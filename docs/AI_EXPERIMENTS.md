@@ -33,6 +33,7 @@ tuning. The heuristic itself lives in
 | `greedy-size` | biggest piece, random tie-break (cchung's "simple greedy") |
 | `heuristic` | shipped weighted eval: `size·10 + frontier·3 + center·1 + block·2` |
 | weight variants | `heuristicStrategy(weights)` with one term changed (ablation / sweep) |
+| `alphabeta-dN` | depth-N paranoid alpha-beta with beam pruning ([alphabeta.ts](../src/game/ai/alphabeta.ts)) |
 
 `size` = piece squares; `frontier` = new legal corner attach-points gained;
 `center` = pull toward board center; `block` = our cells diagonal to an opponent.
@@ -76,6 +77,35 @@ bump. Only stable fact: `f=10` is consistently worst. → motivated seed-averagi
 | Weight ablation | full 29.9 ±5.9 ≈ no-center 29.0 ±4.5 > no-block 25.7 ±7.1 > no-frontier 15.5 ±4.3 |
 | Frontier sweep | f3 29.5 ±7.0 ≈ f6 26.3 ±11.4 ≈ f1 22.9 ±7.1 > f10 21.3 ±5.0 |
 
+### Run D — alpha-beta search vs the heuristic
+
+Paranoid alpha-beta with beam pruning (top-`beam` moves by static heuristic per
+node; I maximize my eval, the 3 opponents minimize it). Leaf eval = my
+`placedSquares + 0.5·attachPoints` minus the opponents' mean.
+
+**Depth isolation** (beam 8, seed 1, 8 games — tiny/noisy, directional only):
+
+| depth | meaning | ab game-share | time |
+|-------|---------|---------------|------|
+| 1 | eval only, no lookahead | 0.25 | 6s |
+| 2 | my move + 1 opp reply | 0.69 | 32s |
+| 3 | + 1 more opp reply | 0.69 | 224s |
+
+→ the **eval alone is weaker** than the static heuristic (d1 loses 25/75);
+**lookahead recovers it** (d2 ≫ d1); d3 adds nothing here and is ~7× slower.
+
+**Proper benchmark** (depth 2, beam 8, 5 seeds × 16 games = 80, ~4s/game):
+
+| strategy | win rate | game-share |
+|----------|----------|------------|
+| alphabeta-d2 | 26.4% ±3.7 | **53%** |
+| heuristic | 23.6% ±3.7 | 47% |
+
+**Depth-2 alpha-beta is ≈ parity with the tuned 1-ply heuristic** — a 53/47 edge
+that sits inside the ±3.7 noise band — at **~100× the compute** (4s/game vs
+near-instant). The d2=0.69 smoke was small-sample noise. Not a deployable win as
+configured.
+
 ## Conclusions (noise-aware)
 
 - **heuristic ≫ greedy-size ≫ random.** Large, stable, replicated.
@@ -105,9 +135,18 @@ terms at one ply. Differences now sit inside the ±5–11 pt noise band; resolvi
 them needs far more games for little payoff. `center` and `block` are settled as
 near-noise/mild.
 
+**Tried, marginal (Run D):** depth-2 paranoid alpha-beta ≈ parity with the
+heuristic at ~100× cost. The bottleneck is the **leaf eval** (weak on its own);
+search only recovers it to a tie. Deeper search (d3) gave no gain here and is far
+slower, and paranoid pessimism likely distorts shallow trees.
+
 **Still open (where real gains likely are):**
-- **Search-based strategies** — alpha-beta depth-2/3, MCTS. A different algorithm
-  class, not a reweighting; the next genuinely discriminating opponent.
+- **Better leaf eval, then re-search** — the eval, not the search, is the ceiling
+  in Run D. A stronger state eval (territory, opponent-mobility) could turn d2's
+  53% into a real margin. Cheapest high-value next step.
+- **Maxn instead of paranoid** — model opponents as maximizing their *own* eval
+  (or fixed greedy), not minimizing mine; less distorted at shallow depth.
+- **MCTS** — different class again; handles the huge branching via sampling.
 - **New features** — opponent-mobility reduction (not just corner denial),
   reachable-territory / region control, piece *flexibility* value (hoard X5/Z5
   for tight late-game spots) beyond raw square count.

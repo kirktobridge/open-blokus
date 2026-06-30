@@ -12,16 +12,24 @@ import {
   heuristicStrategy,
   type Contestant,
 } from './arena';
+import { alphaBetaStrategy } from './alphabeta';
 import { WEIGHTS, type Weights } from './heuristic';
 
-const games = Number(process.argv[2] ?? 100);
-const seeds = Number(process.argv[3] ?? 8);
-const baseSeed = Number(process.argv[4] ?? 1);
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const flags = new Set(process.argv.slice(2).filter((a) => a.startsWith('--')));
+const games = Number(args[0] ?? 100);
+const seeds = Number(args[1] ?? 8);
+const baseSeed = Number(args[2] ?? 1);
 
-function table(title: string, contestants: Contestant[]): void {
-  const r = runTournamentSeeds(contestants, { games, seeds, baseSeed });
+function table(
+  title: string,
+  contestants: Contestant[],
+  g: number = games,
+  s: number = seeds,
+): void {
+  const r = runTournamentSeeds(contestants, { games: g, seeds: s, baseSeed });
   console.log(
-    `\n${title}  (${seeds}×${games} games, base seed ${baseSeed}, mean ties ${r.meanTies.toFixed(1)})`,
+    `\n${title}  (${s}×${g} games, base seed ${baseSeed}, mean ties ${r.meanTies.toFixed(1)})`,
   );
   for (const row of r.rows) {
     const bar = '█'.repeat(Math.round(row.meanRate * 40));
@@ -66,3 +74,20 @@ table('Frontier weight sweep', [
   { name: 'frontier-6', strategy: heuristicStrategy(variant({ frontier: 6 })) },
   { name: 'frontier-10', strategy: heuristicStrategy(variant({ frontier: 10 })) },
 ]);
+
+// 5. Alpha-beta vs heuristic — opt-in (`--ab`), it's ~4s/game so games are capped.
+if (flags.has('--ab')) {
+  const abGames = Math.min(games, 16);
+  const abSeeds = Math.min(seeds, 4);
+  table(
+    'Alpha-beta vs heuristic (slow)',
+    [
+      { name: 'alphabeta-d2', strategy: alphaBetaStrategy({ depth: 2, beam: 8 }) },
+      { name: 'heuristic', strategy: heuristicStrategy() },
+      { name: 'alphabeta-d2', strategy: alphaBetaStrategy({ depth: 2, beam: 8 }) },
+      { name: 'heuristic', strategy: heuristicStrategy() },
+    ],
+    abGames,
+    abSeeds,
+  );
+}
