@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "serve": "vite-node src/server/index.ts",
+    "arena": "vite-node src/game/ai/arena.cli.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

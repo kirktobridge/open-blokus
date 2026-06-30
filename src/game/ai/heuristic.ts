@@ -4,11 +4,19 @@ import { generateLegalMoves } from '../moves';
 import type { Cell, Color, GameState, Placement } from '../types';
 
 /** Tunable heuristic weights. Larger pieces dominate; mobility (frontier) next. */
-export const WEIGHTS = {
-  size: 10, // prefer playing big pieces (size 1..5 → 10..50)
-  frontier: 3, // each new corner-attach point gained
-  center: 1, // mild early pull toward the board center
-  block: 2, // deny opponents a corner we sit diagonally next to
+export interface Weights {
+  size: number; // prefer playing big pieces (size 1..5 → 10..50)
+  frontier: number; // each new corner-attach point gained
+  center: number; // mild early pull toward the board center
+  block: number; // deny opponents a corner we sit diagonally next to
+}
+
+/** Default weights used by the shipped offline bot. */
+export const WEIGHTS: Weights = {
+  size: 10,
+  frontier: 3,
+  center: 1,
+  block: 2,
 };
 
 const CENTER = (BOARD_SIZE - 1) / 2;
@@ -56,13 +64,18 @@ function centerScore(cells: Cell[]): number {
 }
 
 /** Heuristic value of a single placement for `color` (higher is better). */
-export function scorePlacement(G: GameState, color: Color, placement: Placement): number {
+export function scorePlacement(
+  G: GameState,
+  color: Color,
+  placement: Placement,
+  weights: Weights = WEIGHTS,
+): number {
   const cells = resolveCells(placement);
   return (
-    cells.length * WEIGHTS.size +
-    newFrontier(G, color, cells) * WEIGHTS.frontier +
-    centerScore(cells) * WEIGHTS.center +
-    opponentCornersDenied(G, color, cells) * WEIGHTS.block
+    cells.length * weights.size +
+    newFrontier(G, color, cells) * weights.frontier +
+    centerScore(cells) * weights.center +
+    opponentCornersDenied(G, color, cells) * weights.block
   );
 }
 
@@ -74,6 +87,7 @@ export function chooseMove(
   G: GameState,
   color: Color,
   rng: () => number = () => 0,
+  weights: Weights = WEIGHTS,
 ): Placement | null {
   const moves = generateLegalMoves(G, color);
   if (moves.length === 0) return null;
@@ -81,7 +95,7 @@ export function chooseMove(
   let bestScore = -Infinity;
   let best: Placement[] = [];
   for (const m of moves) {
-    const s = scorePlacement(G, color, m);
+    const s = scorePlacement(G, color, m, weights);
     if (s > bestScore) {
       bestScore = s;
       best = [m];
