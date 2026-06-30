@@ -7,10 +7,18 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
   },
-  webServer: {
-    command: 'npm run dev -- --port 5173 --strictPort',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'npm run serve',
+      url: 'http://localhost:8000/games',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'npm run dev -- --port 5173 --strictPort',
+      url: 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+  ],
 });

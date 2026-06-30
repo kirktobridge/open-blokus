@@ -1,6 +1,7 @@
 import type { Color } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { COLOR_HEX } from '../theme';
+import { useSessionActions } from '../lobby/sessionContext';
 
 export interface GameOverPayload {
   colors: Record<Color, number>;
@@ -9,6 +10,7 @@ export interface GameOverPayload {
 }
 
 export function GameOverModal({ gameover }: { gameover: GameOverPayload }) {
+  const actions = useSessionActions();
   return (
     <div
       style={{
@@ -52,6 +54,16 @@ export function GameOverModal({ gameover }: { gameover: GameOverPayload }) {
             .map(([p, v]) => `P${p}: ${v}`)
             .join(' · ')}
         </div>
+        {actions && (
+          <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+            <button data-testid="play-again" onClick={actions.onPlayAgain}>
+              Play again
+            </button>
+            <button data-testid="leave-gameover" onClick={actions.onLeave}>
+              Leave
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
