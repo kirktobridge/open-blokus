@@ -4,11 +4,13 @@ import { useLobby } from './lobby/useLobby';
 import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/config';
 import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
+import { LocalAIGame } from './ai/LocalAIGame';
 
 export function App() {
   const lobby = useLobby();
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [matches, setMatches] = useState<MatchInfo[]>([]);
+  const [aiConfig, setAiConfig] = useState<{ mode: GameMode; aiCount: number } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -54,10 +56,25 @@ export function App() {
     enter(await lobby.join(nextMatchID));
   }, [lobby, session]);
 
+  if (aiConfig) {
+    return (
+      <LocalAIGame
+        mode={aiConfig.mode}
+        aiCount={aiConfig.aiCount}
+        onLeave={() => setAiConfig(null)}
+      />
+    );
+  }
   if (session) {
     return <MatchScreen session={session} onLeave={onLeave} onPlayAgain={onPlayAgain} />;
   }
   return (
-    <HomeScreen matches={matches} onCreate={onCreate} onJoin={onJoin} onRefresh={refresh} />
+    <HomeScreen
+      matches={matches}
+      onCreate={onCreate}
+      onJoin={onJoin}
+      onRefresh={refresh}
+      onStartAI={(mode, aiCount) => setAiConfig({ mode, aiCount })}
+    />
   );
 }

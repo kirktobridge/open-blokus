@@ -5,7 +5,7 @@ import { COLOR_ORDER } from '../game/types';
 import type { GameState, Placement } from '../game/types';
 import { resolveCells } from '../game/pieces';
 import { isLegalPlacement, applyPlacement } from '../game/placement';
-import { hasAnyMove } from '../game/moves';
+import { hasAnyMove, generateLegalMoves } from '../game/moves';
 import { finalScores } from '../game/scoring';
 import { setup, validateSetupData } from './setup';
 import { resolveOwner, seatPos } from './turnOrder';
@@ -52,12 +52,26 @@ const placePiece: Move<GameState> = ({ G, ctx, playerID }, placement: Placement)
   advanceActiveColor(G);
 };
 
+/**
+ * Candidate moves for bots and the debug panel: every legal placement for the
+ * active color, as placePiece moves. Reuses generateLegalMoves so it can never
+ * drift from the rules. The active color always has ≥1 move (stuck colors are
+ * auto-skipped), so this is non-empty until the game is over.
+ */
+export const enumerate: NonNullable<Game<GameState>['ai']>['enumerate'] = (G) =>
+  generateLegalMoves(G, COLOR_ORDER[G.activeColorIndex]).map((p) => ({
+    move: 'placePiece',
+    args: [p],
+  }));
+
 export const BlokusGame: Game<GameState> = {
   name: GAME_NAME,
   setup,
   validateSetupData,
 
   moves: { placePiece },
+
+  ai: { enumerate },
 
   turn: {
     minMoves: 1,

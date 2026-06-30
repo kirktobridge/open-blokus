@@ -333,3 +333,12 @@ Mapping of spec concepts to boardgame.io framework primitives:
 
 - `G.sharedRotation` advances by 1 (mod 3) each time green completes a turn (a placement)
 - Once green is stuck (§5), it is skipped entirely and `G.sharedRotation` no longer advances
+
+---
+
+## 10. AI players (non-normative)
+
+AI opponents are an **engine / UI feature**, not a rules variant — bots play by the exact rules
+above (legal placements only, same scoring, same turn order), so nothing in this document
+changes because of them. Implementation lives in ARCHITECTURE §9; bots are offline /
+client-side.

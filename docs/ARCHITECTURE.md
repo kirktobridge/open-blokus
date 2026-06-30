@@ -59,11 +59,13 @@ open-blokus/
 │  │  ├─ scoring.ts              # basic + advanced scoring, per-player aggregation
 │  │  ├─ modes.ts               # mode config: color↔player maps, corners, rotation
 │  │  ├─ types.ts                # shared domain types (Color, PieceId, Cell, GameState)
+│  │  ├─ ai/heuristic.ts         # bot scoring + chooseMove (pure)
 │  │  └─ index.ts
 │  ├─ bgio/
-│  │  ├─ BlokusGame.ts           # the boardgame.io Game<GameState> object
+│  │  ├─ BlokusGame.ts           # the boardgame.io Game<GameState> object (+ ai.enumerate)
 │  │  ├─ turnOrder.ts            # custom turn order (color-aware)
-│  │  └─ setup.ts                # setup() + validateSetupData()
+│  │  ├─ setup.ts                # setup() + validateSetupData()
+│  │  └─ bots/HeuristicBot.ts    # boardgame.io Bot driven by the heuristic
 │  ├─ client/
 │  │  ├─ App.tsx                 # top-level router: Home → Lobby → Match
 │  │  ├─ BlokusClient.ts         # Client({ game, board, multiplayer }) factory
@@ -78,9 +80,10 @@ open-blokus/
 │  │  │  ├─ Controls.tsx         # rotate / flip / confirm / pass-indicator
 │  │  │  └─ ScorePanel.tsx
 │  │  ├─ lobby/
-│  │  │  ├─ HomeScreen.tsx       # create / join entry
+│  │  │  ├─ HomeScreen.tsx       # create / join entry (+ Play vs AI)
 │  │  │  ├─ MatchList.tsx
 │  │  │  └─ CreateMatchForm.tsx  # pick mode (2/3/4) + scoring variant
+│  │  ├─ ai/                     # offline vs-AI: LocalAIGame.tsx + useBotRunner.ts
 │  │  ├─ hooks/
 │  │  │  ├─ useSelection.ts      # selected piece + rotation/flip + hover (UI state)
 │  │  │  └─ useLobby.ts          # LobbyClient wrapper
@@ -408,3 +411,33 @@ Same `BlokusGame` and board component for both; only the `multiplayer` option ch
 7. **Built-in Lobby** for rooms; `setupData = { mode, scoring }`, guarded by
    `validateSetupData`.
 8. **Orientations precomputed** from base shapes via D4 at load (see GAME_SPEC §2).
+9. **AI is offline/client-side** (heuristic bot); `ai.enumerate` reuses `generateLegalMoves` (see §9).
+
+---
+
+## 9. AI / bots
+
+AI is an **offline, client-side** feature: bots run in the browser on a local boardgame.io
+client. Networked rooms stay human-only.
+
+- **Move source — `BlokusGame.ai.enumerate`** ([src/bgio/BlokusGame.ts](../src/bgio/BlokusGame.ts)): returns every legal
+  placement for the active color as `placePiece` moves by **reusing `generateLegalMoves`**, so a
+  bot can never consider an illegal move. Non-empty until game over (stuck colors auto-skip).
+- **HeuristicBot** ([src/bgio/bots/HeuristicBot.ts](../src/bgio/bots/HeuristicBot.ts), extends `Bot` from `boardgame.io/ai`):
+  ranks the enumerated candidates with a pure scorer, plays the best, seeded tie-break.
+- **Heuristic** ([src/game/ai/heuristic.ts](../src/game/ai/heuristic.ts), pure + unit-tested):
+  `score = size·10 + newFrontier·3 + center·1 + opponentCornersDenied·2` (tunable `WEIGHTS`) —
+  play big early, keep mobility (open corners), drift to center, lightly block.
+- **Offline play path** ([src/client/ai/LocalAIGame.tsx](../src/client/ai/LocalAIGame.tsx) + `useBotRunner.ts`): a vanilla
+  `Client` (no networking). Human seats are the first `mode − aiCount`; the rest are bot seats
+  driven by `Step(client, bot)` after a delay (`VITE_BOT_DELAY`, 0 in e2e) with a "thinking"
+  indicator. `aiCount === mode` ⇒ an all-AI game you watch. Reuses `BlokusBoardView` via a small
+  props adapter; the color≠player model means one bot instance serves all its seats (incl. the
+  3p shared color).
+
+**Recorded decisions (do not silently change — see [GAME_SPEC §10](GAME_SPEC.md)):**
+- Bots are **client-side / offline only**. Networked bot-fill (bots in SocketIO rooms via a
+  bot-runner) is **deferred**.
+- One **heuristic** strength for now. **MCTS / difficulty levels deferred** (Blokus' huge
+  branching + long games make untuned MCTS slow and weak).
+- `ai.enumerate` must always mirror `generateLegalMoves`.

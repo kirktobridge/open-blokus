@@ -19,6 +19,7 @@ export default defineConfig({
       url: 'http://localhost:5173',
       reuseExistingServer: true,
       timeout: 60_000,
+      env: { VITE_BOT_DELAY: '0' }, // instant bots for e2e
     },
   ],
 });
