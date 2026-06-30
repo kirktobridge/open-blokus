@@ -7,9 +7,13 @@ testable output) and lists exactly what to verify before moving on. References:
 Guiding rule: **the pure rules core (Phases 1–3) is finished and tested before any
 boardgame.io or React code.** Bugs are cheapest to find there.
 
+> **Status: all phases shipped ✅.** Phases 0–9 are implemented, committed, and covered
+> by 42 unit tests + Playwright e2e (`npm test` runs both). This plan is retained as the
+> historical build record.
+
 ---
 
-## Phase 0 — Project skeleton
+## Phase 0 — Project skeleton ✅
 
 **Goal:** Vite + TS + React app boots; Vitest runs.
 
@@ -24,7 +28,7 @@ boardgame.io or React code.** Bugs are cheapest to find there.
 
 ---
 
-## Phase 1 — Pieces & geometry (pure)
+## Phase 1 — Pieces & geometry (pure) ✅
 
 **Goal:** all 21 pieces and their orientations exist as data.
 
@@ -44,7 +48,7 @@ boardgame.io or React code.** Bugs are cheapest to find there.
 
 ---
 
-## Phase 2 — Placement legality (pure)
+## Phase 2 — Placement legality (pure) ✅
 
 **Goal:** the core Blokus rule is correct.
 
@@ -63,7 +67,7 @@ boardgame.io or React code.** Bugs are cheapest to find there.
 
 ---
 
-## Phase 3 — Move generation, scoring, stuck (pure)
+## Phase 3 — Move generation, scoring, stuck (pure) ✅
 
 **Goal:** game-end and scoring are correct, no framework yet.
 
@@ -82,7 +86,7 @@ boardgame.io or React code.** Bugs are cheapest to find there.
 
 ---
 
-## Phase 4 — boardgame.io wiring (single-player local)
+## Phase 4 — boardgame.io wiring (single-player local) ✅
 
 **Goal:** a playable 4-player game in one browser via the Local master + debug panel.
 
@@ -108,7 +112,7 @@ boardgame.io or React code.** Bugs are cheapest to find there.
 
 ---
 
-## Phase 5 — Board & piece rendering (read-only)
+## Phase 5 — Board & piece rendering (read-only) ✅
 
 **Goal:** see a real game state.
 
@@ -128,7 +132,7 @@ scores update.
 
 ---
 
-## Phase 6 — Interactive placement
+## Phase 6 — Interactive placement ✅
 
 **Goal:** place pieces by clicking, not via debug panel.
 
@@ -150,7 +154,7 @@ full pass-and-play game, mouse only.
 
 ---
 
-## Phase 7 — Server & networked multiplayer
+## Phase 7 — Server & networked multiplayer ✅
 
 **Goal:** real multiplayer across browsers/devices.
 
@@ -170,7 +174,7 @@ full pass-and-play game, mouse only.
 
 ---
 
-## Phase 8 — Lobby / rooms
+## Phase 8 — Lobby / rooms ✅
 
 **Goal:** create and join matches without hand-passed IDs.
 
@@ -192,7 +196,7 @@ listed and join from another, play to completion, "play again".
 
 ---
 
-## Phase 9 — Polish & hardening
+## Phase 9 — Polish & hardening ✅
 
 **Goal:** ship-quality.
 
@@ -201,7 +205,7 @@ listed and join from another, play to completion, "play again".
 - UX: last-move highlight, "stuck — auto-passed" toast, whose-turn indicator,
   responsive layout, keyboard rotate/flip.
 - Production `origins`, env config, build + deploy (see
-  [docs/boardgame.io/deployment.md](docs/boardgame.io/deployment.md)).
+  [boardgame.io/deployment.md](boardgame.io/deployment.md)).
 - A11y pass (color-blind-safe palette / patterns, focus states).
 
 **Runnable:** `npm run build` + served prod bundle against the deployed server.

@@ -12,7 +12,7 @@ model, the component tree, and the room/lobby system.
 |---------|--------|-----|
 | Build/dev | **Vite** + TypeScript | Fast HMR, first-class TS, simple multi-entry (client + server). |
 | UI | **React 18** | Required by boardgame.io React client; mature. |
-| Game engine | **boardgame.io 0.50.2** | Authoritative move validation, lockstep multiplayer, lobby REST API, undo/log — all free. Pulled docs in [docs/boardgame.io/](docs/boardgame.io/). |
+| Game engine | **boardgame.io 0.50.2** | Authoritative move validation, lockstep multiplayer, lobby REST API, undo/log — all free. Pulled docs in [boardgame.io/](boardgame.io/). |
 | Transport | boardgame.io **SocketIO** master (remote) + **Local** master (pass-and-play / dev) | One code path; swap `multiplayer` option. |
 | Server | boardgame.io **Server** (Koa) | Hosts game master + Lobby REST on one port. |
 | Storage | In-memory (default) for MVP; **flatfile** then a DB connector later | Zero-config start; see §7. |
@@ -41,10 +41,11 @@ model, the component tree, and the room/lobby system.
 
 ```
 open-blokus/
-├─ GAME_SPEC.md
-├─ ARCHITECTURE.md
-├─ BUILD_ORDER.md
-├─ docs/boardgame.io/            # vendored framework docs (reference)
+├─ docs/
+│  ├─ GAME_SPEC.md
+│  ├─ ARCHITECTURE.md
+│  ├─ BUILD_ORDER.md
+│  └─ boardgame.io/              # vendored framework docs (reference)
 ├─ index.html                    # Vite entry (client)
 ├─ vite.config.ts
 ├─ tsconfig.json
@@ -382,7 +383,7 @@ export const validateSetupData = (
 
 - **MVP:** default in-memory (state lost on restart — fine for dev).
 - **Next:** flatfile connector (`bgio-storage`-style) for cheap persistence.
-- **Prod:** a DB connector (e.g. Postgres) per [docs/boardgame.io/storage.md](docs/boardgame.io/storage.md).
+- **Prod:** a DB connector (e.g. Postgres) per [boardgame.io/storage.md](boardgame.io/storage.md).
 
 ### Dev vs. remote master
 
