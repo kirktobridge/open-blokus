@@ -5,6 +5,7 @@ import { BlokusGame, enumerate } from '../../bgio/BlokusGame';
 import { HeuristicBot } from '../../bgio/bots/HeuristicBot';
 import type { GameMode, GameState } from '../../game/types';
 import { BlokusBoardView } from '../BlokusBoardView';
+import { SessionActionsContext } from '../lobby/sessionContext';
 import { useBotRunner } from './useBotRunner';
 
 /** Bot pacing; set VITE_BOT_DELAY=0 (e.g. in e2e) for instant play. */
@@ -64,24 +65,28 @@ export function LocalAIGame({
   } as unknown as BoardProps<GameState>;
 
   return (
-    <div>
-      <div style={{ padding: 8, fontFamily: 'system-ui, sans-serif' }}>
-        <strong>vs AI</strong> · {humanCount} human / {aiCount} AI
-        <span
-          data-testid="ai-thinking"
-          style={{
-            marginLeft: 12,
-            color: '#6b7280',
-            visibility: thinking ? 'visible' : 'hidden',
-          }}
-        >
-          AI thinking…
-        </span>
-        <button data-testid="leave-ai" onClick={onLeave} style={{ marginLeft: 12 }}>
-          Leave
-        </button>
+    <SessionActionsContext.Provider
+      value={{ onPlayAgain: () => client.reset(), onLeave }}
+    >
+      <div>
+        <div style={{ padding: 8, fontFamily: 'system-ui, sans-serif' }}>
+          <strong>vs AI</strong> · {humanCount} human / {aiCount} AI
+          <span
+            data-testid="ai-thinking"
+            style={{
+              marginLeft: 12,
+              color: '#6b7280',
+              visibility: thinking ? 'visible' : 'hidden',
+            }}
+          >
+            AI thinking…
+          </span>
+          <button data-testid="leave-ai" onClick={onLeave} style={{ marginLeft: 12 }}>
+            Leave
+          </button>
+        </div>
+        <BlokusBoardView {...boardProps} />
       </div>
-      <BlokusBoardView {...boardProps} />
-    </div>
+    </SessionActionsContext.Provider>
   );
 }
