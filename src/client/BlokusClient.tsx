@@ -11,7 +11,6 @@ export const BlokusClient = Client({
   game: BlokusGame,
   board: BlokusBoardView,
   numPlayers: 4,
-  debug: true,
 });
 
 /**

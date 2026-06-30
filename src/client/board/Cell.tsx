@@ -7,12 +7,14 @@ export function Cell({
   value,
   preview,
   previewColor,
+  testId,
   onEnter,
   onClick,
 }: {
   value: Color | null;
   preview: PreviewState;
   previewColor: Color;
+  testId?: string;
   onEnter?: () => void;
   onClick?: () => void;
 }) {
@@ -28,6 +30,8 @@ export function Cell({
 
   return (
     <div
+      data-testid={testId}
+      data-value={value ?? ''}
       onMouseEnter={onEnter}
       onClick={onClick}
       style={{

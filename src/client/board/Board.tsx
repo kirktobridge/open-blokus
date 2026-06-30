@@ -47,6 +47,7 @@ export function Board({
             value={value}
             preview={state}
             previewColor={activeColor}
+            testId={`cell-${x}-${y}`}
             onEnter={onCellEnter ? () => onCellEnter(x, y) : undefined}
             onClick={onCellClick ? () => onCellClick(x, y) : undefined}
           />

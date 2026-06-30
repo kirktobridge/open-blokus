@@ -43,6 +43,8 @@ export function PieceThumb({
   return (
     <div
       title={pieceId}
+      data-testid={`piece-${color}-${pieceId}`}
+      data-placed={placed}
       onClick={onClick}
       style={{
         display: 'grid',
