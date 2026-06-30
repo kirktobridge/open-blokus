@@ -40,10 +40,12 @@ tuning. The heuristic itself lives in
 
 ## Trial count
 
-≈ **1,520 games** across the three documented runs below (4-player, basic
-scoring). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts)) also
-plays ~160 games every `npm test` as a regression guard (heuristic must beat
-random; tournaments must be deterministic per seed).
+≈ **2,500 games** across the five documented runs below (4-player, basic
+scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
+sweeps). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
+[alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
+`npm test` as a regression guard (heuristic + alpha-beta must beat random;
+tournaments must be deterministic per seed).
 
 ## Runs
 
@@ -91,8 +93,9 @@ node; I maximize my eval, the 3 opponents minimize it). Leaf eval = my
 | 2 | my move + 1 opp reply | 0.69 | 32s |
 | 3 | + 1 more opp reply | 0.69 | 224s |
 
-→ the **eval alone is weaker** than the static heuristic (d1 loses 25/75);
-**lookahead recovers it** (d2 ≫ d1); d3 adds nothing here and is ~7× slower.
+→ at this tiny sample d1 looked far weaker than d2. **Run E later showed the
+0.25/0.69 split was mostly small-sample noise** — with proper sampling d1 and d2
+both land ~50–55%. Treat this 8-game table as directional only.
 
 **Proper benchmark** (depth 2, beam 8, 5 seeds × 16 games = 80, ~4s/game):
 
@@ -105,6 +108,46 @@ node; I maximize my eval, the 3 opponents minimize it). Leaf eval = my
 that sits inside the ±3.7 noise band — at **~100× the compute** (4s/game vs
 near-instant). The d2=0.69 smoke was small-sample noise. Not a deployable win as
 configured.
+
+### Run E — chasing a better leaf eval (depth-1 eval-weight sweeps)
+
+Run D pointed at the leaf eval as the ceiling, so we tuned it at **depth 1**
+(pure greedy-by-eval, fast) vs the heuristic. Leaf eval =
+`placed·placedWeight + attachPoints·mobilityWeight` minus opponents' mean.
+
+Sweep 1 (4 seeds × 16 = 64 games):
+
+| placed | mob | ab game-share |
+|--------|-----|---------------|
+| 1 | 0.5 | 55% |
+| 1 | 0.25 | 48% |
+| 1 | **0** | **29%** |
+| 2 | 0.5 | 48% |
+| 3 | 0.5 | 60% |
+| 3 | 1 | 48% |
+
+Refine around the peak (6 seeds × 20 = 120 games, tighter):
+
+| placed | mob | ab game-share ±std |
+|--------|-----|--------------------|
+| 3 | 0.5 | 55% ±5.6 |
+| 4 | 0.5 | 54% ±5.1 |
+| 5 | 0.5 | 54% ±5.1 |
+| 3 | 0.75 | 52% ±4.1 |
+
+**Reads:**
+- **Mobility is essential** to the eval — `mob=0` collapses to 29%. (Consistent
+  with `frontier` being the load-bearing heuristic term.)
+- `placed` weight **plateaus at ≥3**; the 60% at the small sample shrank to ~55%
+  with more games (noise again — same lesson as Run B).
+- Net: the tuned depth-1 eval reaches **~54–55% vs the heuristic — a slight edge
+  inside ±5 noise**, i.e. ≈ the depth-2 result. Tuning the eval did *not* break
+  out either.
+
+**Structural ceiling found.** Every search/eval variant clusters at ~50–55% vs
+the heuristic because **the AB beam is ordered by that same heuristic** — it can
+only re-rank the heuristic's top-K, so it can't diverge far by construction.
+That, not the eval magnitude, is why nothing pulls clear.
 
 ## Conclusions (noise-aware)
 
@@ -135,15 +178,20 @@ terms at one ply. Differences now sit inside the ±5–11 pt noise band; resolvi
 them needs far more games for little payoff. `center` and `block` are settled as
 near-noise/mild.
 
-**Tried, marginal (Run D):** depth-2 paranoid alpha-beta ≈ parity with the
-heuristic at ~100× cost. The bottleneck is the **leaf eval** (weak on its own);
-search only recovers it to a tie. Deeper search (d3) gave no gain here and is far
-slower, and paranoid pessimism likely distorts shallow trees.
+**Tried, marginal (Runs D–E):** depth-2 alpha-beta *and* a depth-1 weight-tuned
+eval both land at ~50–55% vs the heuristic — inside noise, at up to ~100× cost.
+Run E found the real ceiling: **the AB beam is heuristic-ordered, so any variant
+can only re-rank the heuristic's top-K and can't pull clear by construction.**
+Tuning eval magnitude (Run E) and adding search depth (Run D) both plateau here.
 
 **Still open (where real gains likely are):**
-- **Better leaf eval, then re-search** — the eval, not the search, is the ceiling
-  in Run D. A stronger state eval (territory, opponent-mobility) could turn d2's
-  53% into a real margin. Cheapest high-value next step.
+- **Break the beam confound first** — order the beam by the *eval itself* (or use
+  a much wider beam) so a different eval can actually pick moves the heuristic
+  wouldn't. Without this, no eval/search change can show its true value. Do this
+  before any more search tuning.
+- **New eval features** — territory/region control, opponent-specific mobility
+  reduction, piece-flexibility value. (Run E: `mob=0` collapses, so mobility-like
+  features are where the signal is.)
 - **Maxn instead of paranoid** — model opponents as maximizing their *own* eval
   (or fixed greedy), not minimizing mine; less distorted at shallow depth.
 - **MCTS** — different class again; handles the huge branching via sampling.
