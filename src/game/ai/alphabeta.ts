@@ -43,6 +43,8 @@ export interface AlphaBetaConfig {
   /** Eval term weights. */
   placedWeight: number;
   mobilityWeight: number;
+  /** Voronoi territory-control weight (0 = off, skips the BFS). */
+  territoryWeight: number;
 }
 
 const DEFAULTS: AlphaBetaConfig = {
@@ -52,6 +54,7 @@ const DEFAULTS: AlphaBetaConfig = {
   weights: WEIGHTS,
   placedWeight: 1,
   mobilityWeight: 0.5,
+  territoryWeight: 0,
 };
 
 // --- State cloning (search must not mutate the live G) ---------------------
@@ -114,15 +117,72 @@ function attachPoints(G: GameState, color: Color): number {
   return n;
 }
 
+const SIZE = 20;
+const COLOR_IDX: Record<Color, number> = Object.fromEntries(
+  COLOR_ORDER.map((c, i) => [c, i]),
+) as Record<Color, number>;
+const CONTESTED = -2;
+
+/**
+ * Voronoi-style territory: a single 8-connected multi-source BFS from every
+ * placed cell, flowing through empty space. Each empty cell is claimed by the
+ * nearest color (Chebyshev distance, matching diagonal expansion); cells tied
+ * between colors are contested and count for no one. Returns each color's claimed
+ * empty-cell count — a measure of open space it is positioned to reach first.
+ */
+function territoryControl(G: GameState): number[] {
+  const owner = new Int8Array(SIZE * SIZE).fill(-1);
+  const dist = new Int16Array(SIZE * SIZE).fill(-1);
+  const queue: number[] = [];
+  for (let i = 0; i < G.board.length; i++) {
+    const cell = G.board[i];
+    if (cell !== null) {
+      owner[i] = COLOR_IDX[cell];
+      dist[i] = 0;
+      queue.push(i);
+    }
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const i = queue[head];
+    const cx = i % SIZE;
+    const cy = (i / SIZE) | 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = cx + dx;
+        const ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) continue;
+        const j = ny * SIZE + nx;
+        if (G.board[j] !== null) continue; // flow only through empty space
+        const nd = dist[i] + 1;
+        if (dist[j] === -1) {
+          dist[j] = nd;
+          owner[j] = owner[i];
+          queue.push(j);
+        } else if (dist[j] === nd && owner[j] !== owner[i]) {
+          owner[j] = CONTESTED; // equidistant from two colors → neutral
+        }
+      }
+    }
+  }
+  const counts = new Array(COLOR_ORDER.length).fill(0);
+  for (let i = 0; i < owner.length; i++) {
+    if (G.board[i] === null && owner[i] >= 0) counts[owner[i]]++;
+  }
+  return counts;
+}
+
 /** State value from `me`'s perspective: my standing minus the opponents' mean. */
 function evalState(G: GameState, me: Color, cfg: AlphaBetaConfig): number {
+  const territory = cfg.territoryWeight !== 0 ? territoryControl(G) : null;
   let mine = 0;
   let oppSum = 0;
   let oppCount = 0;
   for (const c of COLOR_ORDER) {
     const v =
       placedSquares(G.colors[c]) * cfg.placedWeight +
-      attachPoints(G, c) * cfg.mobilityWeight;
+      attachPoints(G, c) * cfg.mobilityWeight +
+      (territory ? territory[COLOR_IDX[c]] * cfg.territoryWeight : 0);
     if (c === me) mine = v;
     else {
       oppSum += v;

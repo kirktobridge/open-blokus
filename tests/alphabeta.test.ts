@@ -30,6 +30,13 @@ describe('alphaBetaStrategy', () => {
     expect(isLegalPlacement(G, 'blue', move!.pieceId, resolveCells(move!))).toBe(true);
   });
 
+  it('territory-weighted eval yields a legal move (exercises the BFS path)', () => {
+    const G = createInitialState(4);
+    const move = alphaBetaStrategy({ depth: 1, beam: 6, territoryWeight: 0.5 })(G, 'blue', () => 0);
+    expect(move).not.toBeNull();
+    expect(isLegalPlacement(G, 'blue', move!.pieceId, resolveCells(move!))).toBe(true);
+  });
+
   it('crushes random (sanity floor)', () => {
     const r = runTournament(
       [

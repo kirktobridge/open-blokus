@@ -40,9 +40,9 @@ tuning. The heuristic itself lives in
 
 ## Trial count
 
-≈ **2,650 games** across the six documented runs below (4-player, basic
+≈ **2,800 games** across the seven documented runs below (4-player, basic
 scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
-sweeps), F ≈ 130 (beam-confound / pure eval). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
+sweeps), F ≈ 130 (beam-confound / pure eval), G ≈ 130 (territory feature). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
 [alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
 `npm test` as a regression guard (heuristic + alpha-beta must beat random;
 tournaments must be deterministic per seed).
@@ -172,6 +172,30 @@ heuristic-ordered. Run F removes that confound two ways.
 slightly *below* the heuristic, within noise. (A small-sample smoke showed 0.61;
 noise again — the recurring lesson of this log.)
 
+### Run G — new feature: Voronoi territory control
+
+Runs E/F said the remaining signal is in *new* features, not reweighting. First
+candidate: **territory control** — a single 8-connected multi-source BFS from
+every placed cell through empty space; each empty cell is claimed by the nearest
+color (Chebyshev distance ≈ diagonal expansion), ties = contested/neutral. Added
+to the eval as `territory · territoryWeight` (opt-in; `0` skips the BFS).
+
+Tested as pure eval (depth-1, beam=all, `placed=3 mob=0.5`) vs heuristic:
+
+| territoryWeight | ab game-share |
+|-----------------|---------------|
+| 0 (baseline) | 46% ±7.3 |
+| 0.02 | 49% ±2.2 |
+| 0.05 | 36% ±4.7 |
+| 0.1 | 38% ±8.6 |
+| 0.5 / 2 / 5 | 0.44 / 0.25 / 0.00 (8-game smoke) |
+
+**No gain at any weight.** `0.02` is within noise of the baseline; everything
+`≥0.05` monotonically *hurts* (the bot spreads thin to claim cells instead of
+playing big pieces / good corners). The coarse nearest-piece partition adds noise,
+not signal — the heuristic's `frontier` term already captures the useful space
+signal. Feature kept in code (opt-in, default off) but **not adopted**.
+
 ## Conclusions (noise-aware)
 
 - **heuristic ≫ greedy-size ≫ random.** Large, stable, replicated.
@@ -209,16 +233,22 @@ better eval. So with the current features — size/placed, frontier/mobility,
 block, center — **the tuned heuristic is at or near the ceiling.** Reweighting,
 deeper search, and eval-ordering are all played out.
 
-**Still open (the feature set itself is the limit now):**
-- **New eval features** — territory/region control, opponent-specific mobility
-  reduction, piece-flexibility value (hoard X5/Z5 for tight late spots). Run E/F:
-  `mob=0` collapses the eval, so mobility-like signal is where gains live — but it
-  needs *new* features, not reweighting the existing four.
+**Tried, no gain (Run G):** Voronoi territory control — neutral-to-harmful at
+every weight. A coarse nearest-piece space partition doesn't beat what `frontier`
+already encodes. First hand-crafted *new feature* tried; it didn't move the
+ceiling either.
+
+**Still open (the hand-feature ceiling looks real — be skeptical of more of the
+same):**
+- **MCTS / learned eval** — a different *class*, not another hand feature. After
+  D–G all plateau, this is the most likely way to actually beat the heuristic;
+  handles huge branching via sampling / learns signal we can't hand-design.
 - **Maxn instead of paranoid** — model opponents as maximizing their *own* eval,
   not minimizing mine; less distorted at shallow depth. (Eval-ordered paranoid
-  search failed in F precisely from this objective mismatch.)
-- **MCTS / learned eval** — a different class; handles huge branching via sampling
-  and could escape the hand-feature ceiling.
+  search failed in F from exactly this objective mismatch.)
+- **Other hand features** — opponent-specific mobility reduction, piece-flexibility
+  value (hoard X5/Z5 for tight late spots). Plausible but Run G is a caution:
+  hand features keep tying the heuristic. Test cheaply (depth-1 beam=all) first.
 - **Phase-dependent weights** — `center` is near-noise whole-game but plausibly
   matters only in the opening; split early/mid/late.
 - **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
