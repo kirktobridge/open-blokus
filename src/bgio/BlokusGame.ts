@@ -11,6 +11,22 @@ import { setup, validateSetupData } from './setup';
 import { resolveOwner, seatPos } from './turnOrder';
 
 /**
+ * Advance activeColorIndex to the next color that still has a legal move
+ * (auto-skip stuck colors). If every color is stuck it is left unchanged and
+ * endIf ends the game. Doing this in the move keeps turn advancement
+ * deterministic and synchronous (vs. skipping inside turn.onBegin).
+ */
+function advanceActiveColor(G: GameState): void {
+  for (let step = 1; step <= COLOR_ORDER.length; step++) {
+    const idx = (G.activeColorIndex + step) % COLOR_ORDER.length;
+    if (!G.colors[COLOR_ORDER[idx]].stuck) {
+      G.activeColorIndex = idx;
+      return;
+    }
+  }
+}
+
+/**
  * Place a piece for the active color. Clients send (pieceId, rotation, reflected,
  * x, y); the engine recomputes the absolute cells, so shapes can't be faked.
  */
@@ -32,6 +48,8 @@ const placePiece: Move<GameState> = ({ G, ctx, playerID }, placement: Placement)
   if (G.config.owners[color] === 'shared') {
     G.sharedRotation = (G.sharedRotation + 1) % ctx.numPlayers;
   }
+
+  advanceActiveColor(G);
 };
 
 export const BlokusGame: Game<GameState> = {
@@ -44,19 +62,11 @@ export const BlokusGame: Game<GameState> = {
   turn: {
     minMoves: 1,
     maxMoves: 1,
-    // currentPlayer follows the active color's owner.
+    // currentPlayer follows the active color's owner; the active color is kept on
+    // a non-stuck color by the move's advanceActiveColor.
     order: {
       first: ({ G }) => seatPos(G, G.activeColorIndex),
       next: ({ G }) => seatPos(G, G.activeColorIndex),
-    },
-    // Skip a color that has no legal move (auto-pass). endIf below stops the
-    // loop once every color is stuck, so this can't recurse forever.
-    onBegin: ({ G, events }) => {
-      if (G.colors[COLOR_ORDER[G.activeColorIndex]].stuck) events.endTurn();
-    },
-    // Advance to the next color after every turn (real move or skip).
-    onEnd: ({ G }) => {
-      G.activeColorIndex = (G.activeColorIndex + 1) % COLOR_ORDER.length;
     },
   },
 

@@ -18,7 +18,7 @@ describe('Board', () => {
       { x: 0, y: 0 },
       { x: 1, y: 0 },
     ]); // two blue cells
-    const html = renderToStaticMarkup(<Board board={G.board} />);
+    const html = renderToStaticMarkup(<Board board={G.board} activeColor="blue" />);
     // 400 cells + 1 grid container = 401 divs.
     expect(occurrences(html, '<div')).toBe(401);
     expect(occurrences(html, COLOR_HEX.blue)).toBe(2);

@@ -1,10 +1,23 @@
-import type { Color, ColorState } from '../../game/types';
+import type { Color, ColorState, PieceId } from '../../game/types';
 import { PIECE_IDS } from '../../game/types';
 import { COLOR_HEX } from '../theme';
 import { PieceThumb } from './PieceThumb';
 
-/** All 21 pieces for one color; placed pieces are dimmed. Read-only. */
-export function PieceTray({ color, state }: { color: Color; state: ColorState }) {
+/** All 21 pieces for one color; placed pieces are dimmed. Interactive for the
+ *  active color on the current player's turn. */
+export function PieceTray({
+  color,
+  state,
+  interactive = false,
+  selectedId = null,
+  onSelect,
+}: {
+  color: Color;
+  state: ColorState;
+  interactive?: boolean;
+  selectedId?: PieceId | null;
+  onSelect?: (id: PieceId) => void;
+}) {
   const remaining = new Set(state.remaining);
   return (
     <div>
@@ -18,6 +31,7 @@ export function PieceTray({ color, state }: { color: Color; state: ColorState })
       >
         {color}
         {state.stuck ? ' (stuck)' : ''}
+        {interactive ? ' ◄' : ''}
       </div>
       <div
         style={{
@@ -28,9 +42,19 @@ export function PieceTray({ color, state }: { color: Color; state: ColorState })
           maxWidth: 220,
         }}
       >
-        {PIECE_IDS.map((id) => (
-          <PieceThumb key={id} pieceId={id} color={color} placed={!remaining.has(id)} />
-        ))}
+        {PIECE_IDS.map((id) => {
+          const placed = !remaining.has(id);
+          return (
+            <PieceThumb
+              key={id}
+              pieceId={id}
+              color={color}
+              placed={placed}
+              selected={interactive && selectedId === id}
+              onClick={interactive && !placed ? () => onSelect?.(id) : undefined}
+            />
+          );
+        })}
       </div>
     </div>
   );

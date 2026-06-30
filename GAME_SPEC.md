@@ -194,9 +194,9 @@ at corners and may never touch along a side.*
 
 > The engine determines "stuck" by attempting move generation for the color: for each
 > remaining piece, each orientation, each board position, test legality (§4). If none
-> is legal, the color is stuck. Stuck status is evaluated at the start of a color's turn
-> (in boardgame.io: `turn.onBegin`). If the color is already in `G.stuck`, the engine
-> immediately calls `events.endTurn()` without prompting for a move.
+> is legal, the color is stuck. Stuck flags are recomputed after every placement; the
+> engine then advances the turn to the next non-stuck color, so a stuck color is simply
+> never given a turn.
 
 ---
 
@@ -319,14 +319,14 @@ Mapping of spec concepts to boardgame.io framework primitives:
 
 **Turn flow:**
 
-- Stuck check runs in `turn.onBegin` — if the current color's `stuck` flag is set, call `events.endTurn()` immediately to skip it (the `endIf` game-over check below short-circuits this, so an all-stuck board ends the game rather than looping)
-- After every `placePiece` move, re-evaluate all colors for stuck status and update each color's `stuck` flag
-- `endIf` triggers when every color is stuck (`COLOR_ORDER.every((c) => G.colors[c].stuck)`)
+- After every `placePiece` move (inside the move): recompute all colors' `stuck` flags, then advance `activeColorIndex` to the next non-stuck color. Auto-skip happens here — in the move — so turn advancement is deterministic and synchronous (an earlier `turn.onBegin` + `events.endTurn()` approach was not reliably synchronous).
+- The turn order's `first` / `next` set `currentPlayer` to the active color's owner. Because the move already skipped to a non-stuck color, a turn never lands on a stuck color.
+- If every color is stuck, `activeColorIndex` is left unchanged and `endIf` ends the game (`COLOR_ORDER.every((c) => G.colors[c].stuck)`).
 
 **Move validation:**
 
 - `moves.placePiece` returns `INVALID_MOVE` (boardgame.io sentinel) for any failed §4 check — do not mutate `G` on failure
-- There is **no** `pass` move. `placePiece` is the only move clients can call; skipping a stuck color is automatic (see *Turn flow* above). boardgame.io has no built-in pass — turn-skipping is done via the `events.endTurn()` event and the turn-order `next` function, not a move.
+- There is **no** `pass` move. `placePiece` is the only move clients can call; skipping a stuck color is automatic (see *Turn flow* above) — handled by advancing `activeColorIndex` inside the move, with the turn-order `next` then mapping the active color to its owning player.
 
 **3-player shared color:**
 

@@ -7,10 +7,14 @@ export function PieceThumb({
   pieceId,
   color,
   placed,
+  selected = false,
+  onClick,
 }: {
   pieceId: PieceId;
   color: Color;
   placed: boolean;
+  selected?: boolean;
+  onClick?: () => void;
 }) {
   const cells = PIECES[pieceId];
   const w = Math.max(...cells.map((c) => c.x)) + 1;
@@ -39,10 +43,15 @@ export function PieceThumb({
   return (
     <div
       title={pieceId}
+      onClick={onClick}
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${w}, ${THUMB_PX}px)`,
         opacity: placed ? 0.4 : 1,
+        cursor: onClick ? 'pointer' : 'default',
+        outline: selected ? '2px solid #111' : 'none',
+        outlineOffset: 2,
+        padding: 2,
       }}
     >
       {squares}
