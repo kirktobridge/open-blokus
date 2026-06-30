@@ -28,9 +28,17 @@ const TOTAL_SQUARES = 89;
 export interface AlphaBetaConfig {
   /** Plies to search, counting the searching color's own move as ply 1. */
   depth: number;
-  /** Max moves kept per node after static ordering. */
+  /** Max moves kept per node after ordering. */
   beam: number;
-  /** Weights for the static move-ordering heuristic. */
+  /**
+   * How to rank/prune candidate moves at each node:
+   * - `heuristic`: by the static placement heuristic (cheap, but the beam can
+   *   then only re-rank the heuristic's top-K — see AI_EXPERIMENTS Run E).
+   * - `eval`: by the one-ply state eval of each move (decouples the search from
+   *   the heuristic, at the cost of an apply+eval per candidate).
+   */
+  ordering: 'heuristic' | 'eval';
+  /** Weights for the static move-ordering heuristic (when ordering = heuristic). */
   weights: Weights;
   /** Eval term weights. */
   placedWeight: number;
@@ -40,6 +48,7 @@ export interface AlphaBetaConfig {
 const DEFAULTS: AlphaBetaConfig = {
   depth: 2,
   beam: 10,
+  ordering: 'heuristic',
   weights: WEIGHTS,
   placedWeight: 1,
   mobilityWeight: 0.5,
@@ -133,20 +142,33 @@ function nextColorIndex(G: GameState, from: number): number {
   return from;
 }
 
-/** Top-`beam` legal moves for `color`, ordered by the static heuristic (desc). */
-function orderedMoves(G: GameState, color: Color, cfg: AlphaBetaConfig): Placement[] {
+/**
+ * Eval of the state reached if `color` plays `move` — from `color`'s own
+ * perspective. Cheaper than applyAndAdvance (no stuck recompute / advance, which
+ * the eval doesn't read), so it's affordable as a move-ordering key.
+ */
+function evalAfterMove(
+  G: GameState,
+  colorIdx: number,
+  move: Placement,
+  cfg: AlphaBetaConfig,
+): number {
+  const G2 = cloneState(G);
+  const color = COLOR_ORDER[colorIdx];
+  applyPlacement(G2, color, move.pieceId, resolveCells(move));
+  return evalState(G2, color, cfg);
+}
+
+/** Top-`beam` legal moves for the active color, ordered by `cfg.ordering` (desc). */
+function orderedMoves(G: GameState, colorIdx: number, cfg: AlphaBetaConfig): Placement[] {
+  const color = COLOR_ORDER[colorIdx];
   const moves = generateLegalMoves(G, color);
-  if (moves.length <= cfg.beam) {
-    return moves.sort(
-      (a, b) =>
-        scorePlacement(G, color, b, cfg.weights) - scorePlacement(G, color, a, cfg.weights),
-    );
-  }
-  return moves
-    .map((m) => ({ m, s: scorePlacement(G, color, m, cfg.weights) }))
-    .sort((a, b) => b.s - a.s)
-    .slice(0, cfg.beam)
-    .map((e) => e.m);
+  const key =
+    cfg.ordering === 'eval'
+      ? (m: Placement) => evalAfterMove(G, colorIdx, m, cfg)
+      : (m: Placement) => scorePlacement(G, color, m, cfg.weights);
+  const scored = moves.map((m) => ({ m, s: key(m) })).sort((a, b) => b.s - a.s);
+  return (scored.length <= cfg.beam ? scored : scored.slice(0, cfg.beam)).map((e) => e.m);
 }
 
 function applyAndAdvance(G: GameState, colorIdx: number, move: Placement): GameState {
@@ -172,7 +194,7 @@ function search(
   const colorIdx = G.activeColorIndex;
   const color = COLOR_ORDER[colorIdx];
   const maximizing = color === me;
-  const moves = orderedMoves(G, color, cfg);
+  const moves = orderedMoves(G, colorIdx, cfg);
 
   let best = maximizing ? -Infinity : Infinity;
   for (const m of moves) {
@@ -198,7 +220,7 @@ export function alphaBetaStrategy(config: Partial<AlphaBetaConfig> = {}): Strate
   const cfg: AlphaBetaConfig = { ...DEFAULTS, ...config };
   return (G, color, rng) => {
     const idxOf = COLOR_ORDER.indexOf(color);
-    const moves = orderedMoves(G, color, cfg);
+    const moves = orderedMoves(G, idxOf, cfg);
     if (moves.length === 0) return null;
 
     let bestVal = -Infinity;

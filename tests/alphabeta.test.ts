@@ -23,6 +23,13 @@ describe('alphaBetaStrategy', () => {
     expect(ab(G, 'blue', () => 0)).toEqual(ab(G, 'blue', () => 0));
   });
 
+  it('eval ordering also yields a legal move', () => {
+    const G = createInitialState(4);
+    const move = alphaBetaStrategy({ depth: 2, beam: 4, ordering: 'eval' })(G, 'blue', () => 0);
+    expect(move).not.toBeNull();
+    expect(isLegalPlacement(G, 'blue', move!.pieceId, resolveCells(move!))).toBe(true);
+  });
+
   it('crushes random (sanity floor)', () => {
     const r = runTournament(
       [

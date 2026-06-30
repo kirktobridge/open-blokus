@@ -40,9 +40,9 @@ tuning. The heuristic itself lives in
 
 ## Trial count
 
-≈ **2,500 games** across the five documented runs below (4-player, basic
+≈ **2,650 games** across the six documented runs below (4-player, basic
 scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
-sweeps). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
+sweeps), F ≈ 130 (beam-confound / pure eval). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
 [alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
 `npm test` as a regression guard (heuristic + alpha-beta must beat random;
 tournaments must be deterministic per seed).
@@ -149,6 +149,29 @@ the heuristic because **the AB beam is ordered by that same heuristic** — it c
 only re-rank the heuristic's top-K, so it can't diverge far by construction.
 That, not the eval magnitude, is why nothing pulls clear.
 
+### Run F — breaking the beam confound
+
+Run E argued every AB variant clustered near the heuristic because the beam was
+heuristic-ordered. Run F removes that confound two ways.
+
+- **Pure eval** — depth 1 with `beam = all moves`, so the root argmaxes the eval
+  directly and heuristic ordering is irrelevant (`placed=3, mob=0.5`). 6×16 = 96
+  games vs heuristic:
+
+  | strategy | win rate | game-share |
+  |----------|----------|------------|
+  | heuristic | 26.7% ±6.4 | 53% |
+  | pure-eval | 23.3% ±6.4 | **47%** |
+
+- **Eval-ordered search** — depth 2, `ordering: 'eval'`. Smoke: 0.25 game-share
+  and ~15s/game. Worse *and* impractical — eval-ordering misaligns with the
+  paranoid objective (it ranks opponents by *their* eval, but the search wants
+  them minimizing *ours*). Abandoned.
+
+**The confound wasn't hiding a better eval.** Unconfounded, the eval is 47% —
+slightly *below* the heuristic, within noise. (A small-sample smoke showed 0.61;
+noise again — the recurring lesson of this log.)
+
 ## Conclusions (noise-aware)
 
 - **heuristic ≫ greedy-size ≫ random.** Large, stable, replicated.
@@ -178,27 +201,25 @@ terms at one ply. Differences now sit inside the ±5–11 pt noise band; resolvi
 them needs far more games for little payoff. `center` and `block` are settled as
 near-noise/mild.
 
-**Tried, marginal (Runs D–E):** depth-2 alpha-beta *and* a depth-1 weight-tuned
-eval both land at ~50–55% vs the heuristic — inside noise, at up to ~100× cost.
-Run E found the real ceiling: **the AB beam is heuristic-ordered, so any variant
-can only re-rank the heuristic's top-K and can't pull clear by construction.**
-Tuning eval magnitude (Run E) and adding search depth (Run D) both plateau here.
+**Tried, no win (Runs D–F):** depth-2 alpha-beta (D), a depth-1 weight-tuned eval
+(E), and an *unconfounded* pure eval (F, beam=all) all land at 47–55% vs the
+heuristic — statistically indistinguishable, at up to ~100× cost. Run F is the
+clincher: removing the heuristic-ordered-beam confound did **not** surface a
+better eval. So with the current features — size/placed, frontier/mobility,
+block, center — **the tuned heuristic is at or near the ceiling.** Reweighting,
+deeper search, and eval-ordering are all played out.
 
-**Still open (where real gains likely are):**
-- **Break the beam confound first** — order the beam by the *eval itself* (or use
-  a much wider beam) so a different eval can actually pick moves the heuristic
-  wouldn't. Without this, no eval/search change can show its true value. Do this
-  before any more search tuning.
+**Still open (the feature set itself is the limit now):**
 - **New eval features** — territory/region control, opponent-specific mobility
-  reduction, piece-flexibility value. (Run E: `mob=0` collapses, so mobility-like
-  features are where the signal is.)
-- **Maxn instead of paranoid** — model opponents as maximizing their *own* eval
-  (or fixed greedy), not minimizing mine; less distorted at shallow depth.
-- **MCTS** — different class again; handles the huge branching via sampling.
-- **New features** — opponent-mobility reduction (not just corner denial),
-  reachable-territory / region control, piece *flexibility* value (hoard X5/Z5
-  for tight late-game spots) beyond raw square count.
-- **Phase-dependent weights** — `center` is near-noise when averaged whole-game
-  but plausibly matters only in the opening; split early/mid/late.
+  reduction, piece-flexibility value (hoard X5/Z5 for tight late spots). Run E/F:
+  `mob=0` collapses the eval, so mobility-like signal is where gains live — but it
+  needs *new* features, not reweighting the existing four.
+- **Maxn instead of paranoid** — model opponents as maximizing their *own* eval,
+  not minimizing mine; less distorted at shallow depth. (Eval-ordered paranoid
+  search failed in F precisely from this objective mismatch.)
+- **MCTS / learned eval** — a different class; handles huge branching via sampling
+  and could escape the hand-feature ceiling.
+- **Phase-dependent weights** — `center` is near-noise whole-game but plausibly
+  matters only in the opening; split early/mid/late.
 - **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
   color) have different blocking dynamics, untested.
