@@ -161,6 +161,9 @@ export interface GameState {
   /** Whose turn it is to play the shared color next (3p only): index into the
    *  human-player rotation. Advances each time the shared color moves. */
   sharedRotation: number;
+
+  /** Flat board indices of the most recently placed piece (UI highlight only). */
+  lastMove: number[];
 }
 ```
 

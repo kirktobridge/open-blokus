@@ -63,5 +63,6 @@ export function createInitialState(
     colors,
     activeColorIndex: 0,
     sharedRotation: 0,
+    lastMove: [],
   };
 }

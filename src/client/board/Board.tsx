@@ -15,6 +15,7 @@ export function Board({
   board,
   activeColor,
   preview,
+  lastMove,
   onCellEnter,
   onCellClick,
   onLeave,
@@ -22,10 +23,12 @@ export function Board({
   board: (Color | null)[];
   activeColor: Color;
   preview?: BoardPreview;
+  lastMove?: number[];
   onCellEnter?: (x: number, y: number) => void;
   onCellClick?: (x: number, y: number) => void;
   onLeave?: () => void;
 }) {
+  const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
   return (
     <div
       onMouseLeave={onLeave}
@@ -47,7 +50,9 @@ export function Board({
             value={value}
             preview={state}
             previewColor={activeColor}
+            lastMove={lastMoveSet?.has(i) ?? false}
             testId={`cell-${x}-${y}`}
+            label={`cell ${x},${y}${value ? ` ${value}` : ' empty'}`}
             onEnter={onCellEnter ? () => onCellEnter(x, y) : undefined}
             onClick={onCellClick ? () => onCellClick(x, y) : undefined}
           />

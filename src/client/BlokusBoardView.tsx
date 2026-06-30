@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { GameState } from '../game/types';
 import { COLOR_ORDER } from '../game/types';
@@ -9,6 +10,7 @@ import { ScorePanel } from './controls/ScorePanel';
 import { Controls } from './controls/Controls';
 import { GameOverModal, type GameOverPayload } from './controls/GameOverModal';
 import { useSelection } from './hooks/useSelection';
+import { COLOR_HEX } from './theme';
 
 /** Interactive game view (Phase 6): select a piece, preview it, click to place. */
 export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameState>) {
@@ -59,6 +61,18 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
 
   const interactive = canPlay && sel.pieceId != null;
 
+  // Keyboard shortcuts: R rotate, F flip, Esc clear.
+  useEffect(() => {
+    if (!canPlay) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') sel.rotate();
+      else if (e.key === 'f' || e.key === 'F') sel.flip();
+      else if (e.key === 'Escape') sel.reset();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canPlay, sel.rotate, sel.flip, sel.reset]);
+
   return (
     <div
       style={{
@@ -71,14 +85,30 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
     >
       <div>
         <h2 style={{ margin: '0 0 8px' }}>OpenBlokus</h2>
-        <p style={{ margin: '0 0 8px', fontSize: 14 }}>
-          turn {ctx.turn} · player {ctx.currentPlayer} · active {activeColor}
-          {canPlay ? '' : ' · waiting'}
+        <p style={{ margin: '0 0 8px', fontSize: 14 }} role="status">
+          turn {ctx.turn} · player {ctx.currentPlayer} · active{' '}
+          <span style={{ color: COLOR_HEX[activeColor], fontWeight: 600 }}>
+            {activeColor}
+          </span>
+          {' · '}
+          <span
+            data-testid="turn-status"
+            style={{
+              padding: '1px 8px',
+              borderRadius: 10,
+              fontSize: 12,
+              color: '#fff',
+              background: canPlay ? COLOR_HEX[activeColor] : '#9ca3af',
+            }}
+          >
+            {ctx.gameover ? 'game over' : canPlay ? 'your turn' : 'waiting'}
+          </span>
         </p>
         <Board
           board={G.board}
           activeColor={activeColor}
           preview={preview}
+          lastMove={G.lastMove}
           onCellEnter={interactive ? (x, y) => sel.setHover({ x, y }) : undefined}
           onCellClick={interactive ? tryPlace : undefined}
           onLeave={() => sel.setHover(null)}

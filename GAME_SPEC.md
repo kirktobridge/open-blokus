@@ -316,6 +316,7 @@ Mapping of spec concepts to boardgame.io framework primitives:
 - `G.colors[color].hasStarted`: `boolean` — whether the color has made its first (corner) move
 - `G.colors[color].stuck`: `boolean` — `true` once the color has no legal placement remaining
 - `G.sharedRotation`: `number` (`0 | 1 | 2`) — 3-player mode only; index into `[P0, P1, P2]` indicating which human plays green's current turn
+- `G.lastMove`: `number[]` — flat board indices of the most recently placed piece (UI highlight only; not a rule input)
 
 **Turn flow:**
 

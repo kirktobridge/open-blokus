@@ -78,4 +78,6 @@ export interface GameState {
   activeColorIndex: number;
   /** 3p only: index into the human rotation for the next shared-color turn. */
   sharedRotation: number;
+  /** Flat board indices of the most recently placed piece (for UI highlight). */
+  lastMove: number[];
 }

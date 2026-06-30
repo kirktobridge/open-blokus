@@ -55,7 +55,9 @@ export function applyPlacement(
   pieceId: PieceId,
   cells: Cell[],
 ): void {
-  for (const c of cells) G.board[idx(c.x, c.y)] = color;
+  const indices = cells.map((c) => idx(c.x, c.y));
+  for (const i of indices) G.board[i] = color;
+  G.lastMove = indices;
   const cs = G.colors[color];
   cs.remaining = cs.remaining.filter((p) => p !== pieceId);
   cs.lastPlaced = pieceId;

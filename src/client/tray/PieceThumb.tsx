@@ -45,6 +45,8 @@ export function PieceThumb({
       title={pieceId}
       data-testid={`piece-${color}-${pieceId}`}
       data-placed={placed}
+      role={onClick ? 'button' : undefined}
+      aria-label={`${color} piece ${pieceId}${placed ? ' (placed)' : ''}${selected ? ' (selected)' : ''}`}
       onClick={onClick}
       style={{
         display: 'grid',

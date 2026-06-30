@@ -7,14 +7,18 @@ export function Cell({
   value,
   preview,
   previewColor,
+  lastMove = false,
   testId,
+  label,
   onEnter,
   onClick,
 }: {
   value: Color | null;
   preview: PreviewState;
   previewColor: Color;
+  lastMove?: boolean;
   testId?: string;
+  label?: string;
   onEnter?: () => void;
   onClick?: () => void;
 }) {
@@ -32,6 +36,9 @@ export function Cell({
     <div
       data-testid={testId}
       data-value={value ?? ''}
+      data-lastmove={lastMove}
+      role={onClick ? 'button' : undefined}
+      aria-label={label}
       onMouseEnter={onEnter}
       onClick={onClick}
       style={{
@@ -40,6 +47,7 @@ export function Cell({
         background,
         opacity,
         border: `1px solid ${GRID_LINE}`,
+        boxShadow: lastMove ? 'inset 0 0 0 3px rgba(255,255,255,0.85)' : undefined,
         boxSizing: 'border-box',
         cursor: onClick ? 'pointer' : 'default',
       }}
