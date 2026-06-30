@@ -8,8 +8,17 @@ import { BlokusBoardView } from '../BlokusBoardView';
 import { SessionActionsContext } from '../lobby/sessionContext';
 import { useBotRunner } from './useBotRunner';
 
-/** Bot pacing; set VITE_BOT_DELAY=0 (e.g. in e2e) for instant play. */
-const BOT_DELAY_MS = Number(import.meta.env.VITE_BOT_DELAY ?? 600);
+/**
+ * Bot pacing in ms. A `?botDelay=` query param wins (so e2e can force instant
+ * play regardless of which dev server it hits), else VITE_BOT_DELAY, else 600.
+ */
+function resolveBotDelay(): number {
+  if (typeof window !== 'undefined') {
+    const q = new URLSearchParams(window.location.search).get('botDelay');
+    if (q != null && q !== '') return Number(q);
+  }
+  return Number(import.meta.env.VITE_BOT_DELAY ?? 600);
+}
 
 /**
  * Offline single-player-vs-AI game on a local boardgame.io client. Human seats
@@ -27,6 +36,7 @@ export function LocalAIGame({
 }) {
   const client = useMemo(() => Client({ game: BlokusGame, numPlayers: mode }), [mode]);
   const bot = useMemo(() => new HeuristicBot({ enumerate, seed: 'vs-ai' }), []);
+  const botDelay = useMemo(resolveBotDelay, []);
 
   const humanCount = Math.max(0, mode - aiCount);
   const humanSeats = useMemo(
@@ -51,7 +61,7 @@ export function LocalAIGame({
     };
   }, [client]);
 
-  const thinking = useBotRunner(client, botSeats, bot, BOT_DELAY_MS);
+  const thinking = useBotRunner(client, botSeats, bot, botDelay);
 
   const state = client.getState();
   if (!state) return <div style={{ padding: 16 }}>Loading…</div>;

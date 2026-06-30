@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('human vs 3 AI: human opens, the three AIs reply on their corners', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/?botDelay=0');
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('3'); // you = P0 (blue)
   await page.getByTestId('start-ai').click();
@@ -29,12 +29,12 @@ test('human vs 3 AI: human opens, the three AIs reply on their corners', async (
 });
 
 test('all-AI watch game plays to completion with no human input', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?botDelay=0');
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
   await page.getByTestId('start-ai').click();
 
-  // With VITE_BOT_DELAY=0 the whole game runs in a few seconds.
+  // ?botDelay=0 → instant bots, so the whole game runs in a couple of seconds.
   await expect(page.getByRole('heading', { name: 'Game over' })).toBeVisible({
     timeout: 30_000,
   });
