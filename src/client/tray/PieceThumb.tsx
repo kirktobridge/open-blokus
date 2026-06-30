@@ -1,0 +1,51 @@
+import type { Color, PieceId } from '../../game/types';
+import { PIECES } from '../../game/pieces';
+import { COLOR_HEX, PLACED_PIECE, THUMB_PX } from '../theme';
+
+/** A small static rendering of a piece's base shape. Dimmed when placed. */
+export function PieceThumb({
+  pieceId,
+  color,
+  placed,
+}: {
+  pieceId: PieceId;
+  color: Color;
+  placed: boolean;
+}) {
+  const cells = PIECES[pieceId];
+  const w = Math.max(...cells.map((c) => c.x)) + 1;
+  const h = Math.max(...cells.map((c) => c.y)) + 1;
+  const filled = new Set(cells.map((c) => `${c.x},${c.y}`));
+
+  const squares = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const on = filled.has(`${x},${y}`);
+      squares.push(
+        <div
+          key={`${x},${y}`}
+          style={{
+            width: THUMB_PX,
+            height: THUMB_PX,
+            background: on ? (placed ? PLACED_PIECE : COLOR_HEX[color]) : 'transparent',
+            border: on ? '1px solid rgba(0,0,0,0.15)' : 'none',
+            boxSizing: 'border-box',
+          }}
+        />,
+      );
+    }
+  }
+
+  return (
+    <div
+      title={pieceId}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${w}, ${THUMB_PX}px)`,
+        opacity: placed ? 0.4 : 1,
+      }}
+    >
+      {squares}
+    </div>
+  );
+}
