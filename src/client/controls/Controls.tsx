@@ -26,7 +26,7 @@ export function Controls({
       <button disabled={!pieceId} onClick={onClear}>
         Clear
       </button>
-      <span style={{ fontSize: 13, color: '#555' }}>
+      <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
         {disabled
           ? 'Waiting for your turn…'
           : pieceId

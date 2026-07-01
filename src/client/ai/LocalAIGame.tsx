@@ -85,7 +85,7 @@ export function LocalAIGame({
             data-testid="ai-thinking"
             style={{
               marginLeft: 12,
-              color: '#6b7280',
+              color: 'var(--fg-muted)',
               visibility: thinking ? 'visible' : 'hidden',
             }}
           >

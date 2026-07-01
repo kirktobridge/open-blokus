@@ -62,7 +62,7 @@ export function HomeScreen({
             Start
           </button>
         </div>
-        <p style={{ fontSize: 12, color: '#6b7280', margin: '4px 0 0' }}>
+        <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '4px 0 0' }}>
           {aiMode - aiCount} human / {aiCount} AI{aiCount === aiMode ? ' (watch)' : ''}
         </p>
       </section>

@@ -1,0 +1,48 @@
+/* Theme tokens. Piece colors (blue/red/…) live in theme.ts and are shared by
+ * both schemes; these are the neutral UI surfaces that flip for dark mode.
+ * Inline styles reference these via var(); switching [data-theme] on <html>
+ * re-skins the whole app with no re-render. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --fg: #111827;
+  --fg-muted: #6b7280;
+  --surface: #ffffff;
+  --overlay: rgba(0, 0, 0, 0.5);
+  --empty-cell: #f3f4f6;
+  --grid-line: #d1d5db;
+  --placed-piece: #e5e7eb;
+  --outline-strong: #111111;
+  --pill-idle: #9ca3af;
+  --cell-outline: rgba(0, 0, 0, 0.15);
+  --last-move-ring: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --fg: #e5e7eb;
+  --fg-muted: #9ca3af;
+  --surface: #1b1e24;
+  --overlay: rgba(0, 0, 0, 0.65);
+  --empty-cell: #262a31;
+  --grid-line: #3a3f47;
+  --placed-piece: #40454d;
+  --outline-strong: #f3f4f6;
+  --pill-idle: #4b5563;
+  --cell-outline: rgba(0, 0, 0, 0.4);
+  --last-move-ring: rgba(255, 255, 255, 0.9);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Native controls follow color-scheme; nudge borders so they read in dark. */
+button,
+input,
+select {
+  color-scheme: inherit;
+}

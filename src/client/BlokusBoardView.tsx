@@ -98,7 +98,7 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
               borderRadius: 10,
               fontSize: 12,
               color: '#fff',
-              background: canPlay ? COLOR_HEX[activeColor] : '#9ca3af',
+              background: canPlay ? COLOR_HEX[activeColor] : 'var(--pill-idle)',
             }}
           >
             {ctx.gameover ? 'game over' : canPlay ? 'your turn' : 'waiting'}

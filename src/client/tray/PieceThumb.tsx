@@ -32,7 +32,7 @@ export function PieceThumb({
             width: THUMB_PX,
             height: THUMB_PX,
             background: on ? (placed ? PLACED_PIECE : COLOR_HEX[color]) : 'transparent',
-            border: on ? '1px solid rgba(0,0,0,0.15)' : 'none',
+            border: on ? '1px solid var(--cell-outline)' : 'none',
             boxSizing: 'border-box',
           }}
         />,
@@ -53,7 +53,7 @@ export function PieceThumb({
         gridTemplateColumns: `repeat(${w}, ${THUMB_PX}px)`,
         opacity: placed ? 0.4 : 1,
         cursor: onClick ? 'pointer' : 'default',
-        outline: selected ? '2px solid #111' : 'none',
+        outline: selected ? '2px solid var(--outline-strong)' : 'none',
         outlineOffset: 2,
         padding: 2,
       }}

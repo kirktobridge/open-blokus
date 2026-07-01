@@ -5,6 +5,7 @@ import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/
 import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
+import { ThemeToggle } from './ThemeToggle';
 
 export function App() {
   const lobby = useLobby();
@@ -56,25 +57,32 @@ export function App() {
     enter(await lobby.join(nextMatchID));
   }, [lobby, session]);
 
+  let screen;
   if (aiConfig) {
-    return (
+    screen = (
       <LocalAIGame
         mode={aiConfig.mode}
         aiCount={aiConfig.aiCount}
         onLeave={() => setAiConfig(null)}
       />
     );
-  }
-  if (session) {
-    return <MatchScreen session={session} onLeave={onLeave} onPlayAgain={onPlayAgain} />;
+  } else if (session) {
+    screen = <MatchScreen session={session} onLeave={onLeave} onPlayAgain={onPlayAgain} />;
+  } else {
+    screen = (
+      <HomeScreen
+        matches={matches}
+        onCreate={onCreate}
+        onJoin={onJoin}
+        onRefresh={refresh}
+        onStartAI={(mode, aiCount) => setAiConfig({ mode, aiCount })}
+      />
+    );
   }
   return (
-    <HomeScreen
-      matches={matches}
-      onCreate={onCreate}
-      onJoin={onJoin}
-      onRefresh={refresh}
-      onStartAI={(mode, aiCount) => setAiConfig({ mode, aiCount })}
-    />
+    <>
+      <ThemeToggle />
+      {screen}
+    </>
   );
 }

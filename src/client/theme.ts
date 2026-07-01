@@ -8,9 +8,11 @@ export const COLOR_HEX: Record<Color, string> = {
   green: '#16a34a',
 };
 
-export const EMPTY_CELL = '#f3f4f6';
-export const GRID_LINE = '#d1d5db';
-export const PLACED_PIECE = '#e5e7eb';
+// Neutral UI surfaces resolve from CSS vars (see theme.css) so dark mode flips
+// them without re-render. Piece colors above stay identical across schemes.
+export const EMPTY_CELL = 'var(--empty-cell)';
+export const GRID_LINE = 'var(--grid-line)';
+export const PLACED_PIECE = 'var(--placed-piece)';
 
 /** Board cell size in pixels. */
 export const CELL_PX = 24;

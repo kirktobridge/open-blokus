@@ -47,7 +47,7 @@ export function Cell({
         background,
         opacity,
         border: `1px solid ${GRID_LINE}`,
-        boxShadow: lastMove ? 'inset 0 0 0 3px rgba(255,255,255,0.85)' : undefined,
+        boxShadow: lastMove ? 'inset 0 0 0 3px var(--last-move-ring)' : undefined,
         boxSizing: 'border-box',
         cursor: onClick ? 'pointer' : 'default',
       }}

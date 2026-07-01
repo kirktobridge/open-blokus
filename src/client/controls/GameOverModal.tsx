@@ -16,7 +16,7 @@ export function GameOverModal({ gameover }: { gameover: GameOverPayload }) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.5)',
+        background: 'var(--overlay)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -24,7 +24,8 @@ export function GameOverModal({ gameover }: { gameover: GameOverPayload }) {
     >
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface)',
+          color: 'var(--fg)',
           padding: 24,
           borderRadius: 8,
           minWidth: 280,
