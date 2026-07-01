@@ -41,10 +41,10 @@ tuning. The heuristic itself lives in
 
 ## Trial count
 
-≈ **2,850 games** across the eight documented runs below (4-player, basic
+≈ **5,250 games** across the eight documented runs below (4-player, basic
 scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
 sweeps), F ≈ 130 (beam-confound / pure eval), G ≈ 130 (territory feature),
-H ≈ 50 (MCTS — few games, it's slow). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
+H ≈ 2,450 (MCTS — a 2,400-game budget sweep across 12 cores). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
 [alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
 `npm test` as a regression guard (heuristic + alpha-beta must beat random;
 tournaments must be deterministic per seed).
@@ -205,32 +205,39 @@ each player maximizes its *own* outcome (fixes the paranoid mismatch from D/F);
 heuristic-prior beam per node (plain MCTS can't try every root move at a feasible
 budget); rejection-sampled rollouts (sample *one* legal move instead of
 enumerating all — ~2.5× faster); reward = placed-square leader (exact winner
-under basic scoring). MCTS is expensive here — `generateLegalMoves` is ~34 ms
-mid-game and search needs thousands — so games are few and budgets modest.
+under basic scoring).
 
-Head-to-head vs heuristic (2 seats each):
+Sanity: MCTS beats `random` 1.00 (4 games). A first small run looked like `it=80,
+d=8` won 60% over 30 games, but that was too few to call (95% CI [0.42, 0.78]).
+So we ran a **2,400-game budget sweep** (70 shards across 12 cores), pooled into
+proper binomial stats (game-share, Wilson 95% CI, one-sided z-test vs 50/50):
 
-| config | sample | mcts game-share |
-|--------|--------|-----------------|
-| vs `random` (sanity) | 4 games | **1.00** |
-| `it=40, d=6` | 8 games | 50% (tie) |
-| `it=80, d=8` | 6 games | 75% (noisy) |
-| **`it=80, d=8`** | **3×10 = 30 games** | **60% ±2.5** |
+| config | games | mcts game-share | 95% CI | one-sided p |
+|--------|-------|-----------------|--------|-------------|
+| `it=40,  d=6`  | 400 | **39.3%** | [34.7, 44.2] | — (loses, z −4.3) |
+| `it=80,  d=8`  | 1200 | **54.6%** | [51.8, 57.4] | 0.0007 |
+| `it=160, d=10` | 400 | **60.7%** | [55.8, 65.4] | <1e-4 |
+| `it=320, d=12` | 200 | **69.9%** | [63.2, 75.8] | <1e-4 |
+| `it=80,  d=0` (full rollout) | 200 | **76.7%** | [70.3, 82.0] | <1e-4 |
 
-**MCTS is the first strategy to *lead* the heuristic — but 30 games is not enough
-to call it a win.** `p̂ = 0.60` on ~30 decisive games has a binomial SE of ~0.089;
-the 95% CI is **[0.42, 0.78]**, which includes 0.50 (one-sided vs 50/50: z ≈ 1.1,
-**p ≈ 0.14**). The `±2.5` that `runTournamentSeeds` prints is the std of three
-seed-means and badly *understates* the true sampling error — do not read it as a
-CI (an earlier draft wrongly called this "~4σ"; it is not). The result is
-*consistent* (the 3 seeds landed ~6/6/6, not 4/6/8), which nudges belief toward a
-true p ≈ 0.55–0.65, but does not clear significance.
+**Three solid findings:**
+1. **MCTS beats the heuristic, and it's significant** — `it=80/d=8` is 54.6%,
+   CI clear of 50, p = 0.0007 over 1,200 games. The first strategy in D–H to
+   genuinely win. (The 30-game 60% was small-sample inflation — the real edge at
+   this budget is ~5 pts, not 10. Skepticism vindicated.)
+2. **Strength scales monotonically with search budget** — 39 → 55 → 61 → 70% as
+   iterations/depth rise. The opposite of the D–G plateau: here more compute keeps
+   buying real strength. (Too little search, `it=40/d=6`, actually *loses* at 39%.)
+3. **Rollout quality dominates.** `it=80/d=0` (rollouts to *terminal*) hits 76.7%
+   — beating even the heaviest truncated config `it=320/d=12` at a quarter the
+   iterations. The placed-leader reward is *exact* at a terminal state but a weak
+   proxy at a mid-rollout cutoff, so full rollouts carry far more signal. Rollout
+   depth, not raw iteration count, is the biggest lever.
 
-Also suggestive, not conclusive: it's **budget-dependent** (`it=40/d=6` ties,
-`it=80/d=8` leads), which is the pattern you'd expect if search genuinely helps —
-unlike the D–G plateau. **To actually confirm a beat needs ~150–250 games**
-(~1.5–2.5 h at ~35 s/game); that run is still TODO. Cost caveat regardless:
-~100–1000× the heuristic, so at best a "hard bot with a move-time budget".
+Cost caveat: ~100–1000× the heuristic (`generateLegalMoves` is ~34 ms mid-game and
+search needs thousands), so this is a "hard bot with a move-time budget", not a
+drop-in. The `it=80/d=0` result says a strong-and-cheaper config is: fewer
+iterations, full rollouts.
 
 ## Conclusions (noise-aware)
 
@@ -274,23 +281,23 @@ every weight. A coarse nearest-piece space partition doesn't beat what `frontier
 already encodes. First hand-crafted *new feature* tried; it didn't move the
 ceiling either.
 
-**Promising, not yet significant (Run H):** maxn MCTS *leads* the heuristic 60/40,
-the first strategy to do so — but only 30 games (95% CI [0.42, 0.78], p ≈ 0.14).
-Directionally it fits the D–G lesson (a *different algorithm class* is what moved
-the needle) and is budget-dependent, but **needs ~150–250 games to confirm**.
-It's slow (~100–1000× the heuristic).
+**Broke the ceiling — confirmed at scale (Run H):** maxn MCTS beats the heuristic,
+significantly (`it=80/d=8` 54.6%, p = 0.0007 over 1,200 games), and its strength
+**scales with search budget** (39 → 55 → 61 → 70%) — the opposite of the D–G
+plateau. Rollout *depth* is the biggest lever: full rollouts (`it=80/d=0`) reach
+76.7%. The first genuine beat, and it's a class change, not hand-tuning. Slow
+(~100–1000× the heuristic).
 
 **Still open:**
-- **Confirm Run H at scale** — ~150–250 games of `it=80/d=8` vs heuristic before
-  claiming a beat. Highest priority; everything below assumes it holds.
-- **Make MCTS practical / stronger** — if confirmed, it's expensive. Levers:
-  a faster incremental `generateLegalMoves` (the bottleneck, ~34 ms mid-game),
-  RAVE/AMAF, a move-time budget instead of fixed iterations, and an
-  iteration/rollout-depth sweep now that ≥it80/d8 is known to win. Then wire it
-  as the "hard" offline bot (ARCHITECTURE §9) with a per-move time cap.
-- **Learned eval / policy** — could give MCTS a strong prior + value, cutting the
-  rollout cost that makes it slow.
-- **Phase-dependent weights** — `center` is near-noise whole-game but plausibly
-  matters only in the opening; split early/mid/late. (Cheap; hand-feature though.)
+- **Ship MCTS as the "hard" offline bot** (ARCHITECTURE §9) with a per-move *time
+  budget* rather than fixed iterations, and prefer **full rollouts** (Run H: `d=0`
+  ≫ truncated). This is the payoff of the whole D–H arc.
+- **Make MCTS faster** so a higher budget fits the time cap. Biggest win: an
+  incremental / cached `generateLegalMoves` (the ~34 ms mid-game bottleneck).
+  Then RAVE/AMAF and tree reuse across moves.
+- **Learned eval / policy** — a value net would replace expensive rollouts (which
+  Run H shows are the strength driver) with a cheap strong estimate.
+- **Push the budget ladder further** — `it=320/d=12` was still climbing at 70%;
+  find where MCTS strength saturates vs the heuristic.
 - **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
   color) have different blocking dynamics, untested.
