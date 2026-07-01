@@ -1,5 +1,6 @@
 import type { Color } from '../../game/types';
-import { COLOR_HEX, EMPTY_CELL, GRID_LINE, CELL_PX } from '../theme';
+import { EMPTY_CELL, GRID_LINE, CELL_PX } from '../theme';
+import type { PaletteColors } from '../palettes';
 
 export type PreviewState = 'none' | 'legal' | 'illegal';
 
@@ -7,6 +8,7 @@ export function Cell({
   value,
   preview,
   previewColor,
+  colors,
   lastMove = false,
   testId,
   label,
@@ -16,16 +18,17 @@ export function Cell({
   value: Color | null;
   preview: PreviewState;
   previewColor: Color;
+  colors: PaletteColors;
   lastMove?: boolean;
   testId?: string;
   label?: string;
   onEnter?: () => void;
   onClick?: () => void;
 }) {
-  let background = value ? COLOR_HEX[value] : EMPTY_CELL;
+  let background = value ? colors[value] : EMPTY_CELL;
   let opacity = 1;
   if (preview === 'legal') {
-    background = COLOR_HEX[previewColor];
+    background = colors[previewColor];
     opacity = 0.55;
   } else if (preview === 'illegal') {
     background = '#ef4444';

@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react';
 import type { Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
+import { usePaletteColors } from '../palettes';
 import { Cell } from './Cell';
 
 export interface BoardPreview {
@@ -19,6 +21,8 @@ export function Board({
   onCellEnter,
   onCellClick,
   onLeave,
+  onRotate,
+  onFlip,
 }: {
   board: (Color | null)[];
   activeColor: Color;
@@ -27,11 +31,40 @@ export function Board({
   onCellEnter?: (x: number, y: number) => void;
   onCellClick?: (x: number, y: number) => void;
   onLeave?: () => void;
+  /** Mouse-wheel over the board rotates the piece being placed. */
+  onRotate?: (dir: 1 | -1) => void;
+  /** Right-click over the board flips the piece being placed. */
+  onFlip?: () => void;
 }) {
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
+  const colors = usePaletteColors();
+  const ref = useRef<HTMLDivElement>(null);
+
+  // React attaches wheel listeners as passive, so preventDefault (to stop the
+  // page scrolling while rotating) needs a native non-passive listener.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !onRotate) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      onRotate(e.deltaY > 0 ? 1 : -1);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [onRotate]);
+
   return (
     <div
+      ref={ref}
       onMouseLeave={onLeave}
+      onContextMenu={
+        onFlip
+          ? (e) => {
+              e.preventDefault();
+              onFlip();
+            }
+          : undefined
+      }
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
@@ -50,6 +83,7 @@ export function Board({
             value={value}
             preview={state}
             previewColor={activeColor}
+            colors={colors}
             lastMove={lastMoveSet?.has(i) ?? false}
             testId={`cell-${x}-${y}`}
             label={`cell ${x},${y}${value ? ` ${value}` : ' empty'}`}

@@ -10,11 +10,12 @@ import { ScorePanel } from './controls/ScorePanel';
 import { Controls } from './controls/Controls';
 import { GameOverModal, type GameOverPayload } from './controls/GameOverModal';
 import { useSelection } from './hooks/useSelection';
-import { COLOR_HEX } from './theme';
+import { usePaletteColors } from './palettes';
 
 /** Interactive game view (Phase 6): select a piece, preview it, click to place. */
 export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameState>) {
   const sel = useSelection();
+  const colors = usePaletteColors();
   const activeColor = COLOR_ORDER[G.activeColorIndex];
   // Single-player passes isActive=true for the current player; multiplayer gates it.
   const canPlay = isActive !== false && !ctx.gameover;
@@ -87,7 +88,7 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
         <h2 style={{ margin: '0 0 8px' }}>OpenBlokus</h2>
         <p style={{ margin: '0 0 8px', fontSize: 14 }} role="status">
           turn {ctx.turn} · player {ctx.currentPlayer} · active{' '}
-          <span style={{ color: COLOR_HEX[activeColor], fontWeight: 600 }}>
+          <span style={{ color: colors[activeColor], fontWeight: 600 }}>
             {activeColor}
           </span>
           {' · '}
@@ -98,7 +99,7 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
               borderRadius: 10,
               fontSize: 12,
               color: '#fff',
-              background: canPlay ? COLOR_HEX[activeColor] : 'var(--pill-idle)',
+              background: canPlay ? colors[activeColor] : 'var(--pill-idle)',
             }}
           >
             {ctx.gameover ? 'game over' : canPlay ? 'your turn' : 'waiting'}
@@ -112,6 +113,8 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
           onCellEnter={interactive ? (x, y) => sel.setHover({ x, y }) : undefined}
           onCellClick={interactive ? tryPlace : undefined}
           onLeave={() => sel.setHover(null)}
+          onRotate={interactive ? sel.rotate : undefined}
+          onFlip={interactive ? sel.flip : undefined}
         />
         <Controls
           pieceId={sel.pieceId}

@@ -29,13 +29,13 @@ describe('Board', () => {
 describe('PieceThumb', () => {
   it('shows the color when available and dims when placed', () => {
     const avail = renderToStaticMarkup(
-      <PieceThumb pieceId="I5" color="green" placed={false} />,
+      <PieceThumb pieceId="I5" color="green" colors={COLOR_HEX} placed={false} />,
     );
     expect(avail.includes(COLOR_HEX.green)).toBe(true);
     expect(avail.includes('opacity:1')).toBe(true);
 
     const placed = renderToStaticMarkup(
-      <PieceThumb pieceId="I5" color="green" placed={true} />,
+      <PieceThumb pieceId="I5" color="green" colors={COLOR_HEX} placed={true} />,
     );
     expect(placed.includes('opacity:0.4')).toBe(true);
     expect(placed.includes(COLOR_HEX.green)).toBe(false); // greyed, not colored

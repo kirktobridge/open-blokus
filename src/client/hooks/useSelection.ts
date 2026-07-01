@@ -18,7 +18,10 @@ export function useSelection() {
     setReflected(false);
   }, []);
 
-  const rotate = useCallback(() => setRotation((r) => ((r + 1) % 4) as Rotation), []);
+  const rotate = useCallback(
+    (dir: 1 | -1 = 1) => setRotation((r) => (((r + dir + 4) % 4) as Rotation)),
+    [],
+  );
   const flip = useCallback(() => setReflected((f) => !f), []);
   const reset = useCallback(() => {
     setPieceId(null);

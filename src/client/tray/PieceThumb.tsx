@@ -1,17 +1,20 @@
 import type { Color, PieceId } from '../../game/types';
 import { PIECES } from '../../game/pieces';
-import { COLOR_HEX, PLACED_PIECE, THUMB_PX } from '../theme';
+import { PLACED_PIECE, THUMB_PX } from '../theme';
+import type { PaletteColors } from '../palettes';
 
 /** A small static rendering of a piece's base shape. Dimmed when placed. */
 export function PieceThumb({
   pieceId,
   color,
+  colors,
   placed,
   selected = false,
   onClick,
 }: {
   pieceId: PieceId;
   color: Color;
+  colors: PaletteColors;
   placed: boolean;
   selected?: boolean;
   onClick?: () => void;
@@ -31,7 +34,7 @@ export function PieceThumb({
           style={{
             width: THUMB_PX,
             height: THUMB_PX,
-            background: on ? (placed ? PLACED_PIECE : COLOR_HEX[color]) : 'transparent',
+            background: on ? (placed ? PLACED_PIECE : colors[color]) : 'transparent',
             border: on ? '1px solid var(--cell-outline)' : 'none',
             boxSizing: 'border-box',
           }}

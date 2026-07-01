@@ -1,6 +1,6 @@
 import type { Color } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
-import { COLOR_HEX } from '../theme';
+import { usePaletteColors } from '../palettes';
 import { useSessionActions } from '../lobby/sessionContext';
 
 export interface GameOverPayload {
@@ -11,6 +11,7 @@ export interface GameOverPayload {
 
 export function GameOverModal({ gameover }: { gameover: GameOverPayload }) {
   const actions = useSessionActions();
+  const colors = usePaletteColors();
   return (
     <div
       style={{
@@ -41,7 +42,7 @@ export function GameOverModal({ gameover }: { gameover: GameOverPayload }) {
           <tbody>
             {COLOR_ORDER.map((c) => (
               <tr key={c}>
-                <td style={{ color: COLOR_HEX[c], textTransform: 'capitalize', paddingRight: 12 }}>
+                <td style={{ color: colors[c], textTransform: 'capitalize', paddingRight: 12 }}>
                   {c}
                 </td>
                 <td>{gameover.colors[c]}</td>

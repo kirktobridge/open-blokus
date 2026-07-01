@@ -48,9 +48,10 @@ export function ThemeToggle() {
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       title="Toggle dark mode"
       style={{
+        // Bottom-left: the boardgame.io debug panel owns the entire right edge.
         position: 'fixed',
-        top: 8,
-        right: 8,
+        bottom: 8,
+        left: 8,
         zIndex: 1000,
         padding: '4px 10px',
         cursor: 'pointer',

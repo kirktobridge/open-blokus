@@ -1,6 +1,6 @@
 import type { Color, ColorState, PieceId } from '../../game/types';
 import { PIECE_IDS } from '../../game/types';
-import { COLOR_HEX } from '../theme';
+import { usePaletteColors } from '../palettes';
 import { PieceThumb } from './PieceThumb';
 
 /** All 21 pieces for one color; placed pieces are dimmed. Interactive for the
@@ -19,12 +19,13 @@ export function PieceTray({
   onSelect?: (id: PieceId) => void;
 }) {
   const remaining = new Set(state.remaining);
+  const colors = usePaletteColors();
   return (
     <div>
       <div
         style={{
           fontWeight: 600,
-          color: COLOR_HEX[color],
+          color: colors[color],
           textTransform: 'capitalize',
           marginBottom: 4,
         }}
@@ -49,6 +50,7 @@ export function PieceTray({
               key={id}
               pieceId={id}
               color={color}
+              colors={colors}
               placed={placed}
               selected={interactive && selectedId === id}
               onClick={interactive && !placed ? () => onSelect?.(id) : undefined}
