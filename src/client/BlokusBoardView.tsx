@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { GameState } from '../game/types';
 import { COLOR_ORDER } from '../game/types';
@@ -9,10 +9,14 @@ import { PieceTray } from './tray/PieceTray';
 import { ScorePanel } from './controls/ScorePanel';
 import { Controls } from './controls/Controls';
 import { GameOverModal, type GameOverPayload } from './controls/GameOverModal';
+import { matchAction, type PlacementAction } from './controls/keymap';
 import { useSelection } from './hooks/useSelection';
 import { usePaletteColors } from './palettes';
 
-/** Interactive game view (Phase 6): select a piece, preview it, click to place. */
+/**
+ * Interactive game view. Two-step placement: position + orient a piece (mouse or
+ * WASD / arrows / scroll), lock it (click or Space), then submit (button or Enter).
+ */
 export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameState>) {
   const sel = useSelection();
   const colors = usePaletteColors();
@@ -36,43 +40,92 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
       : false;
   const preview =
     sel.pieceId && sel.hover
-      ? { cells: new Set(oriented.map((c) => `${c.x},${c.y}`)), legal }
+      ? { cells: new Set(oriented.map((c) => `${c.x},${c.y}`)), legal, staged: sel.staged }
       : undefined;
 
-  function tryPlace(x: number, y: number) {
-    if (!canPlay || !sel.pieceId) return;
+  const canSubmit = sel.staged && legal;
+
+  /** Commit the staged placement to the engine. Returns whether a move was made. */
+  function submitMove(): boolean {
+    if (!canPlay || !sel.pieceId || !sel.hover || !sel.staged) return false;
     const cells = resolveCells({
       pieceId: sel.pieceId,
       rotation: sel.rotation,
       reflected: sel.reflected,
-      x,
-      y,
+      x: sel.hover.x,
+      y: sel.hover.y,
     });
-    if (isLegalPlacement(G, activeColor, sel.pieceId, cells)) {
-      moves.placePiece({
-        pieceId: sel.pieceId,
-        rotation: sel.rotation,
-        reflected: sel.reflected,
-        x,
-        y,
-      });
-      sel.reset();
-    }
+    if (!isLegalPlacement(G, activeColor, sel.pieceId, cells)) return false;
+    moves.placePiece({
+      pieceId: sel.pieceId,
+      rotation: sel.rotation,
+      reflected: sel.reflected,
+      x: sel.hover.x,
+      y: sel.hover.y,
+    });
+    sel.reset();
+    return true;
   }
 
   const interactive = canPlay && sel.pieceId != null;
 
-  // Keyboard shortcuts: R rotate, F flip, Esc clear.
+  // Keep a fresh action handler in a ref so the window listener stays stable while
+  // still closing over the latest selection/legality. Returns true if it consumed
+  // the event (so we can preventDefault only when we actually acted).
+  const handleActionRef = useRef<(a: PlacementAction) => boolean>(() => false);
+  handleActionRef.current = (action) => {
+    if (!canPlay) return false;
+    if (action === 'cancel') {
+      if (sel.staged) sel.unstage();
+      else sel.reset();
+      return true;
+    }
+    if (!sel.pieceId) return false;
+    switch (action) {
+      case 'moveUp':
+        sel.move(0, -1);
+        return true;
+      case 'moveDown':
+        sel.move(0, 1);
+        return true;
+      case 'moveLeft':
+        sel.move(-1, 0);
+        return true;
+      case 'moveRight':
+        sel.move(1, 0);
+        return true;
+      case 'rotateCW':
+        sel.rotate(1);
+        return true;
+      case 'rotateCCW':
+        sel.rotate(-1);
+        return true;
+      case 'flip':
+        sel.flip();
+        return true;
+      case 'place':
+        if (!sel.hover) return false;
+        sel.stage();
+        return true;
+      case 'submit':
+        return submitMove();
+      default:
+        return false;
+    }
+  };
+
   useEffect(() => {
-    if (!canPlay) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'r' || e.key === 'R') sel.rotate();
-      else if (e.key === 'f' || e.key === 'F') sel.flip();
-      else if (e.key === 'Escape') sel.reset();
+      // Don't hijack keys while typing in a form field (palette name, join id, …).
+      const target = e.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      const action = matchAction(e);
+      if (!action) return;
+      if (handleActionRef.current(action)) e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canPlay, sel.rotate, sel.flip, sel.reset]);
+  }, []);
 
   return (
     <div
@@ -110,17 +163,31 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
           activeColor={activeColor}
           preview={preview}
           lastMove={G.lastMove}
-          onCellEnter={interactive ? (x, y) => sel.setHover({ x, y }) : undefined}
-          onCellClick={interactive ? tryPlace : undefined}
-          onLeave={() => sel.setHover(null)}
+          onCellEnter={
+            interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
+          }
+          onCellClick={
+            interactive
+              ? (x, y) => {
+                  sel.setHover({ x, y });
+                  sel.stage();
+                }
+              : undefined
+          }
+          onLeave={() => {
+            if (!sel.staged) sel.setHover(null);
+          }}
           onRotate={interactive ? sel.rotate : undefined}
           onFlip={interactive ? sel.flip : undefined}
         />
         <Controls
           pieceId={sel.pieceId}
           disabled={!canPlay}
+          staged={sel.staged}
+          canSubmit={canSubmit}
           onRotate={sel.rotate}
           onFlip={sel.flip}
+          onSubmit={submitMove}
           onClear={sel.reset}
         />
       </div>

@@ -9,10 +9,12 @@ test('keyboard rotate places a rotated piece, with last-move highlight', async (
   await expect(page.getByTestId('match-id')).toBeVisible();
   await expect(page.getByText(/active blue/)).toBeVisible();
 
-  // Select the I2 domino and rotate it to vertical with the keyboard.
+  // Select the I2 domino and rotate it to vertical with the keyboard, lock it on
+  // the corner (click), then submit.
   await page.getByTestId('piece-blue-I2').click();
   await page.keyboard.press('r');
-  await page.getByTestId('cell-0-0').click();
+  await page.getByTestId('cell-0-0').click(); // stage
+  await page.getByTestId('submit-move').click(); // commit
 
   // Vertical I2 covers (0,0) and (0,1); (1,0) stays empty.
   await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue');

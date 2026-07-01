@@ -10,6 +10,8 @@ export interface BoardPreview {
   cells: Set<string>;
   /** Whether the previewed placement is legal. */
   legal: boolean;
+  /** Whether the piece is locked (staged) awaiting submit. */
+  staged: boolean;
 }
 
 /** 20×20 board. `board` is row-major (index = y * BOARD_SIZE + x). */
@@ -56,6 +58,7 @@ export function Board({
   return (
     <div
       ref={ref}
+      data-staged={preview?.staged ?? false}
       onMouseLeave={onLeave}
       onContextMenu={
         onFlip
@@ -82,6 +85,7 @@ export function Board({
             key={i}
             value={value}
             preview={state}
+            staged={inPreview && (preview?.staged ?? false)}
             previewColor={activeColor}
             colors={colors}
             lastMove={lastMoveSet?.has(i) ?? false}

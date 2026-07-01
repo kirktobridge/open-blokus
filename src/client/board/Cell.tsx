@@ -7,6 +7,7 @@ export type PreviewState = 'none' | 'legal' | 'illegal';
 export function Cell({
   value,
   preview,
+  staged = false,
   previewColor,
   colors,
   lastMove = false,
@@ -17,6 +18,7 @@ export function Cell({
 }: {
   value: Color | null;
   preview: PreviewState;
+  staged?: boolean;
   previewColor: Color;
   colors: PaletteColors;
   lastMove?: boolean;
@@ -29,10 +31,10 @@ export function Cell({
   let opacity = 1;
   if (preview === 'legal') {
     background = colors[previewColor];
-    opacity = 0.55;
+    opacity = staged ? 0.85 : 0.55;
   } else if (preview === 'illegal') {
     background = '#ef4444';
-    opacity = 0.55;
+    opacity = staged ? 0.85 : 0.55;
   }
 
   return (
@@ -50,7 +52,11 @@ export function Cell({
         background,
         opacity,
         border: `1px solid ${GRID_LINE}`,
-        boxShadow: lastMove ? 'inset 0 0 0 3px var(--last-move-ring)' : undefined,
+        boxShadow: staged
+          ? 'inset 0 0 0 2px var(--outline-strong)'
+          : lastMove
+            ? 'inset 0 0 0 3px var(--last-move-ring)'
+            : undefined,
         boxSizing: 'border-box',
         cursor: onClick ? 'pointer' : 'default',
       }}

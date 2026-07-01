@@ -11,7 +11,8 @@ test('human vs 3 AI: human opens, the three AIs reply on their corners', async (
   // Human (blue) is up first.
   await expect(page.getByText(/active blue/)).toBeVisible();
   await page.getByTestId('piece-blue-I2').click();
-  await page.getByTestId('cell-0-0').click(); // covers blue's corner
+  await page.getByTestId('cell-0-0').click(); // stage on blue's corner
+  await page.getByTestId('submit-move').click(); // commit
 
   // The three AI seats each open by covering their own corner.
   await expect(page.getByTestId('cell-19-0')).toHaveAttribute('data-value', 'yellow', {

@@ -25,7 +25,8 @@ test('two players in separate browsers see each other’s moves', async ({ brows
     // A is blue and moves first; B sees the blue piece appear.
     await expect(a.getByText(/active blue/)).toBeVisible();
     await a.getByTestId('piece-blue-I2').click();
-    await a.getByTestId('cell-0-0').click();
+    await a.getByTestId('cell-0-0').click(); // stage
+    await a.getByTestId('submit-move').click(); // commit
     await expect(b.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue', {
       timeout: 10_000,
     });
@@ -33,7 +34,8 @@ test('two players in separate browsers see each other’s moves', async ({ brows
     // Now yellow (P1 = B) is active; B places on yellow's corner (19,0).
     await expect(b.getByText(/active yellow/)).toBeVisible();
     await b.getByTestId('piece-yellow-I2').click();
-    await b.getByTestId('cell-18-0').click(); // I2 → covers (18,0) and (19,0)
+    await b.getByTestId('cell-18-0').click(); // stage — covers (18,0) and (19,0)
+    await b.getByTestId('submit-move').click(); // commit
     await expect(a.getByTestId('cell-19-0')).toHaveAttribute('data-value', 'yellow', {
       timeout: 10_000,
     });
