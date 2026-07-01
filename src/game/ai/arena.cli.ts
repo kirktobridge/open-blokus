@@ -13,6 +13,7 @@ import {
   type Contestant,
 } from './arena';
 import { alphaBetaStrategy } from './alphabeta';
+import { mctsStrategy } from './mcts';
 import { WEIGHTS, type Weights } from './heuristic';
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
@@ -89,5 +90,23 @@ if (flags.has('--ab')) {
     ],
     abGames,
     abSeeds,
+  );
+}
+
+// 6. MCTS vs heuristic — opt-in (`--mcts`), very slow (seconds/move) so games
+// and seeds are capped hard. Tune iterations/rolloutDepth here for Run H.
+if (flags.has('--mcts')) {
+  const mctsGames = Math.min(games, 8);
+  const mctsSeeds = Math.min(seeds, 3);
+  table(
+    'MCTS vs heuristic (very slow)',
+    [
+      { name: 'mcts', strategy: mctsStrategy({ iterations: 150, rolloutDepth: 12 }) },
+      { name: 'heuristic', strategy: heuristicStrategy() },
+      { name: 'mcts', strategy: mctsStrategy({ iterations: 150, rolloutDepth: 12 }) },
+      { name: 'heuristic', strategy: heuristicStrategy() },
+    ],
+    mctsGames,
+    mctsSeeds,
   );
 }

@@ -12,7 +12,7 @@
  */
 import { idx, inBounds, orthoNeighbors, diagNeighbors } from '../board';
 import { resolveCells } from '../pieces';
-import { generateLegalMoves, hasAnyMove } from '../moves';
+import { generateLegalMoves } from '../moves';
 import { applyPlacement } from '../placement';
 import { remainingSquares } from '../scoring';
 import { COLOR_ORDER } from '../types';
@@ -20,6 +20,7 @@ import type { Color, ColorState, GameState, Placement } from '../types';
 import { scorePlacement, WEIGHTS } from './heuristic';
 import type { Weights } from './heuristic';
 import type { Strategy } from './arena';
+import { cloneState, applyAndAdvance } from './simstate';
 import { CORNERS } from '../modes';
 
 /** Total squares one color owns across all 21 pieces (sum of sizes). */
@@ -56,30 +57,6 @@ const DEFAULTS: AlphaBetaConfig = {
   mobilityWeight: 0.5,
   territoryWeight: 0,
 };
-
-// --- State cloning (search must not mutate the live G) ---------------------
-
-function cloneColorState(cs: ColorState): ColorState {
-  return {
-    remaining: cs.remaining.slice(),
-    lastPlaced: cs.lastPlaced,
-    hasStarted: cs.hasStarted,
-    stuck: cs.stuck,
-  };
-}
-
-function cloneState(G: GameState): GameState {
-  const colors = {} as Record<Color, ColorState>;
-  for (const c of COLOR_ORDER) colors[c] = cloneColorState(G.colors[c]);
-  return {
-    config: G.config, // immutable — safe to share
-    board: G.board.slice(),
-    colors,
-    activeColorIndex: G.activeColorIndex,
-    sharedRotation: G.sharedRotation,
-    lastMove: [],
-  };
-}
 
 // --- Evaluation -----------------------------------------------------------
 
@@ -194,14 +171,6 @@ function evalState(G: GameState, me: Color, cfg: AlphaBetaConfig): number {
 
 // --- Search ---------------------------------------------------------------
 
-function nextColorIndex(G: GameState, from: number): number {
-  for (let step = 1; step <= COLOR_ORDER.length; step++) {
-    const i = (from + step) % COLOR_ORDER.length;
-    if (!G.colors[COLOR_ORDER[i]].stuck) return i;
-  }
-  return from;
-}
-
 /**
  * Eval of the state reached if `color` plays `move` — from `color`'s own
  * perspective. Cheaper than applyAndAdvance (no stuck recompute / advance, which
@@ -229,15 +198,6 @@ function orderedMoves(G: GameState, colorIdx: number, cfg: AlphaBetaConfig): Pla
       : (m: Placement) => scorePlacement(G, color, m, cfg.weights);
   const scored = moves.map((m) => ({ m, s: key(m) })).sort((a, b) => b.s - a.s);
   return (scored.length <= cfg.beam ? scored : scored.slice(0, cfg.beam)).map((e) => e.m);
-}
-
-function applyAndAdvance(G: GameState, colorIdx: number, move: Placement): GameState {
-  const G2 = cloneState(G);
-  const color = COLOR_ORDER[colorIdx];
-  applyPlacement(G2, color, move.pieceId, resolveCells(move));
-  for (const c of COLOR_ORDER) G2.colors[c].stuck = !hasAnyMove(G2, c);
-  G2.activeColorIndex = nextColorIndex(G2, colorIdx);
-  return G2;
 }
 
 function search(
