@@ -41,10 +41,10 @@ tuning. The heuristic itself lives in
 
 ## Trial count
 
-≈ **5,250 games** across the eight documented runs below (4-player, basic
+≈ **6,250 games** across the nine documented runs below (4-player, basic
 scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
 sweeps), F ≈ 130 (beam-confound / pure eval), G ≈ 130 (territory feature),
-H ≈ 2,450 (MCTS — a 2,400-game budget sweep across 12 cores). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
+H ≈ 2,450 (MCTS budget sweep), I ≈ 990 (MCTS full-rollout scaling). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
 [alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
 `npm test` as a regression guard (heuristic + alpha-beta must beat random;
 tournaments must be deterministic per seed).
@@ -239,6 +239,31 @@ search needs thousands), so this is a "hard bot with a move-time budget", not a
 drop-in. The `it=80/d=0` result says a strong-and-cheaper config is: fewer
 iterations, full rollouts.
 
+### Run I — full-rollout iteration scaling (how strong does MCTS get?)
+
+Run H flagged full rollouts (`d=0`) as the biggest lever and the ladder hadn't
+saturated, so we swept iterations at `d=0` — 990 games, same sharded harness,
+pooled binomial stats vs heuristic:
+
+| config | games | mcts game-share | 95% CI | Δ per doubling |
+|--------|-------|-----------------|--------|----------------|
+| `it=40,  d=0` | 300 | 67.6% | [62.1, 72.6] | — |
+| `it=80,  d=0` | 300 | 77.4% | [72.3, 81.8] | +9.8 |
+| `it=160, d=0` | 240 | 85.1% | [80.1, 89.1] | +7.7 |
+| `it=320, d=0` | 150 | 90.1% | [84.3, 93.9] | +5.0 |
+
+**MCTS goes from "wins" to "dominates."** Full-rollout MCTS climbs monotonically
+to **90%** game-share by `it=320`, all p < 1e-4. It's still rising but the per-
+doubling gain is shrinking (+9.8 → +7.7 → +5.0), so it's decelerating toward a
+ceiling in the **mid-90s**, not saturated yet.
+
+The starkest number in the whole log: at the *same* tiny `it=40` budget,
+**truncated rollouts lose (39%, Run H `d=6`) while full rollouts win big (68%)** —
+a 29-point swing from rollout depth alone. Rollout *quality* (playing to a
+terminal state where the placed-leader reward is exact) is the dominant factor;
+iterations then stack multiplicatively on top. Practical takeaway for a shipped
+bot: **always full rollouts; spend the move-time budget on iterations.**
+
 ## Conclusions (noise-aware)
 
 - **heuristic ≫ greedy-size ≫ random.** Large, stable, replicated.
@@ -281,23 +306,21 @@ every weight. A coarse nearest-piece space partition doesn't beat what `frontier
 already encodes. First hand-crafted *new feature* tried; it didn't move the
 ceiling either.
 
-**Broke the ceiling — confirmed at scale (Run H):** maxn MCTS beats the heuristic,
-significantly (`it=80/d=8` 54.6%, p = 0.0007 over 1,200 games), and its strength
-**scales with search budget** (39 → 55 → 61 → 70%) — the opposite of the D–G
-plateau. Rollout *depth* is the biggest lever: full rollouts (`it=80/d=0`) reach
-76.7%. The first genuine beat, and it's a class change, not hand-tuning. Slow
-(~100–1000× the heuristic).
+**Broke the ceiling, then ran away with it (Runs H–I):** maxn MCTS beats the
+heuristic significantly (`it=80/d=8` 54.6%, p = 0.0007, n = 1,200) and *scales
+with compute* — the opposite of the D–G plateau. With **full rollouts** it climbs
+to **90%** (`it=320/d=0`, Run I), decelerating toward a mid-90s ceiling. Rollout
+*quality* is the dominant lever (a 29-pt swing at fixed `it=40`), iterations
+stack on top. It's slow (~100–1000× the heuristic).
 
 **Still open:**
 - **Ship MCTS as the "hard" offline bot** (ARCHITECTURE §9) with a per-move *time
-  budget* rather than fixed iterations, and prefer **full rollouts** (Run H: `d=0`
-  ≫ truncated). This is the payoff of the whole D–H arc.
-- **Make MCTS faster** so a higher budget fits the time cap. Biggest win: an
-  incremental / cached `generateLegalMoves` (the ~34 ms mid-game bottleneck).
-  Then RAVE/AMAF and tree reuse across moves.
-- **Learned eval / policy** — a value net would replace expensive rollouts (which
-  Run H shows are the strength driver) with a cheap strong estimate.
-- **Push the budget ladder further** — `it=320/d=12` was still climbing at 70%;
-  find where MCTS strength saturates vs the heuristic.
+  budget* and **full rollouts** (Runs H–I: `d=0` ≫ truncated; spend the budget on
+  iterations). This is the concrete payoff of the whole D–I arc.
+- **Make MCTS faster** so more iterations fit the time cap (each doubling still
+  adds ~5 pts). Biggest win: an incremental / cached `generateLegalMoves` (the
+  ~34 ms mid-game bottleneck); then RAVE/AMAF and tree reuse across moves.
+- **Learned eval / policy** — a value net would replace the expensive full
+  rollouts (the strength driver) with a cheap strong estimate.
 - **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
   color) have different blocking dynamics, untested.
