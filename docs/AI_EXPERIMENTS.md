@@ -34,15 +34,17 @@ tuning. The heuristic itself lives in
 | `heuristic` | shipped weighted eval: `size·10 + frontier·3 + center·1 + block·2` |
 | weight variants | `heuristicStrategy(weights)` with one term changed (ablation / sweep) |
 | `alphabeta-dN` | depth-N paranoid alpha-beta with beam pruning ([alphabeta.ts](../src/game/ai/alphabeta.ts)) |
+| `mcts` | maxn UCT Monte-Carlo Tree Search ([mcts.ts](../src/game/ai/mcts.ts)) |
 
 `size` = piece squares; `frontier` = new legal corner attach-points gained;
 `center` = pull toward board center; `block` = our cells diagonal to an opponent.
 
 ## Trial count
 
-≈ **2,800 games** across the seven documented runs below (4-player, basic
+≈ **2,850 games** across the eight documented runs below (4-player, basic
 scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
-sweeps), F ≈ 130 (beam-confound / pure eval), G ≈ 130 (territory feature). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
+sweeps), F ≈ 130 (beam-confound / pure eval), G ≈ 130 (territory feature),
+H ≈ 50 (MCTS — few games, it's slow). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
 [alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
 `npm test` as a regression guard (heuristic + alpha-beta must beat random;
 tournaments must be deterministic per seed).
@@ -196,6 +198,35 @@ playing big pieces / good corners). The coarse nearest-piece partition adds nois
 not signal — the heuristic's `frontier` term already captures the useful space
 signal. Feature kept in code (opt-in, default off) but **not adopted**.
 
+### Run H — MCTS (the ceiling breaks)
+
+Maxn UCT MCTS ([mcts.ts](../src/game/ai/mcts.ts)): per-color reward vectors so
+each player maximizes its *own* outcome (fixes the paranoid mismatch from D/F);
+heuristic-prior beam per node (plain MCTS can't try every root move at a feasible
+budget); rejection-sampled rollouts (sample *one* legal move instead of
+enumerating all — ~2.5× faster); reward = placed-square leader (exact winner
+under basic scoring). MCTS is expensive here — `generateLegalMoves` is ~34 ms
+mid-game and search needs thousands — so games are few and budgets modest.
+
+Head-to-head vs heuristic (2 seats each):
+
+| config | sample | mcts game-share |
+|--------|--------|-----------------|
+| vs `random` (sanity) | 4 games | **1.00** |
+| `it=40, d=6` | 8 games | 50% (tie) |
+| `it=80, d=8` | 6 games | 75% (noisy) |
+| **`it=80, d=8`** | **3×10 = 30 games** | **60% ±2.5** |
+
+**MCTS is the first strategy to genuinely beat the tuned heuristic** — 60% vs 40%
+game-share, ±2.5 across three independent seeds, ~4σ clear of 50/50. The result
+is **budget-dependent**: `it=40/d=6` ties, `it=80/d=8` wins — more search buys
+real strength, unlike reweighting/depth in D–G which plateaued. Cost is the catch:
+~35 s/game with two MCTS seats (≈100–1000× the heuristic), so this is a "hard bot
+with a move-time budget", not a drop-in replacement.
+
+This validates the D–G thesis: the hand-feature *ceiling* was real, and only a
+different algorithm class (sampling-based search) broke it.
+
 ## Conclusions (noise-aware)
 
 - **heuristic ≫ greedy-size ≫ random.** Large, stable, replicated.
@@ -238,18 +269,19 @@ every weight. A coarse nearest-piece space partition doesn't beat what `frontier
 already encodes. First hand-crafted *new feature* tried; it didn't move the
 ceiling either.
 
-**Still open (the hand-feature ceiling looks real — be skeptical of more of the
-same):**
-- **MCTS / learned eval** — a different *class*, not another hand feature. After
-  D–G all plateau, this is the most likely way to actually beat the heuristic;
-  handles huge branching via sampling / learns signal we can't hand-design.
-- **Maxn instead of paranoid** — model opponents as maximizing their *own* eval,
-  not minimizing mine; less distorted at shallow depth. (Eval-ordered paranoid
-  search failed in F from exactly this objective mismatch.)
-- **Other hand features** — opponent-specific mobility reduction, piece-flexibility
-  value (hoard X5/Z5 for tight late spots). Plausible but Run G is a caution:
-  hand features keep tying the heuristic. Test cheaply (depth-1 beam=all) first.
+**Broke the ceiling (Run H):** maxn MCTS beats the heuristic 60/40 (±2.5) — the
+first strategy to do so. Confirms the D–G lesson: a *different algorithm class*,
+not more hand-tuning, was the answer. It's slow (~100–1000× the heuristic).
+
+**Still open:**
+- **Make MCTS practical / stronger** — the win is real but expensive. Levers:
+  a faster incremental `generateLegalMoves` (the bottleneck, ~34 ms mid-game),
+  RAVE/AMAF, a move-time budget instead of fixed iterations, and an
+  iteration/rollout-depth sweep now that ≥it80/d8 is known to win. Then wire it
+  as the "hard" offline bot (ARCHITECTURE §9) with a per-move time cap.
+- **Learned eval / policy** — could give MCTS a strong prior + value, cutting the
+  rollout cost that makes it slow.
 - **Phase-dependent weights** — `center` is near-noise whole-game but plausibly
-  matters only in the opening; split early/mid/late.
+  matters only in the opening; split early/mid/late. (Cheap; hand-feature though.)
 - **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
   color) have different blocking dynamics, untested.
