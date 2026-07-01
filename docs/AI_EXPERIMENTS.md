@@ -217,15 +217,20 @@ Head-to-head vs heuristic (2 seats each):
 | `it=80, d=8` | 6 games | 75% (noisy) |
 | **`it=80, d=8`** | **3×10 = 30 games** | **60% ±2.5** |
 
-**MCTS is the first strategy to genuinely beat the tuned heuristic** — 60% vs 40%
-game-share, ±2.5 across three independent seeds, ~4σ clear of 50/50. The result
-is **budget-dependent**: `it=40/d=6` ties, `it=80/d=8` wins — more search buys
-real strength, unlike reweighting/depth in D–G which plateaued. Cost is the catch:
-~35 s/game with two MCTS seats (≈100–1000× the heuristic), so this is a "hard bot
-with a move-time budget", not a drop-in replacement.
+**MCTS is the first strategy to *lead* the heuristic — but 30 games is not enough
+to call it a win.** `p̂ = 0.60` on ~30 decisive games has a binomial SE of ~0.089;
+the 95% CI is **[0.42, 0.78]**, which includes 0.50 (one-sided vs 50/50: z ≈ 1.1,
+**p ≈ 0.14**). The `±2.5` that `runTournamentSeeds` prints is the std of three
+seed-means and badly *understates* the true sampling error — do not read it as a
+CI (an earlier draft wrongly called this "~4σ"; it is not). The result is
+*consistent* (the 3 seeds landed ~6/6/6, not 4/6/8), which nudges belief toward a
+true p ≈ 0.55–0.65, but does not clear significance.
 
-This validates the D–G thesis: the hand-feature *ceiling* was real, and only a
-different algorithm class (sampling-based search) broke it.
+Also suggestive, not conclusive: it's **budget-dependent** (`it=40/d=6` ties,
+`it=80/d=8` leads), which is the pattern you'd expect if search genuinely helps —
+unlike the D–G plateau. **To actually confirm a beat needs ~150–250 games**
+(~1.5–2.5 h at ~35 s/game); that run is still TODO. Cost caveat regardless:
+~100–1000× the heuristic, so at best a "hard bot with a move-time budget".
 
 ## Conclusions (noise-aware)
 
@@ -269,12 +274,16 @@ every weight. A coarse nearest-piece space partition doesn't beat what `frontier
 already encodes. First hand-crafted *new feature* tried; it didn't move the
 ceiling either.
 
-**Broke the ceiling (Run H):** maxn MCTS beats the heuristic 60/40 (±2.5) — the
-first strategy to do so. Confirms the D–G lesson: a *different algorithm class*,
-not more hand-tuning, was the answer. It's slow (~100–1000× the heuristic).
+**Promising, not yet significant (Run H):** maxn MCTS *leads* the heuristic 60/40,
+the first strategy to do so — but only 30 games (95% CI [0.42, 0.78], p ≈ 0.14).
+Directionally it fits the D–G lesson (a *different algorithm class* is what moved
+the needle) and is budget-dependent, but **needs ~150–250 games to confirm**.
+It's slow (~100–1000× the heuristic).
 
 **Still open:**
-- **Make MCTS practical / stronger** — the win is real but expensive. Levers:
+- **Confirm Run H at scale** — ~150–250 games of `it=80/d=8` vs heuristic before
+  claiming a beat. Highest priority; everything below assumes it holds.
+- **Make MCTS practical / stronger** — if confirmed, it's expensive. Levers:
   a faster incremental `generateLegalMoves` (the bottleneck, ~34 ms mid-game),
   RAVE/AMAF, a move-time budget instead of fixed iterations, and an
   iteration/rollout-depth sweep now that ≥it80/d8 is known to win. Then wire it
