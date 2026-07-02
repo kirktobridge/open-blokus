@@ -90,3 +90,28 @@ four classic colors as accents, shapes as the star.
 - **Status:** proposed (deferred — later release)
 - **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds.
 - **Scope:** placement/UI SFX, palette of nostalgic cues.
+
+### P8 — 3D presentation
+- **Status:** deferred — investigated 2026-07-02; 2D gel chosen for the resting board (P5).
+- **Value:** depth/tactility a fixed top-down 2D view can't give, and the pieces' real
+  translucent-plastic quality (light *through* the material) which only reads at an angle.
+- **Why deferred:** resting Blokus is a single flat coplanar layer — pieces never overlap
+  or stack, so straight overhead, real-3D's translucency win (light through *overlapping*
+  pieces) plus bevel/parallax are wasted; live three.js `transmission` mockups wash toward
+  white dead-overhead. 3D pays off only where an **angle** is reintroduced — the features
+  below. So resting pieces stay 2D (P5 gel); 3D is scoped to angled surfaces.
+- **Scope / candidate features:**
+  - rotate-the-board **3D** view (perspective tilt — distinct from the 2D 90° rotate in P6)
+  - 3D "table" / play-area presentation
+  - tilted / piled piece-inventory tray (pieces as a pile on a table)
+  - drag "swing": a lifted piece tilts + casts a shadow as it nears the board, snaps flat
+    on drop
+- **Depends on:** nothing hard; it's an investment tied to whether these angled surfaces
+  get built.
+- **Likely shape:** keep the DOM cell grid for interaction/preview/a11y; add a
+  react-three-fiber canvas overlay (WebGL sibling of PlacedLayer) for visuals only. Piece
+  color = `material.color`, so custom palettes keep working. Cost: `three` (~150kb gz) +
+  swapping some DOM-color test assertions for screenshot compares.
+- **Caveat:** literal "board grid showing *through* a piece" needs the placed cell to stop
+  being an opaque solid color (currently pinned by the palette e2e). Revisit that contract
+  for true see-through.
