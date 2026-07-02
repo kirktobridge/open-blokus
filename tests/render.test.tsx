@@ -19,9 +19,11 @@ describe('Board', () => {
       { x: 1, y: 0 },
     ]); // two blue cells
     const html = renderToStaticMarkup(<Board board={G.board} activeColor="blue" />);
-    // 400 cells + 1 grid container = 401 divs.
+    // 400 cells + 1 grid container = 401 divs (the placed-piece finish is an
+    // absolutely-positioned <svg> overlay, not a div).
     expect(occurrences(html, '<div')).toBe(401);
-    expect(occurrences(html, COLOR_HEX.blue)).toBe(2);
+    // Two blue cell backgrounds + one joined-piece fill in the SVG overlay.
+    expect(occurrences(html, COLOR_HEX.blue)).toBe(3);
     expect(occurrences(html, COLOR_HEX.red)).toBe(0);
   });
 });

@@ -4,6 +4,7 @@ import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 import { usePaletteColors } from '../palettes';
 import { Cell } from './Cell';
+import { PlacedLayer } from './PlacedLayer';
 
 export interface BoardPreview {
   /** Set of "x,y" keys that the previewed piece would occupy. */
@@ -45,6 +46,17 @@ export function Board({
   const colors = usePaletteColors();
   const ref = useRef<HTMLDivElement>(null);
 
+  // Board indices under the current preview — the placed-piece finish skips
+  // these so live placement feedback (esp. illegal over an occupied cell) shows.
+  const previewIdx = preview
+    ? new Set(
+        [...preview.cells].map((k) => {
+          const [x, y] = k.split(',').map(Number);
+          return y * BOARD_SIZE + x;
+        }),
+      )
+    : undefined;
+
   // React attaches wheel listeners as passive, so preventDefault (to stop the
   // page scrolling while rotating) needs a native non-passive listener.
   useEffect(() => {
@@ -72,6 +84,7 @@ export function Board({
           : undefined
       }
       style={{
+        position: 'relative',
         display: 'grid',
         gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
         gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
@@ -100,6 +113,7 @@ export function Board({
           />
         );
       })}
+      <PlacedLayer board={board} colors={colors} previewCells={previewIdx} lastMove={lastMove} />
     </div>
   );
 }
