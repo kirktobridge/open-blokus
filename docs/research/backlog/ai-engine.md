@@ -6,23 +6,19 @@ Planned/deferred AI and engine experiments, each structured per
 This is the "not yet / open threads" list — keeping current work scoped.
 
 Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
-`no-win` / `played-out` (see FRAMEWORK).
+`won` / `no-win` / `played-out` (see FRAMEWORK).
 
 ---
 
-### AE1 — Ship MCTS as the "hard" offline bot
-- **Status:** proposed (highest priority — the concrete payoff of the whole Run D–I arc)
-- **Objective:** turn the winning MCTS config into the deployed Hard difficulty.
-- **Hypothesis:** a per-move *time-budget* MCTS with **full rollouts** gives a
-  clearly-stronger-than-heuristic bot at an acceptable move latency (F6).
-- **Method:** wire the time-budget MCTS into [src/client/ai/difficulty.ts](../../../src/client/ai/difficulty.ts)
-  (Easy = heuristic, Medium/Hard = MCTS budgets); verify move latency on real
-  positions; regression-play vs heuristic to confirm the shipped config still wins.
-- **Success criteria:** Hard beats heuristic (game-share CI clear of 50) within the
-  chosen move-time cap; latency acceptable in-app.
-- **Cost / risk:** integration work; MCTS is ~100–1000× the heuristic so latency is
-  the real constraint (drives AE2).
-- **Log:** — (Phase 1 time-budget mode + heuristic fallback already committed)
+### AE1 — Ship MCTS as the "hard" offline bot — SHIPPED
+- **Status:** won / shipped. The research bar (MCTS beats the heuristic, CI clear of
+  50) was met by Runs H–I ([FINDINGS](../FINDINGS.md) F6); the delivery shipped as
+  time-budget MCTS + difficulty tiers via a Web Worker
+  ([difficulty.ts](../../../src/client/ai/difficulty.ts): easy = heuristic,
+  medium/hard = full-rollout MCTS budgets).
+- **Kept here as the record** linking the D–I research arc to its deployment. Further
+  *product* work on the bot (UX, latency tuning in-app) belongs in
+  the [product backlog](../../product/BACKLOG.md); the open *research* lever is AE2 (make it faster).
 
 ### AE2 — Make MCTS faster (more iterations per time cap)
 - **Status:** proposed (biggest lever on shipped strength — each budget doubling ≈ +5 pts)

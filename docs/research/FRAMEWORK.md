@@ -4,6 +4,12 @@ How OpenBlokus runs and records experiments. One template, one status vocabulary
 one set of stats rules — so results are comparable and mistakes aren't re-made.
 This file owns the *process*; [FINDINGS.md](FINDINGS.md) owns the *conclusions*.
 
+**Scope:** this framework is for **experiments** — measurable questions with a
+pre-registered success bar. Shippable **features** (UI, UX, whose success is
+"usability" not a metric) go in the [product backlog](../product/BACKLOG.md),
+not here. If an entry can't state a success criterion without writing "N/A", it's a
+product item.
+
 ## The loop
 
 ```
@@ -96,7 +102,7 @@ these.
 |--------|---------|-------|
 | AI strategy | headless arena, pure rules core | [src/game/ai/arena.ts](../../src/game/ai/arena.ts) · `npm run arena [games] [seeds] [baseSeed]` |
 | regression guard | ~180 games every `npm test` | [tests/arena.test.ts](../../tests/arena.test.ts), [tests/alphabeta.test.ts](../../tests/alphabeta.test.ts) |
-| advisor / evaluator | *not built yet — see [backlog/advisor.md](backlog/advisor.md)* | needs game-logging first |
+| advisor / evaluator | *not built yet — see [backlog/advisor.md](backlog/advisor.md)* | needs [product backlog](../product/BACKLOG.md) P1 game-logging first |
 
 New research domains (advisor, UX) add their own harness row here and their own
 `log/*.md` + `backlog/*.md` files following the same templates.
