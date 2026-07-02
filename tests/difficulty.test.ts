@@ -21,4 +21,13 @@ describe('difficulty MCTS config', () => {
     expect(hard.timeBudgetMs).toBe(2000);
     expect(hard.beam!).toBeGreaterThanOrEqual(medium.beam!);
   });
+
+  it('extreme uses a fixed iteration count and no time budget', () => {
+    const x = mctsConfigFor('extreme');
+    expect(x.timeBudgetMs).toBeUndefined(); // "no time budget" → iterations mode
+    expect(x.iterations!).toBeGreaterThan(mctsConfigFor('hard').beam! * 5); // clearly deep
+    expect(x.rolloutDepth).toBe(0);
+    // Enough rollouts per child to stay reliable at its beam (≥ ~5, per F8).
+    expect(x.iterations! / x.beam!).toBeGreaterThanOrEqual(5);
+  });
 });
