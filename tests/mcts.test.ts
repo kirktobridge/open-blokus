@@ -3,7 +3,7 @@ import { createInitialState } from '../src/game/modes';
 import { isLegalPlacement } from '../src/game/placement';
 import { resolveCells } from '../src/game/pieces';
 import { generateLegalMoves } from '../src/game/moves';
-import { mctsStrategy } from '../src/game/ai/mcts';
+import { mctsStrategy, mctsSearch, type MctsNode } from '../src/game/ai/mcts';
 import { chooseMove } from '../src/game/ai/heuristic';
 
 // MCTS is expensive; keep the unit config tiny. Strength (vs heuristic/random)
@@ -53,6 +53,53 @@ describe('mctsStrategy', () => {
     expect(move).toEqual(chooseMove(G, 'blue', () => 0));
   });
 });
+
+describe('mctsSearch tree reuse', () => {
+  it('re-roots onto a prior subtree and keeps its visit statistics', () => {
+    const G = createInitialState(4);
+    const first = mctsSearch(G, 'blue', seededRng(), {
+      iterations: 500,
+      rolloutDepth: 6,
+      beam: 6,
+    });
+    expect(first.root).not.toBeNull();
+
+    // Find an explored descendant that is again blue's turn (a plausible "our next
+    // turn" position reached after the opponents reply).
+    const target = findByMover(first.root!, 0);
+    expect(target, 'expected an explored blue-turn descendant').not.toBeNull();
+    const priorN = target!.N;
+    expect(priorN).toBeGreaterThan(0);
+
+    const second = mctsSearch(target!.G, 'blue', seededRng(), { iterations: 40, beam: 8 }, first.root);
+    // Reuse: the search rooted at the very same node object, stats carried over.
+    expect(second.root).toBe(target);
+    expect(second.root!.N).toBeGreaterThan(priorN);
+    expect(second.move).not.toBeNull();
+  });
+
+  it('starts fresh when the position is not in the prior tree', () => {
+    const G = createInitialState(4);
+    const first = mctsSearch(G, 'blue', seededRng(), { iterations: 30, beam: 6 });
+    // A different, unrelated position (yellow has opened elsewhere) won't match.
+    const other = createInitialState(4);
+    other.board[other.board.length - 1] = 'yellow';
+    const second = mctsSearch(other, 'blue', seededRng(), { iterations: 20, beam: 6 }, first.root);
+    expect(second.root).not.toBe(first.root);
+    expect(second.move).not.toBeNull();
+  });
+});
+
+/** BFS a tree (depth ≤ 4) for a visited descendant whose mover index is `moverIdx`. */
+function findByMover(root: MctsNode, moverIdx: number): MctsNode | null {
+  let frontier = root.children;
+  for (let d = 1; d <= 4; d++) {
+    for (const n of frontier) if (n.moverIdx === moverIdx && n.N > 0) return n;
+    frontier = frontier.flatMap((n) => n.children);
+    if (frontier.length === 0) break;
+  }
+  return null;
+}
 
 /** A fixed-seed mulberry32 stream so two runs draw identically. */
 function seededRng(): () => number {

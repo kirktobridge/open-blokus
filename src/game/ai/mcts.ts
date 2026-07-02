@@ -264,49 +264,107 @@ function backprop(leaf: Node, reward: Float64Array): void {
   }
 }
 
+/** Opaque handle to a persisted search tree, for cross-turn reuse (see mctsSearch). */
+export type MctsNode = Node;
+
+export interface MctsSearchResult {
+  move: Placement | null;
+  /** The searched root — pass back as `priorRoot` next turn to reuse the subtree. */
+  root: MctsNode | null;
+}
+
+function sameBoard(a: (Color | null)[], b: (Color | null)[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
 /**
- * Build an MCTS strategy. Runs either a fixed `iterations` count (deterministic)
- * or until `timeBudgetMs` elapses (live play), then returns the most-visited root
- * move (robust child). If fewer than `minIterations` completed, the tree is too
- * shallow to trust, so it falls back to the heuristic's move.
+ * Find the descendant of a previous root that matches the current position `G`
+ * (same board and color-to-move), so its accumulated statistics can be reused.
+ * The match is at most one of our moves plus the opponents' replies deep, so we
+ * BFS a few levels. Returns the detached node, or null if the played line wasn't
+ * in the tree (then the caller starts fresh).
  */
-export function mctsStrategy(config: Partial<MctsConfig> = {}): Strategy {
+function reRoot(prior: Node, G: GameState): Node | null {
+  let frontier = prior.children;
+  for (let depth = 1; depth <= COLOR_ORDER.length; depth++) {
+    const next: Node[] = [];
+    for (const node of frontier) {
+      if (node.moverIdx === G.activeColorIndex && sameBoard(node.G.board, G.board)) {
+        node.parent = undefined; // detach so backprop stops here
+        return node;
+      }
+      for (const c of node.children) next.push(c);
+    }
+    frontier = next;
+    if (frontier.length === 0) break;
+  }
+  return null;
+}
+
+/**
+ * Core search. Runs a fixed `iterations` count (deterministic) or until
+ * `timeBudgetMs` elapses (live play). If `priorRoot` is given and the current
+ * position is found within it, that subtree is reused (its visit statistics carry
+ * over); otherwise a fresh tree is built. Returns the chosen move and the root to
+ * pass back next turn. Falls back to the heuristic if the tree has fewer than
+ * `minIterations` total visits.
+ */
+export function mctsSearch(
+  G: GameState,
+  color: Color,
+  rng: () => number,
+  config: Partial<MctsConfig> = {},
+  priorRoot?: MctsNode | null,
+): MctsSearchResult {
   const cfg: MctsConfig = { ...DEFAULTS, ...config };
-  return (G, color, rng) => {
+
+  let root: Node | null = priorRoot ? reRoot(priorRoot, G) : null;
+  if (!root) {
     const rootG = cloneState(G);
     recomputeStuck(rootG);
-    const root = makeNode(rootG);
-    if (root.terminal) return null;
-    const rootMoves = untriedMoves(root, cfg);
-    if (rootMoves.length === 0) return null;
-    if (rootMoves.length === 1) return rootMoves[0];
+    root = makeNode(rootG);
+  }
+  if (root.terminal) return { move: null, root: null };
+  const rootMoves = untriedMoves(root, cfg);
+  if (rootMoves.length === 0) return { move: null, root: null };
+  if (rootMoves.length === 1) return { move: rootMoves[0], root };
 
-    // Time-budget mode checks the deadline between iterations (worst-case
-    // overshoot is one rollout); otherwise run the fixed iteration count.
-    const timed = cfg.timeBudgetMs != null && cfg.timeBudgetMs > 0;
-    const deadline = timed ? Date.now() + cfg.timeBudgetMs! : 0;
-    let iters = 0;
-    while (timed ? Date.now() < deadline : iters < cfg.iterations) {
-      const leaf = treePolicy(root, cfg, rng);
-      const reward = leaf.terminal ? rewardVector(leaf.G) : rollout(leaf.G, cfg, rng);
-      backprop(leaf, reward);
-      iters++;
+  // Time-budget mode checks the deadline between iterations (worst-case overshoot
+  // is one rollout); otherwise run the fixed iteration count.
+  const timed = cfg.timeBudgetMs != null && cfg.timeBudgetMs > 0;
+  const deadline = timed ? Date.now() + cfg.timeBudgetMs! : 0;
+  let iters = 0;
+  while (timed ? Date.now() < deadline : iters < cfg.iterations) {
+    const leaf = treePolicy(root, cfg, rng);
+    const reward = leaf.terminal ? rewardVector(leaf.G) : rollout(leaf.G, cfg, rng);
+    backprop(leaf, reward);
+    iters++;
+  }
+
+  // Trust the tree only if it has enough total visits (reuse counts toward this).
+  if (root.N < cfg.minIterations) return { move: chooseMove(root.G, color, rng), root };
+
+  // Robust child: highest visit count (ties broken by rng).
+  let best: Node[] = [];
+  let bestN = -1;
+  for (const child of root.children) {
+    if (child.N > bestN) {
+      bestN = child.N;
+      best = [child];
+    } else if (child.N === bestN) {
+      best.push(child);
     }
+  }
+  return { move: (best.length ? pick(best, rng).move : undefined) ?? null, root };
+}
 
-    // Too little search to trust the tree → defer to the heuristic.
-    if (iters < cfg.minIterations) return chooseMove(rootG, color, rng);
-
-    // Robust child: highest visit count (ties broken by rng).
-    let best: Node[] = [];
-    let bestN = -1;
-    for (const child of root.children) {
-      if (child.N > bestN) {
-        bestN = child.N;
-        best = [child];
-      } else if (child.N === bestN) {
-        best.push(child);
-      }
-    }
-    return pick(best, rng).move ?? null;
-  };
+/**
+ * MCTS as a stateless Strategy (fresh tree each call) — used by the arena and
+ * tests, where reproducibility matters. Live play uses mctsSearch with a
+ * persisted root for cross-turn tree reuse.
+ */
+export function mctsStrategy(config: Partial<MctsConfig> = {}): Strategy {
+  return (G, color, rng) => mctsSearch(G, color, rng, config).move;
 }

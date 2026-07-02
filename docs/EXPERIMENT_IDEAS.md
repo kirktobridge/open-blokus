@@ -14,12 +14,17 @@ matter more than raw time on positions with many strong options. Benchmark
 `beam ∈ {10, 16, 24, all}` at a fixed budget vs the heuristic, and beam×budget
 interactions. Keep time-only until measured.
 
-## Tree reuse across turns (implemented as Phase 4 — measure the gain)
+## Tree reuse across turns — implemented, but ~0 benefit in 4p (measured)
 
 Persist the search tree between moves and re-root at the actually-played line
-instead of rebuilding. Pure optimization → more effective iterations per budget.
-Once built, **measure the strength gain** at a fixed time budget (iterations/move
-should rise; game-share vs heuristic should tick up).
+(`mctsSearch` + `reRoot`, worker holds a tree per color). The mechanism is correct
+(unit-tested), but **measured reuse hit rate in 4p is ~0–5%** at 100–600
+iterations: your next turn is 4 plies deep (your move + three opponents) in a
+beam-16-wide tree, so the exact played line is almost never still in the tree, and
+when it is it carries ~0 extra visits. Kept because it's correct, zero-cost on a
+miss (falls back to a fresh tree), and **should pay off in 2-player mode** (only 2
+plies to your next turn) or at much larger budgets. Revisit if/when 2p AI lands or
+budgets grow. Don't invest more in it for 4p.
 
 ## RAVE / AMAF
 
