@@ -111,3 +111,5 @@ these are ideas from the human developer and should not be considered official d
 - submitting move: add clickable button, also allow Enter
 
   - WASDstrafes, scroll rotates, space and click can both place, enter submits
+
+add color themes like dracula and catpuccin
