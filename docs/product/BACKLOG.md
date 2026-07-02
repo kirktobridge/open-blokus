@@ -21,10 +21,7 @@ distinguishes them from a research entry.
 ## Epic: Advisor & game analysis
 
 The player-facing intelligence surface. Each feature **depends on a research question**
-being answered first (the evaluator/win-prob/blunder signal must be *trustworthy*
-before it's *shown*) — those questions live in
-[../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build order
-runs foundation → offline surfaces → live surfaces.
+The player-facing intelligence surface. Each feature **depends on a research question** being answered first (the evaluator/win-prob/blunder signal must be *trustworthy*before it's *shown*) — those questions live in [../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build order runs foundation → offline surfaces → live surfaces.
 
 ### P1 — Game-logging foundation (infra)
 - **Status:** proposed (foundational — unblocks P2, P3, and research AD2–AD4 + AE4)
