@@ -5,7 +5,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 
-/** Per-move MCTS time budgets (ms). Tunable — see docs/EXPERIMENT_IDEAS.md. */
+/** Per-move MCTS time budgets (ms). Tunable — see docs/research/backlog/ai-engine.md (AE5). */
 const BUDGET_MS: Record<Exclude<Difficulty, 'easy'>, number> = {
   medium: 500,
   hard: 2000,

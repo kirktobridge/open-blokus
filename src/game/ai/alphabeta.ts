@@ -34,7 +34,7 @@ export interface AlphaBetaConfig {
   /**
    * How to rank/prune candidate moves at each node:
    * - `heuristic`: by the static placement heuristic (cheap, but the beam can
-   *   then only re-rank the heuristic's top-K — see AI_EXPERIMENTS Run E).
+   *   then only re-rank the heuristic's top-K — see research/log/ai-strategy.md Run E).
    * - `eval`: by the one-ply state eval of each move (decouples the search from
    *   the heuristic, at the cost of an apply+eval per candidate).
    */
