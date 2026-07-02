@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
-import type { GameState } from '../game/types';
+import type { Color, GameState } from '../game/types';
 import { COLOR_ORDER } from '../game/types';
 import { resolveCells } from '../game/pieces';
 import { isLegalPlacement } from '../game/placement';
+import { CORNERS } from '../game/modes';
 import { Board } from './board/Board';
 import { PieceTray } from './tray/PieceTray';
 import { ScorePanel } from './controls/ScorePanel';
@@ -13,16 +14,35 @@ import { matchAction, type PlacementAction } from './controls/keymap';
 import { useSelection } from './hooks/useSelection';
 import { usePaletteColors } from './palettes';
 
+/** Clockwise quarter-turns that bring each color's corner to the bottom-right. */
+const TURNS_TO_BOTTOM_RIGHT: Record<Color, number> = { blue: 2, yellow: 1, red: 0, green: 3 };
+
+/** Rotate a screen-space (dx, dy) into board space for a board turned `turns` CW. */
+function toBoardDelta(dx: number, dy: number, turns: number): [number, number] {
+  let a = dx;
+  let b = dy;
+  for (let i = 0; i < turns; i++) [a, b] = [b, -a];
+  return [a, b];
+}
+
 /**
  * Interactive game view. Two-step placement: position + orient a piece (mouse or
  * WASD / arrows / scroll), lock it (click or Space), then submit (button or Enter).
+ * The board is rotated so the local player's corner sits bottom-right.
  */
-export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameState>) {
+export function BlokusBoardView({ G, ctx, moves, isActive, playerID }: BoardProps<GameState>) {
   const sel = useSelection();
   const colors = usePaletteColors();
   const activeColor = COLOR_ORDER[G.activeColorIndex];
   // Single-player passes isActive=true for the current player; multiplayer gates it.
   const canPlay = isActive !== false && !ctx.gameover;
+
+  // Orient the board to the local seat's color (bottom-right); manual button cycles.
+  const homeColor =
+    playerID != null ? COLOR_ORDER.find((c) => G.config.owners[c] === playerID) : undefined;
+  const [boardTurns, setBoardTurns] = useState(
+    homeColor ? TURNS_TO_BOTTOM_RIGHT[homeColor] : 0,
+  );
 
   const oriented =
     sel.pieceId && sel.hover
@@ -44,6 +64,10 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
       : undefined;
 
   const canSubmit = sel.staged && legal;
+
+  // Before your color's first move, mark its required opening corner.
+  const startHint =
+    canPlay && !G.colors[activeColor].hasStarted ? CORNERS[activeColor] : undefined;
 
   /** Commit the staged placement to the engine. Returns whether a move was made. */
   function submitMove(): boolean {
@@ -81,18 +105,21 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
       return true;
     }
     if (!sel.pieceId) return false;
+    // Movement is expressed in screen space, then rotated into board space so the
+    // arrow keys stay intuitive whatever the board's orientation.
+    const moveScreen = (dx: number, dy: number) => sel.move(...toBoardDelta(dx, dy, boardTurns));
     switch (action) {
       case 'moveUp':
-        sel.move(0, -1);
+        moveScreen(0, -1);
         return true;
       case 'moveDown':
-        sel.move(0, 1);
+        moveScreen(0, 1);
         return true;
       case 'moveLeft':
-        sel.move(-1, 0);
+        moveScreen(-1, 0);
         return true;
       case 'moveRight':
-        sel.move(1, 0);
+        moveScreen(1, 0);
         return true;
       case 'rotateCW':
         sel.rotate(1);
@@ -158,28 +185,48 @@ export function BlokusBoardView({ G, ctx, moves, isActive }: BoardProps<GameStat
             {ctx.gameover ? 'game over' : canPlay ? 'your turn' : 'waiting'}
           </span>
         </p>
-        <Board
-          board={G.board}
-          activeColor={activeColor}
-          preview={preview}
-          lastMove={G.lastMove}
-          onCellEnter={
-            interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
-          }
-          onCellClick={
-            interactive
-              ? (x, y) => {
-                  sel.setHover({ x, y });
-                  sel.stage();
-                }
-              : undefined
-          }
-          onLeave={() => {
-            if (!sel.staged) sel.setHover(null);
+        <div style={{ margin: '0 0 8px' }}>
+          <button
+            data-testid="rotate-board"
+            onClick={() => setBoardTurns((t) => (t + 1) % 4)}
+            title="Rotate the board view 90°"
+          >
+            Rotate board ⟲
+          </button>
+        </div>
+        <div
+          data-testid="board-rotator"
+          style={{
+            display: 'inline-block',
+            transform: `rotate(${boardTurns * 90}deg)`,
+            transformOrigin: 'center',
+            transition: 'transform 0.2s ease',
           }}
-          onRotate={interactive ? sel.rotate : undefined}
-          onFlip={interactive ? sel.flip : undefined}
-        />
+        >
+          <Board
+            board={G.board}
+            activeColor={activeColor}
+            preview={preview}
+            lastMove={G.lastMove}
+            startHint={startHint}
+            onCellEnter={
+              interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
+            }
+            onCellClick={
+              interactive
+                ? (x, y) => {
+                    sel.setHover({ x, y });
+                    sel.stage();
+                  }
+                : undefined
+            }
+            onLeave={() => {
+              if (!sel.staged) sel.setHover(null);
+            }}
+            onRotate={interactive ? sel.rotate : undefined}
+            onFlip={interactive ? sel.flip : undefined}
+          />
+        </div>
         <Controls
           pieceId={sel.pieceId}
           disabled={!canPlay}

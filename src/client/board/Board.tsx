@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Color } from '../../game/types';
+import type { Cell as CellCoord, Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 import { usePaletteColors } from '../palettes';
@@ -20,6 +20,7 @@ export function Board({
   activeColor,
   preview,
   lastMove,
+  startHint,
   onCellEnter,
   onCellClick,
   onLeave,
@@ -30,6 +31,8 @@ export function Board({
   activeColor: Color;
   preview?: BoardPreview;
   lastMove?: number[];
+  /** Active color's starting corner to highlight before its first move. */
+  startHint?: CellCoord;
   onCellEnter?: (x: number, y: number) => void;
   onCellClick?: (x: number, y: number) => void;
   onLeave?: () => void;
@@ -86,6 +89,7 @@ export function Board({
             value={value}
             preview={state}
             staged={inPreview && (preview?.staged ?? false)}
+            startHint={startHint?.x === x && startHint?.y === y}
             previewColor={activeColor}
             colors={colors}
             lastMove={lastMoveSet?.has(i) ?? false}

@@ -18,14 +18,22 @@ test('keyboard-only: arrows position, WASD rotate, Space lock, Enter submit', as
 }) => {
   await createMatchAsBlue(page);
 
+  // Blue (seat 0) is oriented with its corner bottom-right, so the board view is
+  // rotated 180°. Arrow keys are screen-relative, so screen right/down drive the
+  // ghost toward blue's true corner (0,0).
+  await expect(page.getByTestId('board-rotator')).toHaveCSS(
+    'transform',
+    'matrix(-1, 0, 0, -1, 0, 0)',
+  );
+
   // Select the domino from the tray (a non-focusable div, so Space/Enter below
   // reach the window handler rather than re-toggling the piece).
   await page.getByTestId('piece-blue-I2').click();
 
-  // Drive the ghost from the board centre (first move key seeds it) to (0,0).
-  await press(page, 'ArrowUp', 1); // seed hover at centre (10,10)
-  await press(page, 'ArrowLeft', 10); // x: 10 -> 0
-  await press(page, 'ArrowUp', 10); // y: 10 -> 0
+  // Drive the ghost from centre to the visual (screen) corner = true (0,0).
+  await press(page, 'ArrowDown', 1); // seed hover at centre (10,10)
+  await press(page, 'ArrowRight', 10); // screen-right -> board x: 10 -> 0
+  await press(page, 'ArrowDown', 10); // screen-down -> board y: 10 -> 0
 
   // Rotate CW to vertical (D), then lock + submit — all from the keyboard.
   await page.keyboard.press('d');
@@ -58,4 +66,16 @@ test('Submit enables only for a legal, staged placement', async ({ page }) => {
   await page.getByTestId('submit-move').click();
   await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue');
   await expect(page.getByText(/active yellow/)).toBeVisible();
+});
+
+test('rotate-board button turns the board view 90°', async ({ page }) => {
+  await createMatchAsBlue(page);
+  const rotator = page.getByTestId('board-rotator');
+
+  // Blue is oriented bottom-right = 180°.
+  await expect(rotator).toHaveCSS('transform', 'matrix(-1, 0, 0, -1, 0, 0)');
+
+  // Each click adds a 90° clockwise turn (180° -> 270°).
+  await page.getByTestId('rotate-board').click();
+  await expect(rotator).toHaveCSS('transform', 'matrix(0, -1, 1, 0, 0, 0)');
 });

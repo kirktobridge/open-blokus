@@ -12,6 +12,9 @@ async function createMatchAsBlue(page: import('@playwright/test').Page) {
 test('illegal first move is rejected, legal corner move is accepted', async ({ page }) => {
   await createMatchAsBlue(page);
 
+  // Blue's opening corner (0,0) is hinted before its first move.
+  await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-starthint', 'true');
+
   // Illegal: I1 not on blue's corner (0,0) — locking it there leaves Submit
   // disabled, nothing is placed, and it's still blue's turn.
   await page.getByTestId('piece-blue-I1').click();

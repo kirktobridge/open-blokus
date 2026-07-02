@@ -67,11 +67,14 @@ export function LocalAIGame({
   if (!state) return <div style={{ padding: 16 }}>Loading…</div>;
 
   const isActive = humanSeats.has(state.ctx.currentPlayer) && !state.ctx.gameover;
+  // Orient the board to the first human seat (undefined for all-AI watch games).
+  const viewSeat = humanCount > 0 ? '0' : undefined;
   const boardProps = {
     G: state.G,
     ctx: state.ctx,
     moves: client.moves,
     isActive,
+    playerID: viewSeat,
   } as unknown as BoardProps<GameState>;
 
   return (
