@@ -68,6 +68,18 @@ test('Submit enables only for a legal, staged placement', async ({ page }) => {
   await expect(page.getByText(/active yellow/)).toBeVisible();
 });
 
+test('controls reference lists keyboard + mouse bindings (read-only)', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('controls-help-toggle').click();
+  const help = page.getByTestId('controls-help');
+  await expect(help).toContainText('Submit move');
+  await expect(help).toContainText('Enter'); // from the central keymap
+  await expect(help).toContainText('Space');
+  await expect(help).toContainText('Right-click');
+  // No editing affordances — it's view-only (no inputs).
+  await expect(help.locator('input')).toHaveCount(0);
+});
+
 test('rotate-board button turns the board view 90°', async ({ page }) => {
   await createMatchAsBlue(page);
   const rotator = page.getByTestId('board-rotator');

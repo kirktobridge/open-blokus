@@ -7,6 +7,7 @@ import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
 import { ThemeToggle } from './ThemeToggle';
 import { PalettePicker } from './PalettePicker';
+import { ControlsHelp } from './ControlsHelp';
 
 export function App() {
   const lobby = useLobby();
@@ -84,6 +85,7 @@ export function App() {
     <>
       <ThemeToggle />
       <PalettePicker />
+      <ControlsHelp />
       {screen}
     </>
   );
