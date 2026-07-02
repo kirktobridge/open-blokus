@@ -21,7 +21,8 @@ const TURNS_TO_BOTTOM_RIGHT: Record<Color, number> = { blue: 2, yellow: 1, red: 
 function toBoardDelta(dx: number, dy: number, turns: number): [number, number] {
   let a = dx;
   let b = dy;
-  for (let i = 0; i < turns; i++) [a, b] = [b, -a];
+  const t = ((turns % 4) + 4) % 4;
+  for (let i = 0; i < t; i++) [a, b] = [b, -a];
   return [a, b];
 }
 
@@ -188,7 +189,9 @@ export function BlokusBoardView({ G, ctx, moves, isActive, playerID }: BoardProp
         <div style={{ margin: '0 0 8px' }}>
           <button
             data-testid="rotate-board"
-            onClick={() => setBoardTurns((t) => (t + 1) % 4)}
+            // Increment without wrapping so the CSS transform always animates
+            // forward (270°→360° instead of 270°→0°, which spins backwards).
+            onClick={() => setBoardTurns((t) => t + 1)}
             title="Rotate the board view 90°"
           >
             Rotate board ⟲
