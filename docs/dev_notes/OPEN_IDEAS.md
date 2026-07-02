@@ -2,6 +2,12 @@
 
 these are ideas from the human developer and should not be considered official documentation or directives. these ideas may be implemented already, deferred, cancelled, etc. and this document will not be updated or maintained as a source of truth. treat it accordingly.
 
+## logging (foundational)
+
+- foundational to things like an endgame advisor, play by play analysis, and research in general, is logging. we should implement game logging (and some system that manages the logging) to allow analysis on move-by-move data to 1) improve our understanding of how best to play the game and 2) support advisory and review functions.
+
+- should probably think about how to diffrentiate/evaluate need for app-logging for debugging, vs. game-logging to support above ideas
+
 ## advisor features (deferred to later release)
 
 ### pre-game tutorial
@@ -43,7 +49,7 @@ these are ideas from the human developer and should not be considered official d
 
   - Release 3: stronger advisor overlay with board heatmaps or strategic priorities.
 
-### postgame recap (consider how this and mid-game advisor can use the same assets)
+### postgame recap (consider how this and mid-game advisor can use the same assets) - also somewhat connected idea is to look at games where humans beat the AI and make observations about it
 
 - play-by-play analysis
 - highlighting key moments like "good plays" or "blunders"
@@ -71,6 +77,12 @@ these are ideas from the human developer and should not be considered official d
 - hyperrealistic replications of plastic for the Blokus game board, translucent plastic pieces for the polyminoes.
 
 - eventually, sounds that are fun and nostalgic of 90s/2000s internet, and maybe MIDI/Flash-era-esque/nostalgic sounds for placing pieces
+
+- "In src/client/board/Cell.tsx, the placed cell is currently a flat 
+
+   with a solid background. I want to upgrade placed cells to an SVG-based skeuomorphic finish: translucent colored fill, subtle top-left bevel highlight, bottom-right shadow edge, soft contact shadow, and very light grain texture using SVG feTurbulence. The finish must be parameterized by a baseColor hex string so all palettes work automatically. Keep the existing props interface — only change the visual output. Do not touch game logic."
+
+  skeumorphism prompt
 
 #### Board
 
