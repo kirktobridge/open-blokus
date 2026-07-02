@@ -388,6 +388,22 @@ export const validateSetupData = (
 - **Next:** flatfile connector (`bgio-storage`-style) for cheap persistence.
 - **Prod:** a DB connector (e.g. Postgres) per [boardgame.io/storage.md](boardgame.io/storage.md).
 
+### Admin panel
+
+Optional server-side ops UI at **`GET /admin`** (served by the game server on `:8000`,
+`src/server/admin.ts` + `adminPage.ts`). Self-contained HTML/JS page — no Vite build, same
+origin as its API. **Disabled by default**: routes are only mounted when both
+`OBK_ADMIN_USER` and `OBK_ADMIN_PASS` are set, and every route is gated by HTTP Basic auth.
+
+- `GET /admin` — the panel (list of matches + health header).
+- `GET /admin/api/health` — uptime, memory, match count, storage mode.
+- `GET /admin/api/matches` — all matches (credentials stripped); `:id` returns a state peek.
+- `DELETE /admin/api/matches/:id` — kill/delete a match (`db.wipe`).
+- `POST /admin/api/matches/:id/boot/:seat` — free a seat (clears name + credentials).
+
+Backed entirely by the boardgame.io `StorageAPI` (`db.listMatches / fetch / wipe / setMetadata`),
+so it works with both the in-memory and flatfile stores.
+
 ### Dev vs. remote master
 
 - `multiplayer: Local()` — pass-and-play and component dev; render 2–4 `<BlokusClient>`

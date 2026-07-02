@@ -13,6 +13,7 @@ export default defineConfig({
       url: 'http://localhost:8000/games',
       reuseExistingServer: true,
       timeout: 60_000,
+      env: { OBK_ADMIN_USER: 'admin', OBK_ADMIN_PASS: 'test-pass' }, // enable admin panel
     },
     {
       command: 'npm run dev -- --port 5173 --strictPort',
