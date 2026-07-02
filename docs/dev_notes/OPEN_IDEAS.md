@@ -25,7 +25,13 @@ these are ideas from the human developer and should not be considered official d
 
   - Step 4: Demonstrate a “bad but legal” move versus a “better for growth” move.
 
-### mid-game advisor overlay (save this for when UI/style is finalized as it would be pretty complicated)
+### mid-game advisor overlay 
+
+- defer until:
+
+  - UI/style is finalized as it would be pretty complicated
+
+  - evaluator logic is solid
 
 - optional walkthrough of what to prioritize
 
