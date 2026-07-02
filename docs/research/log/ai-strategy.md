@@ -1,15 +1,19 @@
 # AI strategy experiments
 
 Running log of CPU-strategy research: what we tried, how, and what we found.
-The harness is the headless arena in [src/game/ai/arena.ts](../src/game/ai/arena.ts)
+The harness is the headless arena in [src/game/ai/arena.ts](../../../src/game/ai/arena.ts)
 (`npm run arena [games] [seeds] [baseSeed]`, runner
-[arena.cli.ts](../src/game/ai/arena.cli.ts)). Inspired by
+[arena.cli.ts](../../../src/game/ai/arena.cli.ts)). Inspired by
 [cchung89/Blokus_Game_Solver](https://github.com/cchung89/Blokus_Game_Solver).
 
 This is a **research log, not a spec** — it records the *why* behind the bot's
 tuning. The heuristic itself lives in
-[src/game/ai/heuristic.ts](../src/game/ai/heuristic.ts); rules in
-[GAME_SPEC](GAME_SPEC.md). Append new runs at the bottom; don't rewrite history.
+[src/game/ai/heuristic.ts](../../../src/game/ai/heuristic.ts); rules in
+[GAME_SPEC](../../GAME_SPEC.md). Append new runs at the bottom; don't rewrite history.
+
+> Synthesized conclusions, lessons, and the played-out/still-open map now live in
+> [../FINDINGS.md](../FINDINGS.md). This file stays the append-only lab notebook
+> (raw runs); FINDINGS is the curated takeaway layer.
 
 ## Method
 
@@ -33,8 +37,8 @@ tuning. The heuristic itself lives in
 | `greedy-size` | biggest piece, random tie-break (cchung's "simple greedy") |
 | `heuristic` | shipped weighted eval: `size·10 + frontier·3 + center·1 + block·2` |
 | weight variants | `heuristicStrategy(weights)` with one term changed (ablation / sweep) |
-| `alphabeta-dN` | depth-N paranoid alpha-beta with beam pruning ([alphabeta.ts](../src/game/ai/alphabeta.ts)) |
-| `mcts` | maxn UCT Monte-Carlo Tree Search ([mcts.ts](../src/game/ai/mcts.ts)) |
+| `alphabeta-dN` | depth-N paranoid alpha-beta with beam pruning ([alphabeta.ts](../../../src/game/ai/alphabeta.ts)) |
+| `mcts` | maxn UCT Monte-Carlo Tree Search ([mcts.ts](../../../src/game/ai/mcts.ts)) |
 
 `size` = piece squares; `frontier` = new legal corner attach-points gained;
 `center` = pull toward board center; `block` = our cells diagonal to an opponent.
@@ -44,8 +48,8 @@ tuning. The heuristic itself lives in
 ≈ **6,250 games** across the nine documented runs below (4-player, basic
 scoring): A–C ≈ 1,520 (heuristic tuning), D ≈ 100 (alpha-beta), E ≈ 850 (eval
 sweeps), F ≈ 130 (beam-confound / pure eval), G ≈ 130 (territory feature),
-H ≈ 2,450 (MCTS budget sweep), I ≈ 990 (MCTS full-rollout scaling). The CI suite ([tests/arena.test.ts](../tests/arena.test.ts),
-[alphabeta.test.ts](../tests/alphabeta.test.ts)) also plays ~180 games every
+H ≈ 2,450 (MCTS budget sweep), I ≈ 990 (MCTS full-rollout scaling). The CI suite ([tests/arena.test.ts](../../../tests/arena.test.ts),
+[alphabeta.test.ts](../../../tests/alphabeta.test.ts)) also plays ~180 games every
 `npm test` as a regression guard (heuristic + alpha-beta must beat random;
 tournaments must be deterministic per seed).
 
@@ -200,7 +204,7 @@ signal. Feature kept in code (opt-in, default off) but **not adopted**.
 
 ### Run H — MCTS (the ceiling breaks)
 
-Maxn UCT MCTS ([mcts.ts](../src/game/ai/mcts.ts)): per-color reward vectors so
+Maxn UCT MCTS ([mcts.ts](../../../src/game/ai/mcts.ts)): per-color reward vectors so
 each player maximizes its *own* outcome (fixes the paranoid mismatch from D/F);
 heuristic-prior beam per node (plain MCTS can't try every root move at a feasible
 budget); rejection-sampled rollouts (sample *one* legal move instead of
@@ -264,66 +268,11 @@ terminal state where the placed-leader reward is exact) is the dominant factor;
 iterations then stack multiplicatively on top. Practical takeaway for a shipped
 bot: **always full rollouts; spend the move-time budget on iterations.**
 
-## Conclusions (noise-aware)
+## Synthesis
 
-- **heuristic ≫ greedy-size ≫ random.** Large, stable, replicated.
-- **`frontier` is the load-bearing term.** `no-frontier` → 15.5%, far outside
-  any error band. Own-mobility is what raw size ignores.
-- **`block` = mild win** (~4 pts, within ±std). Real-ish, small.
-- **`center` ≈ noise.** `full` and `no-center` overlap completely. Earns ~nothing
-  (probably because it's averaged over the whole game, not just the opening).
-- **`frontier: 3` stays.** Whole sweep overlaps in error; only `f=10` clearly
-  worse (overweighting position starves the size term).
-
-### vs cchung89
-
-They found *simple greedy beat their "advanced" (size + corner-diff) greedy*; we
-find the opposite. Likely because their corner term was **blended into one
-metric, possibly miscounted (ignoring the ortho-adjacency rule), possibly
-overweighted** vs size, and judged only **against random** (which compresses the
-gap between two strong bots). We keep terms separate, size-dominant, and measure
-head-to-head with seed-averaging — and positional play wins clearly. Our own
-`f=10` result is direct evidence that overweighting the positional term hurts,
-which is the trap that likely bit their "advanced" bot.
-
-## What's likely played out vs still open
-
-**Played out (diminishing returns):** single-weight sweeps of the existing four
-terms at one ply. Differences now sit inside the ±5–11 pt noise band; resolving
-them needs far more games for little payoff. `center` and `block` are settled as
-near-noise/mild.
-
-**Tried, no win (Runs D–F):** depth-2 alpha-beta (D), a depth-1 weight-tuned eval
-(E), and an *unconfounded* pure eval (F, beam=all) all land at 47–55% vs the
-heuristic — statistically indistinguishable, at up to ~100× cost. Run F is the
-clincher: removing the heuristic-ordered-beam confound did **not** surface a
-better eval. So with the current features — size/placed, frontier/mobility,
-block, center — **the tuned heuristic is at or near the ceiling.** Reweighting,
-deeper search, and eval-ordering are all played out.
-
-**Tried, no gain (Run G):** Voronoi territory control — neutral-to-harmful at
-every weight. A coarse nearest-piece space partition doesn't beat what `frontier`
-already encodes. First hand-crafted *new feature* tried; it didn't move the
-ceiling either.
-
-**Broke the ceiling, then ran away with it (Runs H–I):** maxn MCTS beats the
-heuristic significantly (`it=80/d=8` 54.6%, p = 0.0007, n = 1,200) and *scales
-with compute* — the opposite of the D–G plateau. With **full rollouts** it climbs
-to **90%** (`it=320/d=0`, Run I), decelerating toward a mid-90s ceiling. Rollout
-*quality* is the dominant lever (a 29-pt swing at fixed `it=40`), iterations
-stack on top. It's slow (~100–1000× the heuristic).
-
-**Still open:**
-- **Ship MCTS as the "hard" offline bot** (ARCHITECTURE §9) with a per-move *time
-  budget* and **full rollouts** (Runs H–I: `d=0` ≫ truncated; spend the budget on
-  iterations). This is the concrete payoff of the whole D–I arc.
-- **Make MCTS faster** so more iterations fit the time cap (each doubling still
-  adds ~5 pts). Biggest win: an incremental / cached `generateLegalMoves` (the
-  ~34 ms mid-game bottleneck); then RAVE/AMAF and tree reuse across moves.
-- **Learned eval / policy** — a value net would replace the expensive full
-  rollouts (the strength driver) with a cheap strong estimate.
-- **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
-  color) have different blocking dynamics, untested.
+Conclusions, the cchung89 comparison, and the played-out/still-open map moved to
+[../FINDINGS.md](../FINDINGS.md) (findings F1–F6). Open threads are tracked as
+structured entries in [../backlog/ai-engine.md](../backlog/ai-engine.md).
 
 ## Engine note — anchor-restricted move generation
 
@@ -331,6 +280,6 @@ stack on top. It's slow (~100–1000× the heuristic).
 placement (post-first-move) must cover an empty cell diagonally adjacent to the
 color's own pieces, so we only test positions anchored to that small frontier
 set. Output is byte-identical to the full scan (differential test in
-[tests/moves-opt.test.ts](../tests/moves-opt.test.ts)); the bottleneck
+[tests/moves-opt.test.ts](../../../tests/moves-opt.test.ts)); the bottleneck
 `generateLegalMoves` got **~16× faster** (47 → 766 calls/s on mid-game positions),
 i.e. ~16× more MCTS iterations per time budget at no accuracy cost.

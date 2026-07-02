@@ -222,7 +222,7 @@ function rolloutMove(
     return sampleLegalMove(G, color, rng) ?? fallbackMove(G, color, rng);
   }
   // Heuristic: sample a few legal moves, keep the largest piece (size is the
-  // dominant heuristic term — see AI_EXPERIMENTS). Cheap vs full enumeration.
+  // dominant heuristic term — see research/log/ai-strategy.md). Cheap vs full enumeration.
   let best: SampledMove | null = null;
   for (let k = 0; k < HEURISTIC_SAMPLES; k++) {
     const s = sampleLegalMove(G, color, rng);

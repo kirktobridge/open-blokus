@@ -1,0 +1,41 @@
+# Research
+
+The OpenBlokus research hub: what we've tried, what we've learned, and what we plan
+to try next — for AI strategy, engine performance, and (forthcoming) the advisor /
+evaluator / game-analysis line of work.
+
+## Layout
+
+| Path | Role |
+|------|------|
+| [FRAMEWORK.md](FRAMEWORK.md) | **Process.** The experiment template, status vocabulary, and stats discipline everything follows. Start here. |
+| [FINDINGS.md](FINDINGS.md) | **Conclusions.** Curated, presentation-ready insights (F1–F7) + method lessons (M1–M3). The "so what." |
+| [log/](log/) | **Records.** Append-only lab notebook of runs actually executed. Never rewritten. |
+| [backlog/](backlog/) | **Questions.** Planned/deferred experiments, one framework block each. |
+
+### Files today
+
+- [log/ai-strategy.md](log/ai-strategy.md) — CPU-strategy runs A–I + engine note.
+- [backlog/ai-engine.md](backlog/ai-engine.md) — AI/engine open threads (AE1–AE9).
+- [backlog/advisor.md](backlog/advisor.md) — advisor / evaluator / analysis (AD1–AD6).
+
+## How to use it
+
+**Running an experiment:** grab an entry from `backlog/`, follow its Method, append a
+record to the matching `log/*.md`, then distil the durable claim into `FINDINGS.md`
+and update the backlog entry's status. The full loop and templates are in
+[FRAMEWORK.md](FRAMEWORK.md).
+
+**Presenting results:** `FINDINGS.md` is the source — each finding is claim →
+evidence → confidence, already written for an audience.
+
+**Adding a new research domain** (e.g. UX experiments): add a `log/<domain>.md` and a
+`backlog/<domain>.md`, register its harness row in FRAMEWORK.md, and link them here.
+
+## Relationship to the rest of the docs
+
+- Rules → [../GAME_SPEC.md](../GAME_SPEC.md); structure/why → [../ARCHITECTURE.md](../ARCHITECTURE.md).
+  Research owns the *why behind AI/engine tuning* — it does not restate rules.
+- [../dev_notes/](../dev_notes/) is the developer's raw, unmaintained idea dump
+  (reference only). Research entries derived from it are the curated versions; the
+  dev_notes are not a source of truth.
