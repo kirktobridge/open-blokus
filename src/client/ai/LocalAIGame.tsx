@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { Client } from 'boardgame.io/client';
 import type { BoardProps } from 'boardgame.io/react';
 import { BlokusGame, enumerate } from '../../bgio/BlokusGame';
 import { HeuristicBot } from '../../bgio/bots/HeuristicBot';
+import { MctsBot } from '../../bgio/bots/MctsBot';
 import type { GameMode, GameState } from '../../game/types';
 import { BlokusBoardView } from '../BlokusBoardView';
 import { SessionActionsContext } from '../lobby/sessionContext';
 import { useBotRunner } from './useBotRunner';
+import { mctsConfigFor, type Difficulty } from './difficulty';
 
 /**
  * Bot pacing in ms. A `?botDelay=` query param wins (so e2e can force instant
@@ -28,15 +30,50 @@ function resolveBotDelay(): number {
 export function LocalAIGame({
   mode,
   aiCount,
+  difficulty,
   onLeave,
 }: {
   mode: GameMode;
   aiCount: number;
+  difficulty: Difficulty;
   onLeave: () => void;
 }) {
   const client = useMemo(() => Client({ game: BlokusGame, numPlayers: mode }), [mode]);
-  const bot = useMemo(() => new HeuristicBot({ enumerate, seed: 'vs-ai' }), []);
-  const botDelay = useMemo(resolveBotDelay, []);
+
+  // Medium/hard run MCTS in a Web Worker so the search never freezes the UI. The
+  // worker lives in a ref (managed by the effect below) rather than useMemo, so
+  // StrictMode's mount→cleanup→mount recreates it cleanly; the bot reads the live
+  // worker lazily via getWorker and never holds a terminated one.
+  const workerRef = useRef<Worker | null>(null);
+  useEffect(() => {
+    if (difficulty === 'easy') {
+      workerRef.current = null;
+      return;
+    }
+    const w = new Worker(new URL('./mctsWorker.ts', import.meta.url), { type: 'module' });
+    workerRef.current = w;
+    return () => {
+      w.terminate();
+      if (workerRef.current === w) workerRef.current = null;
+    };
+  }, [difficulty]);
+
+  const bot = useMemo(() => {
+    if (difficulty === 'easy') return new HeuristicBot({ enumerate, seed: 'vs-ai' });
+    return new MctsBot({
+      enumerate,
+      seed: 'vs-ai',
+      getWorker: () => workerRef.current,
+      config: mctsConfigFor(difficulty),
+    });
+  }, [difficulty]);
+
+  // Heuristic needs an artificial pace to be watchable; MCTS's own search is the
+  // pace, so it runs with no extra delay.
+  const botDelay = useMemo(
+    () => (difficulty === 'easy' ? resolveBotDelay() : 0),
+    [difficulty],
+  );
 
   const humanCount = Math.max(0, mode - aiCount);
   const humanSeats = useMemo(
@@ -83,7 +120,7 @@ export function LocalAIGame({
     >
       <div>
         <div style={{ padding: 8, fontFamily: 'system-ui, sans-serif' }}>
-          <strong>vs AI</strong> · {humanCount} human / {aiCount} AI
+          <strong>vs AI</strong> · {humanCount} human / {aiCount} AI · {difficulty}
           <span
             data-testid="ai-thinking"
             style={{

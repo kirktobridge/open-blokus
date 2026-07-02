@@ -5,6 +5,7 @@ import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/
 import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
+import type { Difficulty } from './ai/difficulty';
 import { ThemeToggle } from './ThemeToggle';
 import { PalettePicker } from './PalettePicker';
 import { ControlsHelp } from './ControlsHelp';
@@ -13,7 +14,11 @@ export function App() {
   const lobby = useLobby();
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [matches, setMatches] = useState<MatchInfo[]>([]);
-  const [aiConfig, setAiConfig] = useState<{ mode: GameMode; aiCount: number } | null>(null);
+  const [aiConfig, setAiConfig] = useState<{
+    mode: GameMode;
+    aiCount: number;
+    difficulty: Difficulty;
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -65,6 +70,7 @@ export function App() {
       <LocalAIGame
         mode={aiConfig.mode}
         aiCount={aiConfig.aiCount}
+        difficulty={aiConfig.difficulty}
         onLeave={() => setAiConfig(null)}
       />
     );
@@ -77,7 +83,7 @@ export function App() {
         onCreate={onCreate}
         onJoin={onJoin}
         onRefresh={refresh}
-        onStartAI={(mode, aiCount) => setAiConfig({ mode, aiCount })}
+        onStartAI={(mode, aiCount, difficulty) => setAiConfig({ mode, aiCount, difficulty })}
       />
     );
   }

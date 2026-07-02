@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { GameMode, ScoringVariant } from '../../game/types';
 import type { MatchInfo } from './config';
+import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
 import { CreateMatchForm } from './CreateMatchForm';
 import { MatchList } from './MatchList';
 
@@ -15,11 +16,12 @@ export function HomeScreen({
   onCreate: (mode: GameMode, scoring: ScoringVariant) => void;
   onJoin: (matchID: string) => void;
   onRefresh: () => void;
-  onStartAI: (mode: GameMode, aiCount: number) => void;
+  onStartAI: (mode: GameMode, aiCount: number, difficulty: Difficulty) => void;
 }) {
   const [id, setId] = useState('');
   const [aiMode, setAiMode] = useState<GameMode>(4);
   const [aiCount, setAiCount] = useState(3);
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
 
   return (
     <div style={{ padding: 16, fontFamily: 'system-ui, sans-serif', maxWidth: 560 }}>
@@ -58,12 +60,27 @@ export function HomeScreen({
               ))}
             </select>
           </label>
-          <button data-testid="start-ai" onClick={() => onStartAI(aiMode, aiCount)}>
+          <label>
+            Difficulty:{' '}
+            <select
+              data-testid="ai-difficulty-select"
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+            >
+              {DIFFICULTIES.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button data-testid="start-ai" onClick={() => onStartAI(aiMode, aiCount, difficulty)}>
             Start
           </button>
         </div>
         <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '4px 0 0' }}>
-          {aiMode - aiCount} human / {aiCount} AI{aiCount === aiMode ? ' (watch)' : ''}
+          {aiMode - aiCount} human / {aiCount} AI{aiCount === aiMode ? ' (watch)' : ''} ·{' '}
+          {difficulty === 'easy' ? 'heuristic' : `MCTS (${difficulty})`}
         </p>
       </section>
 
