@@ -4,6 +4,7 @@ import { isLegalPlacement } from '../src/game/placement';
 import { resolveCells } from '../src/game/pieces';
 import { generateLegalMoves } from '../src/game/moves';
 import { mctsStrategy } from '../src/game/ai/mcts';
+import { chooseMove } from '../src/game/ai/heuristic';
 
 // MCTS is expensive; keep the unit config tiny. Strength (vs heuristic/random)
 // is validated in the benchmark / Run H, not here.
@@ -31,6 +32,25 @@ describe('mctsStrategy', () => {
     expect(mctsStrategy(fast)(G, 'blue', seededRng())).toEqual(
       mctsStrategy(fast)(G, 'blue', seededRng()),
     );
+  });
+
+  it('time-budget mode returns a legal move', () => {
+    const G = createInitialState(4);
+    const move = mctsStrategy({ timeBudgetMs: 50, minIterations: 1, rolloutDepth: 4, beam: 6 })(
+      G,
+      'blue',
+      seededRng(),
+    );
+    expect(move).not.toBeNull();
+    expect(isLegalPlacement(G, 'blue', move!.pieceId, resolveCells(move!))).toBe(true);
+  });
+
+  it('falls back to the heuristic when too few iterations complete', () => {
+    const G = createInitialState(4);
+    // Tiny budget + huge trust threshold forces the fallback path; a constant rng
+    // makes both the fallback and a direct chooseMove pick the same tie-break.
+    const move = mctsStrategy({ timeBudgetMs: 1, minIterations: 1e9 })(G, 'blue', () => 0);
+    expect(move).toEqual(chooseMove(G, 'blue', () => 0));
   });
 });
 

@@ -20,15 +20,31 @@ import { remainingSquares } from '../scoring';
 import { COLOR_ORDER } from '../types';
 import type { Cell, Color, GameState, PieceId, Placement } from '../types';
 import { cloneState, recomputeStuck, applyAndAdvance } from './simstate';
-import { scorePlacement, WEIGHTS } from './heuristic';
+import { chooseMove, scorePlacement, WEIGHTS } from './heuristic';
 import type { Strategy } from './arena';
 
 /** Total squares one color owns across all 21 pieces (sum of sizes). */
 const TOTAL_SQUARES = 89;
 
 export interface MctsConfig {
-  /** Simulations (select→expand→rollout→backprop) per move decision. */
+  /**
+   * Fixed simulation count per move. Used when `timeBudgetMs` is unset — this is
+   * the deterministic mode the arena and tests rely on for reproducibility.
+   */
   iterations: number;
+  /**
+   * If set (> 0), search until this many milliseconds elapse instead of a fixed
+   * `iterations` count (for live play). Nondeterministic — iterations completed
+   * depend on machine speed. Takes precedence over `iterations` when set.
+   */
+  timeBudgetMs?: number;
+  /**
+   * Trust threshold: if the search completes fewer than this many iterations
+   * (e.g. a too-small budget on a slow machine), the tree is deemed
+   * untrustworthy and we fall back to the heuristic's move. A tunable knob for
+   * "how little search is too little" — not a magic constant.
+   */
+  minIterations: number;
   /** UCT exploration constant. */
   explorationC: number;
   /** Rollout move policy. */
@@ -41,6 +57,7 @@ export interface MctsConfig {
 
 const DEFAULTS: MctsConfig = {
   iterations: 150,
+  minIterations: 8,
   explorationC: Math.SQRT2,
   rolloutPolicy: 'heuristic',
   rolloutDepth: 0,
@@ -247,10 +264,15 @@ function backprop(leaf: Node, reward: Float64Array): void {
   }
 }
 
-/** Build an MCTS strategy. Returns the most-visited root move (robust child). */
+/**
+ * Build an MCTS strategy. Runs either a fixed `iterations` count (deterministic)
+ * or until `timeBudgetMs` elapses (live play), then returns the most-visited root
+ * move (robust child). If fewer than `minIterations` completed, the tree is too
+ * shallow to trust, so it falls back to the heuristic's move.
+ */
 export function mctsStrategy(config: Partial<MctsConfig> = {}): Strategy {
   const cfg: MctsConfig = { ...DEFAULTS, ...config };
-  return (G, _color, rng) => {
+  return (G, color, rng) => {
     const rootG = cloneState(G);
     recomputeStuck(rootG);
     const root = makeNode(rootG);
@@ -259,11 +281,20 @@ export function mctsStrategy(config: Partial<MctsConfig> = {}): Strategy {
     if (rootMoves.length === 0) return null;
     if (rootMoves.length === 1) return rootMoves[0];
 
-    for (let i = 0; i < cfg.iterations; i++) {
+    // Time-budget mode checks the deadline between iterations (worst-case
+    // overshoot is one rollout); otherwise run the fixed iteration count.
+    const timed = cfg.timeBudgetMs != null && cfg.timeBudgetMs > 0;
+    const deadline = timed ? Date.now() + cfg.timeBudgetMs! : 0;
+    let iters = 0;
+    while (timed ? Date.now() < deadline : iters < cfg.iterations) {
       const leaf = treePolicy(root, cfg, rng);
       const reward = leaf.terminal ? rewardVector(leaf.G) : rollout(leaf.G, cfg, rng);
       backprop(leaf, reward);
+      iters++;
     }
+
+    // Too little search to trust the tree → defer to the heuristic.
+    if (iters < cfg.minIterations) return chooseMove(rootG, color, rng);
 
     // Robust child: highest visit count (ties broken by rng).
     let best: Node[] = [];
