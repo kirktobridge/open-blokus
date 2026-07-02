@@ -1,4 +1,5 @@
-import { BOARD_SIZE } from './board';
+import { BOARD_SIZE, idx, inBounds, diagNeighbors } from './board';
+import { CORNERS } from './modes';
 import { resolveCells, cellsKey } from './pieces';
 import { isLegalPlacement } from './placement';
 import type { Cell, Color, GameState, PieceId, Placement, Rotation } from './types';
@@ -41,18 +42,99 @@ function transformsFor(pieceId: PieceId): Transform[] {
   return result;
 }
 
-/** All legal placements for `color` in the current state. */
-export function generateLegalMoves(G: GameState, color: Color): Placement[] {
-  const moves: Placement[] = [];
+/**
+ * The empty "anchor" cells that a legal placement for `color` must cover: every
+ * legal placement after the first move touches a cell diagonally adjacent to the
+ * color's own pieces, and the first move must cover the color's start corner. So
+ * candidate placements only need to be tried where a piece-cell lands on an
+ * anchor — a small set — rather than over the whole board. Returned as flat
+ * board indices.
+ */
+function anchorCells(G: GameState, color: Color): number[] {
+  if (!G.colors[color].hasStarted) {
+    const corner = CORNERS[color];
+    const ci = idx(corner.x, corner.y);
+    return G.board[ci] === null ? [ci] : [];
+  }
+  const anchors = new Set<number>();
+  for (let i = 0; i < G.board.length; i++) {
+    if (G.board[i] !== color) continue;
+    const x = i % BOARD_SIZE;
+    const y = (i / BOARD_SIZE) | 0;
+    for (const d of diagNeighbors({ x, y })) {
+      if (inBounds(d.x, d.y)) {
+        const di = idx(d.x, d.y);
+        if (G.board[di] === null) anchors.add(di);
+      }
+    }
+  }
+  return [...anchors];
+}
+
+/**
+ * Visit each unique candidate placement offset for `color` — one per (piece,
+ * transform, anchor-aligned position) — deduped per transform. `visit` returns
+ * true to stop early. This is the shared anchor-restricted enumeration behind
+ * both generateLegalMoves and hasAnyMove.
+ */
+function eachCandidate(
+  G: GameState,
+  color: Color,
+  visit: (pieceId: PieceId, t: Transform, ox: number, oy: number) => boolean,
+): void {
+  const anchors = anchorCells(G, color);
+  if (anchors.length === 0) return;
   for (const pieceId of G.colors[color].remaining) {
     for (const t of transformsFor(pieceId)) {
-      for (let y = 0; y <= BOARD_SIZE - t.height; y++) {
-        for (let x = 0; x <= BOARD_SIZE - t.width; x++) {
-          const cells = t.cells.map((c) => ({ x: c.x + x, y: c.y + y }));
-          if (isLegalPlacement(G, color, pieceId, cells)) {
-            moves.push({ pieceId, rotation: t.rotation, reflected: t.reflected, x, y });
-          }
+      const seen = new Set<number>();
+      for (const anchorIdx of anchors) {
+        const ax = anchorIdx % BOARD_SIZE;
+        const ay = (anchorIdx / BOARD_SIZE) | 0;
+        for (const c of t.cells) {
+          const ox = ax - c.x;
+          const oy = ay - c.y;
+          if (ox < 0 || oy < 0 || ox > BOARD_SIZE - t.width || oy > BOARD_SIZE - t.height) continue;
+          const key = oy * BOARD_SIZE + ox;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          if (visit(pieceId, t, ox, oy)) return;
         }
+      }
+    }
+  }
+}
+
+/**
+ * All legal placements for `color`. Output is identical (same set and same order:
+ * piece → transform → y → x) to a full-board scan, but only positions anchored to
+ * the color's frontier are tested.
+ */
+export function generateLegalMoves(G: GameState, color: Color): Placement[] {
+  const moves: Placement[] = [];
+  const anchors = anchorCells(G, color);
+  if (anchors.length === 0) return moves;
+  for (const pieceId of G.colors[color].remaining) {
+    for (const t of transformsFor(pieceId)) {
+      const offsets: Cell[] = [];
+      const seen = new Set<number>();
+      for (const anchorIdx of anchors) {
+        const ax = anchorIdx % BOARD_SIZE;
+        const ay = (anchorIdx / BOARD_SIZE) | 0;
+        for (const c of t.cells) {
+          const ox = ax - c.x;
+          const oy = ay - c.y;
+          if (ox < 0 || oy < 0 || ox > BOARD_SIZE - t.width || oy > BOARD_SIZE - t.height) continue;
+          const key = oy * BOARD_SIZE + ox;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const cells = t.cells.map((cc) => ({ x: cc.x + ox, y: cc.y + oy }));
+          if (isLegalPlacement(G, color, pieceId, cells)) offsets.push({ x: ox, y: oy });
+        }
+      }
+      // Emit in (y, x) order to match the old full-scan ordering exactly.
+      offsets.sort((a, b) => a.y - b.y || a.x - b.x);
+      for (const o of offsets) {
+        moves.push({ pieceId, rotation: t.rotation, reflected: t.reflected, x: o.x, y: o.y });
       }
     }
   }
@@ -61,15 +143,14 @@ export function generateLegalMoves(G: GameState, color: Color): Placement[] {
 
 /** Whether `color` has at least one legal placement (short-circuits). */
 export function hasAnyMove(G: GameState, color: Color): boolean {
-  for (const pieceId of G.colors[color].remaining) {
-    for (const t of transformsFor(pieceId)) {
-      for (let y = 0; y <= BOARD_SIZE - t.height; y++) {
-        for (let x = 0; x <= BOARD_SIZE - t.width; x++) {
-          const cells = t.cells.map((c) => ({ x: c.x + x, y: c.y + y }));
-          if (isLegalPlacement(G, color, pieceId, cells)) return true;
-        }
-      }
+  let found = false;
+  eachCandidate(G, color, (pieceId, t, ox, oy) => {
+    const cells = t.cells.map((c) => ({ x: c.x + ox, y: c.y + oy }));
+    if (isLegalPlacement(G, color, pieceId, cells)) {
+      found = true;
+      return true;
     }
-  }
-  return false;
+    return false;
+  });
+  return found;
 }

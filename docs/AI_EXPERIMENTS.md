@@ -324,3 +324,13 @@ stack on top. It's slow (~100–1000× the heuristic).
   rollouts (the strength driver) with a cheap strong estimate.
 - **Mode coverage** — all runs are 4p. 2p (you steer two colors) and 3p (shared
   color) have different blocking dynamics, untested.
+
+## Engine note — anchor-restricted move generation
+
+`generateLegalMoves`/`hasAnyMove` no longer scan all 400 board cells. Every legal
+placement (post-first-move) must cover an empty cell diagonally adjacent to the
+color's own pieces, so we only test positions anchored to that small frontier
+set. Output is byte-identical to the full scan (differential test in
+[tests/moves-opt.test.ts](../tests/moves-opt.test.ts)); the bottleneck
+`generateLegalMoves` got **~16× faster** (47 → 766 calls/s on mid-game positions),
+i.e. ~16× more MCTS iterations per time budget at no accuracy cost.
