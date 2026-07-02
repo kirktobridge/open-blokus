@@ -331,3 +331,21 @@ argues for narrowing beam and/or confirming with real time budgets.
 **Decision:** shipped budgets **fail** the ladder bar (medium < easy); latency
 bars pass. Fix = scale/narrow the beam by tier (medium → ~6, hard → keep ~16),
 realizing [AE5](../backlog/ai-engine.md); no budget/latency change needed. → F8.
+
+### Run J-confirm — beam fix under real time budgets (AE5)
+
+Applied the F8 fix (medium `beam=6`, hard `beam=16` in
+[difficulty.ts](../../../src/client/ai/difficulty.ts)) and re-ran the ladder with
+the **exact shipped configs** (real `timeBudgetMs`, phase-varying iterations — not
+the it30/it140 proxies):
+
+| matchup | A game-share | 95% CI | n | verdict |
+|---------|--------------|--------|---|---------|
+| medium(500ms,beam6) vs easy | **67.2%** | [58.7, 74.7] | 128 | PASS (was 31% at beam16) |
+| hard(2000ms,beam16) vs medium(500ms,beam6) | 63.0% | [50.8, 73.8] | 64 | PASS (lower CI grazes 50) |
+
+**Read:** the beam fix restores a monotonic, significant ladder under real budgets:
+**easy < medium (+17 pts) < hard (+13 pts)**. Medium flipped from *losing* to easy
+(31 %) to a clear win (67 %) with no budget/latency change. c2 at n=64 is solid but
+thin — worth more games if we want a tight hard↔medium margin.
+**Decision:** adopt. AE5 → won; AE10 fully resolved.

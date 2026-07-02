@@ -53,11 +53,12 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Cost / risk:** large — training pipeline + data. Blocked on logging infra.
 
 ### AE5 — Difficulty → beam scaling
-- **Status:** active — **shown necessary by AE10/F8**, not just a nice-to-have: at
-  the medium budget (~30 iters) `beam=16` *loses* to the heuristic; `beam≈6` wins
-  (66 %). The finding flipped from "does a wider beam help Hard?" to "**beam must
-  scale *down* with the (small, phase-varying) iteration budget or the low tier is
-  broken.**"
+- **Status:** **won / shipped** (Run J-confirm). Per-tier beam set in
+  [difficulty.ts](../../../src/client/ai/difficulty.ts) (medium 6, hard 16); under
+  **real time budgets** the ladder is monotonic and significant — medium 67 % vs
+  easy (was 31 % at beam 16), hard 63 % vs medium. The finding flipped from "does a
+  wider beam help Hard?" to "**beam must scale *down* with the small, phase-varying
+  iteration budget or the low tier is broken.**"
 - **Objective:** ship a per-tier (or budget-derived) beam so the difficulty ladder
   is monotonic. Rule of thumb from F8: `beam ≈ iters/6`.
 - **Hypothesis:** narrow beam at medium (~6), wider at hard (~16) restores

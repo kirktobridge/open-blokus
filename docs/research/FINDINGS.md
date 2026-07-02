@@ -89,11 +89,11 @@ the beam recovers it monotonically: `beam 12→51 %, 8→64 %, 6→66 %, 4→70 
 lever is the **beam:iterations ratio** (~5 rollouts/child; rule `beam ≈ iters/6`,
 matching the winning it40/beam8 of F6), not the time budget — which is why hard
 (139 iters / beam 16 ≈ 9 per child) is fine (77.8 % vs heuristic) and beats medium
-90.5 %. **Fix:** scale beam by tier (medium → ~6, hard → ~16); no latency change
-(both budgets' p95 move-time already clear the 2.5 s cap). Run J; drives [AE10 +
-AE5](backlog/ai-engine.md). Caveat: measured with fixed-iteration proxies for the
-phase-varying real budgets — real medium openings (~17 iters) are thinner still,
-reinforcing the narrow-beam fix; confirm under real time budgets before/with shipping.
+90.5 %. **Fix (shipped):** per-tier beam (medium → 6, hard → 16); no latency change
+(both budgets' p95 move-time already clear the 2.5 s cap). **Confirmed under real
+time budgets** (Run J-confirm): medium 67 % vs easy (was 31 % at beam 16), hard
+63 % vs medium — a monotonic, significant ladder. Runs J / J-confirm; resolved
+[AE10 + AE5](backlog/ai-engine.md).
 
 ---
 
