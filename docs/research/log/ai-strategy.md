@@ -283,3 +283,51 @@ set. Output is byte-identical to the full scan (differential test in
 [tests/moves-opt.test.ts](../../../tests/moves-opt.test.ts)); the bottleneck
 `generateLegalMoves` got **~16× faster** (47 → 766 calls/s on mid-game positions),
 i.e. ~16× more MCTS iterations per time budget at no accuracy cost.
+
+## Run J — AE10 difficulty-budget assessment (Leg B + versus + beam sweep)
+
+Assess/tune the shipped medium/hard time budgets ([AE10](../backlog/ai-engine.md)).
+Two legs then head-to-heads. Iteration-equivalents from **Leg B** (instrumented
+`mctsSearch(timeBudgetMs)`, iterations/move by phase, node):
+
+| budget | iters p50 | early | mid | late | move ms (p50/p95) |
+|--------|-----------|-------|-----|------|-------------------|
+| 500 ms (medium) | 30 | ~17 | ~44 | ~166 | 510 / 534 |
+| 2000 ms (hard) | 139 | ~66 | ~207 | ~892 | 2005 / 2028 |
+
+Budgets are **strongly phase-dependent** — early game (most branching) gets the
+*fewest* iterations. Latency bars **pass** (hard p95 = 2028 ms ≤ 2.5 s).
+
+Head-to-head at the median iteration-equivalents (`it30`≈medium, `it140`≈hard),
+full rollouts, **shipped beam=16**, pooled Wilson CI:
+
+| matchup | A game-share | 95% CI | n | verdict |
+|---------|--------------|--------|---|---------|
+| medium(it30) vs easy(heuristic) | **31.4%** | [24.7, 38.9] | 160 | **medium LOSES to easy** |
+| hard(it140) vs medium(it30) | 90.5% | [83.2, 94.8] | 100 | hard ≫ medium |
+| hard(it140) vs easy(heuristic) | 77.8% | [65.8, 86.4] | 60 | hard ≫ easy |
+
+Ladder as shipped: **hard(78 %) > easy > medium(31 %)** — inverted at the low tier.
+
+Beam sweep at the medium budget (`it30` vs heuristic), varying `beam`:
+
+| beam | game-share | 95% CI | verdict |
+|------|-----------|--------|---------|
+| 16 (shipped) | 31.4% | [24.7, 38.9] | loses |
+| 12 | 51.0% | [41.2, 60.8] | parity |
+| 8 | 63.7% | [53.7, 72.6] | beats |
+| 6 | 66.3% | [56.4, 75.0] | beats |
+| 4 | 70.3% | [60.5, 78.5] | beats |
+
+**Read:** the failure is the **beam:iterations ratio**, not the budget. 30 iters
+over 16 children ≈ 2 rollouts each (the robust-child pick is noise, worse than the
+heuristic's own #1); over ~6 children ≈ 5 rollouts each → meaningful re-ranking.
+Rule of thumb `beam ≈ iters/6` (Leg A's winning it40 used beam 8). Because time
+budgets deliver *few* iterations — fewest early game — a fixed wide beam is wrong;
+beam must scale with the budget. Caveat: `it30/it140` are median proxies for the
+phase-varying real budgets, so real medium openings (~17 iters) are even thinner —
+argues for narrowing beam and/or confirming with real time budgets.
+
+**Decision:** shipped budgets **fail** the ladder bar (medium < easy); latency
+bars pass. Fix = scale/narrow the beam by tier (medium → ~6, hard → keep ~16),
+realizing [AE5](../backlog/ai-engine.md); no budget/latency change needed. → F8.

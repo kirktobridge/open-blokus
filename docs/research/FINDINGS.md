@@ -79,6 +79,22 @@ Output is byte-identical to the full scan (differential test in
 766 calls/s mid-game — i.e. ~16× more MCTS iterations per time budget at no
 accuracy cost. Details in [log/ai-strategy.md](log/ai-strategy.md) (Engine note).
 
+### F8 — MCTS `beam` must scale with the iteration budget; a fixed wide beam breaks the low tier
+`significant`. Time budgets deliver *few* iterations (Leg B: 500 ms ≈ 30/move, and
+only ~17 early-game where branching is highest; 2000 ms ≈ 139). At the shipped
+default `beam=16`, the ~30-iteration medium tier spreads ~2 rollouts over 16
+children, so the most-visited pick is noise — **medium *loses* to the heuristic**
+(31.4 % game-share, [24.7, 38.9], n=160) despite being the "harder" tier. Narrowing
+the beam recovers it monotonically: `beam 12→51 %, 8→64 %, 6→66 %, 4→70 %`. The
+lever is the **beam:iterations ratio** (~5 rollouts/child; rule `beam ≈ iters/6`,
+matching the winning it40/beam8 of F6), not the time budget — which is why hard
+(139 iters / beam 16 ≈ 9 per child) is fine (77.8 % vs heuristic) and beats medium
+90.5 %. **Fix:** scale beam by tier (medium → ~6, hard → ~16); no latency change
+(both budgets' p95 move-time already clear the 2.5 s cap). Run J; drives [AE10 +
+AE5](backlog/ai-engine.md). Caveat: measured with fixed-iteration proxies for the
+phase-varying real budgets — real medium openings (~17 iters) are thinner still,
+reinforcing the narrow-beam fix; confirm under real time budgets before/with shipping.
+
 ---
 
 ## Method lessons (the ones we paid for)

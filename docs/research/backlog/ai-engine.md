@@ -53,15 +53,22 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Cost / risk:** large — training pipeline + data. Blocked on logging infra.
 
 ### AE5 — Difficulty → beam scaling
-- **Status:** proposed
-- **Objective:** decide whether difficulty tiers should scale MCTS `beam`
-  (per-node action pruning) in addition to time budget.
-- **Hypothesis:** a wider beam at Hard explores more candidate moves per node and
-  may matter more than raw time on positions with many strong options.
-- **Method:** benchmark `beam ∈ {10, 16, 24, all}` at a fixed budget vs heuristic;
-  measure beam×budget interactions.
-- **Success criteria:** a beam setting that beats time-only at matched wall-clock.
-- **Cost / risk:** pure benchmark. Keep time-only until measured.
+- **Status:** active — **shown necessary by AE10/F8**, not just a nice-to-have: at
+  the medium budget (~30 iters) `beam=16` *loses* to the heuristic; `beam≈6` wins
+  (66 %). The finding flipped from "does a wider beam help Hard?" to "**beam must
+  scale *down* with the (small, phase-varying) iteration budget or the low tier is
+  broken.**"
+- **Objective:** ship a per-tier (or budget-derived) beam so the difficulty ladder
+  is monotonic. Rule of thumb from F8: `beam ≈ iters/6`.
+- **Hypothesis:** narrow beam at medium (~6), wider at hard (~16) restores
+  `easy < medium < hard`; may further tune hard (Leg A hints it160/beam12 = 85 %
+  > it140/beam16 = 78 %).
+- **Method:** set beam per tier in [difficulty.ts](../../../src/client/ai/difficulty.ts);
+  re-confirm each ladder step head-to-head under **real time budgets** (not just
+  fixed-iteration proxies), Wilson CI.
+- **Success criteria:** each step beats the one below by ≥ 8 pts game-share, CI
+  clear of 50, at the shipped budgets/latency.
+- **Cost / risk:** tiny code change + a confirmation run.
 
 ### AE6 — Push the budget ladder to saturation
 - **Status:** proposed (pure benchmarking; low priority)
@@ -103,3 +110,33 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   vs the current implementation; benchmark.
 - **Success criteria:** large iters/s gain, byte-identical output.
 - **Cost / risk:** large rewrite of the rules core. Only pursue if AE2 falls short.
+
+### AE10 — Assess & tune difficulty time-budgets
+- **Status:** resolved (Run J / F8) — **latency bars pass**, but the **ladder is
+  inverted**: shipped medium (500 ms, `beam=16`) *loses* to easy (heuristic). The
+  budgets are fine; the fix is **beam-scaling → hands off to AE5**. Re-confirm
+  under real time budgets when applying the fix.
+- **Objective:** choose the medium/hard time budgets (`BUDGET_MS` in
+  [difficulty.ts](../../../src/client/ai/difficulty.ts)) that give a monotonic,
+  well-separated difficulty ladder within a latency cap — decides what ships.
+- **Hypothesis:** strength **saturates** (F6/Run I: +5 pts per iteration doubling,
+  mid-90s ceiling), so the current `500 / 2000 ms` likely both land in the strong
+  80–90 % band; the **medium↔hard head-to-head gap will be small** and the ladder
+  is better spaced by handicapping the *low* end than by spending more at the top.
+- **Method:** two legs, then a head-to-head.
+  (A) *Strength vs iterations* — from the arena (Runs H/I + fill gaps via
+  `runTournamentSeeds`, Wilson CI): full-rollout game-share vs heuristic is
+  `it40→68 · it80→77 · it160→85 · it320→90`.
+  (B) *Iterations vs time on the device* — instrument `mctsSearch(timeBudgetMs)` to
+  log iterations/move **by game phase** (early/mid/late differ); node harness first,
+  confirm in the browser Worker (structured-clone + scheduling overhead).
+  Compose A×B → strength-vs-time; then run **heuristic vs medium-iters vs
+  hard-iters** seed-averaged, both readouts + Wilson CI.
+- **Success criteria (pre-registered):** (1) each ladder step beats the one below by
+  **≥ 8 pts game-share head-to-head, CI clear of 50**; (2) **hard 95th-pctile move
+  latency ≤ 2.5 s** on reference hardware. If medium↔hard is inside noise → re-space
+  by handicapping medium (fewer iters, or a `beam` / `rolloutDepth` handicap — ties
+  into AE5) and re-test.
+- **Cost / risk:** mostly pure benchmark + light instrumentation; may add a
+  difficulty handicap knob if re-spacing is needed.
+- **Log:** —
