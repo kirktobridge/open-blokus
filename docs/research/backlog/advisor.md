@@ -18,8 +18,8 @@ All three below are **blocked on game logging** — roadmap
 ### AD2 — Position evaluator ("how am I doing right now?")
 - **Status:** proposed (blocked on backlog P1 logging)
 - **Objective:** score the current game state from a color's perspective.
-- **Hypothesis:** the same intelligence the bot uses (heuristic today, MCTS/value-net
-  later) can be surfaced as a state-of-game readout without a separate model.
+- **Hypothesis:** the same intelligence the bot uses (heuristic **and now MCTS** —
+  value-net later) can be surfaced as a state-of-game readout without a separate model.
 - **Method:** expose the existing eval as a per-color score; validate that its
   ranking tracks eventual game outcomes on logged games.
 - **Success criteria:** evaluator score correlates with final placement/win on held-out
@@ -31,7 +31,9 @@ All three below are **blocked on game logging** — roadmap
 - **Status:** proposed (blocked on P1 logging, AD2)
 - **Objective:** turn a position into a calibrated win-probability per color.
 - **Hypothesis:** MCTS rollout outcomes and/or a value model over logged games yield
-  a probability that is *calibrated*, not just correctly ordered.
+  a probability that is *calibrated*, not just correctly ordered. (The shipped
+  `mctsSearch` already accumulates a per-color reward vector = rollout win-rate — a
+  ready signal source once P1 logging exists to validate it.)
 - **Method:** derive win-prob from rollout win-rates or a trained value head; measure
   calibration (reliability curve) on logged games.
 - **Success criteria:** calibrated within tolerance across game phases.

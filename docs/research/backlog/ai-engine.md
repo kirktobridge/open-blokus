@@ -10,18 +10,26 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 
 ---
 
-### AE1 — Ship MCTS as the "hard" offline bot — SHIPPED
+### AE1 — Ship MCTS as the offline bot — SHIPPED
 - **Status:** won / shipped. The research bar (MCTS beats the heuristic, CI clear of
-  50) was met by Runs H–I ([FINDINGS](../FINDINGS.md) F6); the delivery shipped as
-  time-budget MCTS + difficulty tiers via a Web Worker
-  ([difficulty.ts](../../../src/client/ai/difficulty.ts): easy = heuristic,
-  medium/hard = full-rollout MCTS budgets).
-- **Kept here as the record** linking the D–I research arc to its deployment. Further
-  *product* work on the bot (UX, latency tuning in-app) belongs in
-  the [product backlog](../../product/BACKLOG.md); the open *research* lever is AE2 (make it faster).
+  50) was met by Runs H–I ([FINDINGS](../FINDINGS.md) F6); delivered as a Web-Worker
+  bot with a **four-tier difficulty ladder** ([difficulty.ts](../../../src/client/ai/difficulty.ts)):
+  easy = heuristic, medium/hard = time-budget MCTS (500 / 2000 ms), **extreme =
+  MCTS with no time budget** (fixed it500). Beam is scaled per tier (F8/AE5) after
+  the assessment found a fixed wide beam broke the low tier.
+- **Ladder is fully measured + monotonic** (Runs J / J-confirm / K): easy < medium
+  (67 % vs easy) < hard (63 % vs medium) < extreme (79 % vs hard), every step CI-clear
+  of 50.
+- **Kept here as the record** linking the D–K research arc to its deployment. Further
+  *product* work on the bot (the long-move UX for extreme; networked bot-fill) lives
+  in the [product backlog](../../product/BACKLOG.md) (Epic: AI opponent); the open
+  *research* levers are AE2 (faster) and AE3 (RAVE).
 
 ### AE2 — Make MCTS faster (more iterations per time cap)
-- **Status:** proposed (biggest lever on shipped strength — each budget doubling ≈ +5 pts)
+- **Status:** proposed (partly banked — the anchor optimization already shipped a
+  **~16× move-gen speedup**, F7/Run J engine note; this entry is now the *further*
+  gains beyond that. Still valuable: each budget doubling ≈ +5 pts, and F8 showed
+  medium is iteration-starved early game.)
 - **Objective:** raise iterations-per-second so more search fits the AE1 time cap.
 - **Hypothesis:** an incremental / cached `generateLegalMoves` removes the ~34 ms
   mid-game bottleneck; strength rises with the extra iterations bought.

@@ -62,6 +62,41 @@ The player-facing intelligence surface. Each feature **depends on a research que
 
 ---
 
+## Epic: AI opponent (offline)
+
+The single-player-vs-computer surface. The *strength* questions live in
+[../research/backlog/ai-engine.md](../research/backlog/ai-engine.md) (AE1–AE10);
+this epic owns the user-facing feature + its UX.
+
+### P9 — Offline vs-AI with difficulty tiers — SHIPPED
+- **Status:** shipped. Four-tier ladder ([difficulty.ts](../../src/client/ai/difficulty.ts)):
+  **easy** = instant heuristic; **medium / hard** = time-budget MCTS (500 / 2000 ms);
+  **extreme** = MCTS with no time budget (fixed it500). Runs in a Web Worker (UI stays
+  responsive); difficulty selector in HomeScreen. Strength ladder measured + monotonic
+  (research AE1 / Runs J–K); beam scaled per tier so the low tier isn't iteration-starved
+  (F8/AE5).
+- **Value:** single-player practice at a real, verified difficulty ramp.
+- **Remaining:** long-move UX for `extreme` (→ P10).
+
+### P10 — Long-move feedback for the strongest tier
+- **Status:** proposed (independent; small).
+- **Value:** `extreme` has *no time budget*, so early-game moves take ~12 s; the plain
+  "AI thinking…" text shows no progress and can read as "stuck / broken." The strongest
+  tier shouldn't feel frozen.
+- **Scope:** progress/elapsed feedback during a long search (spinner, "thinking… Ns",
+  or a soft-cap/label warning it's slow). Optionally surface iterations done. Could
+  reuse a worker→UI progress message.
+- **Depends on:** nothing (the worker already reports back per move).
+
+### P11 — Networked bot-fill (bots in online matches)
+- **Status:** deferred. AI is offline-only today; filling empty seats in lobby/online
+  matches with bots is a separate feature (server- or client-driven, plus turn-order
+  and disconnect handling). Noted deferred in ARCHITECTURE §9.
+- **Value:** start/again online games without waiting for a full human lobby.
+- **Depends on:** server integration decisions; reuses the shipped bot strategies.
+
+---
+
 ## Epic: Game feel & UI
 
 Look, feel, and interaction. Curated from [../dev_notes/OPEN_IDEAS.md](../dev_notes/OPEN_IDEAS.md)
