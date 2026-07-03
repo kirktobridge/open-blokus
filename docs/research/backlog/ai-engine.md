@@ -40,7 +40,10 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Cost / risk:** moderate rules-core work; correctness guarded by differential test.
 
 ### AE3 — RAVE / AMAF value sharing
-- **Status:** proposed
+- **Status:** no-win (Runs L+M / F9) — implemented + measured; **54.0 % game-share
+  vs plain UCT at matched iters, CI [49.1, 58.8], n=400**, bar (CI clear) not met.
+  Kept behind `rave:false` (default, zero-cost) for a possible revisit at other budgets.
+- **Log:** [Run L + Run M](../log/ai-strategy.md) → [F9](../FINDINGS.md)
 - **Objective:** warm up UCT estimates from rollout move statistics (All-Moves-As-First).
 - **Hypothesis:** RAVE (Option B approximation) helps early in the search, buying
   strength at equal iteration budget — standard MCTS acceleration.

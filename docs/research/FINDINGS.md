@@ -95,6 +95,20 @@ time budgets** (Run J-confirm): medium 67 % vs easy (was 31 % at beam 16), hard
 63 % vs medium — a monotonic, significant ladder. Runs J / J-confirm; resolved
 [AE10 + AE5](backlog/ai-engine.md).
 
+### F9 — RAVE / AMAF value sharing does not buy strength in Blokus MCTS
+`replicated` (no-win). At **matched iterations** (150 iters, beam 16, rolloutDepth 12),
+RAVE vs plain UCT pooled to **54.0 % game-share, CI [49.1, 58.8], n=400** (Runs L+M,
+two independent seed batches) — the pre-registered "CI clear of 50 %" bar is **not
+met**; the second batch regressed to 52 %, so the first batch's 56 % was mostly noise.
+Even the small nominal edge is illusory as a *shipping* case: at matched **wall-clock**
+RAVE fares worse, paying AMAF tracking + sibling-backprop overhead per iteration for no
+iteration-efficiency gain. Two likely reasons AMAF underperforms here: (1) the
+heuristic beam already supplies the early-search prior RAVE exists to add, and (2)
+Blokus placements rarely recur across lines and a move's value is strongly
+position-dependent, so the "all-moves-as-first" assumption carries little signal. Code
+kept behind `rave:false` (default, zero-cost) for a possible revisit at other budgets.
+Run L/M; closed [AE3](backlog/ai-engine.md) as no-win.
+
 ---
 
 ## Method lessons (the ones we paid for)
