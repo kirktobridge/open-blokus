@@ -349,3 +349,19 @@ the it30/it140 proxies):
 (31 %) to a clear win (67 %) with no budget/latency change. c2 at n=64 is solid but
 thin — worth more games if we want a tight hard↔medium margin.
 **Decision:** adopt. AE5 → won; AE10 fully resolved.
+
+### Run K — extreme tier confirmation (no time budget)
+
+The `extreme` tier (MCTS iterations mode, `it500` / `beam 20` / full rollouts, no
+`timeBudgetMs`) vs `hard` (2000 ms), exact shipped configs, sharded:
+
+| matchup | game-share | 95% CI | n | verdict |
+|---------|-----------|--------|---|---------|
+| extreme(it500) vs hard(2000ms) | **78.6%** | [66.7, 87.1] | 60 | PASS (+28.6 pts) |
+
+**Read:** extreme clears the top of the ladder decisively — the iterations→strength
+curve (F6/Run I, 90 % at it320) keeps paying past the time-budget tiers. Full
+shipped ladder now measured + monotonic: easy < medium (67 % vs easy) < hard (63 %
+vs medium) < extreme (79 % vs hard), every step CI-clear of 50. Cost: ~6–7 min per
+extreme-heavy game (≈ 12 s/move early); acceptable only because "no time budget" is
+the point of the tier. **Decision:** adopt; ladder complete.
