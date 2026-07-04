@@ -12,9 +12,9 @@ A backlog is a **prioritized pool, not a committed plan** — sequencing/phasing
 developer dump; this file is the curated version. Rules → [../GAME_SPEC.md](../GAME_SPEC.md);
 structure → [../ARCHITECTURE.md](../ARCHITECTURE.md).
 
-Status vocab: `proposed` / `partial` (some milestones shipped) / `shipped` /
-`deferred`. Product features don't carry a hypothesis or a game-share bar — that's what
-distinguishes them from a research entry.
+Status vocab: `proposed` / `in-progress` (being built this session/branch) / `partial`
+(some milestones shipped) / `shipped` / `deferred`. Product features don't carry a
+hypothesis or a game-share bar — that's what distinguishes them from a research entry.
 
 ---
 
@@ -69,12 +69,9 @@ The single-player-vs-computer surface. The *strength* questions live in
 this epic owns the user-facing feature + its UX.
 
 ### P9 — Offline vs-AI with difficulty tiers — SHIPPED
-- **Status:** shipped. Four-tier ladder ([difficulty.ts](../../src/client/ai/difficulty.ts)):
-  **easy** = instant heuristic; **medium / hard** = time-budget MCTS (500 / 2000 ms);
-  **extreme** = MCTS with no time budget (fixed it500). Runs in a Web Worker (UI stays
-  responsive); difficulty selector in HomeScreen. Strength ladder measured + monotonic
-  (research AE1 / Runs J–K); beam scaled per tier so the low tier isn't iteration-starved
-  (F8/AE5).
+- **Status:** shipped — four-tier ladder, measured monotonic (research AE1, Runs J–K;
+  per-tier beam F8/AE5). Details: [difficulty.ts](../../src/client/ai/difficulty.ts)
+  + ARCHITECTURE §9.
 - **Value:** single-player practice at a real, verified difficulty ramp.
 - **Remaining:** long-move UX for `extreme` (→ P10).
 
