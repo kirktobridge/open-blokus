@@ -30,6 +30,10 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   **~16× move-gen speedup**, F7/Run J engine note; this entry is now the *further*
   gains beyond that. Still valuable: each budget doubling ≈ +5 pts, and F8 showed
   medium is iteration-starved early game.)
+- **Note:** Run N / F10 profile confirms the gen/legality path is the bottleneck
+  (~75 % of MCTS time). This entry (cache/incrementalise) and **AE9 (bitboards)**
+  target the same hot path; AE9 is the sharper tool — pursue it first, fold any
+  caching wins in after.
 - **Objective:** raise iterations-per-second so more search fits the AE1 time cap.
 - **Hypothesis:** an incremental / cached `generateLegalMoves` removes the ~34 ms
   mid-game bottleneck; strength rises with the extra iterations bought.
@@ -114,14 +118,20 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Cost / risk:** none new (mechanism exists). **Don't invest more for 4p.**
 
 ### AE9 — Bitboard move generation
-- **Status:** deferred (only if the anchor optimization isn't enough for the time budget)
+- **Status:** proposed — **next candidate** (Run N / F10). Profiling shows MCTS is
+  legality-bound: `isLegalPlacement` is 31 % of self-time and ~75 % goes to
+  cell-by-cell legality + gen. Bitboards attack that shared hot path directly and
+  speed rollout *and* gen at once. Promoted from `deferred`.
 - **Objective:** faster legality checks via bitwise ops.
 - **Hypothesis:** representing occupancy + per-color corner/edge masks as bit words
   computes legality far faster than the current scan, same results.
 - **Method:** rewrite the rules-core legality path on bitboards; differential-test
   vs the current implementation; benchmark.
-- **Success criteria:** large iters/s gain, byte-identical output.
-- **Cost / risk:** large rewrite of the rules core. Only pursue if AE2 falls short.
+- **Success criteria:** large iters/s gain, byte-identical output (differential test),
+  translating to higher game-share at fixed wall-clock.
+- **Cost / risk:** large rewrite of the rules core (20×20 = 400 cells → 7×`BigInt`/
+  `Uint32` words, or per-row masks). Correctness guarded by differential test vs the
+  current scan. See [F10](../FINDINGS.md) for the profile that justifies it.
 
 ### AE10 — Assess & tune difficulty time-budgets
 - **Status:** resolved (Run J / F8) — **latency bars pass**, but the **ladder is

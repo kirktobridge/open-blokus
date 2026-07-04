@@ -418,3 +418,39 @@ highly position-dependent), undercutting the AMAF assumption.
 **Decision:** **no-win.** Pre-registered bar (CI clear of 50%) not met at n=400,
 replicated across two seed batches. Do not ship RAVE. Code kept behind `rave:false`
 (default, zero-cost) for future revisit at other budgets. AE3 → no-win. → F9.
+
+### Run N — MCTS profile: where does a 150-iter move spend its time? (AE2/AE9 diagnostic)
+
+Not a tournament (no win/loss/CI) — a CPU profile to decide the AE2-vs-AE9-vs-AE4
+fork off real numbers instead of guessing (M3). `node:inspector` CPU profile of one
+150-iter plain-UCT search (beam 16, rolloutDepth 12) on a representative mid-opening
+position (8 plies in, **541 legal moves** — near-peak branching), 20× repeat for
+sample count. Script: [scripts/profile-mcts.ts](../../../scripts/profile-mcts.ts).
+~390 ms/search.
+
+Phase self-time: rollout **46%**, move-gen **19.5%**, tree+backprop **0.7%**, other
+33.7% (almost all low-level board primitives). Top leaves:
+
+| fn | self-time | role |
+|----|-----------|------|
+| `isLegalPlacement` | 31.4% | legality test (adjacency/corner/overlap) |
+| `generateLegalMoves` | 17.9% | full move enumeration |
+| `inBounds` | 11.1% | per-cell board-bounds guard |
+| `sampleLegalMove` | 11.0% | rollout rejection sampler (→ isLegalPlacement) |
+| `get` / `idx` | 7.1% / 6.0% | per-cell board reads |
+| `isSameColor` / `newFrontier` | 1.0% / 2.6% | adjacency/corner scan guts |
+
+**Read:** attributing the primitives to their callers, **~75% of MCTS time is
+legality-testing + move generation, both dominated by cell-by-cell board scans**
+(`isLegalPlacement` alone is 31%). Rollout's 46% is itself mostly `sampleLegalMove`
+calling `isLegalPlacement` up to 24×/move. `tree/backprop` is 0.7% — which is exactly
+why AE3's RAVE (a tree-stats tweak) couldn't move strength: it optimized a rounding
+error. The bottleneck is **shared** by rollout and gen — the per-cell legality
+primitive — so the lever that speeds both at once is a **bitboard** board
+representation (AE9): occupied/adjacency/corner masks turn `isLegalPlacement` into a
+few AND/ORs instead of `inBounds`+`get`+`isSameColor` loops.
+
+**Decision:** promote **AE9 (bitboards)** to the next active candidate; it attacks the
+~75% hot path and accelerates rollout *and* gen together. AE4 (learned eval) is the
+wrong tool here — rollout cost is legality *sampling*, not *evaluation* — and stays
+blocked on logging. → F10.

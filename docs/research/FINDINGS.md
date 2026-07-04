@@ -109,6 +109,19 @@ position-dependent, so the "all-moves-as-first" assumption carries little signal
 kept behind `rave:false` (default, zero-cost) for a possible revisit at other budgets.
 Run L/M; closed [AE3](backlog/ai-engine.md) as no-win.
 
+### F10 — MCTS is legality-bound, not eval- or tree-bound: ~75% of time is cell-by-cell legality/gen
+`significant` (single well-controlled CPU profile, Run N). On a peak-branching
+mid-opening position (541 legal moves), a 150-iter search spends **rollout 46 % /
+move-gen 19.5 % / tree+backprop 0.7 %**; by leaf function `isLegalPlacement` is 31 %
+and, folding in its per-cell primitives (`inBounds`, `get`, `idx`, `isSameColor`),
+**~75 % of all time is legality-testing + move generation done cell-by-cell**. Two
+consequences: (1) it explains F9 — RAVE tweaks the 0.7 % tree layer, so it *couldn't*
+matter; (2) it picks the next lever — a **bitboard** representation (occupied /
+adjacency / corner masks) collapses the per-cell primitives into mask ops and speeds
+*both* rollout and gen, unlike a learned eval (AE4), which only touches rollout
+evaluation while our rollout cost is legality *sampling*. Points to [AE9](backlog/ai-engine.md)
+as the next win. Run N.
+
 ---
 
 ## Method lessons (the ones we paid for)
@@ -133,3 +146,13 @@ The F4 plateau looked like "no better eval exists" but was partly the
 heuristic-ordered beam constraining search. We only trusted the conclusion after
 Run F removed the confound (beam=all) and *still* saw no gain. When a result is
 suspiciously flat, ask what the harness is holding fixed.
+
+### M4 — Fit-check an algorithm's core assumption against Blokus *before* backlogging it
+RAVE (F9) cost two 132-min runs to reach a no-win we could have predicted: its
+"all-moves-as-first" premise — a move's value is roughly order-independent — is
+false for Blokus, where a placement is glued to exact board state (same piece one
+turn later is often *illegal*). The tell was available a priori, for free. So before
+an idea graduates idea → `proposed`, state the one assumption the technique needs
+and ask whether our domain honours it. Cheap to fail on paper; expensive to fail in
+the arena. (Assumption-free changes — bitboards, a learned eval — carry no such
+risk and skip this gate.)
