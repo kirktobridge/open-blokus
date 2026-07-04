@@ -102,7 +102,14 @@ these.
 |--------|---------|-------|
 | AI strategy | headless arena, pure rules core | [src/game/ai/arena.ts](../../src/game/ai/arena.ts) · `npm run arena [games] [seeds] [baseSeed]` |
 | regression guard | ~180 games every `npm test` | [tests/arena.test.ts](../../tests/arena.test.ts), [tests/alphabeta.test.ts](../../tests/alphabeta.test.ts) |
+| engine profiling | CPU profile scripts | [scripts/profile-mcts.ts](../../scripts/profile-mcts.ts) · `npx vite-node scripts/profile-mcts.ts` (Run N / F10) |
 | advisor / evaluator | *not built yet — see [backlog/advisor.md](backlog/advisor.md)* | needs [product backlog](../product/BACKLOG.md) P1 game-logging first |
+
+**Experiment configs:** an experiment's arena setup lives in
+`scripts/experiments/<id>.json` (title + seats, each `{name, strategy, options}`) and
+runs via `npm run arena <games> <seeds> <baseSeed> -- --config=scripts/experiments/<id>.json`.
+Never edit the hardcoded tables in `arena.cli.ts` for a run — those are the standing
+baselines. Commit the config alongside the log record so every run is reproducible.
 
 New research domains (advisor, UX) add their own harness row here and their own
 `log/*.md` + `backlog/*.md` files following the same templates.

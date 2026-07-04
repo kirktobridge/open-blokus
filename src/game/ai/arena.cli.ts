@@ -5,6 +5,7 @@
  * the per-seat win rate, so noise (which once made frontier=6 look good on a
  * single seed but not across seeds) can't mislead a tuning call.
  */
+import { readFileSync } from 'node:fs';
 import {
   runTournamentSeeds,
   randomStrategy,
@@ -17,7 +18,8 @@ import { mctsStrategy } from './mcts';
 import { WEIGHTS, type Weights } from './heuristic';
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-const flags = new Set(process.argv.slice(2).filter((a) => a.startsWith('--')));
+const flagArgs = process.argv.slice(2).filter((a) => a.startsWith('--'));
+const flags = new Set(flagArgs);
 const games = Number(args[0] ?? 100);
 const seeds = Number(args[1] ?? 8);
 const baseSeed = Number(args[2] ?? 1);
@@ -43,6 +45,53 @@ function table(
 }
 
 const variant = (over: Partial<Weights>): Weights => ({ ...WEIGHTS, ...over });
+
+// 0. Experiment config (`--config=scripts/experiments/<id>.json`): build the
+// table from JSON instead of editing the hardcoded ones below, so experiment
+// setups live outside src/ and each run is reproducible from its config file.
+// Runs only that table, then exits; games/seeds default to the CLI args.
+interface SeatConfig {
+  name: string;
+  strategy: 'random' | 'greedy-size' | 'heuristic' | 'alphabeta' | 'mcts';
+  options?: Record<string, unknown>;
+}
+interface ExperimentConfig {
+  title: string;
+  seats: SeatConfig[];
+  games?: number;
+  seeds?: number;
+}
+
+function buildStrategy(seat: SeatConfig): Contestant['strategy'] {
+  switch (seat.strategy) {
+    case 'random':
+      return randomStrategy;
+    case 'greedy-size':
+      return greedySizeStrategy;
+    case 'heuristic':
+      return heuristicStrategy(
+        seat.options ? variant(seat.options as Partial<Weights>) : undefined,
+      );
+    case 'alphabeta':
+      return alphaBetaStrategy(seat.options as Parameters<typeof alphaBetaStrategy>[0]);
+    case 'mcts':
+      return mctsStrategy(seat.options as Parameters<typeof mctsStrategy>[0]);
+  }
+}
+
+const configFlag = flagArgs.find((f) => f.startsWith('--config='));
+if (configFlag) {
+  const cfg = JSON.parse(
+    readFileSync(configFlag.slice('--config='.length), 'utf8'),
+  ) as ExperimentConfig;
+  table(
+    cfg.title,
+    cfg.seats.map((s) => ({ name: s.name, strategy: buildStrategy(s) })),
+    cfg.games ?? games,
+    cfg.seeds ?? seeds,
+  );
+  process.exit(0);
+}
 
 // 1. Baselines: random vs size-greedy vs full heuristic.
 table('Baselines', [

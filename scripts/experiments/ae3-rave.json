@@ -1,0 +1,9 @@
+{
+  "title": "RAVE vs plain UCT (matched iters, AE3 — very slow)",
+  "seats": [
+    { "name": "rave", "strategy": "mcts", "options": { "iterations": 150, "rolloutDepth": 12, "rave": true } },
+    { "name": "plain-uct", "strategy": "mcts", "options": { "iterations": 150, "rolloutDepth": 12 } },
+    { "name": "rave", "strategy": "mcts", "options": { "iterations": 150, "rolloutDepth": 12, "rave": true } },
+    { "name": "plain-uct", "strategy": "mcts", "options": { "iterations": 150, "rolloutDepth": 12 } }
+  ]
+}
