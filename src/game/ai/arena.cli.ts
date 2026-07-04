@@ -110,3 +110,25 @@ if (flags.has('--mcts')) {
     mctsSeeds,
   );
 }
+
+// 7. RAVE / AMAF vs plain UCT at MATCHED iterations (AE3) — opt-in (`--rave`),
+// seconds/move so games/seeds capped. Tests the value-sharing hypothesis: does
+// AMAF warm-up buy strength at equal iteration budget? Tune iterations/raveK here.
+if (flags.has('--rave')) {
+  // No small cap here (unlike --mcts): AE3 needs a CI-clearing n, driven via args.
+  const rGames = games;
+  const rSeeds = seeds;
+  const ITERS = 150;
+  const DEPTH = 12;
+  table(
+    'RAVE vs plain UCT (matched iters, very slow)',
+    [
+      { name: 'rave', strategy: mctsStrategy({ iterations: ITERS, rolloutDepth: DEPTH, rave: true }) },
+      { name: 'plain-uct', strategy: mctsStrategy({ iterations: ITERS, rolloutDepth: DEPTH }) },
+      { name: 'rave', strategy: mctsStrategy({ iterations: ITERS, rolloutDepth: DEPTH, rave: true }) },
+      { name: 'plain-uct', strategy: mctsStrategy({ iterations: ITERS, rolloutDepth: DEPTH }) },
+    ],
+    rGames,
+    rSeeds,
+  );
+}

@@ -53,6 +53,15 @@ export interface MctsConfig {
   rolloutDepth: number;
   /** Prune each node's action set to the heuristic's top-K (0 = keep all). */
   beam: number;
+  /**
+   * Enable RAVE / AMAF value sharing (AE3). When on, every simulation's moves
+   * warm up the AMAF estimate of *sibling* actions, blended into selection via a
+   * β schedule that decays to pure UCT as real visits accrue. Off = byte-identical
+   * plain-UCT behaviour (no tracking overhead).
+   */
+  rave: boolean;
+  /** RAVE equivalence parameter k: β = √(k / (3N + k)). Larger = trust AMAF longer. */
+  raveK: number;
 }
 
 const DEFAULTS: MctsConfig = {
@@ -62,6 +71,8 @@ const DEFAULTS: MctsConfig = {
   rolloutPolicy: 'heuristic',
   rolloutDepth: 0,
   beam: 16,
+  rave: false,
+  raveK: 1000,
 };
 
 interface Node {
@@ -78,6 +89,15 @@ interface Node {
   N: number;
   /** Per-color accumulated reward (index = COLOR_ORDER index). */
   W: Float64Array;
+  /** AMAF visit count (RAVE only). */
+  N_amaf: number;
+  /** Per-color AMAF accumulated reward (RAVE only). */
+  W_amaf: Float64Array;
+  /**
+   * Cell-set key of the move that reaches this node (RAVE only), used to match
+   * this action against moves played later in a simulation. Undefined at root.
+   */
+  key?: string;
 }
 
 function pick<T>(arr: T[], rng: () => number): T {
@@ -88,7 +108,15 @@ function isTerminal(G: GameState): boolean {
   return COLOR_ORDER.every((c) => G.colors[c].stuck);
 }
 
-function makeNode(G: GameState, parent?: Node, move?: Placement): Node {
+/** Cell-set key: sorted board indices of the occupied cells (order-independent). */
+function moveKey(cells: Cell[]): string {
+  return cells
+    .map((c) => c.y * BOARD_SIZE + c.x)
+    .sort((a, b) => a - b)
+    .join(',');
+}
+
+function makeNode(G: GameState, parent?: Node, move?: Placement, rave = false): Node {
   return {
     G,
     moverIdx: G.activeColorIndex,
@@ -99,6 +127,9 @@ function makeNode(G: GameState, parent?: Node, move?: Placement): Node {
     children: [],
     N: 0,
     W: new Float64Array(COLOR_ORDER.length),
+    N_amaf: 0,
+    W_amaf: new Float64Array(COLOR_ORDER.length),
+    key: rave && move ? moveKey(resolveCells(move)) : undefined,
   };
 }
 
@@ -134,7 +165,13 @@ function selectChild(node: Node, cfg: MctsConfig, rng: () => number): Node {
   let best: Node[] = [];
   let bestVal = -Infinity;
   for (const child of node.children) {
-    const exploit = child.W[node.moverIdx] / child.N;
+    const uct = child.W[node.moverIdx] / child.N;
+    let exploit = uct;
+    if (cfg.rave && child.N_amaf > 0) {
+      const amaf = child.W_amaf[node.moverIdx] / child.N_amaf;
+      const beta = Math.sqrt(cfg.raveK / (3 * child.N + cfg.raveK));
+      exploit = beta * amaf + (1 - beta) * uct;
+    }
     const explore = cfg.explorationC * Math.sqrt(logN / child.N);
     const v = exploit + explore;
     if (v > bestVal) {
@@ -155,7 +192,7 @@ function treePolicy(root: Node, cfg: MctsConfig, rng: () => number): Node {
     if (untried.length > 0) {
       const i = Math.floor(rng() * untried.length);
       const move = untried.splice(i, 1)[0];
-      const child = makeNode(applyAndAdvance(node.G, node.moverIdx, move), node, move);
+      const child = makeNode(applyAndAdvance(node.G, node.moverIdx, move), node, move, cfg.rave);
       node.children.push(child);
       return child;
     }
@@ -264,6 +301,60 @@ function backprop(leaf: Node, reward: Float64Array): void {
   }
 }
 
+/**
+ * RAVE rollout: identical policy to `rollout`, but also records each played
+ * move's cell-key into `played[colorIdx]` so the AMAF backprop can credit sibling
+ * actions. Kept separate so the plain-UCT path carries zero tracking overhead.
+ */
+function rolloutRave(
+  G: GameState,
+  cfg: MctsConfig,
+  rng: () => number,
+  played: Set<string>[],
+): Float64Array {
+  const g = cloneState(G);
+  let depth = 0;
+  let passStreak = 0;
+  let idx = g.activeColorIndex;
+  while (cfg.rolloutDepth === 0 || depth < cfg.rolloutDepth) {
+    const color = COLOR_ORDER[idx];
+    const move = rolloutMove(g, color, cfg, rng);
+    if (move) {
+      applyPlacement(g, color, move.pieceId, move.cells);
+      played[idx].add(moveKey(move.cells));
+      passStreak = 0;
+      depth++;
+    } else if (++passStreak >= COLOR_ORDER.length) {
+      break;
+    }
+    idx = (idx + 1) % COLOR_ORDER.length;
+  }
+  return rewardVector(g);
+}
+
+/**
+ * RAVE backprop: standard visit/reward update, plus AMAF. Descent moves are
+ * folded into `played` first, then for each node on the path every child whose
+ * action that node's mover played anywhere in the simulation gets its AMAF stats
+ * bumped with the same reward (the sibling value-sharing that warms up selection).
+ */
+function backpropRave(leaf: Node, reward: Float64Array, played: Set<string>[]): void {
+  for (let n: Node = leaf; n.parent; n = n.parent) {
+    if (n.key !== undefined) played[n.parent.moverIdx].add(n.key);
+  }
+  for (let n: Node | undefined = leaf; n; n = n.parent) {
+    n.N += 1;
+    for (let i = 0; i < reward.length; i++) n.W[i] += reward[i];
+    const playedByMover = played[n.moverIdx];
+    for (const child of n.children) {
+      if (child.key !== undefined && playedByMover.has(child.key)) {
+        child.N_amaf += 1;
+        for (let i = 0; i < reward.length; i++) child.W_amaf[i] += reward[i];
+      }
+    }
+  }
+}
+
 /** Opaque handle to a persisted search tree, for cross-turn reuse (see mctsSearch). */
 export type MctsNode = Node;
 
@@ -338,8 +429,14 @@ export function mctsSearch(
   let iters = 0;
   while (timed ? Date.now() < deadline : iters < cfg.iterations) {
     const leaf = treePolicy(root, cfg, rng);
-    const reward = leaf.terminal ? rewardVector(leaf.G) : rollout(leaf.G, cfg, rng);
-    backprop(leaf, reward);
+    if (cfg.rave) {
+      const played = COLOR_ORDER.map(() => new Set<string>());
+      const reward = leaf.terminal ? rewardVector(leaf.G) : rolloutRave(leaf.G, cfg, rng, played);
+      backpropRave(leaf, reward, played);
+    } else {
+      const reward = leaf.terminal ? rewardVector(leaf.G) : rollout(leaf.G, cfg, rng);
+      backprop(leaf, reward);
+    }
     iters++;
   }
 

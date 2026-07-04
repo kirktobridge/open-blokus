@@ -95,6 +95,33 @@ time budgets** (Run J-confirm): medium 67 % vs easy (was 31 % at beam 16), hard
 63 % vs medium — a monotonic, significant ladder. Runs J / J-confirm; resolved
 [AE10 + AE5](backlog/ai-engine.md).
 
+### F9 — RAVE / AMAF value sharing does not buy strength in Blokus MCTS
+`replicated` (no-win). At **matched iterations** (150 iters, beam 16, rolloutDepth 12),
+RAVE vs plain UCT pooled to **54.0 % game-share, CI [49.1, 58.8], n=400** (Runs L+M,
+two independent seed batches) — the pre-registered "CI clear of 50 %" bar is **not
+met**; the second batch regressed to 52 %, so the first batch's 56 % was mostly noise.
+Even the small nominal edge is illusory as a *shipping* case: at matched **wall-clock**
+RAVE fares worse, paying AMAF tracking + sibling-backprop overhead per iteration for no
+iteration-efficiency gain. Two likely reasons AMAF underperforms here: (1) the
+heuristic beam already supplies the early-search prior RAVE exists to add, and (2)
+Blokus placements rarely recur across lines and a move's value is strongly
+position-dependent, so the "all-moves-as-first" assumption carries little signal. Code
+kept behind `rave:false` (default, zero-cost) for a possible revisit at other budgets.
+Run L/M; closed [AE3](backlog/ai-engine.md) as no-win.
+
+### F10 — MCTS is legality-bound, not eval- or tree-bound: ~75% of time is cell-by-cell legality/gen
+`significant` (single well-controlled CPU profile, Run N). On a peak-branching
+mid-opening position (541 legal moves), a 150-iter search spends **rollout 46 % /
+move-gen 19.5 % / tree+backprop 0.7 %**; by leaf function `isLegalPlacement` is 31 %
+and, folding in its per-cell primitives (`inBounds`, `get`, `idx`, `isSameColor`),
+**~75 % of all time is legality-testing + move generation done cell-by-cell**. Two
+consequences: (1) it explains F9 — RAVE tweaks the 0.7 % tree layer, so it *couldn't*
+matter; (2) it picks the next lever — a **bitboard** representation (occupied /
+adjacency / corner masks) collapses the per-cell primitives into mask ops and speeds
+*both* rollout and gen, unlike a learned eval (AE4), which only touches rollout
+evaluation while our rollout cost is legality *sampling*. Points to [AE9](backlog/ai-engine.md)
+as the next win. Run N.
+
 ---
 
 ## Method lessons (the ones we paid for)
@@ -119,3 +146,13 @@ The F4 plateau looked like "no better eval exists" but was partly the
 heuristic-ordered beam constraining search. We only trusted the conclusion after
 Run F removed the confound (beam=all) and *still* saw no gain. When a result is
 suspiciously flat, ask what the harness is holding fixed.
+
+### M4 — Fit-check an algorithm's core assumption against Blokus *before* backlogging it
+RAVE (F9) cost two 132-min runs to reach a no-win we could have predicted: its
+"all-moves-as-first" premise — a move's value is roughly order-independent — is
+false for Blokus, where a placement is glued to exact board state (same piece one
+turn later is often *illegal*). The tell was available a priori, for free. So before
+an idea graduates idea → `proposed`, state the one assumption the technique needs
+and ask whether our domain honours it. Cheap to fail on paper; expensive to fail in
+the arena. (Assumption-free changes — bitboards, a learned eval — carry no such
+risk and skip this gate.)

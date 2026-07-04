@@ -365,3 +365,92 @@ shipped ladder now measured + monotonic: easy < medium (67 % vs easy) < hard (63
 vs medium) < extreme (79 % vs hard), every step CI-clear of 50. Cost: ~6–7 min per
 extreme-heavy game (≈ 12 s/move early); acceptable only because "no time budget" is
 the point of the tier. **Decision:** adopt; ladder complete.
+
+### Run L — RAVE / AMAF value sharing vs plain UCT (AE3)
+
+Added RAVE/AMAF value sharing to [mcts.ts](../../../src/game/ai/mcts.ts) (config
+`rave`/`raveK`; per-node AMAF stats; selection blend β=√(k/(3N+k)), k=1000; plain-UCT
+path byte-identical when off). Benchmarked RAVE vs plain UCT at **matched iterations**
+(both `iterations:150`, `rolloutDepth:12`, `beam:16`) — the `--rave` arena table. 2
+RAVE seats vs 2 plain-UCT seats, so parity ⇒ 50% game-share (null).
+Pre-registered bar (M2): RAVE game-share > 50%, Wilson 95% CI clear.
+
+| matchup | RAVE game-share | 95% CI | n | one-sided p | verdict |
+|---------|-----------------|--------|---|-------------|---------|
+| rave(it150) vs plain-uct(it150) | 56.0% | [49.1, 62.7] | 200 | 0.045 | INCONCLUSIVE (CI grazes 50) |
+
+Seed-averaged over 8 seeds × 25 games (base seed 1). Wall clock 132 min (~40s/game).
+
+**Read:** RAVE is **directionally positive** (+6 pts game-share, one-sided p=0.045)
+but the pre-registered two-sided-CI bar is **not met** — the 95% Wilson lower bound
+(49.1%) grazes below 50%. Right sign, magnitude consistent with a real-but-modest
+AMAF warm-up effect at this budget, but n=200 is underpowered for a 56% effect (need
+~400+ for the CI to clear). No post-hoc bar lowering (M2).
+
+**Decision:** do **not** claim a win on this batch. Pool a second independent
+seed-batch (different base seed) to ~n=400 and re-test the pre-registered bar before
+closing AE3.
+
+### Run M — RAVE pooled to n=400 (AE3 close)
+
+Second independent seed-batch (8 seeds × 25 games, base seed 1000) to pool with Run L
+and re-test the pre-registered bar at higher power. Same matched-iteration config.
+
+| batch | RAVE game-share | n |
+|-------|-----------------|---|
+| Run L (seed 1) | 56.0% (112/200) | 200 |
+| Run M (seed 1000) | 52.0% (104/200) | 200 |
+| **pooled** | **54.0% (216/400)** | **400** |
+
+Pooled (stats.py --pool): game-share 54.0%, Wilson 95% CI **[49.1, 58.8]**, one-sided
+z +1.60, p(>50%)=0.055. Wall clock 134 min (batch 2).
+
+**Read:** the second batch regressed toward the null (52%), so batch 1's 56% was
+partly noise. Pooled to n=400 the two-sided 95% CI **still does not clear 50%**
+(lower bound 49.1). RAVE's matched-iteration edge is small (~4 pts pooled) and not
+significant — and at matched *wall-clock* it would fare worse still, since RAVE pays
+AMAF tracking + sibling-backprop overhead per iteration for no net iteration
+efficiency here. AMAF warm-up doesn't buy meaningful strength in Blokus at this budget:
+plausibly the heuristic beam already supplies the early-search prior RAVE would add,
+and Blokus placements rarely recur across lines (weak AMAF signal — a move's value is
+highly position-dependent), undercutting the AMAF assumption.
+
+**Decision:** **no-win.** Pre-registered bar (CI clear of 50%) not met at n=400,
+replicated across two seed batches. Do not ship RAVE. Code kept behind `rave:false`
+(default, zero-cost) for future revisit at other budgets. AE3 → no-win. → F9.
+
+### Run N — MCTS profile: where does a 150-iter move spend its time? (AE2/AE9 diagnostic)
+
+Not a tournament (no win/loss/CI) — a CPU profile to decide the AE2-vs-AE9-vs-AE4
+fork off real numbers instead of guessing (M3). `node:inspector` CPU profile of one
+150-iter plain-UCT search (beam 16, rolloutDepth 12) on a representative mid-opening
+position (8 plies in, **541 legal moves** — near-peak branching), 20× repeat for
+sample count. Script: [scripts/profile-mcts.ts](../../../scripts/profile-mcts.ts).
+~390 ms/search.
+
+Phase self-time: rollout **46%**, move-gen **19.5%**, tree+backprop **0.7%**, other
+33.7% (almost all low-level board primitives). Top leaves:
+
+| fn | self-time | role |
+|----|-----------|------|
+| `isLegalPlacement` | 31.4% | legality test (adjacency/corner/overlap) |
+| `generateLegalMoves` | 17.9% | full move enumeration |
+| `inBounds` | 11.1% | per-cell board-bounds guard |
+| `sampleLegalMove` | 11.0% | rollout rejection sampler (→ isLegalPlacement) |
+| `get` / `idx` | 7.1% / 6.0% | per-cell board reads |
+| `isSameColor` / `newFrontier` | 1.0% / 2.6% | adjacency/corner scan guts |
+
+**Read:** attributing the primitives to their callers, **~75% of MCTS time is
+legality-testing + move generation, both dominated by cell-by-cell board scans**
+(`isLegalPlacement` alone is 31%). Rollout's 46% is itself mostly `sampleLegalMove`
+calling `isLegalPlacement` up to 24×/move. `tree/backprop` is 0.7% — which is exactly
+why AE3's RAVE (a tree-stats tweak) couldn't move strength: it optimized a rounding
+error. The bottleneck is **shared** by rollout and gen — the per-cell legality
+primitive — so the lever that speeds both at once is a **bitboard** board
+representation (AE9): occupied/adjacency/corner masks turn `isLegalPlacement` into a
+few AND/ORs instead of `inBounds`+`get`+`isSameColor` loops.
+
+**Decision:** promote **AE9 (bitboards)** to the next active candidate; it attacks the
+~75% hot path and accelerates rollout *and* gen together. AE4 (learned eval) is the
+wrong tool here — rollout cost is legality *sampling*, not *evaluation* — and stays
+blocked on logging. → F10.
