@@ -6,16 +6,19 @@ import type { Bot } from 'boardgame.io/ai';
 type GameClient = ReturnType<typeof Client>;
 
 /**
- * Drives bot seats on a local client: whenever it's a bot's turn, wait `delayMs`
- * (for a watchable pace) then make one move via Step. Returns whether a bot is
- * currently "thinking". Self-perpetuates through client.subscribe — after each
- * bot move the next bot turn (if any) is scheduled.
+ * Drives bot seats on a local client: whenever it's a bot's turn, wait the seat's
+ * delay (for a watchable pace) then make one move via that seat's bot. Returns
+ * whether a bot is currently "thinking". Self-perpetuates through client.subscribe
+ * — after each bot move the next bot turn (if any) is scheduled.
+ *
+ * `botsBySeat` is keyed by playerID; a seat is a bot iff it has an entry. Each
+ * seat gets its own difficulty (its own Bot instance and delay), so opponents can
+ * be mixed easy/medium/hard/extreme.
  */
 export function useBotRunner(
   client: GameClient,
-  botSeats: Set<string>,
-  bot: Bot,
-  delayMs: number,
+  botsBySeat: Map<string, Bot>,
+  delayForSeat: (seat: string) => number,
 ): boolean {
   const [thinking, setThinking] = useState(false);
 
@@ -26,16 +29,18 @@ export function useBotRunner(
 
     const tick = () => {
       const s = client.getState();
-      if (!s || s.ctx.gameover || !botSeats.has(s.ctx.currentPlayer)) {
+      const seat = s?.ctx.currentPlayer;
+      if (!s || s.ctx.gameover || seat == null || !botsBySeat.has(seat)) {
         setThinking(false);
         return;
       }
       if (scheduledFor === s._stateID) return; // already scheduled for this state
       scheduledFor = s._stateID;
       setThinking(true);
+      const bot = botsBySeat.get(seat)!;
       timer = setTimeout(() => {
         if (!cancelled) void Step(client, bot);
-      }, delayMs);
+      }, delayForSeat(seat));
     };
 
     const unsub = client.subscribe(() => tick());
@@ -45,7 +50,7 @@ export function useBotRunner(
       if (timer) clearTimeout(timer);
       unsub();
     };
-  }, [client, bot, delayMs, botSeats]);
+  }, [client, botsBySeat, delayForSeat]);
 
   return thinking;
 }

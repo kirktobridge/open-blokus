@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import { Client } from 'boardgame.io/client';
 import type { BoardProps } from 'boardgame.io/react';
+import type { Bot } from 'boardgame.io/ai';
 import { BlokusGame, enumerate } from '../../bgio/BlokusGame';
 import { HeuristicBot } from '../../bgio/bots/HeuristicBot';
 import { MctsBot } from '../../bgio/bots/MctsBot';
@@ -30,62 +31,84 @@ function resolveBotDelay(): number {
 export function LocalAIGame({
   mode,
   aiCount,
-  difficulty,
+  botDifficulties,
   onLeave,
 }: {
   mode: GameMode;
   aiCount: number;
-  difficulty: Difficulty;
+  /** Difficulty per bot seat (playerID). Seats absent here are human. */
+  botDifficulties: Record<string, Difficulty>;
   onLeave: () => void;
 }) {
   const client = useMemo(() => Client({ game: BlokusGame, numPlayers: mode }), [mode]);
 
-  // Medium/hard run MCTS in a Web Worker so the search never freezes the UI. The
-  // worker lives in a ref (managed by the effect below) rather than useMemo, so
-  // StrictMode's mount→cleanup→mount recreates it cleanly; the bot reads the live
-  // worker lazily via getWorker and never holds a terminated one.
-  const workerRef = useRef<Worker | null>(null);
-  useEffect(() => {
-    if (difficulty === 'easy') {
-      workerRef.current = null;
-      return;
-    }
-    const w = new Worker(new URL('./mctsWorker.ts', import.meta.url), { type: 'module' });
-    workerRef.current = w;
-    return () => {
-      w.terminate();
-      if (workerRef.current === w) workerRef.current = null;
-    };
-  }, [difficulty]);
-
-  const bot = useMemo(() => {
-    if (difficulty === 'easy') return new HeuristicBot({ enumerate, seed: 'vs-ai' });
-    return new MctsBot({
-      enumerate,
-      seed: 'vs-ai',
-      getWorker: () => workerRef.current,
-      config: mctsConfigFor(difficulty),
-    });
-  }, [difficulty]);
-
-  // Heuristic needs an artificial pace to be watchable; MCTS's own search is the
-  // pace, so it runs with no extra delay.
-  const botDelay = useMemo(
-    () => (difficulty === 'easy' ? resolveBotDelay() : 0),
-    [difficulty],
+  const humanCount = Math.max(0, mode - aiCount);
+  const botSeats = useMemo(
+    () =>
+      Array.from({ length: mode }, (_, i) => String(i)).filter(
+        (s) => Number(s) >= humanCount,
+      ),
+    [mode, humanCount],
   );
 
-  const humanCount = Math.max(0, mode - aiCount);
+  // Stable key for the seat→difficulty map so worker/bot memos only rebuild when a
+  // tier actually changes, not on every render (object identity would churn).
+  const difficultyKey = botSeats.map((s) => `${s}:${botDifficulties[s] ?? 'easy'}`).join(',');
+
+  // Each MCTS bot seat gets its own Web Worker so its per-color search trees stay
+  // isolated — mixed tiers never share a tree (the worker keys trees by color).
+  // Easy seats need no worker. Workers live in a ref (managed by the effect below)
+  // rather than useMemo, so StrictMode's mount→cleanup→mount recreates them cleanly;
+  // each bot reads its live worker lazily via getWorker and never holds a terminated one.
+  const workersRef = useRef<Map<string, Worker>>(new Map());
+  useEffect(() => {
+    const workers = new Map<string, Worker>();
+    for (const seat of botSeats) {
+      if ((botDifficulties[seat] ?? 'easy') === 'easy') continue;
+      workers.set(seat, new Worker(new URL('./mctsWorker.ts', import.meta.url), { type: 'module' }));
+    }
+    workersRef.current = workers;
+    return () => {
+      for (const w of workers.values()) w.terminate();
+      if (workersRef.current === workers) workersRef.current = new Map();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [difficultyKey]);
+
+  const botsBySeat = useMemo(() => {
+    const bots = new Map<string, Bot>();
+    for (const seat of botSeats) {
+      const diff = botDifficulties[seat] ?? 'easy';
+      if (diff === 'easy') {
+        bots.set(seat, new HeuristicBot({ enumerate, seed: `vs-ai-${seat}` }));
+      } else {
+        bots.set(
+          seat,
+          new MctsBot({
+            enumerate,
+            seed: `vs-ai-${seat}`,
+            getWorker: () => workersRef.current.get(seat) ?? null,
+            config: mctsConfigFor(diff),
+          }),
+        );
+      }
+    }
+    return bots;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [difficultyKey]);
+
+  // Heuristic (easy) needs an artificial pace to be watchable; MCTS's own search is
+  // the pace, so it runs with no extra delay.
+  const delayForSeat = useMemo(() => {
+    const heuristicDelay = resolveBotDelay();
+    return (seat: string) =>
+      (botDifficulties[seat] ?? 'easy') === 'easy' ? heuristicDelay : 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [difficultyKey]);
+
   const humanSeats = useMemo(
     () => new Set(Array.from({ length: humanCount }, (_, i) => String(i))),
     [humanCount],
-  );
-  const botSeats = useMemo(
-    () =>
-      new Set(
-        Array.from({ length: mode }, (_, i) => String(i)).filter((s) => !humanSeats.has(s)),
-      ),
-    [mode, humanSeats],
   );
 
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -98,7 +121,7 @@ export function LocalAIGame({
     };
   }, [client]);
 
-  const thinking = useBotRunner(client, botSeats, bot, botDelay);
+  const thinking = useBotRunner(client, botsBySeat, delayForSeat);
 
   const state = client.getState();
   if (!state) return <div style={{ padding: 16 }}>Loading…</div>;
@@ -120,7 +143,8 @@ export function LocalAIGame({
     >
       <div>
         <div style={{ padding: 8, fontFamily: 'system-ui, sans-serif' }}>
-          <strong>vs AI</strong> · {humanCount} human / {aiCount} AI · {difficulty}
+          <strong>vs AI</strong> · {humanCount} human / {aiCount} AI ·{' '}
+          {botSeats.map((s) => botDifficulties[s] ?? 'easy').join(', ')}
           <span
             data-testid="ai-thinking"
             style={{

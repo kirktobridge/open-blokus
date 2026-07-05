@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#eceadf;font-family:system-ui,sans-serif}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t0">
+  <div class="dv-thd"><a class="dv-tid" href="#t0">0</a><span class="dv-tname">Baseline — faithful recreation of the current open-blokus UI (light theme, mid-game vs 3 bots)</span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="0a">
+      <div class="dv-olabel"><a class="dv-oid" href="#0a">0a</a>Game screen — board auto-rotated 180° so Blue (seat P0) sits bottom-right, as the app does</div>
+      <div class="dv-card" style="width:1054px" data-screen-label="Current game screen">
+        <div style="position:relative;padding-bottom:44px;color:#111827">
+          <div style="padding:8px;font-family:system-ui,sans-serif;font-size:16px"><strong>vs AI</strong> · 1 human / 3 AI · easy<span style="margin-left:12px;color:#6b7280;visibility:hidden">AI thinking…</span><button style="margin-left:12px">Leave</button></div>
+          <div style="display:flex;gap:24px;padding:16px;font-family:system-ui,sans-serif;align-items:flex-start">
+            <div>
+              <h2 style="margin:0 0 8px">OpenBlokus</h2>
+              <p style="margin:0 0 8px;font-size:14px">turn {{ rcTurn }} · player 0 · active <span style="color:#2563eb;font-weight:600">blue</span> · <span style="padding:1px 8px;border-radius:10px;font-size:12px;color:#fff;background:#2563eb">your turn</span></p>
+              <div style="margin:0 0 8px"><button title="Rotate the board view 90°">Rotate board ⟲</button></div>
+              <div style="display:inline-block;transform:rotate(180deg)">
+                <div style="position:relative;display:grid;grid-template-columns:repeat(20,24px);grid-template-rows:repeat(20,24px);width:480px">
+                  <sc-for list="{{ rcCells }}" as="c" hint-placeholder-count="400">
+                    <div style="width:24px;height:24px;background:{{ c.bg }};border:1px solid #d1d5db;box-sizing:border-box"></div>
+                  </sc-for>
+                  {{ rcBoardArt }}
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+                <button disabled="{{ true }}">Rotate ⟳</button>
+                <button disabled="{{ true }}">Flip ⇄</button>
+                <button disabled="{{ true }}" style="font-weight:600">Submit ✓</button>
+                <button disabled="{{ true }}">Clear</button>
+                <span style="font-size:13px;color:#6b7280">Select a piece from your tray</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div>
+                <h3 style="margin:0 0 4px">Scores (basic)</h3>
+                <table style="border-collapse:collapse;font-size:13px"><tbody>
+                  <sc-for list="{{ rcRows }}" as="r" hint-placeholder-count="4">
+                    <tr><td style="color:{{ r.hex }};text-transform:capitalize;padding-right:12px">{{ r.name }}</td><td style="padding-right:12px">{{ r.left }} left</td><td>{{ r.owner }}</td></tr>
+                  </sc-for>
+                </tbody></table>
+                <div style="margin-top:6px;font-size:13px">{{ rcPlayersLine }}</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:16px;width:480px">
+                <sc-for list="{{ rcTrays }}" as="t" hint-placeholder-count="4">
+                  <div>
+                    <div style="font-weight:600;color:{{ t.hex }};text-transform:capitalize;margin-bottom:4px">{{ t.title }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;max-width:220px">
+                      <sc-for list="{{ t.pieces }}" as="p" hint-placeholder-count="21">
+                        <div title="{{ p.id }}" style="display:grid;grid-template-columns:repeat({{ p.w }},12px);opacity:{{ p.op }};padding:2px">
+                          <sc-for list="{{ p.cells }}" as="q">
+                            <div style="width:12px;height:12px;background:{{ q.bg }};border:{{ q.bd }};box-sizing:border-box"></div>
+                          </sc-for>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <button style="position:absolute;bottom:8px;left:8px;padding:4px 10px;cursor:pointer">🌙 Dark</button>
+          <button style="position:absolute;bottom:8px;left:96px;padding:4px 10px;cursor:pointer">🎨 Colors</button>
+          <button style="position:absolute;bottom:8px;left:190px;padding:4px 10px;cursor:pointer">⌨ Controls</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="0b">
+      <div class="dv-olabel"><a class="dv-oid" href="#0b">0b</a>Home / lobby screen</div>
+      <div class="dv-card" style="width:620px" data-screen-label="Current home screen">
+        <div style="padding:16px;font-family:system-ui,sans-serif;max-width:560px;color:#111827">
+          <h1>OpenBlokus</h1>
+          <section style="margin-bottom:16px">
+            <h3>Play vs AI (offline)</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label>Players: <select defaultValue="4"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+              <label>AI opponents: <select defaultValue="3"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+              <label>Difficulty: <select defaultValue="easy"><option value="easy">easy</option><option value="medium">medium</option><option value="hard">hard</option><option value="extreme">extreme</option></select></label>
+              <button>Start</button>
+            </div>
+            <p style="font-size:12px;color:#6b7280;margin:4px 0 0">1 human / 3 AI · heuristic</p>
+          </section>
+          <h3>Online multiplayer</h3>
+          <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+            <label>Players: <select defaultValue="4"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+            <label>Scoring: <select defaultValue="basic"><option value="basic">basic</option><option value="advanced">advanced</option></select></label>
+            <button>Create match</button>
+          </div>
+          <div style="margin:8px 0">
+            <input placeholder="match id"><button>Join by ID</button>
+          </div>
+          <div>
+            <h3>Open matches <button>↻ refresh</button></h3>
+            <p>No matches yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">This is the as-is reference. The redesign directions live in <a class="dv-oid" href="Redesign Directions.dc.html">Redesign Directions</a>.</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { d: null };
+
+  componentDidMount() {
+    import('./blokus-core.js').then((core) => {
+      const HEX = { blue: '#2563eb', yellow: '#eab308', red: '#dc2626', green: '#16a34a' };
+      const st = core.generateMidgame(11, 12);
+      const C = 24;
+      const regions = core.buildRegions(st.board, C, (c) => HEX[c]);
+      const allD = regions.map((r) => r.fillD).join('');
+      const rcBoardArt = core.buildFinishElement({
+        React,
+        C,
+        size: 480,
+        suffix: 'rc',
+        regions,
+        allD,
+        overlay: true,
+        lastRects: core.lastMoveRects(st.lastMove, C),
+        lastStroke: 'rgba(255,255,255,0.85)',
+      });
+      const rcCells = st.board.map((v) => ({ bg: v ? HEX[v] : '#f3f4f6' }));
+      const rcTrays = core.COLOR_ORDER.map((c) => {
+        const rem = new Set(st.colors[c].remaining);
+        return {
+          title: c + (c === 'blue' ? ' ◄' : ''),
+          hex: HEX[c],
+          pieces: core.PIECE_IDS.map((id) => {
+            const placed = !rem.has(id);
+            const t = core.thumbGrid(id);
+            return {
+              id,
+              w: t.w,
+              op: placed ? 0.4 : 1,
+              cells: t.cells.map((q) => ({
+                bg: q.on ? (placed ? '#e5e7eb' : HEX[c]) : 'transparent',
+                bd: q.on ? '1px solid rgba(0,0,0,0.15)' : 'none',
+              })),
+            };
+          }),
+        };
+      });
+      const left = {};
+      core.COLOR_ORDER.forEach((c) => { left[c] = core.remainingSquares(st, c); });
+      const rcRows = core.COLOR_ORDER.map((c, i) => ({ name: c, hex: HEX[c], left: left[c], owner: 'P' + i }));
+      const rcPlayersLine = core.COLOR_ORDER.map((c, i) => 'P' + i + ': ' + left[c]).join(' · ');
+      this.setState({ d: { rcTurn: st.turn, rcBoardArt, rcCells, rcTrays, rcRows, rcPlayersLine } });
+    });
+  }
+
+  renderVals() {
+    return this.state.d || {};
+  }
+}
+</script>
+</body>
+</html>

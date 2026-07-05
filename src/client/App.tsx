@@ -17,7 +17,7 @@ export function App() {
   const [aiConfig, setAiConfig] = useState<{
     mode: GameMode;
     aiCount: number;
-    difficulty: Difficulty;
+    botDifficulties: Record<string, Difficulty>;
   } | null>(null);
 
   const refresh = useCallback(async () => {
@@ -70,7 +70,7 @@ export function App() {
       <LocalAIGame
         mode={aiConfig.mode}
         aiCount={aiConfig.aiCount}
-        difficulty={aiConfig.difficulty}
+        botDifficulties={aiConfig.botDifficulties}
         onLeave={() => setAiConfig(null)}
       />
     );
@@ -83,7 +83,9 @@ export function App() {
         onCreate={onCreate}
         onJoin={onJoin}
         onRefresh={refresh}
-        onStartAI={(mode, aiCount, difficulty) => setAiConfig({ mode, aiCount, difficulty })}
+        onStartAI={(mode, aiCount, botDifficulties) =>
+          setAiConfig({ mode, aiCount, botDifficulties })
+        }
       />
     );
   }
