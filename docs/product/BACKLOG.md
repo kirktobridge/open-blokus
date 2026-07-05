@@ -70,9 +70,11 @@ this epic owns the user-facing feature + its UX.
 
 ### P9 — Offline vs-AI with difficulty tiers — SHIPPED
 - **Status:** shipped — four-tier ladder, measured monotonic (research AE1, Runs J–K;
-  per-tier beam F8/AE5). Details: [difficulty.ts](../../src/client/ai/difficulty.ts)
-  + ARCHITECTURE §9.
-- **Value:** single-player practice at a real, verified difficulty ramp.
+  per-tier beam F8/AE5). Difficulty is **per bot seat** — each opponent's tier is chosen
+  independently in setup (mix easy/hard/etc.). Details:
+  [difficulty.ts](../../src/client/ai/difficulty.ts) + ARCHITECTURE §9.
+- **Value:** single-player practice at a real, verified difficulty ramp; mix opponent
+  strengths for asymmetric practice.
 - **Remaining:** long-move UX for `extreme` (→ P10).
 
 ### P10 — Long-move feedback for the strongest tier

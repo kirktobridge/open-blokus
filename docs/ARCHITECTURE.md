@@ -448,8 +448,10 @@ client. Networked rooms stay human-only.
   `Client` (no networking). Human seats are the first `mode − aiCount`; the rest are bot seats
   driven by `Step(client, bot)` after a delay (`VITE_BOT_DELAY`, 0 in e2e) with a "thinking"
   indicator. `aiCount === mode` ⇒ an all-AI game you watch. Reuses `BlokusBoardView` via a small
-  props adapter; the color≠player model means one bot instance serves all its seats (incl. the
-  3p shared color).
+  props adapter. Difficulty is **per bot seat** (playerID), not global: each bot seat has its own
+  `Bot` + (for MCTS) its own worker, so opponents can be mixed easy/medium/hard/extreme. Keying by
+  seat (not color) keeps each seat's colors — incl. the 3p shared color a seat plays — on one tier,
+  and gives each MCTS seat its own worker so per-color search trees never cross tiers.
 
 **Recorded decisions (do not silently change — see [GAME_SPEC §10](GAME_SPEC.md)):**
 - Bots are **client-side / offline only**. Networked bot-fill (bots in SocketIO rooms via a
