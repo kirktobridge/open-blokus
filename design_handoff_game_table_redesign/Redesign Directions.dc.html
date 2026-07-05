@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Instrument+Serif:ital@0;1&amp;display=swap"><style>body{margin:0;background:#eceadf;font-family:system-ui,sans-serif}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}@keyframes ob-pulse{0%{outline:2px solid rgba(52,104,207,.5);outline-offset:2px}70%{outline:2px solid rgba(52,104,207,0);outline-offset:9px}100%{outline:2px solid rgba(52,104,207,0);outline-offset:9px}}</style></helmet>
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Opponent inventories — counts alone aren't enough; players need to SEE which shapes (e.g. Red's F5) are still in enemy hands. Three riffs on the <a class="dv-oid" href="#1a">1a</a> player card (applies to any look). PLAYED tags now carry the shape glyph, not just the name.</span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a><span><b>Expand-in-place</b> — dots stay the collapsed summary; clicking a card unfolds that player's actual shapes. One open at a time.</span></div>
+      <div class="dv-card" style="width:322px">
+        <div data-screen-label="2a expand-in-place" style="background:radial-gradient(420px 340px at 50% 30%,#584a3c,#493e33 60%,#372f27);padding:18px;font-family:'Instrument Sans',system-ui,sans-serif;color:#2c251c">
+          <div style="width:250px;display:flex;flex-direction:column;gap:10px;margin:0 auto">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#bfb29b;padding:2px 2px 0">PLAYERS · TURN ORDER</div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 0 0 2px #3468cf,0 12px 24px rgba(20,12,4,.38)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Blue · You</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#3468cf;color:#fff;border-radius:999px;padding:3px 8px">YOUR TURN</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.blue.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.blue.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.blue }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#3468cf;opacity:{{ d.o }}"></div></sc-for></div>
+            </div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#d99c22;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Yellow · Bot</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8b7e69">▾</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.yellow.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.yellow.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.yellow }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#d99c22;opacity:{{ d.o }}"></div></sc-for></div>
+            </div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 0 0 1px #c9463c,0 14px 26px rgba(20,12,4,.36)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Red · Bot</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8b7e69">▴</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.red.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.red.pieces }} pieces</div>
+              </div>
+              <div style="height:1px;background:#dbcdb2;margin:10px 0 9px"></div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start">
+                <sc-for list="{{ redMini }}" as="p" hint-placeholder-count="21"><div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},9px);grid-auto-rows:9px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div></sc-for>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;margin-top:9px">DASHED = ALREADY PLAYED</div>
+            </div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#438f5b;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Green · Bot</div>
+                <div style="flex:1"></div>
+                <div style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;border:1px solid #dbcdb2;border-radius:999px;padding:3px 8px">PLAYED<div style="display:grid;grid-template-columns:repeat({{ playedGlyph.w }},4px);grid-auto-rows:4px"><sc-for list="{{ playedGlyph.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8b7e69">▾</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.green.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.green.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.green }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#438f5b;opacity:{{ d.o }}"></div></sc-for></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a><span><b>Peek flyout</b> — hovering a card floats the full tray at reading size, grouped like your own hand; clicking pins it while you plan.</span></div>
+      <div class="dv-card" style="width:640px">
+        <div data-screen-label="2b peek flyout" style="background:radial-gradient(560px 400px at 45% 30%,#584a3c,#493e33 60%,#372f27);padding:18px;font-family:'Instrument Sans',system-ui,sans-serif;color:#2c251c">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:250px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#bfb29b;padding:2px 2px 0">PLAYERS · TURN ORDER</div>
+              <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#d99c22;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Yellow · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;border:1px solid #dbcdb2;border-radius:999px;padding:3px 8px">NEXT</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.yellow.sq }}</div>
+                  <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.yellow.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.yellow }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#d99c22;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 0 0 1px #c9463c,0 14px 26px rgba(20,12,4,.36)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Red · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8b7e69">◂ pinned</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.red.sq }}</div>
+                  <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.red.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.red }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#c9463c;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#438f5b;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Green · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;border:1px solid #dbcdb2;border-radius:999px;padding:3px 8px">PLAYED<div style="display:grid;grid-template-columns:repeat({{ playedGlyph.w }},4px);grid-auto-rows:4px"><sc-for list="{{ playedGlyph.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.green.sq }}</div>
+                  <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.green.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.green }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#438f5b;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+            </div>
+            <div style="width:300px;background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:14px 15px;box-shadow:0 18px 36px rgba(15,9,3,.45);margin-top:132px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:16px;height:16px;border-radius:4px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28)"></div>
+                <div style="font-weight:600;font-size:14px">Red's hand</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8b7e69">{{ stats.red.pieces }} pcs · {{ stats.red.sq }} sq</div>
+              </div>
+              <div style="margin-top:11px;display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ redFly }}" as="g" hint-placeholder-count="3">
+                  <div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:#8b7e69;margin-bottom:5px">{{ g.label }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start">
+                      <sc-for list="{{ g.pieces }}" as="p"><div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},12px);grid-auto-rows:12px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div></sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;margin-top:11px">HOVER PEEKS · CLICK PINS · ESC CLOSES</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a><span><b>Always visible</b> — the 21 dots become 21 micro-silhouettes. Zero clicks, everything scannable; smallest shapes of the three (hover-zoom in the build).</span></div>
+      <div class="dv-card" style="width:322px">
+        <div data-screen-label="2c micro shapes" style="background:radial-gradient(420px 340px at 50% 30%,#584a3c,#493e33 60%,#372f27);padding:18px;font-family:'Instrument Sans',system-ui,sans-serif;color:#2c251c">
+          <div style="width:250px;display:flex;flex-direction:column;gap:10px;margin:0 auto">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#bfb29b;padding:2px 2px 0">PLAYERS · TURN ORDER</div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 0 0 2px #3468cf,0 12px 24px rgba(20,12,4,.38)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Blue · You</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#3468cf;color:#fff;border-radius:999px;padding:3px 8px">YOUR TURN</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.blue.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.blue.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;align-items:flex-start"><sc-for list="{{ micro.blue }}" as="p" hint-placeholder-count="21"><div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},5px);grid-auto-rows:5px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div></sc-for></div>
+            </div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#d99c22;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Yellow · Bot</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;border:1px solid #dbcdb2;border-radius:999px;padding:3px 8px">NEXT</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.yellow.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.yellow.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;align-items:flex-start"><sc-for list="{{ micro.yellow }}" as="p" hint-placeholder-count="21"><div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},5px);grid-auto-rows:5px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div></sc-for></div>
+            </div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Red · Bot</div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.red.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.red.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;align-items:flex-start"><sc-for list="{{ micro.red }}" as="p" hint-placeholder-count="21"><div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},5px);grid-auto-rows:5px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div></sc-for></div>
+            </div>
+            <div style="background:#f6efdf;border:1px solid #dbcdb2;border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:20px;height:20px;border-radius:5px;background:#438f5b;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                <div style="font-weight:600;font-size:14px">Green · Bot</div>
+                <div style="flex:1"></div>
+                <div style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;border:1px solid #dbcdb2;border-radius:999px;padding:3px 8px">PLAYED<div style="display:grid;grid-template-columns:repeat({{ playedGlyph.w }},4px);grid-auto-rows:4px"><sc-for list="{{ playedGlyph.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.green.sq }}</div>
+                <div style="font-size:11.5px;color:#8b7e69">squares left · {{ stats.green.pieces }} pieces</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;align-items:flex-start"><sc-for list="{{ micro.green }}" as="p" hint-placeholder-count="21"><div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},5px);grid-auto-rows:5px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div></sc-for></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "adopt <a class="dv-oid" href="#2a">2a</a> into the build" · "combine <a class="dv-oid" href="#2c">2c</a> strips with <a class="dv-oid" href="#2b">2b</a>'s pinned flyout" · "make the flyout follow whoever just moved".</p>
+</section>
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">The Study Table — three warm-tabletop finishes over one redesigned structure · baseline for comparison: <a class="dv-oid" href="Current UI (Recreation).dc.html">current UI</a></span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span><b>Walnut Club</b> — bone board recessed in dark walnut · paper panels · brass accents. The richest.</span></div>
+      <div class="dv-card" style="width:1440px">
+        <div data-screen-label="Look 1a — Walnut Club" style="--frame-a:#6d5138;--frame-b:#452f1d;--frame-hi:rgba(255,255,255,.28);--mat:#efe6d1;--grid:#d3c5a7;--pnl:#f6efdf;--pnl-bd:#dbcdb2;--well:#eadfc8;--ink:#2c251c;--mut:#8b7e69;--top-ink:#efe6d4;--top-mut:#bfb29b;--top-bd:rgba(239,230,212,.28);--top-bg:rgba(239,230,212,.08);--brass:#c29a58;width:1440px;height:900px;position:relative;overflow:hidden;background:radial-gradient(1150px 780px at 50% 40%,#584a3c,#493e33 55%,#372f27);font-family:'Instrument Sans',system-ui,sans-serif;color:var(--ink)">
+          <svg width="1440" height="900" style="position:absolute;inset:0;opacity:.05;pointer-events:none" aria-hidden="true"><filter id="nz-a"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="1440" height="900" filter="url(#nz-a)"></rect></svg>
+
+          <div style="height:64px;display:flex;align-items:center;gap:14px;padding:0 26px;position:relative;color:var(--top-ink)">
+            <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:25px">OpenBlokus</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--top-mut);border:1px solid var(--top-bd);border-radius:999px;padding:5px 12px">Solo table · 3 bots · Easy · Basic</div>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Theme</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Colors</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Help</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg);opacity:.85">Leave table</div>
+            </div>
+          </div>
+
+          <div style="position:absolute;top:64px;left:0;right:0;bottom:0;display:flex;gap:22px;padding:8px 26px 24px;align-items:stretch">
+            <div style="width:250px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--top-mut);padding:2px 2px 0">PLAYERS · TURN ORDER</div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 0 0 2px #3468cf,0 12px 24px rgba(20,12,4,.38)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Blue · You</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#3468cf;color:#fff;border-radius:999px;padding:3px 8px">YOUR TURN</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.blue.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.blue.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.blue }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#3468cf;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#d99c22;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Yellow · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--mut);border:1px solid var(--pnl-bd);border-radius:999px;padding:3px 8px">NEXT</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.yellow.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.yellow.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.yellow }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#d99c22;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Red · Bot</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.red.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.red.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.red }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#c9463c;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(20,12,4,.24)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#438f5b;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Green · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--mut);border:1px solid var(--pnl-bd);border-radius:999px;padding:3px 8px">PLAYED {{ stats.green.last }}</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.green.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.green.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.green }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#438f5b;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+            </div>
+
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-width:0">
+              <div style="background:linear-gradient(160deg,var(--frame-a),var(--frame-b));border-radius:16px;padding:19px;box-shadow:inset 0 1px 0 var(--frame-hi),inset 0 -1px 0 rgba(0,0,0,.4),0 24px 48px rgba(15,9,3,.42),0 4px 12px rgba(15,9,3,.28)">
+                <div style="border-radius:7px;padding:13px;background:var(--mat);box-shadow:inset 0 2px 9px rgba(0,0,0,.26)">{{ boardA }}</div>
+              </div>
+              <div style="font-size:13px;color:var(--top-mut)"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--top-ink)">{{ ghostId }}</span> in hand — hover to preview · click to stage · scroll rotates · right-click flips</div>
+              <div style="display:flex;align-items:center;gap:14px;background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:16px;padding:11px 16px;box-shadow:0 16px 32px rgba(15,9,3,.38)">
+                <div style="width:56px;height:56px;border-radius:10px;background:var(--well);box-shadow:inset 0 2px 6px rgba(0,0,0,.22);display:grid;place-items:center">
+                  <div style="position:relative;width:{{ slotW }}px;height:{{ slotH }}px"><sc-for list="{{ slotCells }}" as="s"><div style="position:absolute;left:{{ s.x }}px;top:{{ s.y }}px;width:10px;height:10px;background:#3468cf;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.38),inset 0 -1.5px 0 rgba(0,0,0,.3);border-radius:1px"></div></sc-for></div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--mut)">IN HAND</div>
+                  <div style="font-weight:600;font-size:14.5px;margin-top:2px">{{ ghostId }} · {{ ghostSq }} sq</div>
+                </div>
+                <div style="width:1px;height:46px;background:var(--pnl-bd)"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.1)">⟲</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Rotate <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">A</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.1)">⟳</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Rotate <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">D</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.1)">⇄</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Flip <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">F</span></div>
+                </div>
+                <div style="width:1px;height:46px;background:var(--pnl-bd)"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                  <div style="font-size:13px;font-weight:500;color:var(--mut);padding:8px 6px 2px">Cancel</div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">Esc</span>
+                </div>
+                <div style="background:#3468cf;color:#fff;font-weight:600;font-size:15px;border-radius:12px;padding:12px 22px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 16px rgba(52,104,207,.4),inset 0 1px 0 rgba(255,255,255,.28);animation:ob-pulse 1.8s ease-out infinite">Confirm move<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(255,255,255,.22);border-radius:4px;padding:2px 6px">Enter</span></div>
+              </div>
+            </div>
+
+            <div style="width:300px;background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:14px;padding:15px 16px;box-shadow:0 14px 28px rgba(15,9,3,.32);display:flex;flex-direction:column;gap:11px;align-self:flex-start">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:18px;height:18px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28)"></div>
+                <div style="font-weight:600;font-size:15px">Your hand</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mut)">{{ stats.blue.pieces }} pcs · {{ stats.blue.sq }} sq</div>
+              </div>
+              <sc-for list="{{ handL }}" as="g" hint-placeholder-count="3">
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.15em;color:var(--mut);margin-bottom:6px">{{ g.label }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start">
+                    <sc-for list="{{ g.pieces }}" as="p">
+                      <div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},13px);grid-auto-rows:13px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="height:1px;background:var(--pnl-bd);margin:2px 0"></div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.15em;color:var(--mut);margin-bottom:6px">SQUARES LEFT — LOWEST WINS</div>
+                <div style="display:flex;gap:7px"><sc-for list="{{ standings }}" as="s" hint-placeholder-count="4"><div style="display:flex;gap:6px;align-items:center;padding:6px 9px;background:var(--well);border-radius:8px;border:{{ s.bd }}"><div style="width:11px;height:11px;border-radius:3px;background:{{ s.hex }};box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.25)"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600">{{ s.sq }}</div></div></sc-for></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a><span><b>Linen Morning</b> — the same table in daylight · calmest, maximum board contrast · becomes the light theme.</span></div>
+      <div class="dv-card" style="width:1440px">
+        <div data-screen-label="Look 1b — Linen Morning" style="--frame-a:#b38e63;--frame-b:#8a6845;--frame-hi:rgba(255,255,255,.45);--mat:#fbf7ec;--grid:#ddd3bb;--pnl:#fffdf6;--pnl-bd:#e4dac4;--well:#f1e9d5;--ink:#332c21;--mut:#95886e;--top-ink:#3a3225;--top-mut:#8d8069;--top-bd:rgba(58,50,37,.22);--top-bg:rgba(58,50,37,.05);--brass:#a8834b;width:1440px;height:900px;position:relative;overflow:hidden;background:radial-gradient(1150px 780px at 50% 40%,#f0e9db,#e6dcca 55%,#d5c8b0);font-family:'Instrument Sans',system-ui,sans-serif;color:var(--ink)">
+          <svg width="1440" height="900" style="position:absolute;inset:0;opacity:.04;pointer-events:none" aria-hidden="true"><filter id="nz-b"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="1440" height="900" filter="url(#nz-b)"></rect></svg>
+
+          <div style="height:64px;display:flex;align-items:center;gap:14px;padding:0 26px;position:relative;color:var(--top-ink)">
+            <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:25px">OpenBlokus</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--top-mut);border:1px solid var(--top-bd);border-radius:999px;padding:5px 12px">Solo table · 3 bots · Easy · Basic</div>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Theme</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Colors</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Help</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg);opacity:.85">Leave table</div>
+            </div>
+          </div>
+
+          <div style="position:absolute;top:64px;left:0;right:0;bottom:0;display:flex;gap:22px;padding:8px 26px 24px;align-items:stretch">
+            <div style="width:250px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--top-mut);padding:2px 2px 0">PLAYERS · TURN ORDER</div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 0 0 2px #3468cf,0 10px 20px rgba(90,70,40,.22)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Blue · You</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#3468cf;color:#fff;border-radius:999px;padding:3px 8px">YOUR TURN</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.blue.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.blue.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.blue }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#3468cf;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(90,70,40,.16)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#d99c22;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Yellow · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--mut);border:1px solid var(--pnl-bd);border-radius:999px;padding:3px 8px">NEXT</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.yellow.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.yellow.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.yellow }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#d99c22;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(90,70,40,.16)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Red · Bot</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.red.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.red.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.red }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#c9463c;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(90,70,40,.16)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#438f5b;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Green · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--mut);border:1px solid var(--pnl-bd);border-radius:999px;padding:3px 8px">PLAYED {{ stats.green.last }}</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.green.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.green.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.green }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#438f5b;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+            </div>
+
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-width:0">
+              <div style="background:linear-gradient(160deg,var(--frame-a),var(--frame-b));border-radius:16px;padding:19px;box-shadow:inset 0 1px 0 var(--frame-hi),inset 0 -1px 0 rgba(0,0,0,.35),0 20px 40px rgba(96,74,46,.35),0 4px 10px rgba(96,74,46,.22)">
+                <div style="border-radius:7px;padding:13px;background:var(--mat);box-shadow:inset 0 2px 8px rgba(0,0,0,.18)">{{ boardB }}</div>
+              </div>
+              <div style="font-size:13px;color:var(--top-mut)"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--top-ink)">{{ ghostId }}</span> in hand — hover to preview · click to stage · scroll rotates · right-click flips</div>
+              <div style="display:flex;align-items:center;gap:14px;background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:16px;padding:11px 16px;box-shadow:0 14px 28px rgba(96,74,46,.26)">
+                <div style="width:56px;height:56px;border-radius:10px;background:var(--well);box-shadow:inset 0 2px 6px rgba(0,0,0,.16);display:grid;place-items:center">
+                  <div style="position:relative;width:{{ slotW }}px;height:{{ slotH }}px"><sc-for list="{{ slotCells }}" as="s"><div style="position:absolute;left:{{ s.x }}px;top:{{ s.y }}px;width:10px;height:10px;background:#3468cf;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.38),inset 0 -1.5px 0 rgba(0,0,0,.3);border-radius:1px"></div></sc-for></div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--mut)">IN HAND</div>
+                  <div style="font-weight:600;font-size:14.5px;margin-top:2px">{{ ghostId }} · {{ ghostSq }} sq</div>
+                </div>
+                <div style="width:1px;height:46px;background:var(--pnl-bd)"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.08)">⟲</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Rotate <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">A</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.08)">⟳</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Rotate <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">D</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.08)">⇄</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Flip <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">F</span></div>
+                </div>
+                <div style="width:1px;height:46px;background:var(--pnl-bd)"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                  <div style="font-size:13px;font-weight:500;color:var(--mut);padding:8px 6px 2px">Cancel</div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--ink);color:var(--pnl);border-radius:4px;padding:1px 5px">Esc</span>
+                </div>
+                <div style="background:#3468cf;color:#fff;font-weight:600;font-size:15px;border-radius:12px;padding:12px 22px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 16px rgba(52,104,207,.35),inset 0 1px 0 rgba(255,255,255,.28);animation:ob-pulse 1.8s ease-out infinite">Confirm move<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(255,255,255,.22);border-radius:4px;padding:2px 6px">Enter</span></div>
+              </div>
+            </div>
+
+            <div style="width:300px;background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:14px;padding:15px 16px;box-shadow:0 12px 24px rgba(96,74,46,.2);display:flex;flex-direction:column;gap:11px;align-self:flex-start">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:18px;height:18px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28)"></div>
+                <div style="font-weight:600;font-size:15px">Your hand</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mut)">{{ stats.blue.pieces }} pcs · {{ stats.blue.sq }} sq</div>
+              </div>
+              <sc-for list="{{ handL }}" as="g" hint-placeholder-count="3">
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.15em;color:var(--mut);margin-bottom:6px">{{ g.label }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start">
+                    <sc-for list="{{ g.pieces }}" as="p">
+                      <div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},13px);grid-auto-rows:13px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="height:1px;background:var(--pnl-bd);margin:2px 0"></div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.15em;color:var(--mut);margin-bottom:6px">SQUARES LEFT — LOWEST WINS</div>
+                <div style="display:flex;gap:7px"><sc-for list="{{ standings }}" as="s" hint-placeholder-count="4"><div style="display:flex;gap:6px;align-items:center;padding:6px 9px;background:var(--well);border-radius:8px;border:{{ s.bd }}"><div style="width:11px;height:11px;border-radius:3px;background:{{ s.hex }};box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.25)"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600">{{ s.sq }}</div></div></sc-for></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span><b>Lamplight</b> — after dark · charcoal mat, the pieces carry the light · becomes the dark theme.</span></div>
+      <div class="dv-card" style="width:1440px">
+        <div data-screen-label="Look 1c — Lamplight" style="--frame-a:#4a3826;--frame-b:#2b2013;--frame-hi:rgba(255,255,255,.16);--mat:#211d17;--grid:#3a3327;--pnl:#2c261e;--pnl-bd:#41392c;--well:#221d16;--ink:#ece3d0;--mut:#a1947c;--top-ink:#e8ddc6;--top-mut:#998c74;--top-bd:rgba(232,221,198,.22);--top-bg:rgba(232,221,198,.06);--brass:#c9a05e;width:1440px;height:900px;position:relative;overflow:hidden;background:radial-gradient(1150px 780px at 50% 40%,#332a20,#262019 55%,#191512);font-family:'Instrument Sans',system-ui,sans-serif;color:var(--ink)">
+          <svg width="1440" height="900" style="position:absolute;inset:0;opacity:.06;pointer-events:none" aria-hidden="true"><filter id="nz-c"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter><rect width="1440" height="900" filter="url(#nz-c)"></rect></svg>
+          <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(720px 520px at 50% 28%,rgba(255,190,110,.09),rgba(255,190,110,0) 70%)"></div>
+
+          <div style="height:64px;display:flex;align-items:center;gap:14px;padding:0 26px;position:relative;color:var(--top-ink)">
+            <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:25px">OpenBlokus</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--top-mut);border:1px solid var(--top-bd);border-radius:999px;padding:5px 12px">Solo table · 3 bots · Easy · Basic</div>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Theme</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Colors</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg)">Help</div>
+              <div style="font-size:12.5px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--top-bd);background:var(--top-bg);opacity:.85">Leave table</div>
+            </div>
+          </div>
+
+          <div style="position:absolute;top:64px;left:0;right:0;bottom:0;display:flex;gap:22px;padding:8px 26px 24px;align-items:stretch">
+            <div style="width:250px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--top-mut);padding:2px 2px 0">PLAYERS · TURN ORDER</div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 0 0 2px #4a7fe8,0 12px 24px rgba(0,0,0,.5)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Blue · You</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#3468cf;color:#fff;border-radius:999px;padding:3px 8px">YOUR TURN</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.blue.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.blue.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.blue }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#4a7fe8;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(0,0,0,.4)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#d99c22;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Yellow · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--mut);border:1px solid var(--pnl-bd);border-radius:999px;padding:3px 8px">NEXT</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.yellow.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.yellow.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.yellow }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#d99c22;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(0,0,0,.4)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#c9463c;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Red · Bot</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.red.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.red.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.red }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#c9463c;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+              <div style="background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:12px;padding:12px 14px;box-shadow:0 5px 14px rgba(0,0,0,.4)">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:20px;height:20px;border-radius:5px;background:#438f5b;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28),0 1px 2px rgba(0,0,0,.3)"></div>
+                  <div style="font-weight:600;font-size:14px">Green · Bot</div>
+                  <div style="flex:1"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--mut);border:1px solid var(--pnl-bd);border-radius:999px;padding:3px 8px">PLAYED {{ stats.green.last }}</div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ stats.green.sq }}</div>
+                  <div style="font-size:11.5px;color:var(--mut)">squares left · {{ stats.green.pieces }} pieces</div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:9px"><sc-for list="{{ inv.green }}" as="d" hint-placeholder-count="21"><div style="width:6px;height:6px;border-radius:1.5px;background:#438f5b;opacity:{{ d.o }}"></div></sc-for></div>
+              </div>
+            </div>
+
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-width:0">
+              <div style="background:linear-gradient(160deg,var(--frame-a),var(--frame-b));border-radius:16px;padding:19px;box-shadow:inset 0 1px 0 var(--frame-hi),inset 0 -1px 0 rgba(0,0,0,.5),0 26px 52px rgba(0,0,0,.55),0 4px 12px rgba(0,0,0,.4)">
+                <div style="border-radius:7px;padding:13px;background:var(--mat);box-shadow:inset 0 2px 10px rgba(0,0,0,.5)">{{ boardC }}</div>
+              </div>
+              <div style="font-size:13px;color:var(--top-mut)"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--top-ink)">{{ ghostId }}</span> in hand — hover to preview · click to stage · scroll rotates · right-click flips</div>
+              <div style="display:flex;align-items:center;gap:14px;background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:16px;padding:11px 16px;box-shadow:0 16px 32px rgba(0,0,0,.5)">
+                <div style="width:56px;height:56px;border-radius:10px;background:var(--well);box-shadow:inset 0 2px 6px rgba(0,0,0,.4);display:grid;place-items:center">
+                  <div style="position:relative;width:{{ slotW }}px;height:{{ slotH }}px"><sc-for list="{{ slotCells }}" as="s"><div style="position:absolute;left:{{ s.x }}px;top:{{ s.y }}px;width:10px;height:10px;background:#4a7fe8;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.38),inset 0 -1.5px 0 rgba(0,0,0,.3);border-radius:1px"></div></sc-for></div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--mut)">IN HAND</div>
+                  <div style="font-weight:600;font-size:14.5px;margin-top:2px">{{ ghostId }} · {{ ghostSq }} sq</div>
+                </div>
+                <div style="width:1px;height:46px;background:var(--pnl-bd)"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.3)">⟲</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Rotate <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:rgba(232,221,198,.14);color:var(--ink);border:1px solid var(--pnl-bd);border-radius:4px;padding:1px 5px">A</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.3)">⟳</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Rotate <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:rgba(232,221,198,.14);color:var(--ink);border:1px solid var(--pnl-bd);border-radius:4px;padding:1px 5px">D</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="width:48px;height:40px;border-radius:10px;background:var(--well);border:1px solid var(--pnl-bd);display:grid;place-items:center;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.3)">⇄</div>
+                  <div style="font-size:10.5px;color:var(--mut);display:flex;gap:4px;align-items:center">Flip <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:rgba(232,221,198,.14);color:var(--ink);border:1px solid var(--pnl-bd);border-radius:4px;padding:1px 5px">F</span></div>
+                </div>
+                <div style="width:1px;height:46px;background:var(--pnl-bd)"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                  <div style="font-size:13px;font-weight:500;color:var(--mut);padding:8px 6px 2px">Cancel</div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;background:rgba(232,221,198,.14);color:var(--ink);border:1px solid var(--pnl-bd);border-radius:4px;padding:1px 5px">Esc</span>
+                </div>
+                <div style="background:#4a7fe8;color:#fff;font-weight:600;font-size:15px;border-radius:12px;padding:12px 22px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(74,127,232,.45),inset 0 1px 0 rgba(255,255,255,.28);animation:ob-pulse 1.8s ease-out infinite">Confirm move<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(255,255,255,.22);border-radius:4px;padding:2px 6px">Enter</span></div>
+              </div>
+            </div>
+
+            <div style="width:300px;background:var(--pnl);border:1px solid var(--pnl-bd);border-radius:14px;padding:15px 16px;box-shadow:0 14px 28px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:11px;align-self:flex-start">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:18px;height:18px;border-radius:5px;background:#3468cf;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -2px 0 rgba(0,0,0,.28)"></div>
+                <div style="font-weight:600;font-size:15px">Your hand</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mut)">{{ stats.blue.pieces }} pcs · {{ stats.blue.sq }} sq</div>
+              </div>
+              <sc-for list="{{ handD }}" as="g" hint-placeholder-count="3">
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.15em;color:var(--mut);margin-bottom:6px">{{ g.label }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start">
+                    <sc-for list="{{ g.pieces }}" as="p">
+                      <div style="{{ p.wrap }}"><div style="display:grid;grid-template-columns:repeat({{ p.w }},13px);grid-auto-rows:13px"><sc-for list="{{ p.cells }}" as="q"><div style="{{ q.st }}"></div></sc-for></div></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="height:1px;background:var(--pnl-bd);margin:2px 0"></div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.15em;color:var(--mut);margin-bottom:6px">SQUARES LEFT — LOWEST WINS</div>
+                <div style="display:flex;gap:7px"><sc-for list="{{ standings }}" as="s" hint-placeholder-count="4"><div style="display:flex;gap:6px;align-items:center;padding:6px 9px;background:var(--well);border-radius:8px;border:{{ s.bd }}"><div style="width:11px;height:11px;border-radius:3px;background:{{ s.hex }};box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.25)"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600">{{ s.sq }}</div></div></sc-for></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="max-width:1000px;margin:34px 0 0;background:#f9f4e9;border:1px solid #ddd0b6;border-radius:10px;box-shadow:0 2px 8px rgba(60,45,20,.1);padding:30px 34px;color:#2c251c;font-family:'Instrument Sans',system-ui,sans-serif" data-screen-label="Redesign brief">
+    <div style="font-family:'Instrument Serif',serif;font-size:29px;font-style:italic">The Study Table — redesign brief</div>
+    <div style="font-size:12px;color:#8b7e69;margin-top:6px">Assumptions: front-end only — engine API, keymap and two-phase placement stay as-is · desktop ≥ 1280 · classic four colors, custom palettes preserved · light + dark themes from one variable set (1b / 1c).</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:26px;margin-top:22px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8b7e69;margin-bottom:8px">WHAT'S WRONG TODAY</div>
+        <div style="font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:7px">
+          <div><b>1 · No focal point.</b> The board is 480px in the top-left; four equal-weight trays outshout it.</div>
+          <div><b>2 · Your hand isn't privileged.</b> All 84 pieces render identically at 12px; selecting feels like data entry.</div>
+          <div><b>3 · Turn state is prose.</b> "turn 13 · player 0 · active blue" + a 12px pill — not glanceable.</div>
+          <div><b>4 · Actions are detached.</b> Native buttons under the board; the keymap hides in a popover; scroll-to-rotate and right-click-flip are undiscoverable.</div>
+          <div><b>5 · Thin feedback.</b> Illegal = red tint, no reason. No placement moment. Game over is a bare table.</div>
+          <div><b>6 · Chrome scattered.</b> Theme / palette / help pinned bottom-left like debug switches.</div>
+          <div><b>7 · One premium thing, buried.</b> The skeuomorphic piece finish is great — the rest of the page doesn't live up to it. Keep it, amplify it.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8b7e69;margin-bottom:8px">THE CONCEPT</div>
+        <div style="font-size:12.5px;line-height:1.6">The match is a physical table. The board is an <b>object</b> — a walnut-framed, recessed well at dead center, the only thing with real depth. Everything else is <b>paper on the table</b>: ivory cards with contact shadows. Left, who's playing (turn order runs top→down). Right, your hand, grouped by piece size. Below the board, one action dock that reads in the order you think: <i>what's in hand → orient → confirm</i>. Skeuomorphic where it earns tactility (pieces, wells, keycaps); flat where clarity wins (text, labels). Type: Instrument Sans / Serif + IBM Plex Mono for counts and keycaps.</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8b7e69;margin:18px 0 8px">STRUCTURE</div>
+        <div style="border:1px solid #ddd0b6;border-radius:8px;background:#fffdf6;padding:10px;width:290px">
+          <div style="height:18px;border:1px dashed #c8b997;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#8b7e69">WORDMARK · MATCH CHIP&#160;&#160;&#160;&#160;&#160;&#160;UTILITIES</div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <div style="width:56px;height:110px;border:1px dashed #c8b997;border-radius:4px;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#8b7e69;text-align:center">PLAYERS<br>×4</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+              <div style="height:78px;border:2px solid #8b6845;border-radius:4px;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#6d5138;background:#f3ecdb">BOARD 600px</div>
+              <div style="height:27px;border:1px dashed #c8b997;border-radius:999px;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#8b7e69">ACTION DOCK</div>
+            </div>
+            <div style="width:64px;height:110px;border:1px dashed #c8b997;border-radius:4px;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#8b7e69;text-align:center">YOUR<br>HAND</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8b7e69;margin-bottom:8px">COMPONENTS</div>
+        <div style="font-size:12px;line-height:1.55;display:flex;flex-direction:column;gap:5px">
+          <div><b>TableSurface</b> — warm ground, vignette, grain; owns theme vars.</div>
+          <div><b>TopBar</b> — identity + match context; quiet utilities.</div>
+          <div><b>PlayerCard</b> — tile, name, squares/pieces left, 21-dot inventory, state tag (YOUR TURN / NEXT / PLAYED / NO MOVES / WINNER).</div>
+          <div><b>BoardFrame</b> — walnut rail + recessed mat.</div>
+          <div><b>BoardGrid</b> — cells, hover ghost, staged piece, brass last-move ring, start-corner markers.</div>
+          <div><b>PieceFinish</b> — SVG fill + bevel + gloss + grain (evolved from the repo's PlacedLayer).</div>
+          <div><b>HandTray</b> — your 21 pieces grouped 5/4/small; placed = dashed ghosts; selected = recessed well + ring.</div>
+          <div><b>ActionDock</b> — in-hand slot · rotate/flip with keycaps · Cancel · pulsing Confirm.</div>
+          <div><b>StatusLine</b> — one sentence that always says the next action.</div>
+          <div><b>ReasonToast</b> — why a spot is illegal, from the same rule checks the engine runs.</div>
+          <div><b>Standings</b> — squares-left chips, leader in brass.</div>
+          <div><b>GameOverCard · Lobby</b> — build phase.</div>
+        </div>
+      </div>
+    </div>
+    <div style="height:1px;background:#ddd0b6;margin:22px 0 18px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8b7e69;margin-bottom:8px">INTERACTION DECISIONS</div>
+        <div style="font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:7px">
+          <div><b>Hybrid placement (your pick).</b> Hover ghost → click stages → Confirm pulses. Two-phase stays: placement is irreversible in Blokus, so the confirm beat is protection, not friction.</div>
+          <div><b>Keymap kept verbatim</b> (A/D rotate, F flip, arrows nudge, Space stage, Enter, Esc) — but surfaced as keycaps on the controls instead of a help table. Scroll-rotate & right-click-flip stay, advertised in the status line.</div>
+          <div><b>Illegal moves explain themselves.</b> Red ghost + a toast naming the broken rule: "needs corner contact", "shares an edge with Blue", "overlaps", "off board".</div>
+          <div><b>Your tray is the only tray.</b> Opponents compress to counts + a 21-dot inventory — the info that matters (what's left, who's ahead) without 63 tiny shapes.</div>
+          <div><b>Board auto-rotates</b> so your corner is bottom-right (kept from the repo), animated as a framed object turning.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:#8b7e69;margin-bottom:8px">STATE SPECIMENS (1a FINISH)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="background:#3468cf;color:#fff;font-weight:600;font-size:13px;border-radius:10px;padding:9px 16px;box-shadow:0 4px 12px rgba(52,104,207,.4),inset 0 1px 0 rgba(255,255,255,.28)">Confirm move</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">PRIMARY</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="background:#2b57ae;color:#fff;font-weight:600;font-size:13px;border-radius:10px;padding:9px 16px;box-shadow:0 6px 16px rgba(52,104,207,.5),inset 0 1px 0 rgba(255,255,255,.28);transform:translateY(-1px)">Confirm move</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">HOVER</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="background:#eadfc8;color:#a5987f;font-weight:600;font-size:13px;border-radius:10px;padding:9px 16px">Confirm move</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">DISABLED</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:44px;height:36px;border-radius:9px;background:#eadfc8;border:1px solid #dbcdb2;display:grid;place-items:center;font-size:15px;box-shadow:0 2px 0 rgba(0,0,0,.1)">⟳</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">TOOL</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:44px;height:36px;border-radius:9px;background:#e2d5ba;border:1px solid #c9b995;display:grid;place-items:center;font-size:15px;box-shadow:inset 0 2px 3px rgba(0,0,0,.18)">⟳</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">PRESSED</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#3468cf;color:#fff;border-radius:999px;padding:3px 9px">YOUR TURN</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">ACTIVE</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#8b7e69;border:1px solid #dbcdb2;border-radius:999px;padding:3px 9px">NO MOVES</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">STUCK</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;background:#c29a58;color:#fff;border-radius:999px;padding:3px 9px">WINNER</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">END</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start"><div style="display:flex;gap:8px;align-items:center;background:#f6e3dc;border:1px solid #dfab9d;border-radius:9px;padding:8px 12px;font-size:12px;color:#7c2d24"><div style="width:10px;height:10px;border-radius:2px;background:#c9463c"></div>Shares an edge with Blue — same color touches corners only</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">ILLEGAL-MOVE TOAST</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start"><div style="display:flex;gap:8px;align-items:center;background:#e9efdd;border:1px solid #bcca9e;border-radius:9px;padding:8px 12px;font-size:12px;color:#3c5222"><div style="width:10px;height:10px;border-radius:2px;background:#438f5b"></div>Staged on (12, 7) — press Enter to confirm</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#8b7e69">STAGED TOAST</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="dv-next">Try next: "build <a class="dv-oid" href="#1a">1a</a> as the fully playable screen" · "mix: <a class="dv-oid" href="#1b">1b</a> table with <a class="dv-oid" href="#1a">1a</a>'s walnut frame" · "less brass, cooler paper" — the winner becomes the real game screen + lobby, with <a class="dv-oid" href="#1b">1b</a>/<a class="dv-oid" href="#1c">1c</a> as its light/dark themes.</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { d: null };
+
+  componentDidMount() {
+    import('./blokus-core.js').then((core) => {
+      const HEX = { blue: '#3468cf', yellow: '#d99c22', red: '#c9463c', green: '#438f5b' };
+      const C = 30;
+      const st = core.generateMidgame(7, 16);
+      const regions = core.buildRegions(st.board, C, (c) => HEX[c]);
+      const allD = regions.map((r) => r.fillD).join('');
+
+      // Ghost preview: prefer Y5 in blue's remaining, else any pentomino, near center.
+      const moves = core.enumerateMoves(st, 'blue');
+      let cand = moves.filter((m) => m.pieceId === 'Y5');
+      if (!cand.length) cand = moves.filter((m) => m.cells.length === 5);
+      if (!cand.length) cand = moves;
+      let ghostMove = cand[0];
+      let bd = 1e9;
+      for (const m of cand) {
+        const mx = m.cells.reduce((s, c) => s + c[0], 0) / m.cells.length;
+        const my = m.cells.reduce((s, c) => s + c[1], 0) / m.cells.length;
+        const d = Math.hypot(mx - 9.5, my - 9.5);
+        if (d < bd) { bd = d; ghostMove = m; }
+      }
+      const ghostPaths = core.regionPaths(ghostMove.cells, C);
+      const ghost = { fillD: ghostPaths.fillD, outlineD: ghostPaths.outlineD, hex: '#3468cf' };
+      const lastRects = core.lastMoveRects(st.lastMove, C);
+      const base = {
+        matStyle: { fill: 'var(--mat)' },
+        gridD: core.gridPathD(C),
+        gridStyle: { stroke: 'var(--grid)' },
+        borderStyle: { stroke: 'var(--grid)' },
+      };
+      const mkBoard = (suffix) => core.buildFinishElement({
+        React, C, size: 600, suffix, regions, allD, overlay: false, base, ghost,
+        lastRects, lastStroke: 'var(--brass)',
+      });
+
+      const stats = {};
+      for (const c of core.COLOR_ORDER) {
+        stats[c] = {
+          sq: core.remainingSquares(st, c),
+          pieces: st.colors[c].remaining.length,
+          last: st.colors[c].lastPlaced || '—',
+        };
+      }
+      const inv = {};
+      for (const c of core.COLOR_ORDER) {
+        const rem = new Set(st.colors[c].remaining);
+        inv[c] = core.PIECE_IDS.map((id) => ({ o: rem.has(id) ? 0.95 : 0.18 }));
+      }
+
+      const remBlue = new Set(st.colors.blue.remaining);
+      const groupsOf = (theme) => {
+        const cellOn = {
+          width: 13, height: 13, boxSizing: 'border-box', background: HEX.blue,
+          border: theme === 'light' ? '1px solid rgba(0,0,0,.28)' : '1px solid rgba(0,0,0,.5)',
+          boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 -1.5px 0 rgba(0,0,0,.22)',
+        };
+        const cellPlaced = {
+          width: 13, height: 13, boxSizing: 'border-box',
+          border: theme === 'light' ? '1.5px dashed #c8b997' : '1.5px dashed #4c4234',
+        };
+        const cellOff = { width: 13, height: 13 };
+        const defs = [
+          ['PENTOMINOES — 5 SQ', core.PIECE_IDS.filter((id) => core.pieceSize(id) === 5)],
+          ['TETROMINOES — 4 SQ', core.PIECE_IDS.filter((id) => core.pieceSize(id) === 4)],
+          ['TRIOMINOES · DOMINO · MONO', core.PIECE_IDS.filter((id) => core.pieceSize(id) <= 3)],
+        ];
+        return defs.map(([label, ids]) => ({
+          label,
+          pieces: ids.map((id) => {
+            const placed = !remBlue.has(id);
+            const selected = id === ghostMove.pieceId;
+            const t = core.thumbGrid(id);
+            return {
+              w: t.w,
+              wrap: selected
+                ? { padding: 4, borderRadius: 6, background: 'var(--well)', boxShadow: 'inset 0 1.5px 4px rgba(0,0,0,.24), 0 0 0 2px ' + HEX.blue }
+                : placed
+                  ? { padding: 4, opacity: 0.8 }
+                  : { padding: 4, borderRadius: 6 },
+              cells: t.cells.map((q) => ({ st: q.on ? (placed ? cellPlaced : cellOn) : cellOff })),
+            };
+          }),
+        }));
+      };
+
+      const standings = core.COLOR_ORDER
+        .map((c) => ({ hex: HEX[c], sq: stats[c].sq }))
+        .sort((a, b) => a.sq - b.sq)
+        .map((s, i) => ({ ...s, bd: i === 0 ? '1px solid var(--brass)' : '1px solid transparent' }));
+
+      const baseCells = core.PIECES[ghostMove.pieceId];
+      const slotW = (Math.max(...baseCells.map((c) => c[0])) + 1) * 10;
+      const slotH = (Math.max(...baseCells.map((c) => c[1])) + 1) * 10;
+      const slotCells = baseCells.map(([x, y]) => ({ x: x * 10, y: y * 10 }));
+
+      // --- turn 2: opponent-inventory riffs ---
+      const trayFor = (color, px, ids) => {
+        const rem = new Set(st.colors[color].remaining);
+        const big = px >= 8;
+        const cellOn = {
+          width: px, height: px, boxSizing: 'border-box', background: HEX[color],
+          border: '1px solid rgba(0,0,0,' + (big ? '.28' : '.32') + ')',
+          boxShadow: big ? 'inset 0 1.5px 0 rgba(255,255,255,.35), inset 0 -1.5px 0 rgba(0,0,0,.22)' : 'none',
+        };
+        const cellPlaced = {
+          width: px, height: px, boxSizing: 'border-box',
+          border: (big ? '1.5px' : '1px') + ' dashed #c8b997',
+        };
+        const cellOff = { width: px, height: px };
+        return ids.map((id) => {
+          const placed = !rem.has(id);
+          const t = core.thumbGrid(id);
+          return {
+            w: t.w,
+            wrap: { padding: big ? 3 : 1, opacity: placed ? 0.75 : 1 },
+            cells: t.cells.map((q) => ({ st: q.on ? (placed ? cellPlaced : cellOn) : cellOff })),
+          };
+        });
+      };
+      const micro = {};
+      for (const c of core.COLOR_ORDER) micro[c] = trayFor(c, 5, core.PIECE_IDS);
+      const redMini = trayFor('red', 9, core.PIECE_IDS);
+      const flyDefs = [
+        ['PENTOMINOES — 5 SQ', core.PIECE_IDS.filter((id) => core.pieceSize(id) === 5)],
+        ['TETROMINOES — 4 SQ', core.PIECE_IDS.filter((id) => core.pieceSize(id) === 4)],
+        ['TRIOMINOES · DOMINO · MONO', core.PIECE_IDS.filter((id) => core.pieceSize(id) <= 3)],
+      ];
+      const redFly = flyDefs.map(([label, ids]) => ({ label, pieces: trayFor('red', 12, ids) }));
+      const glyphFor = (color, id, px) => {
+        const t = core.thumbGrid(id);
+        return {
+          w: t.w,
+          cells: t.cells.map((q) => ({
+            st: q.on ? { width: px, height: px, background: HEX[color], boxSizing: 'border-box' } : { width: px, height: px },
+          })),
+        };
+      };
+      const playedGlyph = glyphFor('green', st.colors.green.lastPlaced || 'W5', 4);
+
+      this.setState({
+        d: {
+          micro,
+          redMini,
+          redFly,
+          playedGlyph,
+          boardA: mkBoard('a'),
+          boardB: mkBoard('b'),
+          boardC: mkBoard('c'),
+          stats,
+          inv,
+          handL: groupsOf('light'),
+          handD: groupsOf('dark'),
+          standings,
+          ghostId: ghostMove.pieceId,
+          ghostSq: ghostMove.cells.length,
+          slotW,
+          slotH,
+          slotCells,
+        },
+      });
+    });
+  }
+
+  renderVals() {
+    return this.state.d || {};
+  }
+}
+</script>
+</body>
+</html>
