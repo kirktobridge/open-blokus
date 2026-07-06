@@ -4,6 +4,7 @@ test('human vs 3 AI: human opens, the three AIs reply on their corners', async (
   page,
 }) => {
   await page.goto('/?botDelay=0');
+  await page.getByTestId('customize-toggle').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('3'); // you = P0 (blue)
   await page.getByTestId('start-ai').click();
@@ -29,8 +30,25 @@ test('human vs 3 AI: human opens, the three AIs reply on their corners', async (
   await expect(page.getByText(/active blue/)).toBeVisible();
 });
 
+test('Quick Play starts a vs-AI game in one click (default: you vs 3 AI)', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('quick-play').click();
+
+  // Default setup is a 4p game with the human as blue, up first — one click in.
+  await expect(page.getByText(/active blue/)).toBeVisible();
+  await page.getByTestId('piece-blue-I2').click();
+  await page.getByTestId('cell-0-0').click(); // stage on blue's corner
+  await page.getByTestId('submit-move').click(); // commit
+
+  // Proves the seats are AI: yellow replies on its own corner with no further input.
+  await expect(page.getByTestId('cell-19-0')).toHaveAttribute('data-value', 'yellow', {
+    timeout: 15_000,
+  });
+});
+
 test('all-AI watch game plays to completion with no human input', async ({ page }) => {
   await page.goto('/?botDelay=0');
+  await page.getByTestId('customize-toggle').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
   await page.getByTestId('start-ai').click();

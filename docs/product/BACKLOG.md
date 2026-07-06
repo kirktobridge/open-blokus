@@ -209,15 +209,19 @@ four classic colors as accents, shapes as the star.
   [GameOverModal](../../src/client/controls/GameOverModal.tsx) table).
 - **Depends on:** nothing. Strong synergy with P7 (sound) — same event hooks.
 
-### P17 — Front door: quick play, invite links, home screen redesign
-- **Status:** proposed
-- **Value:** first impression currently is dropdowns + a match-ID text box. The board
-  is the product's best visual — the home screen should show it and get you playing
-  in one click.
-- **Scope:** "Quick Play" button (instant game vs bots at last-used settings);
-  copyable invite *URL* replacing paste-a-match-ID; visual redesign consistent with
-  the study-table identity.
-- **Depends on:** nothing hard; invite links need a route param.
+### P17 — Front door: quick play, invite links, home screen redesign — SHIPPED
+- **Status:** shipped — one-click **Quick Play** (last-used vs-AI setup persisted;
+  full setup behind a Customize disclosure), **invite links** (`?join=<matchID>`
+  deep-link auto-joins on load then strips the param; copy-invite buttons on matches
+  + in-game; dismissible join-error strip), and a **study-table home redesign** on
+  the game screen's own token vocabulary (shared `PANEL`/`PRIMARY_BTN`/… primitives
+  in theme.ts, `table-bg` + docked top bar, and a read-only **hero board** reusing
+  PlacedLayer so it inherits the gel finish / palette / theme for free).
+- **Value:** first impression is now the board itself + one click to play, not
+  dropdowns and a match-ID box.
+- **Deviation:** GameOverModal did **not** adopt the shared `PANEL` — it keeps its
+  heavier modal shadow (overlay dialog, e2e-covered); the "one source" consolidation
+  is left for a later pass.
 
 ---
 

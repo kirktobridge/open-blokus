@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameMode, ScoringVariant } from '../game/types';
 import { useLobby } from './lobby/useLobby';
 import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/config';
@@ -13,6 +13,7 @@ export function App() {
   const lobby = useLobby();
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [matches, setMatches] = useState<MatchInfo[]>([]);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [aiConfig, setAiConfig] = useState<{
     mode: GameMode;
     aiCount: number;
@@ -36,6 +37,28 @@ export function App() {
     setSession(s);
   };
 
+  // Invite deep-link: `?join=<matchID>` on load joins that match, then strips the
+  // param so a refresh (which restores via obk:session) won't try to rejoin. Runs
+  // once; the ref guards against StrictMode's double-invoke consuming two seats.
+  const inviteHandled = useRef(false);
+  useEffect(() => {
+    if (inviteHandled.current) return;
+    inviteHandled.current = true;
+    const joinId = new URLSearchParams(window.location.search).get('join');
+    if (!joinId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('join');
+    window.history.replaceState({}, '', url.toString());
+    if (session) return; // already seated (restored session) — ignore the link
+    void (async () => {
+      try {
+        enter(await lobby.join(joinId));
+      } catch {
+        setJoinError('That table is full or no longer exists.');
+      }
+    })();
+  }, []);
+
   const onCreate = useCallback(
     async (mode: GameMode, scoring: ScoringVariant) => {
       const matchID = await lobby.createMatch(mode, scoring);
@@ -46,7 +69,11 @@ export function App() {
 
   const onJoin = useCallback(
     async (matchID: string) => {
-      enter(await lobby.join(matchID));
+      try {
+        enter(await lobby.join(matchID));
+      } catch {
+        setJoinError('Could not join that table — it may be full or gone.');
+      }
     },
     [lobby],
   );
@@ -85,13 +112,16 @@ export function App() {
         onStartAI={(mode, aiCount, botDifficulties) =>
           setAiConfig({ mode, aiCount, botDifficulties })
         }
+        joinError={joinError}
+        onDismissError={() => setJoinError(null)}
       />
     );
   }
   return (
     <>
-      {/* The vs-AI table docks these into its own top bar; elsewhere they float. */}
-      {!aiConfig && (
+      {/* The vs-AI table docks its own chips; the home screen docks its own too.
+          Only the online MatchScreen relies on these floating utility triggers. */}
+      {session && !aiConfig && (
         <>
           <SettingsPanel />
           <ControlsHelp />

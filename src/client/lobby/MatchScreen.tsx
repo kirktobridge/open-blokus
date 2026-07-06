@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { makeNetworkedClient } from '../BlokusClient';
 import { SERVER_URL, type Session } from './config';
 import { SessionActionsContext } from './sessionContext';
+import { CopyInvite } from './CopyInvite';
 
 export function MatchScreen({
   session,
@@ -21,10 +22,19 @@ export function MatchScreen({
   return (
     <SessionActionsContext.Provider value={{ onPlayAgain, onLeave }}>
       <div>
-        <div style={{ padding: 8, fontFamily: 'system-ui, sans-serif' }}>
+        <div
+          style={{
+            padding: 8,
+            fontFamily: 'system-ui, sans-serif',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
           <span data-testid="match-id">Match: {session.matchID}</span>
-          {' · '}you are P{session.playerID}
-          <button data-testid="leave" onClick={onLeave} style={{ marginLeft: 12 }}>
+          <span>· you are P{session.playerID}</span>
+          <CopyInvite matchID={session.matchID} compact />
+          <button data-testid="leave" onClick={onLeave}>
             Leave
           </button>
         </div>

@@ -44,3 +44,40 @@ test('two players in separate browsers see each other’s moves', async ({ brows
     await ctxB.close();
   }
 });
+
+test('an invite link deep-joins the second player into the match', async ({ browser }) => {
+  const ctxA = await browser.newContext();
+  const ctxB = await browser.newContext();
+  const a = await ctxA.newPage();
+  const b = await ctxB.newPage();
+
+  try {
+    // A creates a match and is seated as P0.
+    await a.goto('/');
+    await a.getByTestId('mode-select').selectOption('4');
+    await a.getByTestId('create-match').click();
+    await expect(a.getByTestId('match-id')).toBeVisible();
+    const matchID = ((await a.getByTestId('match-id').textContent()) ?? '')
+      .replace('Match:', '')
+      .trim();
+    expect(matchID.length).toBeGreaterThan(0);
+
+    // B opens the invite deep-link → auto-joins the same match (no manual entry).
+    await b.goto(`/?join=${matchID}`);
+    await expect(b.getByTestId('match-id')).toContainText(matchID);
+    // The join param is stripped from the URL after handling.
+    expect(new URL(b.url()).searchParams.get('join')).toBeNull();
+
+    // The two are in the same game: A's opening move shows up for B.
+    await expect(a.getByText(/active blue/)).toBeVisible();
+    await a.getByTestId('piece-blue-I2').click();
+    await a.getByTestId('cell-0-0').click();
+    await a.getByTestId('submit-move').click();
+    await expect(b.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue', {
+      timeout: 10_000,
+    });
+  } finally {
+    await ctxA.close();
+    await ctxB.close();
+  }
+});

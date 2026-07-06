@@ -2,10 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Color, GameMode, ScoringVariant } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { ownersFor } from '../../game/modes';
-import type { MatchInfo } from './config';
+import { loadQuickPlay, saveQuickPlay, type MatchInfo } from './config';
 import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
 import { CreateMatchForm } from './CreateMatchForm';
 import { MatchList } from './MatchList';
+import { HeroBoard } from './HeroBoard';
+import { SettingsPanel } from '../SettingsPanel';
+import { ControlsHelp } from '../ControlsHelp';
+import {
+  FIELD,
+  FONT_MONO,
+  FONT_UI,
+  PANEL,
+  PRIMARY_BTN,
+  SECONDARY_BTN,
+  WELL_ROW,
+} from '../theme';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -20,7 +32,6 @@ function botSeatLabels(mode: GameMode, aiCount: number): { seat: string; label: 
   const owners = ownersFor(mode);
   const colorsForSeat = (seat: string): Color[] =>
     COLOR_ORDER.filter((c) => owners[c] === seat);
-  // In 3p the 'shared' color rotates among all seats — flag it once on the setup.
   const hasShared = COLOR_ORDER.some((c) => owners[c] === 'shared');
 
   return Array.from({ length: mode }, (_, i) => String(i))
@@ -33,12 +44,16 @@ function botSeatLabels(mode: GameMode, aiCount: number): { seat: string; label: 
     });
 }
 
+const QP_DEFAULT = { mode: 4 as GameMode, aiCount: 3 };
+
 export function HomeScreen({
   matches,
   onCreate,
   onJoin,
   onRefresh,
   onStartAI,
+  joinError,
+  onDismissError,
 }: {
   matches: MatchInfo[];
   onCreate: (mode: GameMode, scoring: ScoringVariant) => void;
@@ -49,11 +64,16 @@ export function HomeScreen({
     aiCount: number,
     botDifficulties: Record<string, Difficulty>,
   ) => void;
+  joinError?: string | null;
+  onDismissError?: () => void;
 }) {
+  const saved = useMemo(() => loadQuickPlay(), []);
   const [id, setId] = useState('');
-  const [aiMode, setAiMode] = useState<GameMode>(4);
-  const [aiCount, setAiCount] = useState(3);
-  const [botDifficulties, setBotDifficulties] = useState<Record<string, Difficulty>>({});
+  const [aiMode, setAiMode] = useState<GameMode>(saved?.mode ?? QP_DEFAULT.mode);
+  const [aiCount, setAiCount] = useState(saved?.aiCount ?? QP_DEFAULT.aiCount);
+  const [botDifficulties, setBotDifficulties] = useState<Record<string, Difficulty>>(
+    saved?.botDifficulties ?? {},
+  );
 
   const botSeats = useMemo(() => botSeatLabels(aiMode, aiCount), [aiMode, aiCount]);
 
@@ -67,103 +87,187 @@ export function HomeScreen({
     });
   }, [botSeats]);
 
+  // Persist the setup and launch — used by both Quick Play and the Customize form.
+  const start = () => {
+    saveQuickPlay({ mode: aiMode, aiCount, botDifficulties });
+    onStartAI(aiMode, aiCount, botDifficulties);
+  };
+
+  const humanCount = aiMode - aiCount;
+  const setupSummary =
+    `${aiMode} players · ` +
+    (aiCount === aiMode ? 'watch (all AI)' : `you${humanCount > 1 ? ` +${humanCount - 1}` : ''} vs ${aiCount} AI`) +
+    (botSeats.length > 0
+      ? ` · ${botSeats.map(({ seat }) => botDifficulties[seat] ?? 'easy').join(', ')}`
+      : '');
+
   return (
-    <div style={{ padding: 16, fontFamily: 'system-ui, sans-serif', maxWidth: 560 }}>
-      <h1>OpenBlokus</h1>
+    <div style={{ background: 'var(--table-bg)', minHeight: '100vh', fontFamily: FONT_UI }}>
+      {/* TopBar — wordmark · lobby chip · spacer · utility chips (matches the table). */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 26px' }}>
+        <span style={{ fontWeight: 900, fontSize: 25, color: 'var(--top-ink)' }}>OpenBlokus</span>
+        <span
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 14,
+            textTransform: 'uppercase',
+            letterSpacing: '.09em',
+            color: 'var(--top-mut)',
+            border: '1px solid var(--top-bd)',
+            borderRadius: 999,
+            padding: '5px 12px',
+          }}
+        >
+          Lobby
+        </span>
+        <span style={{ flex: 1 }} />
+        <SettingsPanel docked />
+        <ControlsHelp docked />
+      </div>
 
-      <section style={{ marginBottom: 16 }}>
-        <h3>Play vs AI (offline)</h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <label>
-            Players:{' '}
-            <select
-              data-testid="ai-mode-select"
-              value={aiMode}
-              onChange={(e) => {
-                const m = Number(e.target.value) as GameMode;
-                setAiMode(m);
-                setAiCount((c) => Math.min(c, m));
-              }}
-            >
-              <option value={2}>2</option>
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-            </select>
-          </label>
-          <label>
-            AI opponents:{' '}
-            <select
-              data-testid="ai-count-select"
-              value={aiCount}
-              onChange={(e) => setAiCount(Number(e.target.value))}
-            >
-              {Array.from({ length: aiMode + 1 }, (_, n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {botSeats.length > 0 && (
+      <div style={{ maxWidth: 920, margin: '0 auto', padding: '8px 26px 40px' }}>
+        {joinError && (
           <div
-            style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: '8px 0' }}
+            data-testid="join-error"
+            style={{
+              ...WELL_ROW,
+              background: 'rgba(220, 38, 38, 0.12)',
+              border: '1px solid rgba(220, 38, 38, 0.4)',
+              color: 'var(--ink)',
+              marginBottom: 16,
+            }}
           >
-            {botSeats.map(({ seat, label }) => (
-              <label
-                key={seat}
-                style={{ display: 'flex', gap: 8, alignItems: 'center' }}
+            <span style={{ flex: 1 }}>{joinError}</span>
+            {onDismissError && (
+              <button
+                onClick={onDismissError}
+                aria-label="Dismiss"
+                style={{ ...SECONDARY_BTN, padding: '4px 10px', fontSize: 12 }}
               >
-                <span style={{ minWidth: 140 }}>{label}:</span>
-                <select
-                  data-testid={`ai-difficulty-${seat}`}
-                  value={botDifficulties[seat] ?? 'easy'}
-                  onChange={(e) =>
-                    setBotDifficulties((prev) => ({
-                      ...prev,
-                      [seat]: e.target.value as Difficulty,
-                    }))
-                  }
-                >
-                  {DIFFICULTIES.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
+                Dismiss
+              </button>
+            )}
           </div>
         )}
 
-        <button
-          data-testid="start-ai"
-          onClick={() => onStartAI(aiMode, aiCount, botDifficulties)}
-        >
-          Start
-        </button>
-        <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '4px 0 0' }}>
-          {aiMode - aiCount} human / {aiCount} AI{aiCount === aiMode ? ' (watch)' : ''}
-          {botSeats.length > 0 &&
-            ` · ${botSeats.map(({ seat }) => botDifficulties[seat] ?? 'easy').join(', ')}`}
-        </p>
-      </section>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <HeroBoard size={280} />
 
-      <h3>Online multiplayer</h3>
-      <CreateMatchForm onCreate={onCreate} />
-      <div style={{ margin: '8px 0' }}>
-        <input
-          data-testid="join-id-input"
-          value={id}
-          onChange={(e) => setId(e.target.value)}
-          placeholder="match id"
-        />
-        <button data-testid="join-id-submit" onClick={() => id && onJoin(id)}>
-          Join by ID
-        </button>
+          <div style={{ flex: '1 1 380px', display: 'flex', flexDirection: 'column', gap: 16, minWidth: 300 }}>
+            {/* Play vs computer — Quick Play hero + collapsible Customize. */}
+            <section style={{ ...PANEL, padding: 20 }}>
+              <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play vs computer</h2>
+              <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>{setupSummary}</p>
+              <button data-testid="quick-play" onClick={start} style={{ ...PRIMARY_BTN, width: '100%' }}>
+                Quick Play
+              </button>
+
+              <details style={{ marginTop: 12 }}>
+                <summary
+                  data-testid="customize-toggle"
+                  style={{ cursor: 'pointer', color: 'var(--mut)', fontSize: 13.5, fontWeight: 600 }}
+                >
+                  Customize…
+                </summary>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
+                      Players:{' '}
+                      <select
+                        data-testid="ai-mode-select"
+                        value={aiMode}
+                        onChange={(e) => {
+                          const m = Number(e.target.value) as GameMode;
+                          setAiMode(m);
+                          setAiCount((c) => Math.min(c, m));
+                        }}
+                        style={FIELD}
+                      >
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                        <option value={4}>4</option>
+                      </select>
+                    </label>
+                    <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
+                      AI opponents:{' '}
+                      <select
+                        data-testid="ai-count-select"
+                        value={aiCount}
+                        onChange={(e) => setAiCount(Number(e.target.value))}
+                        style={FIELD}
+                      >
+                        {Array.from({ length: aiMode + 1 }, (_, n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  {botSeats.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {botSeats.map(({ seat, label }) => (
+                        <label key={seat} style={{ ...WELL_ROW, fontSize: 14 }}>
+                          <span style={{ minWidth: 140 }}>{label}:</span>
+                          <select
+                            data-testid={`ai-difficulty-${seat}`}
+                            value={botDifficulties[seat] ?? 'easy'}
+                            onChange={(e) =>
+                              setBotDifficulties((prev) => ({
+                                ...prev,
+                                [seat]: e.target.value as Difficulty,
+                              }))
+                            }
+                            style={FIELD}
+                          >
+                            {DIFFICULTIES.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  <button data-testid="start-ai" onClick={start} style={{ ...SECONDARY_BTN, alignSelf: 'flex-start' }}>
+                    Start this setup
+                  </button>
+                </div>
+              </details>
+            </section>
+
+            {/* Play online — create a table, then share the invite link. */}
+            <section style={{ ...PANEL, padding: 20 }}>
+              <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Play online</h2>
+              <CreateMatchForm onCreate={onCreate} />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+                <span style={{ color: 'var(--mut)', fontSize: 13 }}>Have a match ID?</span>
+                <input
+                  data-testid="join-id-input"
+                  value={id}
+                  onChange={(e) => setId(e.target.value)}
+                  placeholder="match id"
+                  style={{ ...FIELD, cursor: 'text' }}
+                />
+                <button
+                  data-testid="join-id-submit"
+                  onClick={() => id && onJoin(id)}
+                  style={{ ...SECONDARY_BTN, padding: '7px 14px', fontSize: 13 }}
+                >
+                  Join
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <section style={{ ...PANEL, padding: 20, marginTop: 20 }}>
+          <MatchList matches={matches} onJoin={onJoin} onRefresh={onRefresh} />
+        </section>
       </div>
-      <MatchList matches={matches} onJoin={onJoin} onRefresh={onRefresh} />
     </div>
   );
 }
