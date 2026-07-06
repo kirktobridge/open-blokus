@@ -23,5 +23,8 @@ export function makeNetworkedClient(server: string, numPlayers: number) {
     board: BlokusBoardView,
     numPlayers,
     multiplayer: SocketIO({ server }),
+    // No debug panel in real play — it's a right-edge overlay that isn't part of
+    // the redesigned UI and would collide with the centered table layout.
+    debug: false,
   });
 }

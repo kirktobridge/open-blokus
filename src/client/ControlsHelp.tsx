@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { describeKeys } from './controls/keymap';
+import { ICON_BTN, ICON_CHIP } from './theme';
+import { HelpIcon } from './icons';
 
 /**
  * Read-only reference of the placement controls. Keyboard hints come from the
@@ -21,19 +23,26 @@ const ROWS: { action: string; keys: string; mouse: string }[] = [
   { action: 'Rotate board', keys: '—', mouse: 'Rotate-board button' },
 ];
 
-export function ControlsHelp() {
+export function ControlsHelp({ docked = false }: { docked?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{ position: 'fixed', bottom: 8, left: 190, zIndex: 1000 }}>
+    <div
+      style={
+        docked
+          ? { position: 'relative', zIndex: 1000 }
+          : { position: 'fixed', bottom: 8, left: 190, zIndex: 1000 }
+      }
+    >
       <button
         data-testid="controls-help-toggle"
         onClick={() => setOpen((o) => !o)}
         title="Keyboard & mouse controls"
+        aria-label="Help"
         aria-expanded={open}
-        style={{ padding: '4px 10px', cursor: 'pointer' }}
+        style={docked ? ICON_CHIP : ICON_BTN}
       >
-        ⌨ Controls
+        <HelpIcon />
       </button>
 
       {open && (
@@ -41,8 +50,7 @@ export function ControlsHelp() {
           data-testid="controls-help"
           style={{
             position: 'absolute',
-            bottom: 34,
-            left: 0,
+            ...(docked ? { top: 34, right: 0 } : { bottom: 34, left: 0 }),
             width: 280,
             background: 'var(--surface)',
             color: 'var(--fg)',

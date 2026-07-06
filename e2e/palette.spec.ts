@@ -11,8 +11,8 @@ test('custom palette recolors placed pieces; default stays selectable', async ({
   await page.getByTestId('cell-0-0').click();
   await expect(page.getByTestId('cell-0-0')).toHaveCSS('background-color', 'rgb(37, 99, 235)');
 
-  // Create a custom palette (clones the active one) and recolor blue to black.
-  await page.getByTestId('palette-toggle').click();
+  // Open Settings → Piece colors, create a custom palette, recolor blue to black.
+  await page.getByTestId('settings-toggle').click();
   await page.getByTestId('palette-new').click();
   await page.getByLabel('Custom 1 blue').fill('#000000');
   await expect(page.getByTestId('cell-0-0')).toHaveCSS('background-color', 'rgb(0, 0, 0)');

@@ -8,6 +8,10 @@ import { MctsBot } from '../../bgio/bots/MctsBot';
 import type { GameMode, GameState } from '../../game/types';
 import { BlokusBoardView } from '../BlokusBoardView';
 import { SessionActionsContext } from '../lobby/sessionContext';
+import { SettingsPanel } from '../SettingsPanel';
+import { ControlsHelp } from '../ControlsHelp';
+import { ICON_CHIP, FONT_MONO, FONT_UI } from '../theme';
+import { LeaveIcon } from '../icons';
 import { useBotRunner } from './useBotRunner';
 import { mctsConfigFor, type Difficulty } from './difficulty';
 
@@ -40,7 +44,11 @@ export function LocalAIGame({
   botDifficulties: Record<string, Difficulty>;
   onLeave: () => void;
 }) {
-  const client = useMemo(() => Client({ game: BlokusGame, numPlayers: mode }), [mode]);
+  // debug:false so the redesigned table owns the full width (no bgio panel).
+  const client = useMemo(
+    () => Client({ game: BlokusGame, numPlayers: mode, debug: false }),
+    [mode],
+  );
 
   const humanCount = Math.max(0, mode - aiCount);
   const botSeats = useMemo(
@@ -141,25 +149,64 @@ export function LocalAIGame({
     <SessionActionsContext.Provider
       value={{ onPlayAgain: () => client.reset(), onLeave }}
     >
-      <div>
-        <div style={{ padding: 8, fontFamily: 'system-ui, sans-serif' }}>
-          <strong>vs AI</strong> · {humanCount} human / {aiCount} AI ·{' '}
-          {botSeats.map((s) => botDifficulties[s] ?? 'easy').join(', ')}
+      <div style={{ background: 'var(--table-bg)', minHeight: '100vh' }}>
+        {/* TopBar — wordmark · match chip · status · utility chips */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '12px 26px',
+            fontFamily: FONT_UI,
+          }}
+        >
+          <span style={{ fontFamily: FONT_UI, fontWeight: 900, fontSize: 25, color: 'var(--top-ink)' }}>
+            OpenBlokus
+          </span>
+          <span
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 14,
+              textTransform: 'uppercase',
+              letterSpacing: '.09em',
+              color: 'var(--top-mut)',
+              border: '1px solid var(--top-bd)',
+              borderRadius: 999,
+              padding: '5px 12px',
+            }}
+          >
+            Local game
+          </span>
+          <span style={{ fontSize: 12.5, color: 'var(--top-mut)' }}>
+            {humanCount} human / {aiCount} AI
+          </span>
           <span
             data-testid="ai-thinking"
             style={{
-              marginLeft: 12,
-              color: 'var(--fg-muted)',
+              fontFamily: FONT_MONO,
+              fontSize: 12,
+              color: 'var(--top-mut)',
               visibility: thinking ? 'visible' : 'hidden',
             }}
           >
             AI thinking…
           </span>
-          <button data-testid="leave-ai" onClick={onLeave} style={{ marginLeft: 12 }}>
-            Leave
+
+          <span style={{ flex: 1 }} />
+
+          <SettingsPanel docked />
+          <ControlsHelp docked />
+          <button
+            data-testid="leave-ai"
+            onClick={onLeave}
+            aria-label="Leave table"
+            title="Leave table"
+            style={{ ...ICON_CHIP, opacity: 0.85 }}
+          >
+            <LeaveIcon />
           </button>
         </div>
-        <BlokusBoardView {...boardProps} />
+        <BlokusBoardView {...boardProps} botDifficulties={botDifficulties} />
       </div>
     </SessionActionsContext.Provider>
   );

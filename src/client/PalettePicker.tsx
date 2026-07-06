@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { COLOR_ORDER } from '../game/types';
 import {
   createPalette,
@@ -97,58 +96,23 @@ function PaletteRow({ palette, selected }: { palette: Palette; selected: boolean
   );
 }
 
-/** Fixed control to select and customize player color palettes. */
-export function PalettePicker() {
-  const [open, setOpen] = useState(false);
+/** Reusable palette list + creator, for embedding in the Settings panel. */
+export function PaletteControls() {
   const palettes = usePalettes();
   const active = useActivePalette();
 
   return (
-    <div style={{ position: 'fixed', bottom: 8, left: 96, zIndex: 1000 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {palettes.map((p) => (
+        <PaletteRow key={p.id} palette={p} selected={p.id === active.id} />
+      ))}
       <button
-        data-testid="palette-toggle"
-        onClick={() => setOpen((o) => !o)}
-        title="Player colors"
-        aria-expanded={open}
-        style={{ padding: '4px 10px', cursor: 'pointer' }}
+        data-testid="palette-new"
+        onClick={() => createPalette(`Custom ${palettes.length}`, active.colors)}
+        style={{ padding: '4px 8px', cursor: 'pointer', alignSelf: 'flex-start' }}
       >
-        🎨 Colors
+        + New palette
       </button>
-
-      {open && (
-        <div
-          style={{
-            // Anchored bottom-left; the panel opens upward from the button.
-            position: 'absolute',
-            bottom: 34,
-            left: 0,
-            width: 220,
-            maxHeight: '70vh',
-            overflowY: 'auto',
-            background: 'var(--surface)',
-            color: 'var(--fg)',
-            border: '1px solid var(--cell-outline)',
-            borderRadius: 8,
-            padding: 10,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-            fontFamily: 'system-ui, sans-serif',
-          }}
-        >
-          {palettes.map((p) => (
-            <PaletteRow key={p.id} palette={p} selected={p.id === active.id} />
-          ))}
-          <button
-            data-testid="palette-new"
-            onClick={() => createPalette(`Custom ${palettes.length}`, active.colors)}
-            style={{ padding: '4px 8px', cursor: 'pointer' }}
-          >
-            + New palette
-          </button>
-        </div>
-      )}
     </div>
   );
 }

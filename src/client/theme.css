@@ -1,21 +1,50 @@
 /* Theme tokens. Piece colors (blue/red/…) live in theme.ts and are shared by
  * both schemes; these are the neutral UI surfaces that flip for dark mode.
  * Inline styles reference these via var(); switching [data-theme] on <html>
- * re-skins the whole app with no re-render. */
+ * re-skins the whole app with no re-render.
+ *
+ * "The Study Table" redesign adds a warm surface set (frame / mat / panel /
+ * ink / brass + a table backdrop). :root = Linen (light), [data-theme='dark']
+ * = Lamplight, [data-theme='walnut'] = the hero scheme. The board's neutral
+ * cell/grid tokens are repointed to the warm mat/grid values so the grid reads
+ * warm without touching Cell/PlacedLayer. */
 :root {
   color-scheme: light;
+
+  /* Typography tokens — shared across schemes; retunable in Settings. */
+  --font-ui: 'Nunito', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
   --bg: #ffffff;
   --fg: #111827;
   --fg-muted: #6b7280;
   --surface: #ffffff;
   --overlay: rgba(0, 0, 0, 0.5);
-  --empty-cell: #f3f4f6;
-  --grid-line: #d1d5db;
+  --empty-cell: #fbf7ec;
+  --grid-line: #ddd3bb;
   --placed-piece: #e5e7eb;
   --outline-strong: #111111;
   --pill-idle: #9ca3af;
   --cell-outline: rgba(0, 0, 0, 0.15);
   --last-move-ring: rgba(255, 255, 255, 0.85);
+
+  /* Study Table — Linen (light) */
+  --frame-a: #b38e63;
+  --frame-b: #8a6845;
+  --frame-hi: rgba(255, 255, 255, 0.45);
+  --mat: #fbf7ec;
+  --grid: #ddd3bb;
+  --pnl: #fffdf6;
+  --pnl-bd: #e4dac4;
+  --well: #f1e9d5;
+  --ink: #332c21;
+  --mut: #95886e;
+  --top-ink: #3a3225;
+  --top-mut: #8d8069;
+  --top-bd: rgba(58, 50, 37, 0.22);
+  --top-bg: rgba(58, 50, 37, 0.05);
+  --brass: #a8834b;
+  --table-bg: radial-gradient(1150px 780px at 50% 40%, #f0e9db, #e6dcca 55%, #d5c8b0);
 }
 
 [data-theme='dark'] {
@@ -25,13 +54,66 @@
   --fg-muted: #9ca3af;
   --surface: #1b1e24;
   --overlay: rgba(0, 0, 0, 0.65);
-  --empty-cell: #262a31;
-  --grid-line: #3a3f47;
+  --empty-cell: #211d17;
+  --grid-line: #3a3327;
   --placed-piece: #40454d;
   --outline-strong: #f3f4f6;
   --pill-idle: #4b5563;
   --cell-outline: rgba(0, 0, 0, 0.4);
   --last-move-ring: rgba(255, 255, 255, 0.9);
+
+  /* Study Table — Lamplight (dark) */
+  --frame-a: #4a3826;
+  --frame-b: #2b2013;
+  --frame-hi: rgba(255, 255, 255, 0.16);
+  --mat: #211d17;
+  --grid: #3a3327;
+  --pnl: #2c261e;
+  --pnl-bd: #41392c;
+  --well: #221d16;
+  --ink: #ece3d0;
+  --mut: #a1947c;
+  --top-ink: #e8ddc6;
+  --top-mut: #998c74;
+  --top-bd: rgba(232, 221, 198, 0.22);
+  --top-bg: rgba(232, 221, 198, 0.06);
+  --brass: #c9a05e;
+  --table-bg: radial-gradient(1150px 780px at 50% 40%, #332a20, #262019 55%, #191512);
+}
+
+/* Walnut — the prototype hero. Opt-in via [data-theme='walnut']. */
+[data-theme='walnut'] {
+  color-scheme: dark;
+  --bg: #372f27;
+  --fg: #efe6d4;
+  --fg-muted: #bfb29b;
+  --surface: #493e33;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --empty-cell: #efe6d1;
+  --grid-line: #d3c5a7;
+  --placed-piece: #cabfa6;
+  --outline-strong: #efe6d4;
+  --pill-idle: #6d5e49;
+  --cell-outline: rgba(0, 0, 0, 0.2);
+  --last-move-ring: rgba(255, 255, 255, 0.9);
+
+  /* Study Table — Walnut (hero) */
+  --frame-a: #6d5138;
+  --frame-b: #452f1d;
+  --frame-hi: rgba(255, 255, 255, 0.28);
+  --mat: #efe6d1;
+  --grid: #d3c5a7;
+  --pnl: #f6efdf;
+  --pnl-bd: #dbcdb2;
+  --well: #eadfc8;
+  --ink: #2c251c;
+  --mut: #8b7e69;
+  --top-ink: #efe6d4;
+  --top-mut: #bfb29b;
+  --top-bd: rgba(239, 230, 212, 0.28);
+  --top-bg: rgba(239, 230, 212, 0.08);
+  --brass: #c29a58;
+  --table-bg: radial-gradient(1150px 780px at 50% 40%, #584a3c, #493e33 55%, #372f27);
 }
 
 body {
@@ -45,4 +127,17 @@ button,
 input,
 select {
   color-scheme: inherit;
+}
+
+/* Primary action pulse while a move is staged (ActionDock PLAY MOVE). */
+@keyframes ob-pulse {
+  0% {
+    outline: 2px solid rgba(52, 104, 207, 0.5);
+    outline-offset: 2px;
+  }
+  70%,
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 9px;
+  }
 }

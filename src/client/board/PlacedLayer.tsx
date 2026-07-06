@@ -222,7 +222,7 @@ export function PlacedLayer({
             height={C - 3}
             fill="none"
             strokeWidth={3}
-            style={{ stroke: 'var(--last-move-ring)' }}
+            style={{ stroke: 'var(--brass)' }}
           />
         );
       })}

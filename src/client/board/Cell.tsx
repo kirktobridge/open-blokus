@@ -64,7 +64,7 @@ export function Cell({
           : showHint
             ? `inset 0 0 0 2px ${colors[previewColor]}`
             : lastMove
-              ? 'inset 0 0 0 3px var(--last-move-ring)'
+              ? 'inset 0 0 0 3px var(--brass)'
               : undefined,
         boxSizing: 'border-box',
         cursor: onClick ? 'pointer' : 'default',

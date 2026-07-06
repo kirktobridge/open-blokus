@@ -66,6 +66,8 @@ function keyLabel(key: string): string {
       return '↓';
     case 'Space':
       return 'Space';
+    case 'Escape':
+      return 'Esc';
     default:
       return key.length === 1 ? key.toUpperCase() : key;
   }
@@ -74,4 +76,9 @@ function keyLabel(key: string): string {
 /** Pretty hint of the keys for an action, e.g. `→ / R` — for button labels. */
 export function describeKeys(action: PlacementAction): string {
   return BINDINGS[action].map(keyLabel).join(' / ');
+}
+
+/** The single primary keycap for an action (its first binding), e.g. `A`, `Enter`. */
+export function primaryKey(action: PlacementAction): string {
+  return keyLabel(BINDINGS[action][0]);
 }

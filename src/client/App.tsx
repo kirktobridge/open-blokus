@@ -6,8 +6,7 @@ import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
 import type { Difficulty } from './ai/difficulty';
-import { ThemeToggle } from './ThemeToggle';
-import { PalettePicker } from './PalettePicker';
+import { SettingsPanel } from './SettingsPanel';
 import { ControlsHelp } from './ControlsHelp';
 
 export function App() {
@@ -91,9 +90,13 @@ export function App() {
   }
   return (
     <>
-      <ThemeToggle />
-      <PalettePicker />
-      <ControlsHelp />
+      {/* The vs-AI table docks these into its own top bar; elsewhere they float. */}
+      {!aiConfig && (
+        <>
+          <SettingsPanel />
+          <ControlsHelp />
+        </>
+      )}
       {screen}
     </>
   );

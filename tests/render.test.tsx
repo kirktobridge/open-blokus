@@ -39,8 +39,9 @@ describe('PieceThumb', () => {
     const placed = renderToStaticMarkup(
       <PieceThumb pieceId="I5" color="green" colors={COLOR_HEX} placed={true} />,
     );
-    expect(placed.includes('opacity:0.4')).toBe(true);
-    expect(placed.includes(COLOR_HEX.green)).toBe(false); // greyed, not colored
+    // Study-table design: a placed piece is a dimmed dashed ghost (no fill).
+    expect(placed.includes('opacity:0.8')).toBe(true);
+    expect(placed.includes(COLOR_HEX.green)).toBe(false); // ghosted, not colored
   });
 });
 
