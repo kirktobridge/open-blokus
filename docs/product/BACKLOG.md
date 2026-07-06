@@ -109,6 +109,16 @@ this epic owns the user-facing feature + its UX.
 - **Depends on:** a won research experiment beating current top tier (AE-backlog,
   e.g. AE10 and future entries) — this P only fires once one lands.
 
+### P18 — Bot personas
+- **Status:** proposed
+- **Value:** turns "difficulty dropdown" into rivals — name, face, think-time quips,
+  and a *real* play style (heuristic weight variants: aggressive blocker vs greedy
+  expander), not just cosmetics.
+- **Scope:** persona definitions mapped onto existing tiers + weight variants; setup
+  UI picks rivals instead of tiers (tier still visible).
+- **Depends on:** nothing. Optional later research follow-up if we want to *verify*
+  styles are distinct (would then get an AE entry).
+
 ---
 
 ## Epic: Game feel & UI
@@ -172,3 +182,80 @@ four classic colors as accents, shapes as the star.
 - **Caveat:** literal "board grid showing *through* a piece" needs the placed cell to stop
   being an opaque solid color (currently pinned by the palette e2e). Revisit that contract
   for true see-through.
+
+### P16 — In-game drama (placement weight, endgame beats, win reveal)
+- **Status:** proposed
+- **Value:** the most-repeated action (~84 placements/match) and the two biggest
+  moments (going out, winning) currently have zero ceremony.
+- **Scope:** placement settle animation + invalid-move shake; "X is out of moves"
+  beat; live score count-up; game-over reveal — score bars race, winner's pieces
+  glow, final board presented as a shareable mosaic (replaces the static
+  [GameOverModal](../../src/client/controls/GameOverModal.tsx) table).
+- **Depends on:** nothing. Strong synergy with P7 (sound) — same event hooks.
+
+### P17 — Front door: quick play, invite links, home screen redesign
+- **Status:** proposed
+- **Value:** first impression currently is dropdowns + a match-ID text box. The board
+  is the product's best visual — the home screen should show it and get you playing
+  in one click.
+- **Scope:** "Quick Play" button (instant game vs bots at last-used settings);
+  copyable invite *URL* replacing paste-a-match-ID; visual redesign consistent with
+  the study-table identity.
+- **Depends on:** nothing hard; invite links need a route param.
+
+---
+
+## Epic: Engagement & retention
+
+The "why come back" layer — daily hooks and a memory of your journey across games.
+
+### P14 — Daily puzzle
+- **Status:** proposed
+- **Value:** a daily reason to open the app — same seeded challenge for everyone,
+  shareable emoji-grid result (Wordle-style). Converts an evergreen board game into
+  a habit.
+- **Scope / milestones:** M1 *solitaire* — seeded mid-game position (self-play to
+  turn N with a fixed daily seed), "fit as many remaining pieces as you can," score =
+  cells placed, local share text. M2 *best-move* — "find the strongest placement,"
+  graded against MCTS. M3 — server-shared leaderboard.
+- **Depends on:** M1: nothing (engine + seeded self-play exist). M2: research
+  [AD4](../research/backlog/advisor.md) (move-grading signal must be trustworthy
+  before it grades *you*). M3: server work.
+
+### P15 — Local progression, stats & history
+- **Status:** proposed
+- **Value:** games leave a residue — beating `extreme` the first time should look
+  different from losing your first game. Makes P13's named tiers *feel* like a ladder.
+- **Scope / milestones:** M1 localStorage counters — games played, win rate per tier,
+  best score, streaks, milestone toasts (first win vs each tier, perfect clear).
+  M2 game history list + replay scrubber.
+- **Depends on:** M1: nothing. M2: P1 (game logging); replay assets shared with
+  P2 (recap).
+
+---
+
+## Epic: Social & multiplayer presence
+
+### P19 — Multiplayer identity & reactions
+- **Status:** proposed
+- **Value:** online opponents are literally "P0/P1" today — anonymous games feel
+  dead. A nickname and a few canned reactions ("nice move," "ouch," …) change the
+  social temperature cheaply, without open-chat moderation burden.
+- **Scope:** nickname field (persisted locally, sent on join); canned-reaction button
+  row broadcast via the existing transport; shown as toasts by the player card.
+- **Depends on:** nothing hard; reuses boardgame.io transport.
+
+---
+
+## Epic: Game modes
+
+### P20 — Variety: Blokus Duo & blitz
+- **Status:** proposed
+- **Value:** classic 20×20 is the only way to play. Duo (14×14, center-adjacent
+  starts) is *the* canonical 2-player experience; blitz (per-move timer) makes the
+  same engine feel like a different game.
+- **Scope / milestones:** M1 blitz — per-move countdown, auto-skip or auto-random on
+  expiry (UI + turn glue only). M2 Duo — board size + start-cell rule become mode
+  config (touches rules core → GAME_SPEC + ARCHITECTURE updates required).
+- **Depends on:** M1: nothing. M2: rules-core generalization (board size is
+  currently a constant).
