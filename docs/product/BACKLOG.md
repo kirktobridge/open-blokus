@@ -94,6 +94,21 @@ this epic owns the user-facing feature + its UX.
 - **Value:** start/again online games without waiting for a full human lobby.
 - **Depends on:** server integration decisions; reuses the shipped bot strategies.
 
+### P13 — Named tiers beyond `extreme` for future bot wins
+- **Status:** proposed.
+- **Value:** each AE-backlog win (new bot/algo beating current best) ships as a new
+  named tier above `extreme` (`nightmare`, `immortal`, `deity`, ...) instead of
+  overwriting `extreme` in place. Preserves the old top tier as a stable practice
+  rung instead of silently moving the ceiling; players get visible progression as
+  the AI keeps improving.
+- **Scope:** extend `Difficulty` union + `DIFFICULTIES` order + `MCTS_TIERS` (or
+  per-tier bot-strategy map, once tiers diverge past MCTS-config) in
+  [difficulty.ts](../../src/client/ai/difficulty.ts); update setup UI tier list;
+  each new tier's config is whatever the winning AE experiment measured (bar set by
+  that AE entry, not by this one).
+- **Depends on:** a won research experiment beating current top tier (AE-backlog,
+  e.g. AE10 and future entries) — this P only fires once one lands.
+
 ---
 
 ## Epic: Game feel & UI
