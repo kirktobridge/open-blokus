@@ -21,35 +21,50 @@ hypothesis or a game-share bar — that's what distinguishes them from a researc
 ## Epic: Advisor & game analysis
 
 The player-facing intelligence surface. Each feature **depends on a research question**
-The player-facing intelligence surface. Each feature **depends on a research question** being answered first (the evaluator/win-prob/blunder signal must be *trustworthy*before it's *shown*) — those questions live in [../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build order runs foundation → offline surfaces → live surfaces.
+being answered first (the evaluator/win-prob/blunder signal must be *trustworthy*
+before it's *shown*) — those questions live in
+[../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build
+order runs foundation → offline surfaces → live surfaces.
 
 ### P1 — Game-logging foundation (infra)
 - **Status:** proposed (foundational — unblocks P2, P3, and research AD2–AD4 + AE4)
 - **Value:** move-by-move data is the substrate for every analysis/advisor feature and
   for self-play datasets (learned eval, research AE4).
-- **Scope:** design a game-log schema + a system that manages it; decide the split
-  between **app-logging** (debug/telemetry) and **game-logging** (analysis data); emit
-  from both the arena and real matches.
-- **Depends on:** nothing (it's the root). Get the app-vs-game boundary right early —
-  long-lived schema decision.
+- **Scope:** minimal schema — **game header (mode, seeds, players, tiers) + the move
+  list**; every position, score trajectory, and eval is *derivable by replay* through
+  the pure rules core, so none of it is logged. Extend the AE4 self-play dump format
+  (which already regenerates positions by replay) rather than inventing a second one.
+  Keep app-logging (debug/telemetry) out of scope — separate concern.
+- **Depends on:** nothing (it's the root).
 - **Notes:** build-a-thing, not an experiment, so it lives here rather than research.
+  Rescoped 2026-07-06 from "long-lived schema decision" to this minimal form — moves
+  are already cheat-resistant canonical tuples, replay is exact.
 
 ### P2 — Post-game recap (play-by-play, blunders, key moments)
 - **Status:** proposed (blocked on P1 + research AD4 signal, AD2 evaluator)
 - **Value:** turn-level annotations after a game — "good plays," blunders, swings, with
   plain-English messages ("Turn 6: you closed your own corridor"). Special interest:
   games where humans beat the AI. A local LLM could later narrate the structured signal.
-- **Scope:** the *delivery* — event thresholds → message templates → recap UI. Shares
-  assets with P3.
-- **Depends on:** P1 (logs); research [AD4](../research/backlog/advisor.md) computes/validates
-  the signal (MCTS best-move gap + eval-swing); research AD2 for the score.
+- **Scope / milestones:** **R0 — replay scrubber + score-over-time timeline, no AI**
+  ("when did I fall behind?" — genuine advice with zero evaluator risk; scrubber
+  shared with P15 M2). R1 — event thresholds → message templates → recap UI.
+  R2 — **"retry from this turn"**: jump into the game at a flagged turn and play it
+  out vs bots (replay to turn N via the pure rules core, hand control to the human) —
+  closes the learn-loop. Shares assets with P3.
+- **Depends on:** P1 (logs) for all milestones; R0 needs nothing else. R1+: research
+  [AD4](../research/backlog/advisor.md) computes/validates the signal (MCTS
+  best-move gap + eval-swing); research AD2 for the score. AD4 also feeds P14 M2
+  (daily-puzzle move grading) — shared payoff.
 
 ### P3 — Mid-game advisor overlay
-- **Status:** deferred (until UI/style is finalized AND the evaluator is trustworthy)
+- **Status:** proposed (R1 unblocked; R2+ deferred until the evaluator is trustworthy)
 - **Value:** live in-game guidance without overwhelming the player.
-- **Scope / milestones:** R1 "show legal placements" → R2 "suggest 2–3 candidate moves
-  with plain-English reasons" → R3 "heatmaps / strategic priorities."
-- **Depends on:** P1; research AD2 (evaluator) + AD3 (win-prob). High UI complexity.
+- **Scope / milestones:** R1 "show legal placements" — **pure UI, unblocked today**
+  (`generateLegalMoves` is exact, F7); also the core asset for P4's tutorial step 3 —
+  build once. → R2 "suggest 2–3 candidate moves with plain-English reasons" →
+  R3 "heatmaps / strategic priorities."
+- **Depends on:** R1: nothing. R2+: P1; research AD2 (evaluator) + AD3 (win-prob).
+  High UI complexity in R2+.
 
 ### P4 — Pre-game tutorial (interactive)
 - **Status:** proposed (independent — not gated on logging or the evaluator)
@@ -58,7 +73,8 @@ The player-facing intelligence surface. Each feature **depends on a research que
 - **Scope:** scripted 4-step interactive sequence: place a legal piece → see an illegal
   edge-touch rejected → see multiple corner options → compare "bad but legal" vs "better
   for growth."
-- **Depends on:** nothing. Mostly UI.
+- **Depends on:** nothing. Mostly UI. Step 3 reuses P3 R1's legal-placement
+  highlight component — build once, share.
 
 ---
 
