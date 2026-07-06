@@ -134,3 +134,135 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   `beam=16` lost to easy) and handed the fix to AE5 (beam scaling). Strength-vs-iters
   curve banked: `it40→68 · it80→77 · it160→85 · it320→90` game-share vs heuristic.
 - **Log:** Run J → [F8](../FINDINGS.md)
+
+### AE11 — Smarter rollout policy
+- **Status:** proposed — direct F6/F11 follow-up: rollout quality is the proven
+  strength lever and F11 showed the leaf signal can't be replaced, but the rollout
+  *policy* itself (sample ~6, keep biggest piece) has never been tuned.
+- **Objective:** raise leaf-estimate quality by making rollout moves smarter at
+  similar cost.
+- **Hypothesis:** biasing rollout samples toward frontier-creating / corner-denying
+  moves (or ε-greedy over the sampled candidates with a cheap score) makes rollout
+  outcomes more predictive of true value → higher strength at matched wall-clock.
+  Assumption (M4): stronger rollout play → more predictive outcomes; F6's
+  full-vs-truncated swing supports it.
+- **Method:** variants of `rolloutMove` in `mcts.ts` behind config; arena vs current
+  policy at matched 500 ms/move, `scripts/experiments/ae11.json`, ≥600 pooled games,
+  multi-seed shards.
+- **Success criteria:** game-share Wilson CI clears 52% vs the current rollout policy
+  at matched wall-clock over ≥600 games.
+- **Cost / risk:** small — ~30-line policy swaps; risk is added per-move cost eating
+  the quality gain (measure iters/s alongside).
+- **Log:** —
+
+### AE12 — Move-time management (chess-clock budgeting)
+- **Status:** proposed
+- **Objective:** reallocate a fixed *total* game budget across moves instead of a
+  flat per-move cap.
+- **Hypothesis:** value-per-ms varies hugely by phase (Run O probe: 15 iters/500 ms
+  at peak branching vs ~1,600 in the opening/endgame); spending more where branching
+  and uncertainty are high and less on near-forced moves buys strength at identical
+  total time. Assumption (M4): some moves are near-forced — true late-game, where
+  the legal set collapses.
+- **Method:** budget scheduler around `mctsSearch` (e.g. proportional to legal-move
+  count or root-visit entropy, with floor/ceiling); arena vs flat-budget MCTS at
+  matched *total* game time; ≥600 pooled games.
+- **Success criteria:** game-share CI clears 52% vs flat budget at matched total
+  game time; no per-move latency above a stated UX ceiling (e.g. 2× the flat cap).
+- **Cost / risk:** small-moderate; scheduler only, engine untouched. Timed mode is
+  nondeterministic (accepted precedent: Run J-confirm).
+- **Log:** —
+
+### AE13 — Endgame exact solver
+- **Status:** proposed
+- **Objective:** replace sampled search with exact search where the game tree
+  becomes tractable.
+- **Hypothesis:** branching collapses late (few pieces, few attach points), so
+  below some threshold full-depth search is affordable and exact beats sampled.
+  Assumption (M4): a tractable boundary exists — measure it first (count plies
+  where full-depth alpha-beta fits the move budget).
+- **Method:** phase 1 (measurement): instrument arena games for legal-move count
+  and full-depth feasibility by ply. Phase 2: hybrid strategy — MCTS until the
+  threshold, exact search after; arena vs plain MCTS at matched total time,
+  ≥600 pooled games. Also track mean final score (exact play should convert
+  endgames better even when the winner is decided).
+- **Success criteria:** game-share CI clears 52% vs plain MCTS at matched time, OR
+  mean score improves significantly with win-rate CI not below parity.
+- **Cost / risk:** moderate — threshold detection + a solver mode; risk is the
+  tractable window being too short to matter.
+- **Log:** —
+
+### AE14 — Progressive widening (replace the fixed beam)
+- **Status:** proposed
+- **Objective:** eliminate the hand-tuned per-tier beam (F8's `beam ≈ iters/6`)
+  with a visit-driven child-admission schedule.
+- **Hypothesis:** admitting children as visits accrue (k·N^α over the
+  heuristic-ordered move list) self-scales breadth to any budget, matching tuned
+  beams without per-tier knobs. Assumption (M4): heuristic ordering puts good moves
+  early — F8's beam success shows it does.
+- **Method:** widening schedule in `untriedMoves`/`treePolicy` behind config; arena
+  vs the tuned fixed-beam config at each tier budget (500 ms, 2000 ms, extreme
+  iters); ≥600 pooled games per comparison.
+- **Success criteria:** at every tier, game-share CI overlaps or clears 50% vs the
+  tuned beam (non-inferiority — the win is removing the knob); `won` only if it
+  also clears 52% somewhere.
+- **Cost / risk:** small code change; extra comparisons make it compute-heavy
+  (3 tiers × 600 games).
+- **Log:** —
+
+### AE15 — Score-margin reward shaping
+- **Status:** proposed
+- **Objective:** make bots fight for placement/score when the win is out of reach.
+- **Hypothesis:** the winner-take-all reward leaves a losing bot indifferent
+  between 2nd and 4th; blending a placed-squares-margin term into the reward
+  vector improves final scores without hurting win rate. Assumption (M4) — needs
+  the fit-check: early-game score-greed may conflict with win-seeking (blocking >
+  placing); mitigate by weighting the margin term up only late or when P(win) is
+  low.
+- **Method:** shaped `rewardVector` behind config (e.g. reward = w·win +
+  (1−w)·normalized margin); arena vs plain reward at matched budget; primary
+  readout mean placement + mean score, guard readout game-share; ≥600 pooled games.
+- **Success criteria:** mean placement/score improves (CI clear) while game-share
+  CI does not fall below 48%.
+- **Cost / risk:** small; also feeds the advisor (AD2/AD3) a less degenerate value
+  signal in lost positions.
+- **Log:** —
+
+### AE16 — Opening book
+- **Status:** proposed
+- **Objective:** kill worst-case early-move latency (extreme tier: tens of seconds)
+  and bank strength on the fixed start position.
+- **Hypothesis:** moves 1–3 recur across games (fixed corners, symmetric start), so
+  precomputed strong replies (mined from deep offline MCTS + the Run O self-play
+  corpus) match or beat live search at near-zero latency. Assumption (M4): position
+  repetition decays fast — book depth beyond ~3 plies is likely worthless; measure
+  hit-rate by ply first.
+- **Method:** build book from deep offline search over observed early positions
+  (canonicalized under board symmetry); hybrid book-then-MCTS strategy; arena vs
+  plain MCTS at matched *total* time plus a latency readout for moves 1–3;
+  ≥600 pooled games.
+- **Success criteria:** moves 1–3 latency < 50 ms with game-share CI not below 48%
+  vs plain MCTS at matched total time (non-inferiority; latency is the win).
+- **Cost / risk:** moderate — book mining + symmetry canonicalization; strength
+  regression risk if book lines are shallow-search artifacts.
+- **Log:** —
+
+### AE17 — Root-parallel MCTS via Web Workers
+- **Status:** proposed
+- **Objective:** multiply effective iterations at fixed wall-clock using the
+  client's idle cores (bots are client-side only).
+- **Hypothesis:** K independent trees with root visit-count merging ≈ K× iterations
+  with small quality loss — well-attested for root parallelism in the literature.
+  Assumption (M4): merged root statistics preserve move choice quality despite
+  unshared subtrees; the robust-child rule (max visits) merges naturally.
+- **Method:** phase 1: simulate in the arena (K sequential searches per move,
+  merged roots — measures quality at matched *iterations*, no workers needed).
+  Phase 2 only if phase 1 wins: real Worker plumbing + wall-clock benchmark in the
+  browser. Arena vs single-tree at matched total iterations, then at matched
+  wall-clock with K=4; ≥600 pooled games.
+- **Success criteria:** matched wall-clock game-share CI clears 52% vs
+  single-thread (phase 2); phase 1 gate: merged K-tree at K×iters beats single
+  tree at 1×iters, CI clear.
+- **Cost / risk:** moderate-large — worker infra, state serialization per move;
+  phase 1 de-risks cheaply. Interacts with AE9 (both are speed levers; run after).
+- **Log:** —
