@@ -25,16 +25,31 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   medium is iteration-starved early game.)
 - **Note:** Run N / F10 profile confirms the gen/legality path is the bottleneck
   (~75 % of MCTS time). This entry (cache/incrementalise) and **AE9 (bitboards)**
-  target the same hot path; AE9 is the sharper tool — pursue it first, fold any
-  caching wins in after.
+  target the same hot path; AE9 is the sharper tool — but the sub-items below are
+  days-not-weeks, assumption-free, and partially subsumed by AE9 (do them first
+  only if AE9 isn't imminent).
 - **Objective:** raise iterations-per-second so more search fits the AE1 time cap.
-- **Hypothesis:** an incremental / cached `generateLegalMoves` removes the ~34 ms
-  mid-game bottleneck; strength rises with the extra iterations bought.
-- **Method:** cache/incrementalise legal-move generation (beyond the anchor
-  restriction, F7); benchmark iterations/s and game-share at a fixed time budget.
+- **Hypothesis:** allocation churn and redundant geometry work — not just the scan
+  itself — are a large share of the F10 hot path; removing them buys iterations
+  with zero behavior change.
+- **Method:** concrete sub-items (post-Run-O code audit, 2026-07-06), each
+  differential-tested + profiled via `scripts/profile-mcts.ts`:
+  1. **Allocation-free neighbor iteration** — `orthoNeighbors`/`diagNeighbors`
+     ([board.ts](../../../src/game/board.ts)) allocate 4 `{x,y}` objects + an array
+     per call; one pentomino legality test ⇒ ~40 short-lived objects, and
+     `isLegalPlacement` is 31 % of self-time (F10). Replace with precomputed flat
+     index offsets (`i±1`, `i±20`, edge-guarded by `x`). Largely subsumed by AE9.
+  2. **`resolveCells` memoization** — [pieces.ts](../../../src/game/pieces.ts)
+     re-runs reflect→rotate→normalize per call despite `getOrientations`' cache;
+     `scorePlacement` re-resolves geometry for every candidate the generator just
+     produced. Reduce to cached-orientation + translate, or carry cells with
+     `Placement` inside search. Not subsumed by AE9.
+  3. **Rollout scratch state** — each MCTS iteration clones twice (expansion +
+     `rollout`); the rollout clone can be one reusable mutable scratch. Smaller win.
 - **Success criteria:** measurable iters/s gain with byte-identical move output
   (differential test), translating to higher game-share at fixed wall-clock.
-- **Cost / risk:** moderate rules-core work; correctness guarded by differential test.
+- **Cost / risk:** small per item (an afternoon each); correctness guarded by
+  differential test. Risk: #1 wasted if AE9 lands immediately after.
 
 ### AE3 — RAVE / AMAF value sharing
 - **Status:** no-win — 54.0 % game-share vs plain UCT at matched iters,
@@ -263,6 +278,32 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Success criteria:** matched wall-clock game-share CI clears 52% vs
   single-thread (phase 2); phase 1 gate: merged K-tree at K×iters beats single
   tree at 1×iters, CI clear.
-- **Cost / risk:** moderate-large — worker infra, state serialization per move;
-  phase 1 de-risks cheaply. Interacts with AE9 (both are speed levers; run after).
+- **Cost / risk:** moderate — per-seat MCTS workers already exist
+  ([mctsWorker.ts](../../../src/client/ai/mctsWorker.ts) + LocalAIGame plumbing),
+  so phase 2 is "K workers per seat + root merge," not greenfield; phase 1
+  de-risks quality cheaply. Interacts with AE9 (both are speed levers; run after).
+- **Log:** —
+
+### AE18 — Research-harness throughput (arena driver, dump sharding, feature cache)
+- **Status:** proposed — not a strength experiment; a compute-bill reduction for
+  every future experiment (post-Run-O audit: Run O cost ~20 min data gen + 47 min
+  arena + 2 min featurize-per-tweak).
+- **Objective:** more games/positions per wall-clock hour from the research
+  tooling, with identical outputs.
+- **Hypothesis:** three concrete wastes: (1) `playGame` calls `recomputeStuck`
+  (= `hasAnyMove` ×4, and proving *stuck* is the expensive full-scan case) after
+  **every** move — the rollout code's pass-streak trick applies to the outer
+  driver too; (2) `selfplay-dump` is single-process while per-game seeds
+  (`mulberry32(baseSeed + g)`) are already independent — game-range sharding across
+  cores preserves per-game determinism exactly (the Run O arena shards proved the
+  pattern); (3) the trainer re-replays + re-featurizes the whole corpus (~111 s)
+  on every hyperparameter tweak — dump features once to a binary sidecar.
+- **Method:** implement each behind the existing CLIs; verify identical outputs
+  (same seeds ⇒ byte-identical JSONL / same tournament tables); `time` before/after.
+- **Success criteria:** ≥3× dump throughput and a measured arena-driver speedup
+  with outputs byte-identical to the current implementation; trainer re-run cost
+  after first featurization < 10 s.
+- **Cost / risk:** small; (1) touches only the arena driver (rules core untouched,
+  bgio path unaffected). Wasted only if AE9 makes everything cheap first — but
+  sharding/caching still stack on top of AE9.
 - **Log:** —
