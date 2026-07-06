@@ -109,13 +109,24 @@ four classic colors as accents, shapes as the star.
 - **Value:** the tactile "real Blokus set" identity.
 - **Scope:** hyperrealistic board plastic; per-palette piece finishes; grain/bevel/shadow.
 
-### P6 — Board layout & navigation
-- **Status:** partial — read-only controls reference panel **shipped**; board-rotate
-  animation **shipped**. Remaining: layout (center vs left-half with tray), player's
-  corner always bottom, full keyboard/mouse placement model.
+### P6 — Board layout & navigation — SHIPPED
+- **Status:** shipped — "study table" three-column layout (players · framed board +
+  action dock · hand + standings), centered; board auto-orients the player's corner
+  bottom-right with an animated rotate-view button; full keyboard/mouse placement model
+  + read-only controls reference.
 - **Value:** comfortable placement + orientation control.
 - **Scope:** WASD/cursor hover, scroll/arrows rotate, space/click place, Enter submit;
   rotate-view button; board positioning.
+
+### P12 — Theming & Settings panel — SHIPPED
+- **Status:** shipped — one Settings surface (gear icon) consolidates: theme scheme
+  (Linen / Lamplight / Walnut), the piece-color palette editor, an inventory-display
+  toggle (piece silhouettes vs 21-dot), and live overrides for **every** font/color
+  design token (grouped, collapsible; per-token reset + reset-all).
+- **Value:** deep visual customization with no code; instant retint.
+- **Notes:** themes + tokens are CSS custom properties swapped on `<html>` (no React
+  re-render); palette, token overrides, theme, and inventory choice persist to
+  localStorage. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P7 — Sound design
 - **Status:** proposed (deferred — later release)

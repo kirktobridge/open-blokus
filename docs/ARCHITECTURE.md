@@ -296,18 +296,21 @@ nothing to undo mid-turn, and disabling undo avoids multiplayer desync confusion
 ├─ <Lobby>                             // match list + create form (uses LobbyClient)
 │  ├─ <MatchList>
 │  └─ <CreateMatchForm>                // mode (2/3/4) + scoring variant → setupData
-└─ <MatchScreen matchID playerID credentials>
+└─ <MatchScreen matchID playerID credentials>   // (SettingsPanel/ControlsHelp float here too)
    └─ <BlokusClient>                   // boardgame.io Client(...) instance
-      └─ <BlokusBoardView> (BoardProps<GameState>)
-         ├─ <Board>                    // 20×20 CSS grid
-         │  ├─ <Cell> × 400
-         │  └─ <GhostPiece>            // preview at hovered anchor, valid/invalid tint
-         ├─ <PieceTray>                // one section per color
-         │  └─ <PieceThumb>            // click to select; greyed when placed
-         ├─ <Controls>                 // rotate ⟳, flip ⇄, confirm, "you're stuck"
-         ├─ <ScorePanel>               // live remaining-square counts per color/player
+      └─ <BlokusBoardView> (BoardProps<GameState>)   // "study table": 3 centered columns
+         ├─ <PlayerCard> × 4           // per-seat: state tag, count, micro-inventory
+         ├─ <Board>                    // 20×20 CSS grid, framed in walnut + mat
+         │  ├─ <Cell> × 400            // also renders the hover/staged preview tint
+         │  └─ <PlacedLayer>           // SVG gel finish + last-move ring (see §8)
+         ├─ <Controls>                 // action dock: in-hand · PLAY MOVE · ⟲ ⟳ ⇄ · Cancel
+         ├─ <HandTray>/<PieceThumb>    // your hand, grouped by piece size
+         ├─ <Standings>                // remaining-squares chips
          └─ <GameOverModal>            // shown when ctx.gameover set
 ```
+
+The offline table (`LocalAIGame`) mounts the same `<BlokusBoardView>` and docks
+`SettingsPanel`/`ControlsHelp` into its own top bar (both bgio clients run `debug:false`).
 
 ### UI-only state (never in `G`)
 
@@ -322,6 +325,15 @@ Confirming dispatches `moves.placePiece({ pieceId, rotation, reflected, x, y })`
 The board view reads authoritative data from props: `G` (board, colors), `ctx`
 (currentPlayer, gameover), and `playerID` (which seat this browser is). It disables
 input when `ctx.currentPlayer`'s color isn't owned by this `playerID`.
+
+### Theming & settings (client-only)
+
+Theme schemes and every design token are **CSS custom properties** on `<html>`; the
+Settings panel switches scheme and writes per-token overrides by setting them inline, so
+the whole app retints with **no React re-render**. Piece palettes, token overrides,
+theme, and the inventory-display choice persist to `localStorage` (`settings.ts`,
+`palettes.ts`, `ThemeToggle.tsx`). This is why display concerns stay out of `G` and why
+custom palettes keep working everywhere colors resolve via `usePaletteColors()`.
 
 ---
 
