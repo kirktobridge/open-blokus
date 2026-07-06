@@ -61,7 +61,7 @@ const DEFAULTS: AlphaBetaConfig = {
 // --- Evaluation -----------------------------------------------------------
 
 /** Squares this color has placed on the board. */
-function placedSquares(cs: ColorState): number {
+export function placedSquares(cs: ColorState): number {
   return TOTAL_SQUARES - remainingSquares(cs);
 }
 
@@ -71,7 +71,7 @@ function placedSquares(cs: ColorState): number {
  * if it's diagonally adjacent to the color and not orthogonally adjacent to it.
  * Before the color's first move, only its assigned corner counts.
  */
-function attachPoints(G: GameState, color: Color): number {
+export function attachPoints(G: GameState, color: Color): number {
   if (!G.colors[color].hasStarted) {
     const corner = CORNERS[color];
     return G.board[idx(corner.x, corner.y)] === null ? 1 : 0;
@@ -107,7 +107,7 @@ const CONTESTED = -2;
  * between colors are contested and count for no one. Returns each color's claimed
  * empty-cell count — a measure of open space it is positioned to reach first.
  */
-function territoryControl(G: GameState): number[] {
+export function territoryControl(G: GameState): number[] {
   const owner = new Int8Array(SIZE * SIZE).fill(-1);
   const dist = new Int16Array(SIZE * SIZE).fill(-1);
   const queue: number[] = [];

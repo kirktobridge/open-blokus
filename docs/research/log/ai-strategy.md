@@ -454,3 +454,53 @@ few AND/ORs instead of `inBounds`+`get`+`isSameColor` loops.
 ~75% hot path and accelerates rollout *and* gen together. AE4 (learned eval) is the
 wrong tool here — rollout cost is legality *sampling*, not *evaluation* — and stays
 blocked on logging. → F10.
+
+### Run O — learned value net as MCTS leaf eval (AE4)
+Can a tiny learned value net replace full rollouts at matched wall-clock? (AE4;
+pre-registered bar: net-leaf MCTS game-share CI clears 52% vs full-rollout MCTS
+at matched 500 ms/move over ≥600 games.)
+
+**Stage A — data.** 10,000 self-play games (heuristic + ε=0.1 exploration, 4
+seats, seeds 1000–10999) via `scripts/selfplay-dump.ts` → 697k positions
+(`.data/selfplay/heur-e10-10k.jsonl`, replay-verified). 20.5 min.
+
+**Stage B — offline gate (pre-registered kill-gate).** 609-param color-symmetric
+MLP (8 features/color + opp means + fill → softmax over colors), pure-TS train +
+inference (`scripts/train-valuenet.ts`, 5 epochs, 3.5 min). Held-out winner
+prediction, plies 20–50 (n=31,000 positions / 1,000 games):
+
+| predictor | accuracy | 95% CI |
+|-----------|----------|--------|
+| value net | 42.85% | [42.3, 43.4] |
+| shipped evalState (placed + 0.5·attach) | 39.12% | [38.6, 39.7] |
+
+Discordant pairs: net right in 4,242 of 7,328 = 57.9% [56.8, 59.0], z = +13.5.
+Positions within a game correlate, so the position-level n overstates power, but
+the margin survives any reasonable deflation. **Gate passed** → integration.
+
+**Stage C — arena at matched wall-clock.** `leafValue` injection in `mcts.ts`
+(net win-prob vector backs up instead of a rollout). Net side gets 15–100× the
+iterations at 500 ms (rootN 340–1,593 vs 15–46 by phase) → beam 16 per F8;
+rollout side = shipped medium (500 ms, beam 6). Config
+`scripts/experiments/ae4.json`, 8 shards × 3 seeds × 25 games (seeds 2000–2072),
+600 games, 47 min wall on 16 cores.
+
+| config | games | game-share | 95% CI | p(>50%) |
+|--------|-------|-----------|--------|---------|
+| net-mcts (500 ms, beam 16) | 600 | **27.6%** | [24.2, 31.3] | 1 (z = −11.0) |
+| rollout-mcts (500 ms, beam 6) | 600 | 72.4% | — | — |
+
+All 8 shards agree (net 23–33%); an 8-game pilot's 44% was noise.
+
+**Read:** the bar (CI clears 52%) is missed by ~25 points — a clean, well-powered
+negative. Beating the *static heuristic* as a predictor (Stage B) is far short of
+matching a *full rollout* as a leaf estimate: 15–100× more iterations do not
+compensate for the weaker per-leaf signal. Reconfirms F6 (rollout quality is the
+strength lever) from the opposite direction, and F10's prediction that AE4
+attacks the wrong cost. A stronger net (board planes, more params, MCTS-quality
+labels) might close the gap but is a different cost class than this experiment.
+
+**Decision:** no-win at this scale — keep full rollouts. `leafValue` stays as a
+zero-cost injection point (default off). Revisit only with a step-change in net
+capacity/data (board-plane input, policy head, MCTS self-play labels), ideally
+after AE9 bitboards raise the rollout baseline it must beat. → AE4 closed.

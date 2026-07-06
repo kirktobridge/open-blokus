@@ -89,9 +89,15 @@ function recomputeStuck(G: GameState): void {
  */
 export function playGame(
   byColor: Record<Color, Strategy>,
-  opts: { mode?: GameMode; scoring?: ScoringVariant; rng?: () => number } = {},
+  opts: {
+    mode?: GameMode;
+    scoring?: ScoringVariant;
+    rng?: () => number;
+    /** Called for every accepted move, in play order (self-play logging). */
+    onMove?: (color: Color, move: Placement) => void;
+  } = {},
 ): ReturnType<typeof finalScores> {
-  const { mode = 4, scoring = 'basic', rng = Math.random } = opts;
+  const { mode = 4, scoring = 'basic', rng = Math.random, onMove } = opts;
   const G = createInitialState(mode, scoring);
   recomputeStuck(G);
 
@@ -108,6 +114,7 @@ export function playGame(
       advanceActiveColor(G);
       continue;
     }
+    onMove?.(color, move);
     applyPlacement(G, color, move.pieceId, resolveCells(move));
     recomputeStuck(G);
     advanceActiveColor(G);

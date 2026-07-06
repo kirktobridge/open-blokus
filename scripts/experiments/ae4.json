@@ -1,0 +1,37 @@
+{
+  "title": "AE4: net-leaf MCTS vs full-rollout MCTS (matched 500ms/move)",
+  "seats": [
+    {
+      "name": "net-mcts",
+      "strategy": "mcts",
+      "options": {
+        "timeBudgetMs": 500,
+        "beam": 16,
+        "rolloutDepth": 0,
+        "minIterations": 8,
+        "netWeights": ".data/selfplay/valuenet-weights.json"
+      }
+    },
+    {
+      "name": "rollout-mcts",
+      "strategy": "mcts",
+      "options": { "timeBudgetMs": 500, "beam": 6, "rolloutDepth": 0, "minIterations": 8 }
+    },
+    {
+      "name": "net-mcts",
+      "strategy": "mcts",
+      "options": {
+        "timeBudgetMs": 500,
+        "beam": 16,
+        "rolloutDepth": 0,
+        "minIterations": 8,
+        "netWeights": ".data/selfplay/valuenet-weights.json"
+      }
+    },
+    {
+      "name": "rollout-mcts",
+      "strategy": "mcts",
+      "options": { "timeBudgetMs": 500, "beam": 6, "rolloutDepth": 0, "minIterations": 8 }
+    }
+  ]
+}

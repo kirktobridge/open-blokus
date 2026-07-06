@@ -62,6 +62,13 @@ export interface MctsConfig {
   rave: boolean;
   /** RAVE equivalence parameter k: β = √(k / (3N + k)). Larger = trust AMAF longer. */
   raveK: number;
+  /**
+   * Leaf evaluator replacing rollouts (AE4): returns a per-color reward vector
+   * (COLOR_ORDER order, same scale as rewardVector — entries in [0,1] summing
+   * to 1) for a non-terminal leaf. Injected as a function so this module stays
+   * decoupled from any model; ignored on the RAVE path (needs rollout moves).
+   */
+  leafValue?: (G: GameState) => ArrayLike<number>;
 }
 
 const DEFAULTS: MctsConfig = {
@@ -434,7 +441,11 @@ export function mctsSearch(
       const reward = leaf.terminal ? rewardVector(leaf.G) : rolloutRave(leaf.G, cfg, rng, played);
       backpropRave(leaf, reward, played);
     } else {
-      const reward = leaf.terminal ? rewardVector(leaf.G) : rollout(leaf.G, cfg, rng);
+      const reward = leaf.terminal
+        ? rewardVector(leaf.G)
+        : cfg.leafValue
+          ? Float64Array.from(cfg.leafValue(leaf.G) as number[])
+          : rollout(leaf.G, cfg, rng);
       backprop(leaf, reward);
     }
     iters++;

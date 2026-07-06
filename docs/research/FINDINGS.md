@@ -122,6 +122,22 @@ adjacency / corner masks) collapses the per-cell primitives into mask ops and sp
 evaluation while our rollout cost is legality *sampling*. Points to [AE9](backlog/ai-engine.md)
 as the next win. Run N.
 
+### F11 — A small learned value net can't replace full rollouts, even at 15–100× the iterations
+`significant` (600 games, 8 shards agree, Run O). A 609-param value net trained on
+697k self-play positions **passes its offline gate** — it out-predicts the shipped
+static eval as a mid-game winner predictor (42.9% vs 39.1% held-out, discordant
+pairs 57.9% [56.8, 59.0]) — yet as an MCTS **leaf eval replacing rollouts** it
+loses **27.6% [24.2, 31.3]** game-share vs full-rollout MCTS at matched 500 ms/move,
+despite completing 15–100× more iterations (rootN 340–1,593 vs 15–46). The lesson
+pairs with F6: strength lives in the *quality* of the leaf estimate, and a terminal
+rollout outcome carries far more signal than a cheap static approximation — more
+tree does not buy back a worse leaf. "Beats the heuristic as a predictor" is a much
+lower bar than "matches a rollout as a value". Infra kept at zero cost: `leafValue`
+injection in `mcts.ts` (default off), self-play dump + trainer scripts. Revisit only
+with step-change capacity (board-plane input, policy head, MCTS-quality labels) —
+and after AE9 raises the rollout baseline. Run O; closed
+[AE4](backlog/ai-engine.md) as no-win.
+
 ---
 
 ## Method lessons (the ones we paid for)

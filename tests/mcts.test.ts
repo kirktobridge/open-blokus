@@ -45,6 +45,18 @@ describe('mctsStrategy', () => {
     expect(isLegalPlacement(G, 'blue', move!.pieceId, resolveCells(move!))).toBe(true);
   });
 
+  it('leafValue mode returns a legal move without any rollouts', () => {
+    const G = createInitialState(4);
+    // Constant evaluator favoring blue: search still functions, no rollout runs.
+    const move = mctsStrategy({ ...fast, leafValue: () => [0.7, 0.1, 0.1, 0.1] })(
+      G,
+      'blue',
+      seededRng(),
+    );
+    expect(move).not.toBeNull();
+    expect(isLegalPlacement(G, 'blue', move!.pieceId, resolveCells(move!))).toBe(true);
+  });
+
   it('falls back to the heuristic when too few iterations complete', () => {
     const G = createInitialState(4);
     // Tiny budget + huge trust threshold forces the fallback path; a constant rng

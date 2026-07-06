@@ -14,8 +14,10 @@ import {
   type Contestant,
 } from './arena';
 import { alphaBetaStrategy } from './alphabeta';
-import { mctsStrategy } from './mcts';
+import { mctsStrategy, type MctsConfig } from './mcts';
 import { WEIGHTS, type Weights } from './heuristic';
+import { valueNetProbs, type ValueNetWeights } from './valuenet';
+import { COLOR_ORDER } from '../types';
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const flagArgs = process.argv.slice(2).filter((a) => a.startsWith('--'));
@@ -74,8 +76,18 @@ function buildStrategy(seat: SeatConfig): Contestant['strategy'] {
       );
     case 'alphabeta':
       return alphaBetaStrategy(seat.options as Parameters<typeof alphaBetaStrategy>[0]);
-    case 'mcts':
-      return mctsStrategy(seat.options as Parameters<typeof mctsStrategy>[0]);
+    case 'mcts': {
+      // `netWeights: <path>` (AE4): load a value net and inject it as the leaf
+      // evaluator — JSON configs can't hold functions, so the wiring lives here.
+      const { netWeights, ...rest } = (seat.options ?? {}) as Partial<MctsConfig> & {
+        netWeights?: string;
+      };
+      if (typeof netWeights === 'string') {
+        const w = JSON.parse(readFileSync(netWeights, 'utf8')) as ValueNetWeights;
+        rest.leafValue = (G) => valueNetProbs(G, COLOR_ORDER[G.activeColorIndex], w);
+      }
+      return mctsStrategy(rest);
+    }
   }
 }
 
