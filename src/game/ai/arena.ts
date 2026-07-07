@@ -10,7 +10,7 @@ import type { Color, GameMode, GameState, Placement, ScoringVariant } from '../t
 import { createInitialState } from '../modes';
 import { resolveCells, pieceSize } from '../pieces';
 import { applyPlacement } from '../placement';
-import { generateLegalMoves, hasAnyMove } from '../moves';
+import { generateLegalMoves } from '../moves';
 import { finalScores } from '../scoring';
 import { chooseMove, WEIGHTS } from './heuristic';
 import type { Weights } from './heuristic';
@@ -79,10 +79,6 @@ function advanceActiveColor(G: GameState): void {
   }
 }
 
-function recomputeStuck(G: GameState): void {
-  for (const c of COLOR_ORDER) G.colors[c].stuck = !hasAnyMove(G, c);
-}
-
 /**
  * Play one full game with a strategy assigned to each color. Returns the
  * final-scores payload (per-color scores, per-player totals, winners).
@@ -99,24 +95,26 @@ export function playGame(
 ): ReturnType<typeof finalScores> {
   const { mode = 4, scoring = 'basic', rng = Math.random, onMove } = opts;
   const G = createInitialState(mode, scoring);
-  recomputeStuck(G);
 
-  while (!COLOR_ORDER.every((c) => G.colors[c].stuck)) {
+  // Lazy stuck detection (AE18): no per-move `recomputeStuck` (= `hasAnyMove` ×4,
+  // the expensive full-scan case). A color is discovered stuck only when its
+  // strategy returns null. This is byte-identical to the eager driver because
+  // (a) faithful strategies return null iff no legal move exists and draw no rng
+  // on that path, and (b) legality is monotone — the board only fills, so a stuck
+  // color stays stuck. The eager driver's proactive marking only ever *skipped*
+  // that color's turn (a zero-rng no-op); here the strategy is called once more
+  // and returns null, leaving the rng stream and the played moves identical.
+  let live = COLOR_ORDER.length; // colors not yet known-stuck
+  while (live > 0) {
     const color = COLOR_ORDER[G.activeColorIndex];
-    if (G.colors[color].stuck) {
-      advanceActiveColor(G);
-      continue;
-    }
     const move = byColor[color](G, color, rng);
-    if (!move) {
-      // Strategy yielded nothing though a move exists: treat as stuck, skip.
+    if (move) {
+      onMove?.(color, move);
+      applyPlacement(G, color, move.pieceId, resolveCells(move));
+    } else {
       G.colors[color].stuck = true;
-      advanceActiveColor(G);
-      continue;
+      live--;
     }
-    onMove?.(color, move);
-    applyPlacement(G, color, move.pieceId, resolveCells(move));
-    recomputeStuck(G);
     advanceActiveColor(G);
   }
   return finalScores(G);

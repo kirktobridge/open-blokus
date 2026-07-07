@@ -35,6 +35,28 @@ describe('arena.runTournament', () => {
     expect(a).toEqual(b);
   });
 
+  it('lazy-stuck driver is byte-identical to the eager one (AE18 golden)', () => {
+    // Golden wins/ties captured from the eager `recomputeStuck`-per-move driver
+    // before AE18's lazy-stuck rewrite. Locks byte-identity: the rng stream is
+    // reused across a tournament's games, so any extra/missing draw would cascade.
+    const make = () => [
+      { name: 'heuristic', strategy: heuristicStrategy() },
+      { name: 'random', strategy: randomStrategy },
+      { name: 'greedy-size', strategy: greedySizeStrategy },
+      { name: 'random#2', strategy: randomStrategy },
+    ];
+    const golden: Record<number, { wins: Record<string, number>; ties: number }> = {
+      1: { wins: { heuristic: 27, random: 0, 'greedy-size': 3, 'random#2': 0 }, ties: 0 },
+      42: { wins: { heuristic: 28.5, random: 0, 'greedy-size': 1.5, 'random#2': 0 }, ties: 1 },
+      99: { wins: { heuristic: 28, random: 0, 'greedy-size': 2, 'random#2': 0 }, ties: 0 },
+    };
+    for (const seed of [1, 42, 99]) {
+      const r = runTournament(make(), { games: 30, seed });
+      expect(r.wins).toEqual(golden[seed].wins);
+      expect(r.ties).toBe(golden[seed].ties);
+    }
+  });
+
   it('heuristic dominates random (regression guard for the bot)', () => {
     const r = runTournament(
       [
