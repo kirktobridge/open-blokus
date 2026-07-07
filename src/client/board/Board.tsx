@@ -27,6 +27,7 @@ export function Board({
   onLeave,
   onRotate,
   onFlip,
+  glowColors,
 }: {
   board: (Color | null)[];
   activeColor: Color;
@@ -41,6 +42,8 @@ export function Board({
   onRotate?: (dir: 1 | -1) => void;
   /** Right-click over the board flips the piece being placed. */
   onFlip?: () => void;
+  /** Colors whose pieces glow — the game-over winner reveal (P16). */
+  glowColors?: Color[];
 }) {
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
   const colors = usePaletteColors();
@@ -113,7 +116,13 @@ export function Board({
           />
         );
       })}
-      <PlacedLayer board={board} colors={colors} previewCells={previewIdx} lastMove={lastMove} />
+      <PlacedLayer
+        board={board}
+        colors={colors}
+        previewCells={previewIdx}
+        lastMove={lastMove}
+        glowColors={glowColors}
+      />
     </div>
   );
 }

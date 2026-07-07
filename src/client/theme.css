@@ -141,3 +141,76 @@ select {
     outline-offset: 9px;
   }
 }
+
+/* In-game drama (P16). --- */
+
+/* Placement settle: a white flash over the just-placed cells that pops and
+   fades, reading as the piece landing. Remounted per placement so it plays once.
+   transform-box: fill-box scales around the placed piece's own bounding box. */
+@keyframes ob-settle {
+  0% {
+    opacity: 0.6;
+    transform: scale(1.14);
+  }
+  60% {
+    opacity: 0.18;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+.ob-settle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ob-settle 360ms ease-out forwards;
+  pointer-events: none;
+}
+
+/* Winner-piece glow in the game-over mosaic — a slow breathing halo. */
+@keyframes ob-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.ob-glow {
+  animation: ob-glow 1.9s ease-in-out infinite;
+}
+
+/* Out-of-moves beat: a transient banner that rises in and drifts up as it goes. */
+@keyframes ob-beat {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  12%,
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+.ob-beat {
+  animation: ob-beat 2800ms ease-in-out forwards;
+}
+
+/* Honor reduced-motion: drop the decorative in-game animations entirely. The
+   JS-driven ceremony (count-ups, racing bars, shake) checks the same media
+   query and snaps to its end state. */
+@media (prefers-reduced-motion: reduce) {
+  .ob-settle,
+  .ob-glow,
+  .ob-beat {
+    animation: none;
+  }
+  .ob-settle {
+    opacity: 0;
+  }
+}

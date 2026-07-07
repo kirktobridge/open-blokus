@@ -3,6 +3,7 @@ import type { Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 import type { PaletteColors } from '../palettes';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 const C = CELL_PX;
 const SIZE = BOARD_SIZE * C;
@@ -91,6 +92,7 @@ export function PlacedLayer({
   colors,
   previewCells,
   lastMove,
+  glowColors,
 }: {
   board: (Color | null)[];
   colors: PaletteColors;
@@ -98,10 +100,16 @@ export function PlacedLayer({
   previewCells?: ReadonlySet<number>;
   /** Board indices of the most recent placement (drawn with a highlight ring). */
   lastMove?: number[];
+  /** Colors whose pieces get a glowing halo (game-over winner reveal, P16). */
+  glowColors?: Color[];
 }) {
+  const reduce = useReducedMotion();
   const exclude = previewCells ?? EMPTY_SET;
   const regions = useMemo(() => buildRegions(board, exclude), [board, exclude]);
   const allFillsD = useMemo(() => regions.map((r) => r.fillD).join(''), [regions]);
+  const glowSet = glowColors && glowColors.length > 0 ? new Set(glowColors) : undefined;
+  // Remount key so the settle flash replays exactly once per placement.
+  const settleKey = lastMove && lastMove.length > 0 ? lastMove.join(',') : '';
 
   return (
     <svg
@@ -150,6 +158,10 @@ export function PlacedLayer({
           </feSpecularLighting>
           <feComposite in="glossSpec" in2="SourceAlpha" operator="in" />
         </filter>
+        {/* Soft colored halo for glowing (winner) pieces in the reveal mosaic. */}
+        <filter id="pl-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="4.5" />
+        </filter>
         {/* Clip for uniform layers (volume, grain) — union of all pieces. */}
         <clipPath id="pl-all">
           <path d={allFillsD} />
@@ -162,6 +174,18 @@ export function PlacedLayer({
           </clipPath>
         ))}
       </defs>
+
+      {/* Winner glow (reveal only): blurred colored copies beneath the fills so
+          the halo bleeds out around the winning color's pieces. */}
+      {glowSet && (
+        <g className={reduce ? undefined : 'ob-glow'} filter="url(#pl-glow)">
+          {regions
+            .filter((r) => glowSet.has(r.color))
+            .map((r, i) => (
+              <path key={i} d={r.fillD} fill={colors[r.color]} />
+            ))}
+        </g>
+      )}
 
       {/* Translucent fills sharing one contact shadow. */}
       <g filter="url(#pl-shadow)">
@@ -226,6 +250,19 @@ export function PlacedLayer({
           />
         );
       })}
+
+      {/* Placement settle: a one-shot white flash over the just-placed cells that
+          pops and fades, reading as the piece landing. Keyed so it replays per
+          placement; suppressed under reduced motion. */}
+      {!reduce && settleKey !== '' && (
+        <g key={settleKey} className="ob-settle">
+          {lastMove!.map((idx) => {
+            const x = idx % BOARD_SIZE;
+            const y = (idx / BOARD_SIZE) | 0;
+            return <rect key={idx} x={x * C} y={y * C} width={C} height={C} fill="#ffffff" />;
+          })}
+        </g>
+      )}
     </svg>
   );
 }

@@ -5,6 +5,7 @@ import { FONT_MONO, FONT_UI } from '../theme';
 import type { PaletteColors } from '../palettes';
 import type { InventoryDisplay } from '../settings';
 import { PieceThumb } from '../tray/PieceThumb';
+import { CountUp } from './CountUp';
 
 /** Which state pill a seat shows. Priority resolved by the parent. */
 export type SeatTag = 'active' | 'onDeck' | 'played' | 'noMoves' | 'winner' | null;
@@ -115,7 +116,7 @@ export function PlayerCard({
 
       {/* Row 2: big remaining-square count */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginTop: 9 }}>
-        <span style={{ fontFamily: FONT_MONO, fontWeight: 900, fontSize: 22 }}>{squares}</span>
+        <CountUp value={squares} style={{ fontFamily: FONT_MONO, fontWeight: 900, fontSize: 22 }} />
         <span style={{ fontSize: 11.5, color: 'var(--mut)' }}>
           squares left · {state.remaining.length} pieces
         </span>
