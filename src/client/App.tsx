@@ -5,6 +5,7 @@ import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/
 import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
+import { Tutorial } from './tutorial/Tutorial';
 import type { Difficulty } from './ai/difficulty';
 import { SettingsPanel } from './SettingsPanel';
 import { ControlsHelp } from './ControlsHelp';
@@ -14,6 +15,7 @@ export function App() {
   const [session, setSession] = useState<Session | null>(() => loadSession());
   const [matches, setMatches] = useState<MatchInfo[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [aiConfig, setAiConfig] = useState<{
     mode: GameMode;
     aiCount: number;
@@ -91,7 +93,9 @@ export function App() {
   }, [lobby, session]);
 
   let screen;
-  if (aiConfig) {
+  if (showTutorial) {
+    screen = <Tutorial onExit={() => setShowTutorial(false)} />;
+  } else if (aiConfig) {
     screen = (
       <LocalAIGame
         mode={aiConfig.mode}
@@ -112,6 +116,7 @@ export function App() {
         onStartAI={(mode, aiCount, botDifficulties) =>
           setAiConfig({ mode, aiCount, botDifficulties })
         }
+        onOpenTutorial={() => setShowTutorial(true)}
         joinError={joinError}
         onDismissError={() => setJoinError(null)}
       />

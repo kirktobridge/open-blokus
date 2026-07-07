@@ -201,13 +201,29 @@ select {
   animation: ob-beat 2800ms ease-in-out forwards;
 }
 
+/* Tutorial (P4) placement hints — a gentle breathing pulse to draw the eye to
+   the clickable spots. */
+@keyframes ob-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.ob-hint-pulse {
+  animation: ob-hint-pulse 1.6s ease-in-out infinite;
+}
+
 /* Honor reduced-motion: drop the decorative in-game animations entirely. The
    JS-driven ceremony (count-ups, racing bars, shake) checks the same media
    query and snaps to its end state. */
 @media (prefers-reduced-motion: reduce) {
   .ob-settle,
   .ob-glow,
-  .ob-beat {
+  .ob-beat,
+  .ob-hint-pulse {
     animation: none;
   }
   .ob-settle {
