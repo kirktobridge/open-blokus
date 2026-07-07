@@ -156,6 +156,21 @@ dilations across candidates, not exotic bit-tricks. Bitboard legality now backs
 the bgio/UI path and reference. This raises the standing rollout baseline for every
 future speed/quality experiment. Run P; closed [AE9](backlog/ai-engine.md) as won.
 
+### F13 — Research-harness throughput: dump sharding is 4.6×, the arena-driver win was eaten by AE9
+`significant` (byte-identical diffs + timed runs, Run Q). Two byte-identical tooling
+speedups: (1) `selfplay-dump --jobs=N` shards per-game-seeded games across processes
+and concatenates in order → **4.6×** on 8 cores (200 games 17.0→3.7 s), verified
+`diff`-identical to single-process — this is the win that matters, cutting every
+future self-play dump's cost. (2) Replacing the arena driver's per-move
+`recomputeStuck` (`hasAnyMove` ×4) with lazy stuck-on-null detection is only **1.12×**
+now, because AE9 (F12) already made `hasAnyMove` ~2.5× cheaper so the eliminated
+scans mostly short-circuit — a **sequencing lesson**: a speedup's value is contingent
+on what already landed; AE9 subsumed most of this one, exactly as the entry's cost
+note predicted. Deferred the trainer feature-cache sub-item with the value-net path
+(F11 dormant). Guardrails: golden wins/ties test locks the driver's byte-identity
+(the tournament rng is shared across games, so any stray draw cascades). Run Q;
+closed [AE18](backlog/ai-engine.md) as won (live subset).
+
 ---
 
 ## Method lessons (the ones we paid for)

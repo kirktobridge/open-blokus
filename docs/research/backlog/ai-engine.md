@@ -16,11 +16,9 @@ The dependency-ready head, highest-payoff first — the authoritative "what to r
 Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
 test (product P21) fails CI if any ID here is missing or terminal.
 
-1. **AE18** — research-harness throughput: cuts the compute bill of every future
-   experiment, outputs byte-identical. Now stacks on AE9's faster engine (Run P).
-2. **AE19** — Pentobi external baseline: makes strength absolute, not self-relative.
-3. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
-4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+1. **AE19** — Pentobi external baseline: makes strength absolute, not self-relative.
+2. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
+3. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
 
 ---
 
@@ -306,9 +304,17 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE18 — Research-harness throughput (arena driver, dump sharding, feature cache)
-- **Status:** proposed — not a strength experiment; a compute-bill reduction for
-  every future experiment (post-Run-O audit: Run O cost ~20 min data gen + 47 min
-  arena + 2 min featurize-per-tweak).
+- **Status:** won (live subset; Run Q / F13) — `selfplay-dump --jobs=N` sharding is
+  **4.6×** (byte-identical `diff`) and the arena-driver lazy-stuck rewrite is 1.12×
+  (byte-identical golden test), both shipped. Sub-item (3) trainer feature-cache
+  **deferred** with the dormant value-net path (F11); revive with a stronger-net
+  attempt.
+- **Log:** Run Q → [F13](../FINDINGS.md)
+- **Scope narrowed 2026-07-07 (context shift, M2):** built sub-items (1)
+  arena-driver pass-streak + (2) dump sharding; deferred (3) the trainer
+  feature-cache — F11 closed the value net as a no-win, so the trainer is dormant
+  infra. Sub-item (1)'s absolute win shrank now AE9 (Run P) made `hasAnyMove` ~2.5×
+  cheaper, but eliminating the calls still helps every future arena run.
 - **Objective:** more games/positions per wall-clock hour from the research
   tooling, with identical outputs.
 - **Hypothesis:** three concrete wastes: (1) `playGame` calls `recomputeStuck`
@@ -321,9 +327,11 @@ test (product P21) fails CI if any ID here is missing or terminal.
   on every hyperparameter tweak — dump features once to a binary sidecar.
 - **Method:** implement each behind the existing CLIs; verify identical outputs
   (same seeds ⇒ byte-identical JSONL / same tournament tables); `time` before/after.
-- **Success criteria:** ≥3× dump throughput and a measured arena-driver speedup
-  with outputs byte-identical to the current implementation; trainer re-run cost
-  after first featurization < 10 s.
+- **Success criteria (pre-registered; scope-narrowed 2026-07-07):** ≥3× dump
+  throughput (sub-item 2) **and** a measured arena-driver speedup (sub-item 1), both
+  with outputs **byte-identical** to the current implementation (hard gate: same
+  seeds ⇒ identical tournament tables / identical JSONL). Trainer re-run <10 s
+  (sub-item 3) **deferred**, not part of this close.
 - **Cost / risk:** small; (1) touches only the arena driver (rules core untouched,
   bgio path unaffected). Wasted only if AE9 makes everything cheap first — but
   sharding/caching still stack on top of AE9.

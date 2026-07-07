@@ -569,3 +569,53 @@ experiment is measured against.
 byte-identical; `isLegalPlacement` retained for bgio/UI). Raises node rates for the
 live time-budget tiers for free. → AE9 closed; next speed lever is AE18 (harness
 throughput). Config `scripts/experiments/ae9.json`, bench `scripts/bench-mcts.ts`.
+
+### Run Q — research-harness throughput (AE18, sub-items 1+2)
+Can the research tooling produce more games/positions per wall-clock hour with
+byte-identical outputs? (AE18; scope narrowed 2026-07-07: sub-item 1 arena-driver +
+sub-item 2 dump sharding; sub-item 3 trainer feature-cache deferred, F11 made the
+value-net workflow dormant. Bar: ≥3× dump throughput + a measured arena-driver
+speedup, both byte-identical.)
+
+**Sub-item 1 — arena-driver lazy stuck detection.** `playGame` (`arena.ts`) called
+`recomputeStuck` (= `hasAnyMove` ×4, the expensive full-scan case) after *every*
+move; replaced with the rollout's lazy pass approach — a color is discovered stuck
+only when its strategy returns null. Byte-identical because faithful strategies
+return null iff no legal move and draw no rng on that path, legality is monotone,
+and the old eager marking only ever *skipped* a zero-rng turn. Guarded by a golden
+test (`tests/arena.test.ts`) pinning exact wins/ties for seeds 1/42/99 captured from
+the eager driver — the tournament reuses one rng across its games, so any stray draw
+would cascade. Throughput (fast strategies, 300 games, best-of-3, `scripts/bench-driver.ts`):
+
+| driver | games/s |
+|--------|---------|
+| eager `recomputeStuck`/move | 15.5 |
+| lazy stuck (this run) | **17.4** |
+
+**1.12×** — modest, as the AE18 cost note predicted: AE9 (Run P) already made
+`hasAnyMove` ~2.5× cheaper, so the eliminated calls mostly short-circuit now. Still
+free and byte-identical on every future arena/dump run.
+
+**Sub-item 2 — self-play dump sharding.** `selfplay-dump.ts` uses per-game
+independent seeds (`mulberry32(baseSeed+g)`), so `--jobs=N` shards contiguous game
+ranges across N child processes and concatenates the shard files in game order —
+byte-identical to the single-process JSONL (verified `diff -q` on 48- and 200-game
+dumps). Wall time (200 games, seeds 5000–5199, 16-core host):
+
+| mode | wall | throughput |
+|------|------|-----------|
+| `--jobs=1` | 17.0 s | 11.8 games/s |
+| `--jobs=8` | 3.7 s | **54 games/s** |
+
+**4.6×** — clears the ≥3× bar. (Would scale further with more jobs; 8 chosen for
+the readout.)
+
+**Read:** both live sub-items pass byte-identically. The dump-sharding win (4.6×) is
+the one that matters — it cuts the data-gen cost of every future self-play experiment
+(Run O's 20-min dump → ~4 min); the arena-driver win is small post-AE9 but free. No
+strength claim — this is pure tooling throughput.
+
+**Decision:** won (live subset) — lazy-stuck driver + `--jobs=N` dump sharding
+shipped, both byte-identical (golden test + diff). Sub-item 3 (trainer feature-cache,
+<10 s) deferred with the dormant value-net path. → AE18 closed. Bench
+`scripts/bench-driver.ts`.
