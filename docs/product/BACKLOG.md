@@ -26,16 +26,17 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P4** — pre-game tutorial: independent, pure UI, onboarding payoff; builds the
-   legal-placement highlight that P3 R1 reuses (build once).
-2. **P3** (R1) — mid-game advisor legal-placement overlay: pure UI, unblocked today;
-   shares P4's highlight asset.
-3. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
+1. **P3** (R1) — mid-game advisor legal-placement overlay: pure UI, unblocked today;
+   P4 already built the shared highlight (`src/client/advisor/`) — this is mostly
+   wiring it into the live game view.
+2. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
    seeded self-play already exist.
-4. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
+3. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
    nothing blocking.
-5. **P19** — multiplayer identity & reactions: cheap social win; reuses the
+4. **P19** — multiplayer identity & reactions: cheap social win; reuses the
    boardgame.io transport.
+5. **P10** — long-move feedback for the strongest tier: independent, small; closes the
+   ~12 s silent-wait gap on `extreme`.
 
 ---
 
@@ -84,14 +85,19 @@ order runs foundation → offline surfaces → live surfaces.
 - **Status:** proposed (R1 unblocked; R2+ deferred until the evaluator is trustworthy)
 - **Value:** live in-game guidance without overwhelming the player.
 - **Scope / milestones:** R1 "show legal placements" — **pure UI, unblocked today**
-  (`generateLegalMoves` is exact, F7); also the core asset for P4's tutorial step 3 —
-  build once. → R2 "suggest 2–3 candidate moves with plain-English reasons" →
-  R3 "heatmaps / strategic priorities."
+  (`generateLegalMoves` is exact, F7); the shared highlight is **already built** by P4
+  (`src/client/advisor/` — `LegalMoveHints` + `legalMovesForPiece`), so R1 is mostly
+  wiring it into the live game view. → R2 "suggest 2–3 candidate moves with plain-English
+  reasons" → R3 "heatmaps / strategic priorities."
 - **Depends on:** R1: nothing. R2+: P1; research AD2 (evaluator) + AD3 (win-prob).
   High UI complexity in R2+.
 
-### P4 — Pre-game tutorial (interactive)
-- **Status:** proposed (independent — not gated on logging or the evaluator)
+### P4 — Pre-game tutorial (interactive) — SHIPPED
+- **Status:** shipped — four-step interactive tutorial reachable from the home screen
+  ("New to Blokus?"): start-from-corner → own-edge-touch rejected → many corner options
+  → cramped-vs-open expansion. Every hint's legality/quality is derived from the rules
+  core (so the lesson can't drift), and the shared legal-placement highlight lives in
+  `src/client/advisor/` (`LegalMoveHints` + `legalMoves`) for P3 R1 to reuse.
 - **Value:** teach the four core ideas faster than text — corner-touch rule, no
   own-edge-touch, first move from your corner, preserving expansion lanes.
 - **Scope:** scripted 4-step interactive sequence: place a legal piece → see an illegal

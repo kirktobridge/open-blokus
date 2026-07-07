@@ -84,6 +84,8 @@ open-blokus/
 │  │  │  ├─ MatchList.tsx
 │  │  │  └─ CreateMatchForm.tsx  # pick mode (2/3/4) + scoring variant
 │  │  ├─ ai/                     # offline vs-AI: LocalAIGame.tsx + useBotRunner.ts
+│  │  ├─ tutorial/               # P4 interactive how-to-play (Tutorial.tsx + scenarios)
+│  │  ├─ advisor/                # legal-placement highlight, shared by tutorial + P3 R1
 │  │  ├─ hooks/
 │  │  │  ├─ useSelection.ts      # selected piece + rotation/flip + hover (UI state)
 │  │  │  └─ useLobby.ts          # LobbyClient wrapper
