@@ -104,12 +104,28 @@ type Parsed = {
   /** Vocab words this file's Status values are drawn from, lowercased. */
   vocab: Set<string>;
   entries: Entry[];
+  /** IDs listed in the `## Next up` block (product P22), in order. */
+  nextUp: string[];
 };
 
 const HEADING = new RegExp(`^### (\\S+) ${DASH} (.+?)( ${DASH} SHIPPED)?$`);
 
+/** Bold-wrapped IDs (`**P4**`, `**AE9**`) inside the `## Next up` section. */
+function parseNextUp(lines: string[]): string[] {
+  const start = lines.findIndex((l) => /^## Next up\b/.test(l));
+  if (start < 0) return [];
+  let end = start + 1;
+  while (end < lines.length && !/^(## |### )/.test(lines[end])) end++;
+  const ids: string[] = [];
+  for (const l of lines.slice(start, end)) {
+    for (const m of l.matchAll(/\*\*(P\d+|AE\d+|AD\d+)\*\*/g)) ids.push(m[1]);
+  }
+  return ids;
+}
+
 function parse(b: Backlog): Parsed {
   const lines = read(b.rel).split('\n');
+  const nextUp = parseNextUp(lines);
 
   const entries: Entry[] = [];
   let current: Entry | null = null;
@@ -137,7 +153,7 @@ function parse(b: Backlog): Parsed {
       }
     }
   }
-  return { file: b.file, vocab: b.vocab, entries };
+  return { file: b.file, vocab: b.vocab, entries, nextUp };
 }
 
 const parsed = BACKLOGS.map(parse);
@@ -146,6 +162,10 @@ const parsed = BACKLOGS.map(parse);
 // to a status + log).
 const OPEN_PRODUCT = new Set(['proposed', 'in-progress', 'partial']);
 const OPEN_RESEARCH = new Set(['proposed', 'deferred', 'active']);
+
+// Terminal = the queue is stale if a Next-up entry reached one of these.
+const TERMINAL_PRODUCT = new Set(['shipped']);
+const TERMINAL_RESEARCH = new Set(['won', 'no-win', 'abandoned', 'played-out']);
 
 const has = (body: string[], label: RegExp) => body.some((l) => label.test(l));
 
@@ -210,6 +230,26 @@ describe('backlog schema', () => {
               expect(has(e.body, re), `open ${e.id} missing **${label}**`).toBe(true);
             }
           }
+        }
+      });
+
+      it('has a `## Next up` block whose IDs all exist and are non-terminal', () => {
+        // Product P22: the queue head must never dangle or go stale. Every listed
+        // ID must resolve to a real entry in this backlog and not be terminal
+        // (shipped / won / no-win / abandoned / played-out) — a shipped item left
+        // in the queue fails CI.
+        const isProduct = b.idPattern.source.startsWith('^P');
+        const terminal = isProduct ? TERMINAL_PRODUCT : TERMINAL_RESEARCH;
+        const byId = new Map(p.entries.map((e) => [e.id, e]));
+
+        expect(p.nextUp.length, `${p.file} has no \`## Next up\` IDs`).toBeGreaterThan(0);
+        for (const id of p.nextUp) {
+          const e = byId.get(id);
+          expect(e, `Next-up ID ${id} has no entry in ${p.file}`).toBeDefined();
+          expect(
+            terminal.has(e!.statusToken ?? ''),
+            `Next-up ${id} is terminal ("${e!.statusToken}") — refresh the queue`,
+          ).toBe(false);
         }
       });
     });

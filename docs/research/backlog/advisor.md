@@ -17,6 +17,18 @@ with the human-play distribution re-checked once P1 lands.
 
 ---
 
+## Next up
+
+The dependency-ready head, highest-payoff first — the authoritative "what to run next."
+Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
+test (product P21) fails CI if any ID here is missing or terminal.
+
+1. **AD2** — position evaluator: arena-log validation unblocked; gates AD3 + AD4.
+2. **AD4** — blunder / key-moment signal: P1 logging shipped, but still waits on AD2 — *blocked*.
+3. **AD3** — win probability: waits on AD2 — *blocked*.
+
+---
+
 ### AD2 — Position evaluator ("how am I doing right now?")
 - **Status:** proposed (arena-log validation unblocked; human-game validation waits on P1)
 - **Objective:** score the current game state from a color's perspective.

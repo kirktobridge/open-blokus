@@ -6,8 +6,10 @@ user-facing side of the project. Sibling to [../research/](../research/): resear
 milestones). When a feature can't state a success bar without writing "N/A", it belongs
 here, not in research.
 
-A backlog is a **prioritized pool, not a committed plan** — sequencing/phasing lives in
-[../BUILD_ORDER.md](../BUILD_ORDER.md). Source pipeline mirrors research:
+A backlog is a **prioritized pool, not a committed plan** — its dependency-ready head is
+the [Next up](#next-up) block below (the authoritative "what's next to build"); the
+shipped build history lives in [../BUILD_ORDER.md](../BUILD_ORDER.md). Source pipeline
+mirrors research:
 [../dev_notes/OPEN_IDEAS.md](../dev_notes/OPEN_IDEAS.md) is the raw, unmaintained
 developer dump; this file is the curated version. Rules → [../GAME_SPEC.md](../GAME_SPEC.md);
 structure → [../ARCHITECTURE.md](../ARCHITECTURE.md).
@@ -15,6 +17,25 @@ structure → [../ARCHITECTURE.md](../ARCHITECTURE.md).
 Status vocab: `proposed` / `in-progress` (being built this session/branch) / `partial`
 (some milestones shipped) / `shipped` / `deferred`. Product features don't carry a
 hypothesis or a game-share bar — that's what distinguishes them from a research entry.
+
+---
+
+## Next up
+
+The dependency-ready head of the backlog, highest-payoff first — the authoritative answer
+to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
+schema test (P21) fails CI if any ID here is missing or terminal.
+
+1. **P4** — pre-game tutorial: independent, pure UI, onboarding payoff; builds the
+   legal-placement highlight that P3 R1 reuses (build once).
+2. **P3** (R1) — mid-game advisor legal-placement overlay: pure UI, unblocked today;
+   shares P4's highlight asset.
+3. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
+   seeded self-play already exist.
+4. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
+   nothing blocking.
+5. **P19** — multiplayer identity & reactions: cheap social win; reuses the
+   boardgame.io transport.
 
 ---
 
@@ -327,7 +348,12 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
 - **Depends on:** nothing.
 
 ### P22 — "Next up" queues (ranked head of each backlog)
-- **Status:** proposed.
+- **Status:** shipped — `## Next up` blocks head this file + both
+  `docs/research/backlog/*.md` (dependency-ready IDs, payoff-ranked, one-line why);
+  the P21 schema test now fails CI if any listed ID is missing or terminal. Retired
+  the competing signals: ai-engine.md's `next candidate` tag dropped, and this file's
+  "sequencing lives in BUILD_ORDER" line repointed at the Next up block. Skill
+  read/refresh one-liners proposed to the human as diffs (skills are human-owned).
 - **Value:** makes "implement the next high-priority feature" / "run the next
   experiment" resolve unambiguously. Today product sequencing is delegated to
   BUILD_ORDER — finished, so a dangling pointer — and research order decays
