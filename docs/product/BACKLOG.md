@@ -174,7 +174,7 @@ four classic colors as accents, shapes as the star.
 
 ### P7 — Sound design
 - **Status:** proposed (deferred — later release)
-- **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds.
+- **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds. Should be deeply satisfying.
 - **Scope:** placement/UI SFX, palette of nostalgic cues.
 
 ### P8 — 3D presentation
