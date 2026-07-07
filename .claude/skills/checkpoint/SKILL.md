@@ -21,6 +21,9 @@ gitignored by design; HANDOFF is session state, not project history).
 3. `grep -n "Status:" docs/product/BACKLOG.md | grep -i in-progress` — anything
    in-progress that actually shipped this session should have gone through /ship;
    run it now if missed.
+4. `## Next up` staleness (product P22) — the P21 schema test already fails CI on a
+   dangling/terminal queue, so a green `npm test` covers it; if a feature shipped this
+   session, confirm /ship refreshed the head.
 
 ## Checkpoint commits (tied to completions, never time)
 One commit per completed unit, code and docs separate:

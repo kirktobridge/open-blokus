@@ -6,8 +6,10 @@ user-facing side of the project. Sibling to [../research/](../research/): resear
 milestones). When a feature can't state a success bar without writing "N/A", it belongs
 here, not in research.
 
-A backlog is a **prioritized pool, not a committed plan** — sequencing/phasing lives in
-[../BUILD_ORDER.md](../BUILD_ORDER.md). Source pipeline mirrors research:
+A backlog is a **prioritized pool, not a committed plan** — its dependency-ready head is
+the [Next up](#next-up) block below (the authoritative "what's next to build"); the
+shipped build history lives in [../BUILD_ORDER.md](../BUILD_ORDER.md). Source pipeline
+mirrors research:
 [../dev_notes/OPEN_IDEAS.md](../dev_notes/OPEN_IDEAS.md) is the raw, unmaintained
 developer dump; this file is the curated version. Rules → [../GAME_SPEC.md](../GAME_SPEC.md);
 structure → [../ARCHITECTURE.md](../ARCHITECTURE.md).
@@ -15,6 +17,25 @@ structure → [../ARCHITECTURE.md](../ARCHITECTURE.md).
 Status vocab: `proposed` / `in-progress` (being built this session/branch) / `partial`
 (some milestones shipped) / `shipped` / `deferred`. Product features don't carry a
 hypothesis or a game-share bar — that's what distinguishes them from a research entry.
+
+---
+
+## Next up
+
+The dependency-ready head of the backlog, highest-payoff first — the authoritative answer
+to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
+schema test (P21) fails CI if any ID here is missing or terminal.
+
+1. **P4** — pre-game tutorial: independent, pure UI, onboarding payoff; builds the
+   legal-placement highlight that P3 R1 reuses (build once).
+2. **P3** (R1) — mid-game advisor legal-placement overlay: pure UI, unblocked today;
+   shares P4's highlight asset.
+3. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
+   seeded self-play already exist.
+4. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
+   nothing blocking.
+5. **P19** — multiplayer identity & reactions: cheap social win; reuses the
+   boardgame.io transport.
 
 ---
 
@@ -26,7 +47,7 @@ before it's *shown*) — those questions live in
 [../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build
 order runs foundation → offline surfaces → live surfaces.
 
-### P1 — Game-logging foundation (infra) - SHIPPED
+### P1 — Game-logging foundation (infra) — SHIPPED
 - **Status:** shipped — offline vs-AI games are captured as replayable records
   (v2 of the self-play format: game header + move list) and written as JSONL to
   `.data/games/vs-ai.jsonl`; browse/verify with `scripts/games.ts`. Online capture
@@ -295,3 +316,63 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   config (touches rules core → GAME_SPEC + ARCHITECTURE updates required).
 - **Depends on:** M1: nothing. M2: rules-core generalization (board size is
   currently a constant).
+
+---
+
+## Epic: Project & doc tooling
+
+Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
+
+### P21 — Backlog schema test (docs as reliable data)
+- **Status:** shipped — [tests/backlog-schema.test.ts](../../tests/backlog-schema.test.ts)
+  parses this file + `docs/research/backlog/*.md` and asserts heading shape, unique
+  in-namespace IDs, canonical `— SHIPPED` suffix, a documented-vocab `**Status:**`
+  (product vocab from this file; research vocab from FRAMEWORK.md), and required
+  fields on *open* entries (terminal ones may compress). First run surfaced two
+  drifts — P1's hyphen `- SHIPPED` suffix and AE10's undocumented `resolved` status —
+  fixed by their owners (/ship, /research).
+- **Value:** grep-based orientation of the backlogs (skills read only `### <ID>` +
+  `Status:` lines, never whole files) is only as reliable as the format — and drift
+  already exists (P1's `- SHIPPED` vs the em-dash `— SHIPPED` elsewhere). A schema
+  test makes retrieval mechanically trustworthy — the benefit of a structured
+  dataset without leaving markdown — applying the "let tests enforce the spec"
+  doctrine to the backlogs themselves.
+- **Scope:** one vitest alongside the existing spec-invariant tests that parses
+  this file + `docs/research/backlog/*.md` and asserts, per entry: heading shape
+  `### <ID> — Title` with a unique `P#`/`AE#`/`AD#` (em-dash canonical, optional
+  `— SHIPPED` suffix); a `**Status:**` drawn from that backlog's documented vocab;
+  required fields (product: Value + Scope; research: the framework block —
+  Objective/Hypothesis/Method/Success criteria/Cost/Log). The test only *reads*
+  docs — single-writer contract untouched. Its first run will surface existing
+  drift; fixing that goes through each file's owner (/ship, /research).
+- **Depends on:** nothing.
+
+### P22 — "Next up" queues (ranked head of each backlog)
+- **Status:** shipped — `## Next up` blocks head this file + both
+  `docs/research/backlog/*.md` (dependency-ready IDs, payoff-ranked, one-line why);
+  the P21 schema test now fails CI if any listed ID is missing or terminal. Retired
+  the competing signals: ai-engine.md's `next candidate` tag dropped, and this file's
+  "sequencing lives in BUILD_ORDER" line repointed at the Next up block. Skill
+  read/refresh one-liners proposed to the human as diffs (skills are human-owned).
+- **Value:** makes "implement the next high-priority feature" / "run the next
+  experiment" resolve unambiguously. Today product sequencing is delegated to
+  BUILD_ORDER — finished, so a dangling pointer — and research order decays
+  ("ordered roughly by payoff," plus one stale-able ad-hoc `next candidate` tag).
+  Ranking only the *head* of each pool keeps maintenance cheap and honest: the
+  human reviews a 5-line block, not the whole pool.
+- **Scope:**
+  - A `## Next up` block at the top of this file and each
+    `docs/research/backlog/*.md`: 3–5 ranked IDs, dependency-ready entries only,
+    one-line why each. The first line is the authoritative answer to "what's next."
+  - Refreshed at the events that change priority, by the existing single writers:
+    /ship on product status flips and intake; /research at close (Phase 4) and
+    intake (Phase P).
+  - Retire competing signals: drop ai-engine.md's `next candidate` tag; repoint
+    this file's "sequencing lives in BUILD_ORDER" line at the Next-up block.
+  - Extend P21's schema test: every Next-up ID must exist with a non-terminal
+    status, so staleness fails CI; /checkpoint's dangling-state sweep double-checks.
+  - Skill one-liners (/ship, /research, /implement, /checkpoint read/refresh the
+    block): human-owned — proposed as diffs for sign-off at implementation.
+- **Depends on:** nothing to add the blocks; the mechanical staleness check lands
+  with/after P21. Initial rankings are the human's call (implementer proposes,
+  user confirms).

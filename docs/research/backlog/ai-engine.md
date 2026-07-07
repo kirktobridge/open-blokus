@@ -10,6 +10,22 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 
 ---
 
+## Next up
+
+The dependency-ready head, highest-payoff first — the authoritative "what to run next."
+Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
+test (product P21) fails CI if any ID here is missing or terminal.
+
+1. **AE9** — bitboard move-gen: F10 shows MCTS is legality-bound (~75 % of time on
+   gen/legality); attacks the shared gen + rollout hot path.
+2. **AE18** — research-harness throughput: cuts the compute bill of every future
+   experiment, outputs byte-identical.
+3. **AE19** — Pentobi external baseline: makes strength absolute, not self-relative.
+4. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
+5. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+
+---
+
 ### AE1 — Ship MCTS as the offline bot — SHIPPED
 - **Status:** won / shipped — four-tier ladder in
   [difficulty.ts](../../../src/client/ai/difficulty.ts), measured monotonic
@@ -129,10 +145,11 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Cost / risk:** none new (mechanism exists). **Don't invest more for 4p.**
 
 ### AE9 — Bitboard move generation
-- **Status:** proposed — **next candidate** (Run N / F10). Profiling shows MCTS is
+- **Status:** proposed (Run N / F10). Profiling shows MCTS is
   legality-bound: `isLegalPlacement` is 31 % of self-time and ~75 % goes to
   cell-by-cell legality + gen. Bitboards attack that shared hot path directly and
-  speed rollout *and* gen at once. Promoted from `deferred`.
+  speed rollout *and* gen at once. Promoted from `deferred`; the head-of-queue
+  signal now lives in the Next up block above.
 - **Objective:** faster legality checks via bitwise ops.
 - **Hypothesis:** representing occupancy + per-color corner/edge masks as bit words
   computes legality far faster than the current scan, same results.
@@ -145,7 +162,7 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   current scan. See [F10](../FINDINGS.md) for the profile that justifies it.
 
 ### AE10 — Assess & tune difficulty time-budgets
-- **Status:** resolved — latency bars pass; found the ladder inverted (medium at
+- **Status:** won — latency bars pass; found the ladder inverted (medium at
   `beam=16` lost to easy) and handed the fix to AE5 (beam scaling). Strength-vs-iters
   curve banked: `it40→68 · it80→77 · it160→85 · it320→90` game-share vs heuristic.
 - **Log:** Run J → [F8](../FINDINGS.md)

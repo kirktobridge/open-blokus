@@ -36,6 +36,11 @@ the *why*.** Don't restate signatures or duplicate what the code already says.
    (e.g. AE1 → FINDINGS F6; a backlog feature → its research `AD#`).
 4. **Verify:** relative links resolve; no stale `proposed`/`deferred`/`partial` left on
    an entry that's now fully shipped.
+5. **Refresh `## Next up`** (product P22): on any product status flip or intake, update
+   the `## Next up` block at the top of BACKLOG.md — drop a now-terminal ID, promote the
+   next dependency-ready entry (payoff-ranked, ≤5, one-line why). The P21 schema test
+   ([tests/backlog-schema.test.ts](../../../tests/backlog-schema.test.ts)) fails CI if
+   the queue dangles or lists a terminal ID.
 
 ## Keep it lightweight (refuse to over-document)
 - A status flip + one-line note is usually the whole job. Prefer editing an existing

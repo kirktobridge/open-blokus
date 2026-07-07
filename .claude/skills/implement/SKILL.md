@@ -17,6 +17,8 @@ are human-owned.
 ## Steps
 
 ### 1. Locate + gate
+- **No ID given?** The product `## Next up` block (top of BACKLOG.md) is the ranked,
+  dependency-ready head — propose its first entry (P22).
 - Find the entry: `grep -n -A12 "^### <ID>" docs/product/BACKLOG.md`. Not there →
   it's an untriaged idea; bounce to **/triage**, don't invent an entry.
 - **DEPENDS GATE:** read its `Depends on:`. A dependency that is an unshipped `P#`

@@ -85,12 +85,16 @@ null. Use its numbers verbatim in the log and FINDINGS. `WINS` may be fractional
 2. **CLOSE GATE:** flip the backlog entry's `Status:` to its terminal value
    (`won` / `no-win` / `abandoned` / `played-out` / `deferred`) and link the log run in
    its `Log:` field. An unclosed loop means the backlog lies to the next session.
+3. **Refresh `## Next up`** (product P22): update that backlog file's `## Next up`
+   block — a just-closed entry leaves the head; promote the next dependency-ready one.
+   The P21 schema test fails CI if the queue lists a now-terminal ID.
 
 ## Phase P — propose (new entry, usually via /triage)
 When /triage (or the user) hands over a **research** draft: append a framework block
 (template in FRAMEWORK.md) with `Status: proposed` to the right `backlog/*.md`, slotted
 by expected payoff. Verify it has a pre-registerable success bar — if it can't state
-one without "N/A", bounce it back to /triage as a product item.
+one without "N/A", bounce it back to /triage as a product item. Also slot the new entry
+into that file's `## Next up` block if it's dependency-ready (payoff-ranked).
 
 ## Discipline checklist (refuse to skip, applies to every phase)
 - [ ] Success bar pre-registered before running (M2)
