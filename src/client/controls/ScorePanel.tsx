@@ -3,6 +3,7 @@ import { COLOR_ORDER } from '../../game/types';
 import { remainingSquares } from '../../game/scoring';
 import { FONT_MONO } from '../theme';
 import { usePaletteColors } from '../palettes';
+import { CountUp } from './CountUp';
 
 /**
  * Compact standings strip: one chip per color, sorted ascending by remaining
@@ -57,16 +58,15 @@ export function Standings({ G, showLeader = true }: { G: GameState; showLeader?:
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,.35)',
                 }}
               />
-              <span
+              <CountUp
+                value={rem}
                 style={{
                   fontFamily: FONT_MONO,
                   fontSize: 12.5,
                   fontWeight: 600,
                   color: 'var(--ink)',
                 }}
-              >
-                {rem}
-              </span>
+              />
             </div>
           );
         })}

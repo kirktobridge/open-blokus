@@ -12,8 +12,11 @@ import { Standings } from './controls/ScorePanel';
 import { PlayerCard, type SeatTag } from './controls/PlayerCard';
 import { Controls } from './controls/Controls';
 import { GameOverModal, type GameOverPayload } from './controls/GameOverModal';
+import { EventBeats } from './controls/EventBeats';
 import { matchAction, type PlacementAction } from './controls/keymap';
 import { useSelection } from './hooks/useSelection';
+import { useGameEvents } from './hooks/useGameEvents';
+import { useReducedMotion } from './hooks/useReducedMotion';
 import { usePaletteColors } from './palettes';
 import { useInventoryDisplay } from './settings';
 import { FONT_MONO, FONT_UI } from './theme';
@@ -55,6 +58,27 @@ export function BlokusBoardView({
   // Single-player passes isActive=true for the current player; multiplayer gates it.
   const canPlay = isActive !== false && !ctx.gameover;
   const inventoryDisplay = useInventoryDisplay();
+  const reduce = useReducedMotion();
+  const { beats } = useGameEvents(G);
+
+  // Board-frame shake on a rejected placement (P16). Uses the Web Animations API
+  // so it replays on the same element without a remount hack; no-op if motion is
+  // reduced or the element can't animate (SSR / older engines).
+  const frameRef = useRef<HTMLDivElement>(null);
+  function shake(): void {
+    const el = frameRef.current;
+    if (reduce || !el || typeof el.animate !== 'function') return;
+    el.animate(
+      [
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-6px)' },
+        { transform: 'translateX(5px)' },
+        { transform: 'translateX(-3px)' },
+        { transform: 'translateX(0)' },
+      ],
+      { duration: 320, easing: 'ease-in-out' },
+    );
+  }
 
   // Orient the board to the local seat's color (bottom-right); manual button cycles.
   const homeColor =
@@ -83,6 +107,18 @@ export function BlokusBoardView({
       : undefined;
 
   const canSubmit = sel.staged && legal;
+
+  // Shake the board the moment a placement is locked onto an illegal spot — the
+  // "that doesn't fit" beat (P16). Fires on the transition into staged-illegal
+  // (a click/keyboard lock), not on every re-render while it sits there.
+  const stagedIllegal = canPlay && sel.staged && sel.pieceId != null && sel.hover != null && !legal;
+  const wasStagedIllegal = useRef(false);
+  useEffect(() => {
+    if (stagedIllegal && !wasStagedIllegal.current) shake();
+    wasStagedIllegal.current = stagedIllegal;
+    // shake reads live refs; re-running only on the flag transition is intended.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stagedIllegal]);
 
   // Before your color's first move, mark its required opening corner.
   const startHint =
@@ -160,6 +196,12 @@ export function BlokusBoardView({
         sel.stage();
         return true;
       case 'submit':
+        // Committing a locked-but-illegal placement: reject with a shake rather
+        // than silently doing nothing.
+        if (sel.staged && !legal) {
+          shake();
+          return true;
+        }
         return submitMove();
       default:
         return false;
@@ -260,6 +302,7 @@ export function BlokusBoardView({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
         {/* Walnut frame + recessed mat around the (unchanged) board grid. */}
         <div
+          ref={frameRef}
           style={{
             background: 'linear-gradient(160deg, var(--frame-a), var(--frame-b))',
             borderRadius: 16,
@@ -394,8 +437,11 @@ export function BlokusBoardView({
         </div>
       </div>
 
+      <EventBeats beats={beats} colors={colors} />
+
       {ctx.gameover && (
         <GameOverModal
+          G={G}
           gameover={ctx.gameover as GameOverPayload}
           winnerColors={COLOR_ORDER.filter((c) => {
             const owner = G.config.owners[c];
