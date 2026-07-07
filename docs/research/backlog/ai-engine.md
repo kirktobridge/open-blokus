@@ -145,7 +145,7 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   current scan. See [F10](../FINDINGS.md) for the profile that justifies it.
 
 ### AE10 — Assess & tune difficulty time-budgets
-- **Status:** resolved — latency bars pass; found the ladder inverted (medium at
+- **Status:** won — latency bars pass; found the ladder inverted (medium at
   `beam=16` lost to easy) and handed the fix to AE5 (beam scaling). Strength-vs-iters
   curve banked: `it40→68 · it80→77 · it160→85 · it320→90` game-share vs heuristic.
 - **Log:** Run J → [F8](../FINDINGS.md)

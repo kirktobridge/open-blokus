@@ -26,7 +26,7 @@ before it's *shown*) — those questions live in
 [../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build
 order runs foundation → offline surfaces → live surfaces.
 
-### P1 — Game-logging foundation (infra) - SHIPPED
+### P1 — Game-logging foundation (infra) — SHIPPED
 - **Status:** shipped — offline vs-AI games are captured as replayable records
   (v2 of the self-play format: game header + move list) and written as JSONL to
   `.data/games/vs-ai.jsonl`; browse/verify with `scripts/games.ts`. Online capture
@@ -295,3 +295,58 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   config (touches rules core → GAME_SPEC + ARCHITECTURE updates required).
 - **Depends on:** M1: nothing. M2: rules-core generalization (board size is
   currently a constant).
+
+---
+
+## Epic: Project & doc tooling
+
+Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
+
+### P21 — Backlog schema test (docs as reliable data)
+- **Status:** shipped — [tests/backlog-schema.test.ts](../../tests/backlog-schema.test.ts)
+  parses this file + `docs/research/backlog/*.md` and asserts heading shape, unique
+  in-namespace IDs, canonical `— SHIPPED` suffix, a documented-vocab `**Status:**`
+  (product vocab from this file; research vocab from FRAMEWORK.md), and required
+  fields on *open* entries (terminal ones may compress). First run surfaced two
+  drifts — P1's hyphen `- SHIPPED` suffix and AE10's undocumented `resolved` status —
+  fixed by their owners (/ship, /research).
+- **Value:** grep-based orientation of the backlogs (skills read only `### <ID>` +
+  `Status:` lines, never whole files) is only as reliable as the format — and drift
+  already exists (P1's `- SHIPPED` vs the em-dash `— SHIPPED` elsewhere). A schema
+  test makes retrieval mechanically trustworthy — the benefit of a structured
+  dataset without leaving markdown — applying the "let tests enforce the spec"
+  doctrine to the backlogs themselves.
+- **Scope:** one vitest alongside the existing spec-invariant tests that parses
+  this file + `docs/research/backlog/*.md` and asserts, per entry: heading shape
+  `### <ID> — Title` with a unique `P#`/`AE#`/`AD#` (em-dash canonical, optional
+  `— SHIPPED` suffix); a `**Status:**` drawn from that backlog's documented vocab;
+  required fields (product: Value + Scope; research: the framework block —
+  Objective/Hypothesis/Method/Success criteria/Cost/Log). The test only *reads*
+  docs — single-writer contract untouched. Its first run will surface existing
+  drift; fixing that goes through each file's owner (/ship, /research).
+- **Depends on:** nothing.
+
+### P22 — "Next up" queues (ranked head of each backlog)
+- **Status:** proposed.
+- **Value:** makes "implement the next high-priority feature" / "run the next
+  experiment" resolve unambiguously. Today product sequencing is delegated to
+  BUILD_ORDER — finished, so a dangling pointer — and research order decays
+  ("ordered roughly by payoff," plus one stale-able ad-hoc `next candidate` tag).
+  Ranking only the *head* of each pool keeps maintenance cheap and honest: the
+  human reviews a 5-line block, not the whole pool.
+- **Scope:**
+  - A `## Next up` block at the top of this file and each
+    `docs/research/backlog/*.md`: 3–5 ranked IDs, dependency-ready entries only,
+    one-line why each. The first line is the authoritative answer to "what's next."
+  - Refreshed at the events that change priority, by the existing single writers:
+    /ship on product status flips and intake; /research at close (Phase 4) and
+    intake (Phase P).
+  - Retire competing signals: drop ai-engine.md's `next candidate` tag; repoint
+    this file's "sequencing lives in BUILD_ORDER" line at the Next-up block.
+  - Extend P21's schema test: every Next-up ID must exist with a non-terminal
+    status, so staleness fails CI; /checkpoint's dangling-state sweep double-checks.
+  - Skill one-liners (/ship, /research, /implement, /checkpoint read/refresh the
+    block): human-owned — proposed as diffs for sign-off at implementation.
+- **Depends on:** nothing to add the blocks; the mechanical staleness check lands
+  with/after P21. Initial rankings are the human's call (implementer proposes,
+  user confirms).
