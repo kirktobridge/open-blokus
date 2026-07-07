@@ -52,6 +52,7 @@ export function HomeScreen({
   onJoin,
   onRefresh,
   onStartAI,
+  onOpenTutorial,
   joinError,
   onDismissError,
 }: {
@@ -64,6 +65,7 @@ export function HomeScreen({
     aiCount: number,
     botDifficulties: Record<string, Difficulty>,
   ) => void;
+  onOpenTutorial: () => void;
   joinError?: string | null;
   onDismissError?: () => void;
 }) {
@@ -237,6 +239,25 @@ export function HomeScreen({
                   </button>
                 </div>
               </details>
+
+              <button
+                data-testid="open-tutorial"
+                onClick={onOpenTutorial}
+                style={{
+                  marginTop: 12,
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--mut)',
+                  fontFamily: FONT_UI,
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                New to Blokus? Learn how to play →
+              </button>
             </section>
 
             {/* Play online — create a table, then share the invite link. */}
