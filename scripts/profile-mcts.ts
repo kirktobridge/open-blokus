@@ -49,8 +49,6 @@ async function main() {
   session.disconnect();
 
   // --- aggregate self-time by function name ----------------------------------
-  const interval = profile.timeDeltas ? null : null;
-  const selfById = new Map<number, number>();
   // self-time = number of samples whose leaf is this node, weighted by timeDelta
   const idToNode = new Map<number, any>();
   for (const n of profile.nodes) idToNode.set(n.id, n);

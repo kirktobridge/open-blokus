@@ -19,7 +19,6 @@ import type { SerializedRecord } from '../src/game/ai/selfplay';
 import {
   extractFeatures,
   colorInput,
-  colorLogit,
   boardFill,
   FEATURES_PER_COLOR,
   INPUT_SIZE,
