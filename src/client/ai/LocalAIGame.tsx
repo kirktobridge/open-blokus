@@ -5,8 +5,12 @@ import type { Bot } from 'boardgame.io/ai';
 import { BlokusGame, enumerate } from '../../bgio/BlokusGame';
 import { HeuristicBot } from '../../bgio/bots/HeuristicBot';
 import { MctsBot } from '../../bgio/bots/MctsBot';
-import type { GameMode, GameState } from '../../game/types';
+import type { Color, GameMode, GameState } from '../../game/types';
+import { COLOR_ORDER } from '../../game/types';
+import { ownersFor } from '../../game/modes';
 import { BlokusBoardView } from '../BlokusBoardView';
+import { useGameRecorder } from '../log/useGameRecorder';
+import type { RecorderClient } from '../log/recorder';
 import { SessionActionsContext } from '../lobby/sessionContext';
 import { SettingsPanel } from '../SettingsPanel';
 import { ControlsHelp } from '../ControlsHelp';
@@ -117,6 +121,25 @@ export function LocalAIGame({
   const humanSeats = useMemo(
     () => new Set(Array.from({ length: humanCount }, (_, i) => String(i))),
     [humanCount],
+  );
+
+  // Seat provenance per color for the game log (product P1): "human", a bot tier,
+  // or "shared" for the 3p rotating color. Read by useGameRecorder.
+  const seats = useMemo(() => {
+    const owners = ownersFor(mode);
+    const out = {} as Record<Color, string>;
+    for (const c of COLOR_ORDER) {
+      const owner = owners[c];
+      out[c] =
+        owner === 'shared' ? 'shared' : humanSeats.has(owner) ? 'human' : botDifficulties[owner] ?? 'easy';
+    }
+    return out;
+    // botDifficulties is read via the stable difficultyKey proxy (as elsewhere here).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, humanCount, difficultyKey]);
+  useGameRecorder(
+    client as unknown as RecorderClient,
+    useMemo(() => ({ seats, src: 'vs-ai' }), [seats]),
   );
 
   const [, force] = useReducer((x: number) => x + 1, 0);

@@ -54,6 +54,28 @@ describe('selfplay records', () => {
     expect(finalScores(replayGame(back.moves)).colors).toEqual(record.scores);
   });
 
+  it('deserializes a legacy v1 record as 4-player basic', () => {
+    const { byColor, seats } = mixedSeats();
+    const record = playRecordedGame(byColor, seats, 5, mulberry32(5));
+    // A v1 line predates the mode/scoring/meta header — omit those fields.
+    const v2 = serializeRecord(record);
+    const v1 = {
+      v: 1 as const,
+      seed: v2.seed,
+      seats: v2.seats,
+      moves: v2.moves,
+      scores: v2.scores,
+      winners: v2.winners,
+    };
+
+    const back = deserializeRecord(v1);
+    expect(back.mode).toBe(4);
+    expect(back.scoring).toBe('basic');
+    expect(finalScores(replayGame(back.moves, undefined, back.mode, back.scoring)).colors).toEqual(
+      record.scores,
+    );
+  });
+
   it('replay throws on an illegal (tampered) move list', () => {
     const { byColor, seats } = mixedSeats();
     const record = playRecordedGame(byColor, seats, 13, mulberry32(13));

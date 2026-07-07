@@ -27,7 +27,10 @@ before it's *shown*) — those questions live in
 order runs foundation → offline surfaces → live surfaces.
 
 ### P1 — Game-logging foundation (infra)
-- **Status:** proposed (foundational — unblocks P2, P3, and research AD2–AD4 + AE4)
+- **Status:** shipped — offline vs-AI games are captured as replayable records
+  (v2 of the self-play format: game header + move list) and written as JSONL to
+  `.data/games/vs-ai.jsonl`; browse/verify with `scripts/games.ts`. Online capture
+  deferred. Unblocks P2, P3, and research AD2–AD4 + AE4.
 - **Value:** move-by-move data is the substrate for every analysis/advisor feature and
   for self-play datasets (learned eval, research AE4).
 - **Scope:** minimal schema — **game header (mode, seeds, players, tiers) + the move

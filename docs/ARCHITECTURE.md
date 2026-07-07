@@ -464,6 +464,17 @@ client. Networked rooms stay human-only.
   `Bot` + (for MCTS) its own worker, so opponents can be mixed easy/medium/hard/extreme. Keying by
   seat (not color) keeps each seat's colors — incl. the 3p shared color a seat plays — on one tier,
   and gives each MCTS seat its own worker so per-color search trees never cross tiers.
+- **Game logging** ([src/client/log/](../src/client/log/), product P1): finished offline vs-AI
+  games are captured as **one replayable record = game header (mode, scoring, seat labels) + the
+  move list**, and nothing else — every position, score and eval is *derivable by replay* through
+  the pure rules core, so storing them would be redundant. Rather than invent a schema, this
+  **reuses the self-play `GameRecord`** ([src/game/ai/selfplay.ts](../src/game/ai/selfplay.ts),
+  bumped to `v2` with the header; `v1` reads back as 4p/basic). Capture reads accepted `placePiece`
+  moves off the boardgame.io client log and, on game-over, replay-validates + cross-checks against
+  the live final scores before persisting — a corrupt line can't reach the log. The sink is **plain
+  JSONL on disk** (`.data/games/vs-ai.jsonl`, via a Vite dev-server endpoint) because that's the
+  form research + tooling browse and replay (`scripts/games.ts`); localStorage is only a fallback
+  when the endpoint is unreachable. Online-match capture is deferred.
 
 **Recorded decisions (do not silently change — see [GAME_SPEC §10](GAME_SPEC.md)):**
 - Bots are **client-side / offline only**. Networked bot-fill (bots in SocketIO rooms via a
