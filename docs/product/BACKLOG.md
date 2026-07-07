@@ -26,7 +26,7 @@ before it's *shown*) — those questions live in
 [../research/backlog/advisor.md](../research/backlog/advisor.md) (AD2–AD4). Build
 order runs foundation → offline surfaces → live surfaces.
 
-### P1 — Game-logging foundation (infra)
+### P1 — Game-logging foundation (infra) - SHIPPED
 - **Status:** shipped — offline vs-AI games are captured as replayable records
   (v2 of the self-play format: game header + move list) and written as JSONL to
   `.data/games/vs-ai.jsonl`; browse/verify with `scripts/games.ts`. Online capture
