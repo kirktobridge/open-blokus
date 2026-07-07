@@ -1,7 +1,7 @@
 import { BOARD_SIZE, idx, inBounds, diagNeighbors } from './board';
 import { CORNERS } from './modes';
 import { resolveCells, cellsKey } from './pieces';
-import { isLegalPlacement } from './placement';
+import { buildBitBoards, bbLegal } from './bitboard';
 import type { Cell, Color, GameState, PieceId, Placement, Rotation } from './types';
 
 interface Transform {
@@ -113,6 +113,11 @@ export function generateLegalMoves(G: GameState, color: Color): Placement[] {
   const moves: Placement[] = [];
   const anchors = anchorCells(G, color);
   if (anchors.length === 0) return moves;
+  // Build bitboards once and amortize the fast legality test over every candidate
+  // (AE9) — same output as the isLegalPlacement scan, no per-cell allocation.
+  const bb = buildBitBoards(G);
+  const hasStarted = G.colors[color].hasStarted;
+  const corner = CORNERS[color];
   for (const pieceId of G.colors[color].remaining) {
     for (const t of transformsFor(pieceId)) {
       const offsets: Cell[] = [];
@@ -128,7 +133,7 @@ export function generateLegalMoves(G: GameState, color: Color): Placement[] {
           if (seen.has(key)) continue;
           seen.add(key);
           const cells = t.cells.map((cc) => ({ x: cc.x + ox, y: cc.y + oy }));
-          if (isLegalPlacement(G, color, pieceId, cells)) offsets.push({ x: ox, y: oy });
+          if (bbLegal(bb, color, cells, hasStarted, corner)) offsets.push({ x: ox, y: oy });
         }
       }
       // Emit in (y, x) order to match the old full-scan ordering exactly.
@@ -143,10 +148,13 @@ export function generateLegalMoves(G: GameState, color: Color): Placement[] {
 
 /** Whether `color` has at least one legal placement (short-circuits). */
 export function hasAnyMove(G: GameState, color: Color): boolean {
+  const bb = buildBitBoards(G);
+  const hasStarted = G.colors[color].hasStarted;
+  const corner = CORNERS[color];
   let found = false;
-  eachCandidate(G, color, (pieceId, t, ox, oy) => {
+  eachCandidate(G, color, (_pieceId, t, ox, oy) => {
     const cells = t.cells.map((c) => ({ x: c.x + ox, y: c.y + oy }));
-    if (isLegalPlacement(G, color, pieceId, cells)) {
+    if (bbLegal(bb, color, cells, hasStarted, corner)) {
       found = true;
       return true;
     }

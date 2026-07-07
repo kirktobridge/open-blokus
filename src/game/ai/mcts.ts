@@ -13,8 +13,11 @@
  * comes from the passed-in `rng`, keeping tournaments reproducible.
  */
 import { BOARD_SIZE } from '../board';
+import { CORNERS } from '../modes';
 import { generateLegalMoves } from '../moves';
-import { applyPlacement, isLegalPlacement } from '../placement';
+import { applyPlacement } from '../placement';
+import { buildBitBoards, bbApply, bbLegal } from '../bitboard';
+import type { BitBoards } from '../bitboard';
 import { resolveCells, getOrientations } from '../pieces';
 import { remainingSquares } from '../scoring';
 import { COLOR_ORDER } from '../types';
@@ -226,9 +229,16 @@ const HEURISTIC_SAMPLES = 6;
  * null if no legal move was found within the attempt budget — the caller then
  * confirms with a full generation.
  */
-function sampleLegalMove(G: GameState, color: Color, rng: () => number): SampledMove | null {
+function sampleLegalMove(
+  G: GameState,
+  color: Color,
+  rng: () => number,
+  bb: BitBoards,
+): SampledMove | null {
   const remaining = G.colors[color].remaining;
   if (remaining.length === 0) return null;
+  const hasStarted = G.colors[color].hasStarted;
+  const corner = CORNERS[color];
   for (let a = 0; a < ROLLOUT_ATTEMPTS; a++) {
     const pieceId = remaining[(rng() * remaining.length) | 0];
     const orients = getOrientations(pieceId);
@@ -242,7 +252,7 @@ function sampleLegalMove(G: GameState, color: Color, rng: () => number): Sampled
     const ox = (rng() * (BOARD_SIZE - maxX)) | 0;
     const oy = (rng() * (BOARD_SIZE - maxY)) | 0;
     const cells = base.map((c) => ({ x: c.x + ox, y: c.y + oy }));
-    if (isLegalPlacement(G, color, pieceId, cells)) return { pieceId, cells };
+    if (bbLegal(bb, color, cells, hasStarted, corner)) return { pieceId, cells };
   }
   return null;
 }
@@ -261,15 +271,16 @@ function rolloutMove(
   color: Color,
   cfg: MctsConfig,
   rng: () => number,
+  bb: BitBoards,
 ): SampledMove | null {
   if (cfg.rolloutPolicy === 'random') {
-    return sampleLegalMove(G, color, rng) ?? fallbackMove(G, color, rng);
+    return sampleLegalMove(G, color, rng, bb) ?? fallbackMove(G, color, rng);
   }
   // Heuristic: sample a few legal moves, keep the largest piece (size is the
   // dominant heuristic term — see research/log/ai-strategy.md). Cheap vs full enumeration.
   let best: SampledMove | null = null;
   for (let k = 0; k < HEURISTIC_SAMPLES; k++) {
-    const s = sampleLegalMove(G, color, rng);
+    const s = sampleLegalMove(G, color, rng, bb);
     if (s && (!best || s.cells.length > best.cells.length)) best = s;
   }
   return best ?? fallbackMove(G, color, rng);
@@ -283,14 +294,16 @@ function rolloutMove(
  */
 function rollout(G: GameState, cfg: MctsConfig, rng: () => number): Float64Array {
   const g = cloneState(G);
+  const bb = buildBitBoards(g);
   let depth = 0;
   let passStreak = 0;
   let idx = g.activeColorIndex;
   while (cfg.rolloutDepth === 0 || depth < cfg.rolloutDepth) {
     const color = COLOR_ORDER[idx];
-    const move = rolloutMove(g, color, cfg, rng);
+    const move = rolloutMove(g, color, cfg, rng, bb);
     if (move) {
       applyPlacement(g, color, move.pieceId, move.cells);
+      bbApply(bb, color, move.cells);
       passStreak = 0;
       depth++;
     } else if (++passStreak >= COLOR_ORDER.length) {
@@ -320,14 +333,16 @@ function rolloutRave(
   played: Set<string>[],
 ): Float64Array {
   const g = cloneState(G);
+  const bb = buildBitBoards(g);
   let depth = 0;
   let passStreak = 0;
   let idx = g.activeColorIndex;
   while (cfg.rolloutDepth === 0 || depth < cfg.rolloutDepth) {
     const color = COLOR_ORDER[idx];
-    const move = rolloutMove(g, color, cfg, rng);
+    const move = rolloutMove(g, color, cfg, rng, bb);
     if (move) {
       applyPlacement(g, color, move.pieceId, move.cells);
+      bbApply(bb, color, move.cells);
       played[idx].add(moveKey(move.cells));
       passStreak = 0;
       depth++;
