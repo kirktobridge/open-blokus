@@ -21,6 +21,11 @@ are human-owned.
   dependency-ready head — propose its first entry (P22).
 - Find the entry: `grep -n -A12 "^### <ID>" docs/product/BACKLOG.md`. Not there →
   it's an untriaged idea; bounce to **/triage**, don't invent an entry.
+- **CLAIM GATE:** `grep -n "in-progress" docs/product/BACKLOG.md` first. Target
+  entry already `in-progress` → stop; it's claimed by another session/branch
+  (stale claims are cleared via /checkpoint, not overridden here). Another entry
+  in-progress whose flagged shared assets overlap this one's Scope → stop too;
+  the first claimant builds the shared piece.
 - **DEPENDS GATE:** read its `Depends on:`. A dependency that is an unshipped `P#`
   or an unanswered research ID (`AE#`/`AD#` not terminal in its backlog) blocks the
   build — stop and tell the user what's blocking, unless the specific milestone is
@@ -30,6 +35,9 @@ are human-owned.
   confirm — don't silently build the whole epic.
 
 ### 2. Set up
+- **CLEAN-TREE GATE:** `git status` must be clean before branching. Dirty tree =
+  another task's live state — bounce to /checkpoint; don't branch over it. For a
+  deliberately parallel session, take a `git worktree` instead of sharing the tree.
 - Branch off main: `feat/p<#>-<slug>` (matches existing convention, e.g.
   `feat/p1-game-logging`).
 - Flip the entry to `in-progress` **via /ship** (it's the sole writer of BACKLOG.md).
