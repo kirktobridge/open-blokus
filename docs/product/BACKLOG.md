@@ -113,20 +113,33 @@ this epic owns the user-facing feature + its UX.
 - **Value:** start/again online games without waiting for a full human lobby.
 - **Depends on:** server integration decisions; reuses the shipped bot strategies.
 
-### P13 — Named tiers beyond `extreme` for future bot wins
+### P13 — Ladder calibration policy (tiers as strength contracts)
 - **Status:** proposed.
-- **Value:** each AE-backlog win (new bot/algo beating current best) ships as a new
-  named tier above `extreme` (`nightmare`, `immortal`, `deity`, ...) instead of
-  overwriting `extreme` in place. Preserves the old top tier as a stable practice
-  rung instead of silently moving the ceiling; players get visible progression as
-  the AI keeps improving.
-- **Scope:** extend `Difficulty` union + `DIFFICULTIES` order + `MCTS_TIERS` (or
-  per-tier bot-strategy map, once tiers diverge past MCTS-config) in
-  [difficulty.ts](../../src/client/ai/difficulty.ts); update setup UI tier list;
-  each new tier's config is whatever the winning AE experiment measured (bar set by
-  that AE entry, not by this one).
-- **Depends on:** a won research experiment beating current top tier (AE-backlog,
-  e.g. AE10 and future entries) — this P only fires once one lands.
+- **Value:** as bot research lands wins, the difficulty ladder stays meaningful
+  instead of drifting or bloating: each tier keeps the strength players learned it
+  to mean, and a new named rung (`nightmare`, `immortal`, ...) appears only when
+  the ceiling genuinely moves. Serves the original motivation (stable practice
+  rungs) better than freezing configs — a tier is pinned to a *measured band*,
+  re-verified after engine changes, not to an implementation.
+- **Scope:**
+  - Define each tier as a **strength band + latency budget** measured against a
+    frozen anchor pool (heuristic bot + snapshots of shipped tier configs);
+    `MCTS_TIERS` in [difficulty.ts](../../src/client/ai/difficulty.ts) becomes an
+    implementation detail, retunable at will.
+  - **Decision rule per AE win:** efficiency wins (same strength, cheaper —
+    AE2/AE9/AE17-type) retune existing tiers in place (snappier moves, same band);
+    **ceiling wins** mint a new top tier only if they beat the current top by a
+    measured margin (≥60 % game-share, per that AE entry's bar) *and* meet a
+    latency budget — otherwise fold into `extreme`'s config.
+  - Recalibration workflow: after any engine change touching shipped tiers, re-run
+    the ladder monotonicity arena check (Runs J–K precedent) plus anchor-pool
+    matches; cap the ladder at ~5–6 named rungs (keeps the per-seat picker and
+    P18 personas sane).
+  - Code side as before: extend `Difficulty` union + `DIFFICULTIES` order +
+    per-tier bot-strategy map once tiers diverge past MCTS-config; setup UI tier list.
+- **Depends on:** research AE21 (population-play Elo — the anchor-pool measurement
+  that makes recalibration cheap and trustworthy); a won AE experiment beating the
+  current top tier for any actual new rung.
 
 ### P18 — Bot personas
 - **Status:** proposed

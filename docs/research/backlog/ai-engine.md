@@ -352,7 +352,9 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Status:** proposed
 - **Objective:** detect self-play convention brittleness — a candidate that beats
   the incumbent head-to-head can still be weak against off-distribution play
-  (the kingmaker/multiplayer caveat: 4p has no single optimal strategy).
+  (the kingmaker/multiplayer caveat: 4p has no single optimal strategy). Also the
+  enabling infra for product P13 (ladder calibration — tiers defined as strength
+  bands vs a frozen anchor pool).
 - **Hypothesis:** ranking vs a diverse pool (random, greedy, heuristic variants,
   alphabeta, MCTS tiers, retired champions) differs measurably from head-to-head
   vs the incumbent alone, and is a better proxy for vs-human / vs-external
