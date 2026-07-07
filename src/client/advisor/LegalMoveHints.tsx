@@ -9,6 +9,9 @@ export interface Hint {
   /** Board indices to highlight — a piece footprint, or a single open corner. */
   cells: number[];
   tone: HintTone;
+  /** Override the tone with a specific color (e.g. the active player's own color,
+   *  so legal-move hints read as "where *your* piece fits"). Hex only. */
+  color?: string;
 }
 
 const TONE: Record<HintTone, { fill: string; ring: string }> = {
@@ -17,6 +20,15 @@ const TONE: Record<HintTone, { fill: string; ring: string }> = {
   suboptimal: { fill: 'rgba(234, 179, 8, 0.28)', ring: '#d4a017' },
   anchor: { fill: 'rgba(52, 104, 207, 0.22)', ring: '#3468cf' },
 };
+
+/** Fill + ring for a hint: the active-color override when given (hex + ~23% alpha
+ *  fill), else the tone palette. */
+function hintStyle(h: Hint): { fill: string; ring: string } {
+  if (h.color && /^#[0-9a-fA-F]{6}$/.test(h.color)) {
+    return { fill: `${h.color}3A`, ring: h.color };
+  }
+  return TONE[h.tone];
+}
 
 /**
  * Overlay that marks candidate placements on the board — the shared "show legal
@@ -41,7 +53,7 @@ export function LegalMoveHints({
         h.cells.map((ci) => {
           const x = ci % BOARD_SIZE;
           const y = (ci / BOARD_SIZE) | 0;
-          const t = TONE[h.tone];
+          const t = hintStyle(h);
           return (
             <div
               key={`${h.id}:${ci}`}

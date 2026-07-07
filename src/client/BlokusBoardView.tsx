@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { Color, GameState } from '../game/types';
 import { COLOR_ORDER } from '../game/types';
+import { BOARD_SIZE } from '../shared/constants';
 import { resolveCells } from '../game/pieces';
 import { isLegalPlacement } from '../game/placement';
 import { CORNERS } from '../game/modes';
 import { Board } from './board/Board';
+import { legalTargetCells } from './advisor/legalMoves';
+import type { Hint } from './advisor/LegalMoveHints';
 import { HandTray } from './tray/HandTray';
 import { Standings } from './controls/ScorePanel';
 import { PlayerCard, type SeatTag } from './controls/PlayerCard';
@@ -87,16 +90,19 @@ export function BlokusBoardView({
     homeColor ? TURNS_TO_BOTTOM_RIGHT[homeColor] : 0,
   );
 
-  const oriented =
-    sel.pieceId && sel.hover
-      ? resolveCells({
-          pieceId: sel.pieceId,
-          rotation: sel.rotation,
-          reflected: sel.reflected,
-          x: sel.hover.x,
-          y: sel.hover.y,
-        })
-      : [];
+  const oriented = useMemo(
+    () =>
+      sel.pieceId && sel.hover
+        ? resolveCells({
+            pieceId: sel.pieceId,
+            rotation: sel.rotation,
+            reflected: sel.reflected,
+            x: sel.hover.x,
+            y: sel.hover.y,
+          })
+        : [],
+    [sel.pieceId, sel.hover, sel.rotation, sel.reflected],
+  );
   const legal =
     canPlay && sel.pieceId && sel.hover
       ? isLegalPlacement(G, activeColor, sel.pieceId, oriented)
@@ -105,6 +111,26 @@ export function BlokusBoardView({
     sel.pieceId && sel.hover
       ? { cells: new Set(oriented.map((c) => `${c.x},${c.y}`)), legal, staged: sel.staged }
       : undefined;
+
+  // Advisor (P3 R1): an opt-in overlay marking every square the selected piece
+  // could legally land on. The expensive part (generateLegalMoves) is memoized on
+  // piece + board only, so hovering doesn't recompute it; the hovered footprint is
+  // then excluded so the live preview stays crisp.
+  const [advisorOn, setAdvisorOn] = useState(false);
+  const advisorTargets = useMemo(
+    () =>
+      advisorOn && canPlay && sel.pieceId ? legalTargetCells(G, activeColor, sel.pieceId) : [],
+    [advisorOn, canPlay, sel.pieceId, G, activeColor],
+  );
+  const advisorHints = useMemo<Hint[]>(() => {
+    if (advisorTargets.length === 0) return [];
+    const hovered = new Set(oriented.map((c) => c.y * BOARD_SIZE + c.x));
+    const cells = advisorTargets.filter((c) => !hovered.has(c));
+    // Tint the hints in the active color so they read as "where your piece fits".
+    return cells.length > 0
+      ? [{ id: 'legal', cells, tone: 'legal', color: colors[activeColor] }]
+      : [];
+  }, [advisorTargets, oriented, colors, activeColor]);
 
   const canSubmit = sel.staged && legal;
 
@@ -351,32 +377,53 @@ export function BlokusBoardView({
                 }}
                 onRotate={interactive ? sel.rotate : undefined}
                 onFlip={interactive ? sel.flip : undefined}
+                hints={advisorHints}
               />
             </div>
           </div>
         </div>
 
-        {/* Rotate-board control, sat under the board so its top aligns with the panels. */}
-        <button
-          data-testid="rotate-board"
-          // Increment without wrapping so the CSS transform always animates
-          // forward (270°→360° instead of 270°→0°, which spins backwards).
-          onClick={() => setBoardTurns((t) => t + 1)}
-          title="Rotate the board view 90°"
-          style={{
-            alignSelf: 'flex-end',
-            fontFamily: FONT_UI,
-            fontSize: 11.5,
-            border: '1px solid var(--top-bd)',
-            background: 'var(--top-bg)',
-            color: 'var(--top-ink)',
-            borderRadius: 999,
-            padding: '4px 11px',
-            cursor: 'pointer',
-          }}
-        >
-          Rotate board ⟲
-        </button>
+        {/* Under-board controls: advisor toggle (left) · rotate board (right). */}
+        <div style={{ alignSelf: 'stretch', display: 'flex', justifyContent: 'space-between' }}>
+          <button
+            data-testid="advisor-toggle"
+            aria-pressed={advisorOn}
+            onClick={() => setAdvisorOn((v) => !v)}
+            title="Highlight every legal spot for the selected piece"
+            style={{
+              fontFamily: FONT_UI,
+              fontSize: 11.5,
+              border: `1px solid ${advisorOn ? '#16a34a' : 'var(--top-bd)'}`,
+              background: advisorOn ? 'rgba(34,197,94,.16)' : 'var(--top-bg)',
+              color: advisorOn ? '#16a34a' : 'var(--top-ink)',
+              borderRadius: 999,
+              padding: '4px 11px',
+              fontWeight: advisorOn ? 700 : 400,
+              cursor: 'pointer',
+            }}
+          >
+            💡 Legal moves {advisorOn ? 'on' : 'off'}
+          </button>
+          <button
+            data-testid="rotate-board"
+            // Increment without wrapping so the CSS transform always animates
+            // forward (270°→360° instead of 270°→0°, which spins backwards).
+            onClick={() => setBoardTurns((t) => t + 1)}
+            title="Rotate the board view 90°"
+            style={{
+              fontFamily: FONT_UI,
+              fontSize: 11.5,
+              border: '1px solid var(--top-bd)',
+              background: 'var(--top-bg)',
+              color: 'var(--top-ink)',
+              borderRadius: 999,
+              padding: '4px 11px',
+              cursor: 'pointer',
+            }}
+          >
+            Rotate board ⟲
+          </button>
+        </div>
 
         {/* Status line — also carries the machine-readable active color. */}
         <p
