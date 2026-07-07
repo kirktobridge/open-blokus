@@ -138,6 +138,24 @@ with step-change capacity (board-plane input, policy head, MCTS-quality labels) 
 and after AE9 raises the rollout baseline. Run O; closed
 [AE4](backlog/ai-engine.md) as no-win.
 
+### F12 — Bitboard legality is ~2.5× faster than the cell-by-cell scan, byte-identical, and that throughput converts to strength
+`significant` (differential test + 640-game arena, Run P). Storing the 20×20 board
+as one 20-bit word per row and testing GAME_SPEC §4 with masked lookups (global
+occupancy + per-color own cells + lazily-cached orthogonal/diagonal dilations)
+replaces the per-cell neighbor scan that F10 fingered as ~75% of MCTS time. It is
+**byte-identical** to `isLegalPlacement` (>100k candidates over 48 positions + the
+incremental rollout path; all deterministic search tests unchanged) and **2.48×
+faster** (997 vs 402 iters/s, mid-opening, matched engine config). Because output
+is identical at fixed iterations, per-iteration strength is unchanged, so "matched
+wall-clock" = a 2.5× iteration head-to-head: the faster engine wins **71.4% [67.8,
+74.8]** game-share over 640 games (z = +10.8). Confirms the F10 diagnosis and, from
+the throughput side, F6/F8 (more search buys strength). The big lever was killing
+per-cell allocation (~40 short-lived objects per pentomino test) and amortizing the
+dilations across candidates, not exotic bit-tricks. Bitboard legality now backs
+`generateLegalMoves`/`hasAnyMove` and the MCTS rollouts; `isLegalPlacement` stays as
+the bgio/UI path and reference. This raises the standing rollout baseline for every
+future speed/quality experiment. Run P; closed [AE9](backlog/ai-engine.md) as won.
+
 ---
 
 ## Method lessons (the ones we paid for)

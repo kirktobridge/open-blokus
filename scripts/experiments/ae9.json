@@ -1,0 +1,25 @@
+{
+  "title": "AE9: bitboard throughput as matched-wall-clock game-share (2.5x iters vs baseline)",
+  "seats": [
+    {
+      "name": "bitboard-2.5x",
+      "strategy": "mcts",
+      "options": { "iterations": 80, "rolloutDepth": 12, "beam": 16, "minIterations": 8 }
+    },
+    {
+      "name": "baseline-1x",
+      "strategy": "mcts",
+      "options": { "iterations": 32, "rolloutDepth": 12, "beam": 16, "minIterations": 8 }
+    },
+    {
+      "name": "bitboard-2.5x",
+      "strategy": "mcts",
+      "options": { "iterations": 80, "rolloutDepth": 12, "beam": 16, "minIterations": 8 }
+    },
+    {
+      "name": "baseline-1x",
+      "strategy": "mcts",
+      "options": { "iterations": 32, "rolloutDepth": 12, "beam": 16, "minIterations": 8 }
+    }
+  ]
+}

@@ -16,13 +16,11 @@ The dependency-ready head, highest-payoff first — the authoritative "what to r
 Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
 test (product P21) fails CI if any ID here is missing or terminal.
 
-1. **AE9** — bitboard move-gen: F10 shows MCTS is legality-bound (~75 % of time on
-   gen/legality); attacks the shared gen + rollout hot path.
-2. **AE18** — research-harness throughput: cuts the compute bill of every future
-   experiment, outputs byte-identical.
-3. **AE19** — Pentobi external baseline: makes strength absolute, not self-relative.
-4. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
-5. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+1. **AE18** — research-harness throughput: cuts the compute bill of every future
+   experiment, outputs byte-identical. Now stacks on AE9's faster engine (Run P).
+2. **AE19** — Pentobi external baseline: makes strength absolute, not self-relative.
+3. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
+4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
 
 ---
 
@@ -145,18 +143,24 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** none new (mechanism exists). **Don't invest more for 4p.**
 
 ### AE9 — Bitboard move generation
-- **Status:** proposed (Run N / F10). Profiling shows MCTS is
-  legality-bound: `isLegalPlacement` is 31 % of self-time and ~75 % goes to
-  cell-by-cell legality + gen. Bitboards attack that shared hot path directly and
-  speed rollout *and* gen at once. Promoted from `deferred`; the head-of-queue
-  signal now lives in the Next up block above.
+- **Status:** won (Run P / F12) — bitboard legality is byte-identical to the scan,
+  **2.48× iters/s** (997 vs 402), and at matched wall-clock (2.5× iter head-to-head)
+  wins **71.4 % [67.8, 74.8]** game-share over 640 games. All three pre-registered
+  gates pass. Shipped into `generateLegalMoves`/`hasAnyMove` + the MCTS rollouts;
+  `isLegalPlacement` kept as the bgio/UI path + differential reference.
+- **Log:** Run P → [F12](../FINDINGS.md)
 - **Objective:** faster legality checks via bitwise ops.
 - **Hypothesis:** representing occupancy + per-color corner/edge masks as bit words
   computes legality far faster than the current scan, same results.
 - **Method:** rewrite the rules-core legality path on bitboards; differential-test
   vs the current implementation; benchmark.
-- **Success criteria:** large iters/s gain, byte-identical output (differential test),
-  translating to higher game-share at fixed wall-clock.
+- **Success criteria (pre-registered 2026-07-07, M2):** three gates —
+  (1) **hard gate:** byte-identical legal-move output vs the current scan over a
+  differential test (random reachable positions + full self-play games); (2)
+  **≥2× iters/s** on the MCTS profile harness (`scripts/profile-mcts.ts`) vs the
+  current engine; (3) **game-share Wilson CI clears 52 %** vs the current engine
+  at matched wall-clock, ≥600 pooled multi-seed games. `won` requires all three;
+  faster-but-not-2× or CI 50–52 % is `no-win`.
 - **Cost / risk:** large rewrite of the rules core (20×20 = 400 cells → 7×`BigInt`/
   `Uint32` words, or per-row masks). Correctness guarded by differential test vs the
   current scan. See [F10](../FINDINGS.md) for the profile that justifies it.

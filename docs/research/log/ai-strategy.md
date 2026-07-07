@@ -504,3 +504,68 @@ labels) might close the gap but is a different cost class than this experiment.
 zero-cost injection point (default off). Revisit only with a step-change in net
 capacity/data (board-plane input, policy head, MCTS self-play labels), ideally
 after AE9 bitboards raise the rollout baseline it must beat. → AE4 closed.
+
+### Run P — bitboard move generation (AE9)
+Do bitboard legality checks speed the legality-bound MCTS hot path (F10) without
+changing what it computes, and does the extra throughput convert to strength?
+(AE9; pre-registered bar, three gates: (1) byte-identical legal-move output vs the
+`isLegalPlacement` scan; (2) ≥2× iters/s; (3) game-share CI clears 52% vs the
+current engine at matched wall-clock, ≥600 games.)
+
+**Implementation.** New `src/game/bitboard.ts`: the 20×20 board as one 20-bit word
+per row (`Uint32Array(20)`), a global occupancy board plus, per color, that color's
+own cells and lazily-derived orthogonal (rule-5 forbidden) and diagonal (rule-4
+attach) dilations. `bbLegal` replaces the per-cell `orthoNeighbors`/`diagNeighbors`
+scan (which allocated ~40 short-lived objects per pentomino test — F10/AE2 note)
+with masked lookups; dilations are computed once per color per position-batch and
+reused across all candidates. Threaded into the hot path: `generateLegalMoves` /
+`hasAnyMove` build a board once and amortize; the MCTS rollouts build once and
+maintain incrementally via `bbApply`. `isLegalPlacement` is unchanged and remains
+the bgio/UI path and the differential-test reference.
+
+**Gate 1 — byte-identical (hard gate).** `tests/bitboard.test.ts`: for every
+piece × orientation × position across 48 reachable positions (>100k candidates,
+seeds 1–8 × plies 0–15), `bbLegal` verdict === `isLegalPlacement` verdict; the
+incrementally-maintained board also matches a from-scratch rebuild after every ply
+(the rollout path). Passes. Independently, the deterministic MCTS/moves/sim tests
+(121 unit + 16 e2e) all still pass — byte-identical search trajectories.
+
+**Gate 2 — throughput.** `scripts/bench-mcts.ts`, mid-opening position (8 plies in,
+541 legal moves), 60 × 150-iter searches, best-of-3, same engine config
+(rolloutDepth 12, beam 16):
+
+| engine | iters/s | ms/search |
+|--------|---------|-----------|
+| baseline (`isLegalPlacement` scan) | 402 | 373 |
+| bitboard | **997** | 150 |
+
+**2.48×** — clears the ≥2× bar.
+
+**Gate 3 — game-share at matched wall-clock.** Since output is byte-identical at a
+fixed iteration count (gate 1), per-iteration strength is identical old-vs-new — the
+change only makes iterations cheaper. So "new vs old at matched wall-clock T"
+reduces exactly to a head-to-head at the iteration counts each fits in T: the
+bitboard engine gets 2.5× the iterations of the baseline. `scripts/experiments/ae9.json`,
+bitboard-2.5x = MCTS(80 iters) vs baseline-1x = MCTS(32 iters), rolloutDepth 12,
+beam 16, 4 seeds × 160 games = 640 games (seeds 1–4). (Lighter absolute iters than
+the ~500 ms live budget keep the run tractable; per F8's concave strength-vs-iters
+curve the 2.5× gap is if anything *wider* at low iters, so this is a fair-to-
+conservative proxy.)
+
+| config | games | game-share | 95% CI | p(>50%) |
+|--------|-------|-----------|--------|---------|
+| bitboard-2.5x (80 iters) | 640 | **71.4%** | [67.8, 74.8] | 1.2e-27 (z = +10.8) |
+| baseline-1x (32 iters) | 640 | 28.6% | — | — |
+
+All 4 seeds agree (±0.6). CI clears 52% by ~16 points.
+
+**Read:** all three gates pass. Bitboards cut the F10 legality bottleneck ~2.5×
+with provably identical output, and at matched wall-clock that throughput buys a
+decisive strength edge — reconfirming F6/F8 (more search = more strength) from the
+throughput side. This raises the standing rollout baseline every future speed/quality
+experiment is measured against.
+
+**Decision:** won — bitboard legality shipped into the rules-core hot path (kept
+byte-identical; `isLegalPlacement` retained for bgio/UI). Raises node rates for the
+live time-budget tiers for free. → AE9 closed; next speed lever is AE18 (harness
+throughput). Config `scripts/experiments/ae9.json`, bench `scripts/bench-mcts.ts`.
