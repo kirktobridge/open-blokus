@@ -203,7 +203,7 @@ four classic colors as accents, shapes as the star.
   for true see-through.
 
 ### P16 — In-game drama (placement weight, endgame beats, win reveal)
-- **Status:** proposed
+- **Status:** shipped
 - **Value:** the most-repeated action (~84 placements/match) and the two biggest
   moments (going out, winning) currently have zero ceremony.
 - **Scope:** placement settle animation + invalid-move shake; "X is out of moves"
