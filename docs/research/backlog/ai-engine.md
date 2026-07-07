@@ -65,7 +65,7 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
   (F6 reconfirmed). Infra kept at zero cost: `leafValue` hook in `mcts.ts`
   (default off), `scripts/selfplay-dump.ts` + `scripts/train-valuenet.ts`.
   Revisit only with step-change capacity (board planes / policy head /
-  MCTS-quality labels), ideally after AE9.
+  MCTS-quality labels), ideally after AE9 — formalized as **AE22**.
 - **Objective:** replace expensive full rollouts (the F6 strength driver) with a
   cheap strong estimate, and/or prior the tree to replace the heuristic beam.
 - **Hypothesis:** a small value net evaluated at the leaf gives near-full-rollout
@@ -306,4 +306,121 @@ Ordered roughly by expected payoff. Status vocabulary: `proposed` / `deferred` /
 - **Cost / risk:** small; (1) touches only the arena driver (rules core untouched,
   bgio path unaffected). Wasted only if AE9 makes everything cheap first — but
   sharding/caching still stack on top of AE9.
+- **Log:** —
+
+### AE19 — External baseline: Pentobi bridge
+- **Status:** proposed — the "world-class is unfalsifiable without a reference"
+  fix. Every strength number we have is self-relative; Pentobi (open-source,
+  MCTS-based, calibrated levels 1–9) is the de facto world reference.
+- **Objective:** place our best bot on an absolute ladder and make every future
+  AE win measurable against the outside world.
+- **Hypothesis:** none needed — this is measurement infra (AE6 precedent). The
+  interesting unknown is *which* Pentobi level our `extreme` tier matches.
+- **Method:** adapter between the arena and `pentobi-gtp` (GTP text protocol:
+  coordinate/piece-name mapping, color seating, resign/pass semantics); run our
+  tiers vs Pentobi levels in 4p Classic, ≥200 games per level pairing, seed-
+  averaged as usual. Config in `scripts/experiments/ae19-*.json`.
+- **Success criteria:** measurement — game-share (±CI) vs ≥3 Pentobi levels,
+  identifying the highest level we beat CI-clear; becomes the standing external
+  readout cited by later entries.
+- **Cost / risk:** moderate — local GPL binary + protocol adapter (subprocess,
+  Node-side); risk is GTP dialect/rules-mapping bugs corrupting results
+  (mitigate: replay-verify a sample of bridged games through our rules core).
+- **Log:** —
+
+### AE20 — Gumbel root search (policy improvement at starved budgets)
+- **Status:** proposed
+- **Objective:** stronger move selection exactly where our budgets are tiny —
+  medium tier completes ~15–46 iterations/move (Run O probe).
+- **Hypothesis:** Gumbel-top-k action sampling + sequential halving at the root
+  (Gumbel AlphaZero/MuZero) guarantees policy improvement with a handful of
+  simulations, unlike UCT which needs visits to concentrate. Assumption (M4):
+  the guarantee is w.r.t. a prior policy + value estimate — we have both (beam
+  ordering scores as prior, rollout returns as values), so the premise holds.
+- **Method:** Gumbel root selection behind a config flag (root-only change;
+  interior selection unchanged); arena vs plain UCT at matched iterations
+  (~40 and ~150) and at matched 500 ms wall-clock; ≥600 pooled games per
+  comparison, `scripts/experiments/ae20.json`.
+- **Success criteria:** game-share Wilson CI clears 52% vs plain UCT at the
+  medium (500 ms) budget; the matched-iteration runs isolate mechanism.
+- **Cost / risk:** small-moderate — root-only algorithm swap, well-specified in
+  the literature; risk is the guarantee mattering less with only ~6–16 beam
+  actions to choose among.
+- **Log:** —
+
+### AE21 — Population-play evaluation (pool Elo readout)
+- **Status:** proposed
+- **Objective:** detect self-play convention brittleness — a candidate that beats
+  the incumbent head-to-head can still be weak against off-distribution play
+  (the kingmaker/multiplayer caveat: 4p has no single optimal strategy).
+- **Hypothesis:** ranking vs a diverse pool (random, greedy, heuristic variants,
+  alphabeta, MCTS tiers, retired champions) differs measurably from head-to-head
+  vs the incumbent alone, and is a better proxy for vs-human / vs-external
+  strength (testable once AE19 exists). Assumption (M4): pool diversity
+  approximates off-distribution play — supported by the population-training
+  literature; verified locally if pool rank predicts Pentobi rank.
+- **Method:** arena extension — round-robin over a frozen pool, Elo (or
+  game-share matrix) with CIs; report pool standing alongside head-to-head in
+  future AE runs. Pool composition versioned in `scripts/experiments/pool.json`.
+- **Success criteria:** measurement infra — bar for *adopting as a standing
+  readout*: the pool ranking reorders or separates at least one pair that
+  head-to-head calls equal (i.e. it adds signal), or correlates better with the
+  AE19 external ladder than head-to-head does.
+- **Cost / risk:** small-moderate; pure arena tooling, no engine change.
+  Compute grows with pool size — prune to ~6–8 members.
+- **Log:** —
+
+### AE22 — AlphaZero-lite pipeline (policy+value net over board planes; AE4's designated successor)
+- **Status:** proposed — the F11 "step-change capacity" clause made concrete.
+  Run O's no-win was a 609-param toy on ε-greedy-heuristic outcomes; this is the
+  known summit path: board planes, real capacity, search-improved targets.
+- **Objective:** replace the hand-crafted heuristic beam with a learned policy
+  prior and rollouts with a learned value — PUCT-style — beating full-rollout
+  MCTS at matched wall-clock.
+- **Hypothesis:** policy priors + value nets trained iteratively on MCTS visit
+  distributions (not raw outcomes) reach superhuman strength in comparable
+  board games; F8's beam knob disappears into the prior. Assumption (M4): F11's
+  failure was capacity/labels, not concept — the AlphaZero literature is the
+  evidence; the kill-gates below test it cheaply before the big spend.
+- **Method:** staged, each stage gated (Run O pattern):
+  **A** — MCTS-labeled self-play: extend the AE4 dump to record root visit
+  distributions + outcomes (throughput wants AE9 first).
+  **B** — train a small CNN (board planes per color + to-move) off-browser
+  (Python/GPU); *gates:* policy top-1 must beat the heuristic's top-1 on
+  held-out MCTS choices, value must beat the Run O net's held-out gate numbers.
+  **C** — PUCT integration (prior over children replaces the beam; value at
+  leaves) with browser inference via ONNX Runtime Web / WebGPU; measure
+  inference latency in-loop before any arena spend.
+  **D** — arena: vs full-rollout MCTS at matched 500 ms/move, and vs the AE19
+  Pentobi ladder.
+- **Success criteria (final):** game-share Wilson CI clears 52% vs full-rollout
+  MCTS at matched per-move wall-clock over ≥600 pooled games (same bar as AE4,
+  deliberately — this is the rematch); secondary: climbs ≥1 Pentobi level (AE19).
+- **Cost / risk:** **large** — weeks: training infra (Python/GPU), a client
+  runtime dep (ONNX ~MB bundle, a product concern), and inference latency can
+  eat the gains (gate C exists for exactly that). Sequencing: after AE9;
+  benefits from AE19 (external readout) and AE21 (robustness readout).
+- **Log:** —
+
+### AE23 — Solve a reduced Blokus (Duo on small boards)
+- **Status:** deferred (blocked on board-size generalization — product P20 M2 —
+  and wants AE9 node rates; the one true *solver* item, everything else is
+  player-strength)
+- **Objective:** compute the exact game-theoretic value + principal variation of
+  Blokus Duo on a reduced board (ladder: 6×6 → 7×7 → 8×8, full or reduced piece
+  set) — a proof, and to our knowledge a novel result for any Blokus variant.
+- **Hypothesis:** 2p zero-sum Duo is well-posed (unlike 4p, where kingmaking
+  makes "perfect play" undefined); with bitboards, transposition tables, and
+  symmetry canonicalization, small boards are within alpha-beta / proof-number
+  reach. Assumption (M4): tractability is the open question — the board-size
+  ladder *is* the fit-check; each rung's node count calibrates the next.
+- **Method:** exact negamax/PN search + TT + D4 symmetry reduction over the
+  generalized rules core; verify the solved value by having the PV beat our
+  strongest bot from both seats. Publishable if a nontrivial size falls.
+- **Success criteria:** proven value + reproducible PV for ≥1 nontrivial board
+  size (≥7×7), independently re-derivable from the committed solver + seed-free
+  determinism.
+- **Cost / risk:** large and open-ended — state-space growth may wall at 7×7;
+  the ladder keeps the spend incremental. Shares exact-search machinery with
+  AE13 (endgame solver).
 - **Log:** —
