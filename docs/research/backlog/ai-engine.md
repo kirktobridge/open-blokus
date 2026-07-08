@@ -16,9 +16,9 @@ The dependency-ready head, highest-payoff first — the authoritative "what to r
 Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
 test (product P21) fails CI if any ID here is missing or terminal.
 
-1. **AE19** — Pentobi external baseline: makes strength absolute, not self-relative.
-2. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
-3. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+1. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
+2. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+3. **AE20** — Gumbel root search: policy improvement at the starved medium budget.
 
 ---
 
@@ -338,8 +338,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE19 — External baseline: Pentobi bridge
-- **Status:** proposed — the "world-class is unfalsifiable without a reference"
-  fix. Every strength number we have is self-relative; Pentobi (open-source,
+- **Status:** won (F14) — GTP bridge shipped and our tiers placed on Pentobi's
+  ladder: easy tier CI-clear below L1; extreme beats L1 CI-clear (61.8%, n=200)
+  and is ~even vs L2. Highest level beaten CI-clear = L1. Standing external
+  readout: `npm run arena:pentobi`. Follow-up (cheap): power extreme-vs-L2 to
+  n≥200 if a candidate claims to reach L2.
+  Every strength number we have is self-relative; Pentobi (open-source,
   MCTS-based, calibrated levels 1–9) is the de facto world reference.
 - **Objective:** place our best bot on an absolute ladder and make every future
   AE win measurable against the outside world.
@@ -355,7 +359,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** moderate — local GPL binary + protocol adapter (subprocess,
   Node-side); risk is GTP dialect/rules-mapping bugs corrupting results
   (mitigate: replay-verify a sample of bridged games through our rules core).
-- **Log:** —
+- **Log:** Run R (`docs/research/log/ai-strategy.md`).
 
 ### AE20 — Gumbel root search (policy improvement at starved budgets)
 - **Status:** proposed

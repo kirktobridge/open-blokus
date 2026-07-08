@@ -619,3 +619,44 @@ strength claim — this is pure tooling throughput.
 shipped, both byte-identical (golden test + diff). Sub-item 3 (trainer feature-cache,
 <10 s) deferred with the dormant value-net path. → AE18 closed. Bench
 `scripts/bench-driver.ts`.
+
+### Run R — External baseline: our tiers vs Pentobi over GTP (AE19)
+
+**Question (AE19):** where do our bots sit on Pentobi's calibrated 1–9 ladder — the
+de-facto external reference — so strength becomes absolute, not self-relative?
+
+**Infra.** New GTP bridge in `src/game/ai/pentobi/` (`gtp.ts` async subprocess
+wrapper, `coords.ts` mapping, `arena.ts` async 2v2 driver, `run.ts` runner,
+`npm run arena:pentobi`). Pentobi 23.1's Ubuntu package is GUI-only, so `pentobi-gtp`
+is built from source — no Boost, static cmake, `cmake -DPENTOBI_BUILD_GUI=OFF
+-DPENTOBI_BUILD_GTP=ON` (~6 s) → `~/.local/share/pentobi-gtp/`. Coord map verified
+against Pentobi's forced corner openers (blue→a20, yellow→t20, red→t1, green→a1 =
+our CORNERS): `x = col-'a'`, `y = 20-row`. **Our GameState is authoritative** — every
+move (ours *and* Pentobi's) is applied to `G`, the winner is `finalScores(G)`, and
+because each Pentobi move must resolve to one of our legal moves, every bridged game
+is replay-verified against our rules core for free (0 desync/mismatch across all
+runs; `tests/pentobiCoords.test.ts` locks the mapping). 4p Classic, 2v2 (2 our seats
++ 2 Pentobi), seat-rotated, seed-averaged; game-share null = 50%. Configs
+`scripts/experiments/ae19-*.json` + `ae19-sweep.sh` / `ae19-extreme-power.sh`.
+
+**Result** — game-share of *our* team, Wilson 95% CI, `n` games:
+
+| our bot            | vs L1                    | vs L2                   | vs L3                  | vs L4                |
+|--------------------|--------------------------|-------------------------|------------------------|----------------------|
+| heuristic (easy)   | 21.2% [16.5,26.9] n=240  | 10.5% [7.2,15.0] n=240  | 3.7% [1.9,6.9] n=240   | 0.1% [0,1.8] n=240   |
+| MCTS 150-iter      | 43.1% [36.4,50.0] n=200  | 31.9% [25.8,38.7] n=200 | 19.4% [14.5,25.5] n=200| —                    |
+| extreme (500-iter) | **61.8% [54.9,68.2] n=200** | 45.3% [35.9,55.1] n=100 | —                  | —                    |
+
+**Read.** Pentobi is strong: our shipped **easy tier is CI-clear below L1** (21%),
+decaying monotonically to ~0% by L4 — the clean monotone ladder cross-checks the
+coord mapping. Mid MCTS (150 iters) is a hair below L1 (43%, CI upper just touches
+50). Our **extreme tier beats Pentobi L1 CI-clear** (61.8%, n=200) and is ~even with
+L2 (45.3%, inconclusive at n=100) — so it sits **between L1 and L2**. The jump from
+150→500 iters (43%→62% vs L1) re-confirms F6 (MCTS scales with compute). Highest
+level we beat CI-clear = **L1**. First *absolute* strength number for OpenBlokus;
+every prior figure was self-relative.
+
+**Decision:** won — bridge shipped (measurement infra, AE6 precedent) + ladder
+placed: easy < L1, extreme ≈ L1–L2 (beats L1 CI-clear, even-ish vs L2). Standing
+external readout for future AE entries. extreme-vs-L2 left directional (n=100); a
+firm L2 call is a cheap follow-up if a candidate claims to reach it. → AE19 closed.

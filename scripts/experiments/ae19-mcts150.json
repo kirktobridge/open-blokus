@@ -1,0 +1,9 @@
+{
+  "title": "AE19 — MCTS 150 iters (beam 16, fixed) vs Pentobi (2v2)",
+  "seats": [
+    { "kind": "local", "name": "mcts150", "strategy": "mcts", "options": { "iterations": 150, "beam": 16, "rolloutDepth": 0, "minIterations": 8 } },
+    { "kind": "pentobi", "name": "pentobi-L1", "level": 1 },
+    { "kind": "local", "name": "mcts150", "strategy": "mcts", "options": { "iterations": 150, "beam": 16, "rolloutDepth": 0, "minIterations": 8 } },
+    { "kind": "pentobi", "name": "pentobi-L1", "level": 1 }
+  ]
+}

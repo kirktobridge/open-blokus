@@ -66,6 +66,22 @@ mid-rollout cutoff. **Practical takeaway: always full rollouts; spend the move-t
 budget on iterations.** Cost is ~100–1000× the heuristic, so this is a
 budget-capped "hard" bot, not a drop-in.
 
+### F14 — Absolute strength: our best bot ≈ Pentobi level 1–2 (the first external anchor)
+`significant`. Bridged our arena to `pentobi-gtp` (the calibrated open-source
+reference) over GTP and placed our tiers on Pentobi's 1–9 ladder in 4p Classic 2v2,
+game-share vs a 50% null (Run R, AE19). **Our shipped easy tier (heuristic) is
+CI-clear below even L1** (21.2% game-share, CI [16.5,26.9], n=240), decaying
+monotonically to ~0% by L4. **Our strongest tier (extreme, 500-iter MCTS) beats L1
+CI-clear** (61.8%, CI [54.9,68.2], n=200) and is ~even with L2 (45.3%, CI
+[35.9,55.1], n=100, directional). So the ceiling of everything we ship is roughly
+**one calibrated Pentobi level (≈ L1–L2)** — a sobering absolute number after a
+research history of self-relative wins, and the reason AE19 exists. The 150→500-iter
+jump (43%→62% vs L1) re-confirms F6 (MCTS scales with compute). Bridge is the
+standing external readout: `npm run arena:pentobi`, replay-verified against our rules
+core every game. Method note (M): CPU contention is safe to oversubscribe here
+because both our fixed-iteration tiers and Pentobi's simulation-based levels are
+strength-invariant to wall-clock — only run-time changes.
+
 ---
 
 ## Engine
