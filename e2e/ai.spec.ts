@@ -46,6 +46,27 @@ test('Quick Play starts a vs-AI game in one click (default: you vs 3 AI)', async
   });
 });
 
+test('AI thinking indicator shows a live elapsed-seconds counter (P10)', async ({ page }) => {
+  // A deliberate 1.5 s bot delay makes the counter observable without needing a
+  // slow MCTS tier; the indicator ticks the same way for the real `extreme` wait.
+  await page.goto('/?botDelay=1500');
+  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('ai-mode-select').selectOption('4');
+  await page.getByTestId('ai-count-select').selectOption('3'); // you = P0 (blue)
+  await page.getByTestId('start-ai').click();
+
+  // Human opens, handing the turn to the AI seats.
+  await expect(page.getByText(/active blue/)).toBeVisible();
+  await page.getByTestId('piece-blue-I2').click();
+  await page.getByTestId('cell-0-0').click();
+  await page.getByTestId('submit-move').click();
+
+  // The indicator counts real elapsed seconds — proving it's not a static label.
+  await expect(page.getByTestId('ai-thinking')).toHaveText(/AI thinking… [1-9]\d*s/, {
+    timeout: 5_000,
+  });
+});
+
 test('all-AI watch game plays to completion with no human input', async ({ page }) => {
   await page.goto('/?botDelay=0');
   await page.getByTestId('customize-toggle').click();
