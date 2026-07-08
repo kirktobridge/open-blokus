@@ -289,7 +289,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   before it grades *you*). M3: server work.
 
 ### P15 — Local progression, stats & history
-- **Status:** proposed
+- **Status:** in-progress (M1) — branch `feat/p15-progression-stats`.
 - **Value:** games leave a residue — beating `extreme` the first time should look
   different from losing your first game. Makes P13's named tiers *feel* like a ladder.
 - **Scope / milestones:** M1 localStorage counters — games played, win rate per tier,

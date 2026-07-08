@@ -8,9 +8,13 @@ import { MctsBot } from '../../bgio/bots/MctsBot';
 import type { Color, GameMode, GameState } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { ownersFor } from '../../game/modes';
+import { remainingSquares } from '../../game/scoring';
 import { BlokusBoardView } from '../BlokusBoardView';
 import { useGameRecorder } from '../log/useGameRecorder';
 import type { RecorderClient } from '../log/recorder';
+import { useProgressionRecorder, type ProgressionClient } from '../progression/useProgressionRecorder';
+import { MilestoneToasts } from '../progression/MilestoneToasts';
+import { hardestTier } from '../progression/progression';
 import { SessionActionsContext } from '../lobby/sessionContext';
 import { SettingsPanel } from '../SettingsPanel';
 import { ControlsHelp } from '../ControlsHelp';
@@ -155,6 +159,25 @@ export function LocalAIGame({
 
   const { since: thinkingSince } = useBotRunner(client, botsBySeat, delayForSeat);
 
+  // Record each finished game into local progression (P15) and surface milestone
+  // toasts. Watch games (no human seat) are skipped. "You" is seat 0.
+  const { toasts: milestoneToasts, dismiss: dismissMilestones } = useProgressionRecorder(
+    client as unknown as ProgressionClient,
+    (G, gameover) => {
+      if (humanCount === 0) return null;
+      const you = '0';
+      const owners = G.config.owners;
+      const yourColors = COLOR_ORDER.filter((c) => owners[c] === you);
+      const tiers = botSeats.map((s) => botDifficulties[s] ?? 'easy');
+      return {
+        won: gameover.winners.includes(you),
+        score: gameover.players[you] ?? 0,
+        hardestTier: hardestTier(tiers),
+        perfectClear: yourColors.length > 0 && yourColors.every((c) => remainingSquares(G.colors[c]) === 0),
+      };
+    },
+  );
+
   const state = client.getState();
   if (!state) return <div style={{ padding: 16 }}>Loading…</div>;
 
@@ -222,6 +245,7 @@ export function LocalAIGame({
         </div>
         <BlokusBoardView {...boardProps} botDifficulties={botDifficulties} />
       </div>
+      <MilestoneToasts items={milestoneToasts} onDismiss={dismissMilestones} />
     </SessionActionsContext.Provider>
   );
 }
