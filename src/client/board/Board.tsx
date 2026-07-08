@@ -5,6 +5,7 @@ import { CELL_PX } from '../theme';
 import { usePaletteColors } from '../palettes';
 import { Cell } from './Cell';
 import { PlacedLayer } from './PlacedLayer';
+import { LegalMoveHints, type Hint } from '../advisor/LegalMoveHints';
 
 export interface BoardPreview {
   /** Set of "x,y" keys that the previewed piece would occupy. */
@@ -28,6 +29,7 @@ export function Board({
   onRotate,
   onFlip,
   glowColors,
+  hints,
 }: {
   board: (Color | null)[];
   activeColor: Color;
@@ -44,6 +46,8 @@ export function Board({
   onFlip?: () => void;
   /** Colors whose pieces glow — the game-over winner reveal (P16). */
   glowColors?: Color[];
+  /** Advisor overlay markers — legal-placement hints (P3 R1). Display-only. */
+  hints?: Hint[];
 }) {
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
   const colors = usePaletteColors();
@@ -123,6 +127,7 @@ export function Board({
         lastMove={lastMove}
         glowColors={glowColors}
       />
+      {hints && hints.length > 0 && <LegalMoveHints hints={hints} />}
     </div>
   );
 }

@@ -34,6 +34,19 @@ export function legalMovesForPiece(
 }
 
 /**
+ * Every distinct board cell that *some* legal placement of `pieceId` would cover
+ * — the "where can this piece go" set the P3 R1 advisor highlights. Derived from
+ * `generateLegalMoves`, so it's exactly the engine's legal reach for that piece.
+ */
+export function legalTargetCells(G: GameState, color: Color, pieceId: PieceId): number[] {
+  const cells = new Set<number>();
+  for (const opt of legalMovesForPiece(G, color, pieceId)) {
+    for (const c of opt.cells) cells.add(c);
+  }
+  return [...cells];
+}
+
+/**
  * A color's open "corners": empty cells diagonally adjacent to one of its pieces
  * but not orthogonally adjacent to any (an orthogonally-adjacent cell can never be
  * covered — that's the edge-touch rule). These are exactly the cells a next piece

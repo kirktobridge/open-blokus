@@ -26,17 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P3** (R1) — mid-game advisor legal-placement overlay: pure UI, unblocked today;
-   P4 already built the shared highlight (`src/client/advisor/`) — this is mostly
-   wiring it into the live game view.
-2. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
+1. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
    seeded self-play already exist.
-3. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
+2. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
    nothing blocking.
-4. **P19** — multiplayer identity & reactions: cheap social win; reuses the
+3. **P19** — multiplayer identity & reactions: cheap social win; reuses the
    boardgame.io transport.
-5. **P10** — long-move feedback for the strongest tier: independent, small; closes the
+4. **P10** — long-move feedback for the strongest tier: independent, small; closes the
    ~12 s silent-wait gap on `extreme`.
+5. **P20** (M1) — blitz mode: per-move timer + auto-skip on expiry; UI + turn glue
+   only, no rules-core change.
 
 ---
 
@@ -82,13 +81,13 @@ order runs foundation → offline surfaces → live surfaces.
   (daily-puzzle move grading) — shared payoff.
 
 ### P3 — Mid-game advisor overlay
-- **Status:** proposed (R1 unblocked; R2+ deferred until the evaluator is trustworthy)
+- **Status:** partial — **R1 shipped**; R2+ deferred until the evaluator is trustworthy.
 - **Value:** live in-game guidance without overwhelming the player.
-- **Scope / milestones:** R1 "show legal placements" — **pure UI, unblocked today**
-  (`generateLegalMoves` is exact, F7); the shared highlight is **already built** by P4
-  (`src/client/advisor/` — `LegalMoveHints` + `legalMovesForPiece`), so R1 is mostly
-  wiring it into the live game view. → R2 "suggest 2–3 candidate moves with plain-English
-  reasons" → R3 "heatmaps / strategic priorities."
+- **Scope / milestones:** R1 "show legal placements" — **shipped**: opt-in "Legal moves"
+  toggle in the game view highlighting every square the selected piece can legally land
+  on, tinted in the active player's color (`legalTargetCells` over `generateLegalMoves`,
+  rendered via the shared `src/client/advisor/LegalMoveHints`). → R2 "suggest 2–3
+  candidate moves with plain-English reasons" → R3 "heatmaps / strategic priorities."
 - **Depends on:** R1: nothing. R2+: P1; research AD2 (evaluator) + AD3 (win-prob).
   High UI complexity in R2+.
 
