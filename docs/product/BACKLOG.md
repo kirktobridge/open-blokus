@@ -28,15 +28,15 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 
 1. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
    seeded self-play already exist.
-2. **P15** (M1) — local progression stats: games leave a residue (win rates, streaks);
-   nothing blocking.
-3. **P19** — multiplayer identity & reactions: cheap social win; reuses the
+2. **P19** — multiplayer identity & reactions: cheap social win; reuses the
    boardgame.io transport.
-4. **P20** (M1) — blitz mode: per-move timer + auto-skip on expiry; UI + turn glue
+3. **P20** (M1) — blitz mode: per-move timer + auto-skip on expiry; UI + turn glue
    only, no rules-core change.
-5. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
+4. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
+5. **P18** — bot personas: named AI opponents with light flavor over the shipped
+   tiers; nothing blocking, mostly UI.
 
 ---
 
@@ -289,7 +289,11 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   before it grades *you*). M3: server work.
 
 ### P15 — Local progression, stats & history
-- **Status:** proposed
+- **Status:** partial — **M1 shipped**: a "Your progress" home-screen card backed by
+  a localStorage store (games, per-tier win rate, best score, current/best streak,
+  perfect clears) with one-time milestone toasts (first win vs each tier, perfect
+  clear). M2 (game history list + replay scrubber) pending — shares the scrubber
+  with P2 R0.
 - **Value:** games leave a residue — beating `extreme` the first time should look
   different from losing your first game. Makes P13's named tiers *feel* like a ladder.
 - **Scope / milestones:** M1 localStorage counters — games played, win rate per tier,

@@ -213,6 +213,22 @@ select {
   animation: ob-spin 0.7s linear infinite;
 }
 
+/* Milestone toast (P15) — an achievement pill that rises in when a game unlocks
+   a first win / perfect clear. */
+@keyframes ob-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.ob-toast {
+  animation: ob-toast 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Tutorial (P4) placement hints — a gentle breathing pulse to draw the eye to
    the clickable spots. */
 @keyframes ob-hint-pulse {
@@ -236,7 +252,8 @@ select {
   .ob-glow,
   .ob-beat,
   .ob-hint-pulse,
-  .ob-spin {
+  .ob-spin,
+  .ob-toast {
     animation: none;
   }
   .ob-settle {

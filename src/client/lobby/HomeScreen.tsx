@@ -7,6 +7,7 @@ import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
 import { CreateMatchForm } from './CreateMatchForm';
 import { MatchList } from './MatchList';
 import { HeroBoard } from './HeroBoard';
+import { ProgressionPanel } from '../progression/ProgressionPanel';
 import { SettingsPanel } from '../SettingsPanel';
 import { ControlsHelp } from '../ControlsHelp';
 import {
@@ -282,6 +283,9 @@ export function HomeScreen({
                 </button>
               </div>
             </section>
+
+            {/* Local progression — lifetime vs-AI stats (P15). */}
+            <ProgressionPanel />
           </div>
         </div>
 
