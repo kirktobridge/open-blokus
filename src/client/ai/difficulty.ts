@@ -22,11 +22,16 @@ type MctsTier = Exclude<Difficulty, 'easy'>;
  * `extreme` uses `iterations` (no `timeBudgetMs`) so it searches a fixed amount
  * regardless of wall-clock — the strongest setting on the Run I curve, at the cost
  * of long early-game moves. Tunable — see docs/research/backlog/ai-engine.md (AE10).
+ *
+ * `rankRewardWeight: 0.25` shapes the reward with a rank-normalized placement term
+ * (AE15 / F15): a losing bot fights for 2nd-vs-4th (better final placement/score)
+ * at no measured cost to wins. Validated at truncated rollouts; here rollouts run
+ * to terminal, where the rank term is the *true* final ranking — a stronger signal.
  */
 const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
-  medium: { timeBudgetMs: 500, beam: 6, rolloutDepth: 0, minIterations: 8 },
-  hard: { timeBudgetMs: 2000, beam: 16, rolloutDepth: 0, minIterations: 8 },
-  extreme: { iterations: 500, beam: 20, rolloutDepth: 0, minIterations: 8 },
+  medium: { timeBudgetMs: 500, beam: 6, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
+  hard: { timeBudgetMs: 2000, beam: 16, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
+  extreme: { iterations: 500, beam: 20, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
 };
 
 export function mctsConfigFor(difficulty: MctsTier): Partial<MctsConfig> {
