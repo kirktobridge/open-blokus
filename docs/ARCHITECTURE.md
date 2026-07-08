@@ -481,6 +481,8 @@ client. Networked rooms stay human-only.
 **Recorded decisions (do not silently change — see [GAME_SPEC §10](GAME_SPEC.md)):**
 - Bots are **client-side / offline only**. Networked bot-fill (bots in SocketIO rooms via a
   bot-runner) is **deferred**.
-- One **heuristic** strength for now. **MCTS / difficulty levels deferred** (Blokus' huge
-  branching + long games make untuned MCTS slow and weak).
+- **Four-tier ladder shipped** (easy = heuristic; medium/hard = time-budget MCTS; extreme =
+  fixed-iteration MCTS — [difficulty.ts](../src/client/ai/difficulty.ts)), tuned via research
+  (F6 breaks the heuristic ceiling, F8 per-tier beam) with rank-normalized reward shaping so
+  a losing bot still fights for placement (F15, `rankRewardWeight`). Tuning lives in research.
 - `ai.enumerate` must always mirror `generateLegalMoves`.

@@ -1,0 +1,9 @@
+{
+  "title": "AE19 — extreme MCTS (500 iters, beam 20) vs Pentobi level 4 (2v2)",
+  "seats": [
+    { "kind": "local", "name": "extreme", "strategy": "mcts", "options": { "iterations": 500, "beam": 20, "rolloutDepth": 0, "minIterations": 8 } },
+    { "kind": "pentobi", "name": "pentobi-L4", "level": 4 },
+    { "kind": "local", "name": "extreme", "strategy": "mcts", "options": { "iterations": 500, "beam": 20, "rolloutDepth": 0, "minIterations": 8 } },
+    { "kind": "pentobi", "name": "pentobi-L4", "level": 4 }
+  ]
+}

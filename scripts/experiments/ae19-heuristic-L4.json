@@ -1,0 +1,9 @@
+{
+  "title": "AE19 — heuristic vs Pentobi level 4 (2v2)",
+  "seats": [
+    { "kind": "local", "name": "heuristic", "strategy": "heuristic" },
+    { "kind": "pentobi", "name": "pentobi-L4", "level": 4 },
+    { "kind": "local", "name": "heuristic", "strategy": "heuristic" },
+    { "kind": "pentobi", "name": "pentobi-L4", "level": 4 }
+  ]
+}

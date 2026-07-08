@@ -41,7 +41,9 @@ function table(
     console.log(
       `  ${row.name.padEnd(18)} ${(row.meanRate * 100).toFixed(1).padStart(5)}% ` +
         `±${(row.stdRate * 100).toFixed(1).padStart(4)}  ` +
-        `game-share ${(row.meanGameShare * 100).toFixed(0).padStart(3)}%  ${bar}`,
+        `game-share ${(row.meanGameShare * 100).toFixed(0).padStart(3)}%  ` +
+        `place ${row.meanPlacement.toFixed(2)}±${row.stdPlacement.toFixed(2)}  ` +
+        `placed ${row.meanPlacedSquares.toFixed(1).padStart(4)}±${row.stdPlacedSquares.toFixed(1)}  ${bar}`,
     );
   }
 }

@@ -72,6 +72,15 @@ export interface MctsConfig {
    * decoupled from any model; ignored on the RAVE path (needs rollout moves).
    */
   leafValue?: (G: GameState) => ArrayLike<number>;
+  /**
+   * Reward shaping (AE15): blend a rank-normalized placement term into the
+   * winner-take-all reward so a losing color still fights for 2nd vs 4th. The
+   * per-color reward becomes `(1−w)·winner + w·rankNorm`, where `rankNorm` is
+   * Pentobi's ties-averaged rank result `(beaten + (tied−1)/2)/(n−1)` over placed
+   * squares (best→1, worst→0). `0` = pure winner-take-all (default, byte-identical
+   * to the pre-AE15 reward); `1` = pure rank-normalized margin.
+   */
+  rankRewardWeight: number;
 }
 
 const DEFAULTS: MctsConfig = {
@@ -83,6 +92,7 @@ const DEFAULTS: MctsConfig = {
   beam: 16,
   rave: false,
   raveK: 1000,
+  rankRewardWeight: 0,
 };
 
 interface Node {
@@ -159,13 +169,36 @@ function untriedMoves(node: Node, cfg: MctsConfig): Placement[] {
   return (node.untried = moves);
 }
 
-/** Reward vector: placed-square leader(s) get 1/|leaders|, everyone else 0. */
-function rewardVector(G: GameState): Float64Array {
+/**
+ * Reward vector over COLOR_ORDER. Base term is winner-take-all: placed-square
+ * leader(s) get 1/|leaders|, everyone else 0. With `cfg.rankRewardWeight > 0`
+ * (AE15) a rank-normalized placement term is blended in so a losing color still
+ * has a gradient between 2nd and 4th: `(1−w)·winner + w·rankNorm`, where rankNorm
+ * is Pentobi's ties-averaged rank `(beaten + (tied−1)/2)/(n−1)` (best→1, worst→0).
+ * At w=0 this is byte-identical to the pre-AE15 winner-take-all vector.
+ */
+function rewardVector(G: GameState, cfg: MctsConfig): Float64Array {
   const placed = COLOR_ORDER.map((c) => TOTAL_SQUARES - remainingSquares(G.colors[c]));
   const max = Math.max(...placed);
   const leaders = placed.filter((p) => p === max).length;
   const r = new Float64Array(COLOR_ORDER.length);
-  for (let i = 0; i < placed.length; i++) r[i] = placed[i] === max ? 1 / leaders : 0;
+  const w = cfg.rankRewardWeight;
+  const n = COLOR_ORDER.length;
+  for (let i = 0; i < placed.length; i++) {
+    const winner = placed[i] === max ? 1 / leaders : 0;
+    if (w <= 0) {
+      r[i] = winner;
+      continue;
+    }
+    let beaten = 0;
+    let tied = 0;
+    for (let j = 0; j < placed.length; j++) {
+      if (placed[j] < placed[i]) beaten++;
+      else if (placed[j] === placed[i]) tied++;
+    }
+    const rankNorm = (beaten + (tied - 1) / 2) / (n - 1);
+    r[i] = (1 - w) * winner + w * rankNorm;
+  }
   return r;
 }
 
@@ -311,7 +344,7 @@ function rollout(G: GameState, cfg: MctsConfig, rng: () => number): Float64Array
     }
     idx = (idx + 1) % COLOR_ORDER.length;
   }
-  return rewardVector(g);
+  return rewardVector(g, cfg);
 }
 
 function backprop(leaf: Node, reward: Float64Array): void {
@@ -351,7 +384,7 @@ function rolloutRave(
     }
     idx = (idx + 1) % COLOR_ORDER.length;
   }
-  return rewardVector(g);
+  return rewardVector(g, cfg);
 }
 
 /**
@@ -453,11 +486,11 @@ export function mctsSearch(
     const leaf = treePolicy(root, cfg, rng);
     if (cfg.rave) {
       const played = COLOR_ORDER.map(() => new Set<string>());
-      const reward = leaf.terminal ? rewardVector(leaf.G) : rolloutRave(leaf.G, cfg, rng, played);
+      const reward = leaf.terminal ? rewardVector(leaf.G, cfg) : rolloutRave(leaf.G, cfg, rng, played);
       backpropRave(leaf, reward, played);
     } else {
       const reward = leaf.terminal
-        ? rewardVector(leaf.G)
+        ? rewardVector(leaf.G, cfg)
         : cfg.leafValue
           ? Float64Array.from(cfg.leafValue(leaf.G) as number[])
           : rollout(leaf.G, cfg, rng);

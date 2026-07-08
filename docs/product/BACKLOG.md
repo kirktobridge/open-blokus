@@ -141,6 +141,9 @@ this epic owns the user-facing feature + its UX.
   matches with bots is a separate feature (server- or client-driven, plus turn-order
   and disconnect handling). Noted deferred in ARCHITECTURE §9.
 - **Value:** start/again online games without waiting for a full human lobby.
+  Also the escape hatch from the client-side compute ceiling (research F14/AE25):
+  a server-hosted engine could power an *online-only* tier beyond what the
+  browser can reach (Pentobi L7+ compute).
 - **Depends on:** server integration decisions; reuses the shipped bot strategies.
 
 ### P13 — Ladder calibration policy (tiers as strength contracts)

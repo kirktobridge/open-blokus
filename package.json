@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "serve": "vite-node src/server/index.ts",
     "arena": "vite-node src/game/ai/arena.cli.ts",
+    "arena:pentobi": "vite-node src/game/ai/pentobi/run.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

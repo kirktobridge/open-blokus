@@ -1,0 +1,25 @@
+{
+  "title": "AE15: rank-normalized reward shaping (w=0.25) vs winner-take-all, matched budget",
+  "seats": [
+    {
+      "name": "shaped",
+      "strategy": "mcts",
+      "options": { "iterations": 48, "rolloutDepth": 12, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25 }
+    },
+    {
+      "name": "plain",
+      "strategy": "mcts",
+      "options": { "iterations": 48, "rolloutDepth": 12, "beam": 16, "minIterations": 8, "rankRewardWeight": 0 }
+    },
+    {
+      "name": "shaped",
+      "strategy": "mcts",
+      "options": { "iterations": 48, "rolloutDepth": 12, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25 }
+    },
+    {
+      "name": "plain",
+      "strategy": "mcts",
+      "options": { "iterations": 48, "rolloutDepth": 12, "beam": 16, "minIterations": 8, "rankRewardWeight": 0 }
+    }
+  ]
+}

@@ -619,3 +619,81 @@ strength claim — this is pure tooling throughput.
 shipped, both byte-identical (golden test + diff). Sub-item 3 (trainer feature-cache,
 <10 s) deferred with the dormant value-net path. → AE18 closed. Bench
 `scripts/bench-driver.ts`.
+
+### Run R — External baseline: our tiers vs Pentobi over GTP (AE19)
+
+**Question (AE19):** where do our bots sit on Pentobi's calibrated 1–9 ladder — the
+de-facto external reference — so strength becomes absolute, not self-relative?
+
+**Infra.** New GTP bridge in `src/game/ai/pentobi/` (`gtp.ts` async subprocess
+wrapper, `coords.ts` mapping, `arena.ts` async 2v2 driver, `run.ts` runner,
+`npm run arena:pentobi`). Pentobi 23.1's Ubuntu package is GUI-only, so `pentobi-gtp`
+is built from source — no Boost, static cmake, `cmake -DPENTOBI_BUILD_GUI=OFF
+-DPENTOBI_BUILD_GTP=ON` (~6 s) → `~/.local/share/pentobi-gtp/`. Coord map verified
+against Pentobi's forced corner openers (blue→a20, yellow→t20, red→t1, green→a1 =
+our CORNERS): `x = col-'a'`, `y = 20-row`. **Our GameState is authoritative** — every
+move (ours *and* Pentobi's) is applied to `G`, the winner is `finalScores(G)`, and
+because each Pentobi move must resolve to one of our legal moves, every bridged game
+is replay-verified against our rules core for free (0 desync/mismatch across all
+runs; `tests/pentobiCoords.test.ts` locks the mapping). 4p Classic, 2v2 (2 our seats
++ 2 Pentobi), seat-rotated, seed-averaged; game-share null = 50%. Configs
+`scripts/experiments/ae19-*.json` + `ae19-sweep.sh` / `ae19-extreme-power.sh`.
+
+**Result** — game-share of *our* team, Wilson 95% CI, `n` games:
+
+| our bot            | vs L1                    | vs L2                   | vs L3                  | vs L4                |
+|--------------------|--------------------------|-------------------------|------------------------|----------------------|
+| heuristic (easy)   | 21.2% [16.5,26.9] n=240  | 10.5% [7.2,15.0] n=240  | 3.7% [1.9,6.9] n=240   | 0.1% [0,1.8] n=240   |
+| MCTS 150-iter      | 43.1% [36.4,50.0] n=200  | 31.9% [25.8,38.7] n=200 | 19.4% [14.5,25.5] n=200| —                    |
+| extreme (500-iter) | **61.8% [54.9,68.2] n=200** | 45.3% [35.9,55.1] n=100 | —                  | —                    |
+
+**Read.** Pentobi is strong: our shipped **easy tier is CI-clear below L1** (21%),
+decaying monotonically to ~0% by L4 — the clean monotone ladder cross-checks the
+coord mapping. Mid MCTS (150 iters) is a hair below L1 (43%, CI upper just touches
+50). Our **extreme tier beats Pentobi L1 CI-clear** (61.8%, n=200) and is ~even with
+L2 (45.3%, inconclusive at n=100) — so it sits **between L1 and L2**. The jump from
+150→500 iters (43%→62% vs L1) re-confirms F6 (MCTS scales with compute). Highest
+level we beat CI-clear = **L1**. First *absolute* strength number for OpenBlokus;
+every prior figure was self-relative.
+
+**Decision:** won — bridge shipped (measurement infra, AE6 precedent) + ladder
+placed: easy < L1, extreme ≈ L1–L2 (beats L1 CI-clear, even-ish vs L2). Standing
+external readout for future AE entries. extreme-vs-L2 left directional (n=100); a
+firm L2 call is a cheap follow-up if a candidate claims to reach it. → AE19 closed.
+
+### Run S — Score-margin reward shaping: rank-normalized reward vs winner-take-all (AE15)
+Does blending Pentobi's rank-normalized placement term into the winner-take-all
+reward make a losing bot fight for 2nd-vs-4th without costing wins? (backlog AE15)
+Head-to-head, 2 shaped seats vs 2 plain seats, matched MCTS budget (iters 48,
+rolloutDepth 12, beam 16), differing only in `rankRewardWeight`. Reward becomes
+`(1−w)·winner + w·rankNorm`, rankNorm = ties-averaged `(beaten+(tied−1)/2)/(n−1)`
+over placed squares. Configs `scripts/experiments/ae15.json` (w=0.5),
+`ae15-w025.json` (w=0.25). n=600 each (25×24 seeds, baseSeed 5); game-share pooled
+with a 48-game directional probe (baseSeed 1, disjoint seeds) → n=648. Placement
+lower = better; placed = 89 − remaining, higher = better. Placement diff CI uses the
+exact within-game anti-pairing (shaped-seat mean + plain-seat mean = 5 ⇒ std_d =
+2·seed-std, df=23); placed diff CI assumes seed independence (conservative).
+
+| w    | placement shaped−plain (95% CI) | placed shaped−plain (95% CI) | shaped game-share (Wilson, n=648) |
+|------|---------------------------------|------------------------------|-----------------------------------|
+| 0.25 | **−0.24 [−0.35, −0.13]**        | **+1.30 [+0.64, +1.96]**     | **53.2% [49.4, 57.1]**            |
+| 0.50 | −0.16 [−0.27, −0.05]            | +1.20 [+0.60, +1.80]         | 49.2% [45.4, 53.1]                |
+
+Directional single-seed n=8 probe first showed shaped *losing* game-share 31/69 —
+pure M1 noise; it inverted by n=48 and held through n=600.
+
+**Read.** Both weights improve final placement and placed squares CI-clear — the
+winner-take-all reward genuinely left a gradient on the table between 2nd and 4th.
+The split is on the win guard: **w=0.25 keeps game-share CI above the 48% floor**
+(lower bound 49.4%, even leans >50%, one-sided p=0.049), while **w=0.5 over-trades**
+— placement still improves but game-share CI sinks to 45.4%, under the floor. That's
+the M4 fit-check firing exactly as AE15 pre-registered it: heavy score-greed conflicts
+with win-seeking. Light shaping sits in the sweet spot — a losing bot fills ~1.3 more
+squares and ranks ~0.24 higher without paying in wins.
+
+**Decision:** won at **w=0.25** — clears AE15's bar (placement/score improve CI-clear,
+game-share CI ≥ 48%). w=0.5 rejected (guard fail). `rankRewardWeight` default stays 0
+(byte-identical, AE18 golden intact); 0.25 is the recommended shipping value. Feeds
+the advisor a non-degenerate value signal in lost positions (AD2/AD3). Product ship
+decision (P13): this is a *lost-position* behavior lever, not a ceiling lever, so it's
+a retune-in-place for existing tiers, never a new rung — hand to /ship.
