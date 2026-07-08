@@ -123,7 +123,7 @@ this epic owns the user-facing feature + its UX.
 - **Remaining:** long-move UX for `extreme` (→ P10).
 
 ### P10 — Long-move feedback for the strongest tier
-- **Status:** proposed (independent; small).
+- **Status:** in-progress (independent; small). — branch `feat/p10-long-move-feedback`.
 - **Value:** `extreme` has *no time budget*, so early-game moves take ~12 s; the plain
   "AI thinking…" text shows no progress and can read as "stuck / broken." The strongest
   tier shouldn't feel frozen.

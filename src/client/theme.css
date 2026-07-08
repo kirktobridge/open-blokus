@@ -201,6 +201,18 @@ select {
   animation: ob-beat 2800ms ease-in-out forwards;
 }
 
+/* AI-thinking spinner (P10) — a spinning ring next to the "AI thinking… Ns"
+   elapsed counter, so a long search (slow `extreme` tier) reads as working, not
+   frozen. */
+@keyframes ob-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ob-spin {
+  animation: ob-spin 0.7s linear infinite;
+}
+
 /* Tutorial (P4) placement hints — a gentle breathing pulse to draw the eye to
    the clickable spots. */
 @keyframes ob-hint-pulse {
@@ -223,7 +235,8 @@ select {
   .ob-settle,
   .ob-glow,
   .ob-beat,
-  .ob-hint-pulse {
+  .ob-hint-pulse,
+  .ob-spin {
     animation: none;
   }
   .ob-settle {

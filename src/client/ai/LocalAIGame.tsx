@@ -17,6 +17,7 @@ import { ControlsHelp } from '../ControlsHelp';
 import { ICON_CHIP, FONT_MONO, FONT_UI } from '../theme';
 import { LeaveIcon } from '../icons';
 import { useBotRunner } from './useBotRunner';
+import { AiThinkingIndicator } from './AiThinkingIndicator';
 import { mctsConfigFor, type Difficulty } from './difficulty';
 
 /**
@@ -152,7 +153,7 @@ export function LocalAIGame({
     };
   }, [client]);
 
-  const thinking = useBotRunner(client, botsBySeat, delayForSeat);
+  const { since: thinkingSince } = useBotRunner(client, botsBySeat, delayForSeat);
 
   const state = client.getState();
   if (!state) return <div style={{ padding: 16 }}>Loading…</div>;
@@ -203,17 +204,7 @@ export function LocalAIGame({
           <span style={{ fontSize: 12.5, color: 'var(--top-mut)' }}>
             {humanCount} human / {aiCount} AI
           </span>
-          <span
-            data-testid="ai-thinking"
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 12,
-              color: 'var(--top-mut)',
-              visibility: thinking ? 'visible' : 'hidden',
-            }}
-          >
-            AI thinking…
-          </span>
+          <AiThinkingIndicator since={thinkingSince} />
 
           <span style={{ flex: 1 }} />
 
