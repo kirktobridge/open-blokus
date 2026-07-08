@@ -32,10 +32,11 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    nothing blocking.
 3. **P19** — multiplayer identity & reactions: cheap social win; reuses the
    boardgame.io transport.
-4. **P10** — long-move feedback for the strongest tier: independent, small; closes the
-   ~12 s silent-wait gap on `extreme`.
-5. **P20** (M1) — blitz mode: per-move timer + auto-skip on expiry; UI + turn glue
+4. **P20** (M1) — blitz mode: per-move timer + auto-skip on expiry; UI + turn glue
    only, no rules-core change.
+5. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
+   "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
+   scrubber shared with P15 M2.
 
 ---
 
@@ -120,10 +121,13 @@ this epic owns the user-facing feature + its UX.
   [difficulty.ts](../../src/client/ai/difficulty.ts) + ARCHITECTURE §9.
 - **Value:** single-player practice at a real, verified difficulty ramp; mix opponent
   strengths for asymmetric practice.
-- **Remaining:** long-move UX for `extreme` (→ P10).
+- **Remaining:** none — long-move UX for `extreme` shipped as P10.
 
 ### P10 — Long-move feedback for the strongest tier
-- **Status:** in-progress (independent; small). — branch `feat/p10-long-move-feedback`.
+- **Status:** shipped — the "AI thinking…" indicator now shows a spinner + live
+  elapsed-seconds counter, with a "· deep search" note once a move runs past 8 s
+  (`AiThinkingIndicator` renders off `useBotRunner`'s per-move `since` timestamp).
+  Client-only; no engine/worker change.
 - **Value:** `extreme` has *no time budget*, so early-game moves take ~12 s; the plain
   "AI thinking…" text shows no progress and can read as "stuck / broken." The strongest
   tier shouldn't feel frozen.
