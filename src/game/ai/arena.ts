@@ -122,6 +122,9 @@ export function playGame(
 
 // --- Tournament -----------------------------------------------------------
 
+/** Total squares one color owns across all 21 pieces (sum of sizes). */
+const TOTAL_SQUARES = 89;
+
 export interface TournamentResult {
   /** Wins credited to each contestant name (ties split evenly). */
   wins: Record<string, number>;
@@ -129,6 +132,14 @@ export interface TournamentResult {
   played: Record<string, number>;
   /** Win rate = wins / played. */
   winRate: Record<string, number>;
+  /**
+   * Summed final placement (rank, ties averaged; 1 = best) over each name's seats
+   * (AE15). Mean placement = placement / played. Ranking is by placed squares,
+   * matching the basic-scoring winner order.
+   */
+  placement: Record<string, number>;
+  /** Summed final placed squares (89 − remaining) over each name's seats (AE15). */
+  placedSquares: Record<string, number>;
   games: number;
   ties: number;
 }
@@ -152,11 +163,15 @@ export function runTournament(
   const rng = mulberry32(seed);
   const wins: Record<string, number> = {};
   const played: Record<string, number> = {};
+  const placement: Record<string, number> = {};
+  const placedSquares: Record<string, number> = {};
   let ties = 0;
 
   for (const c of contestants) {
     wins[c.name] ??= 0;
     played[c.name] ??= 0;
+    placement[c.name] ??= 0;
+    placedSquares[c.name] ??= 0;
   }
 
   for (let g = 0; g < games; g++) {
@@ -170,7 +185,7 @@ export function runTournament(
     });
     for (const c of contestants) played[c.name] += 1;
 
-    const { winners } = playGame(byColor, { mode, scoring, rng });
+    const { winners, colors } = playGame(byColor, { mode, scoring, rng });
     // winners are playerIDs; in 4p each color is its own player ("0".."3").
     // Map winner playerIDs back to colors via owners, then to names.
     const winColors = COLOR_ORDER.filter(
@@ -179,13 +194,29 @@ export function runTournament(
     if (winColors.length !== 1) ties += 1;
     const share = winColors.length ? 1 / winColors.length : 0;
     for (const color of winColors) wins[seatName[color]] += share;
+
+    // Placement + placed-squares readouts (AE15). Under basic scoring
+    // colors[color] = remaining squares, so placed = 89 − remaining and lower
+    // remaining ranks better. Ties averaged: rank = 1 + strictly-better +
+    // (tied − 1)/2, matching the winner ordering above.
+    const placed = COLOR_ORDER.map((color) => TOTAL_SQUARES - colors[color]);
+    COLOR_ORDER.forEach((color, i) => {
+      let better = 0;
+      let tied = 0;
+      for (const p of placed) {
+        if (p > placed[i]) better++;
+        else if (p === placed[i]) tied++;
+      }
+      placement[seatName[color]] += 1 + better + (tied - 1) / 2;
+      placedSquares[seatName[color]] += placed[i];
+    });
   }
 
   const winRate: Record<string, number> = {};
   for (const name of Object.keys(wins)) {
     winRate[name] = played[name] ? wins[name] / played[name] : 0;
   }
-  return { wins, played, winRate, games, ties };
+  return { wins, played, winRate, placement, placedSquares, games, ties };
 }
 
 /** In 4p each color owns its own playerID, equal to its turn-order index. */
@@ -203,6 +234,14 @@ export interface AveragedRow {
   stdRate: number;
   /** Mean share of *games* won (wins / games), summed over a name's seats. */
   meanGameShare: number;
+  /** Mean final placement (rank, 1 = best) across seeds (AE15). */
+  meanPlacement: number;
+  /** Sample std of the per-seed mean placement (AE15). */
+  stdPlacement: number;
+  /** Mean final placed squares (89 − remaining) across seeds (AE15). */
+  meanPlacedSquares: number;
+  /** Sample std of the per-seed mean placed squares (AE15). */
+  stdPlacedSquares: number;
 }
 
 export interface AveragedResult {
@@ -232,6 +271,8 @@ export function runTournamentSeeds(
 
   const rateSamples: Record<string, number[]> = Object.fromEntries(names.map((n) => [n, []]));
   const shareSamples: Record<string, number[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const placementSamples: Record<string, number[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const placedSamples: Record<string, number[]> = Object.fromEntries(names.map((n) => [n, []]));
   let tieTotal = 0;
 
   for (let s = 0; s < seeds; s++) {
@@ -239,6 +280,8 @@ export function runTournamentSeeds(
     for (const n of names) {
       rateSamples[n].push(r.winRate[n]);
       shareSamples[n].push(r.wins[n] / r.games);
+      placementSamples[n].push(r.played[n] ? r.placement[n] / r.played[n] : 0);
+      placedSamples[n].push(r.played[n] ? r.placedSquares[n] / r.played[n] : 0);
     }
     tieTotal += r.ties;
   }
@@ -256,6 +299,10 @@ export function runTournamentSeeds(
       meanRate: mean(rateSamples[name]),
       stdRate: std(rateSamples[name]),
       meanGameShare: mean(shareSamples[name]),
+      meanPlacement: mean(placementSamples[name]),
+      stdPlacement: std(placementSamples[name]),
+      meanPlacedSquares: mean(placedSamples[name]),
+      stdPlacedSquares: std(placedSamples[name]),
     }))
     .sort((a, b) => b.meanRate - a.meanRate);
 

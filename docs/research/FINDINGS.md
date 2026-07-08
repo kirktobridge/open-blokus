@@ -82,6 +82,22 @@ core every game. Method note (M): CPU contention is safe to oversubscribe here
 because both our fixed-iteration tiers and Pentobi's simulation-based levels are
 strength-invariant to wall-clock — only run-time changes.
 
+### F15 — Light rank-normalized reward shaping wins placement for free; heavy over-trades
+`significant`. The winner-take-all placed-leader reward left a real gradient on the
+table between 2nd and 4th. Blending Pentobi's ties-averaged rank-normalized term into
+it — reward `(1−w)·winner + w·rankNorm`, `rankNorm = (beaten+(tied−1)/2)/(n−1)` over
+placed squares — improves a losing bot's final standing **at no cost to wins, at the
+right weight** (Run S, AE15, n=600 head-to-head + n=648 pooled game-share). At
+**w=0.25**: placement −0.24 (CI [−0.35,−0.13]), placed squares +1.3 (CI [+0.64,+1.96]),
+game-share 53.2% (CI [49.4,57.1] — clears the 48% guard, leans >50%). At **w=0.5** the
+placement gain persists but game-share CI sinks to 45.4%, under the floor — score-greed
+starts fighting win-seeking, the exact M4 conflict AE15 pre-registered. Shipping value
+is **w=0.25**; default `rankRewardWeight` stays 0 (byte-identical, F13/AE18 golden
+intact). Twofold payoff: better lost-position behaviour for players, and a
+non-degenerate value signal for the advisor (AD2/AD3) where winner-take-all reads a
+flat 0. Per P13 this is a lost-position lever (not a ceiling lever) → retune tiers
+in place, not a new rung.
+
 ---
 
 ## Engine

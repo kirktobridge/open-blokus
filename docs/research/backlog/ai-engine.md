@@ -16,9 +16,13 @@ The dependency-ready head, highest-payoff first — the authoritative "what to r
 Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
 test (product P21) fails CI if any ID here is missing or terminal.
 
-1. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change.
-2. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
-3. **AE20** — Gumbel root search: policy improvement at the starved medium budget.
+1. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change;
+   Pentobi's gamma-sampled playout is the reference spec.
+2. **AE24** — trained softmax move priors: the main share of the ~17× per-simulation
+   quality gap vs Pentobi (F14).
+3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
+   quality is fixed; no deployment changes needed.
+4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
 
 ---
 
@@ -182,7 +186,11 @@ test (product P21) fails CI if any ID here is missing or terminal.
   full-vs-truncated swing supports it.
 - **Method:** variants of `rolloutMove` in `mcts.ts` behind config; arena vs current
   policy at matched 500 ms/move, `scripts/experiments/ae11.json`, ≥600 pooled games,
-  multi-seed shards.
+  multi-seed shards. **Reference spec (F14 follow-up):** Pentobi's playouts sample
+  moves ∝ softmax feature gammas with *incrementally updated* per-color move lists
+  (`libpentobi_mcts/State.cpp:gen_playout_move_full`, github.com/enz/pentobi) —
+  the existence proof that a policy-guided playout carries L1-beating strength at
+  single-digit simulation counts (Run R).
 - **Success criteria:** game-share Wilson CI clears 52% vs the current rollout policy
   at matched wall-clock over ≥600 games.
 - **Cost / risk:** small — ~30-line policy swaps; risk is added per-move cost eating
@@ -245,7 +253,13 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE15 — Score-margin reward shaping
-- **Status:** proposed
+- **Status:** won (w=0.25) — Run S / [F15](../FINDINGS.md). Light rank-normalized
+  shaping `(1−w)·winner + w·rankNorm` at w=0.25 improves placement (−0.24, CI clear)
+  and placed squares (+1.3, CI clear) with game-share 53.2% (CI [49.4,57.1], clears
+  the 48% guard); w=0.5 over-trades (game-share CI 45.4% < floor, the M4 conflict).
+  Config knob `rankRewardWeight` in [mcts.ts](../../../src/game/ai/mcts.ts) (default
+  0 = byte-identical). Ship as a retune-in-place per P13 (lost-position lever, not a
+  new rung) → hand to /ship; also feeds AD2/AD3 a non-degenerate lost-position value.
 - **Objective:** make bots fight for placement/score when the win is out of reach.
 - **Hypothesis:** the winner-take-all reward leaves a losing bot indifferent
   between 2nd and 4th; blending a placed-squares-margin term into the reward
@@ -256,14 +270,26 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Method:** shaped `rewardVector` behind config (e.g. reward = w·win +
   (1−w)·normalized margin); arena vs plain reward at matched budget; primary
   readout mean placement + mean score, guard readout game-share; ≥600 pooled games.
+  **Reference form (F14 follow-up, upgrades the M4 assumption to
+  reference-proven):** Pentobi's multiplayer reward is the rank-normalized result
+  `rank/(n−1)` (ties averaged) plus quality bonuses
+  `0.3·sigmoid(2,(score−μ)/σ)` and a `−0.12·(result−0.5)·sigmoid(...)` game-length
+  term, both normalized by running search statistics
+  (`libpentobi_mcts/State.cpp:get_quality_bonus`, github.com/enz/pentobi; Pepels
+  et al., *Quality-based Rewards for MCTS Simulations*, ECAI 2014). Start from
+  these constants; our current reward is winner-take-all placed-leader, which
+  discards the 2nd-vs-4th signal entirely.
 - **Success criteria:** mean placement/score improves (CI clear) while game-share
   CI does not fall below 48%.
 - **Cost / risk:** small; also feeds the advisor (AD2/AD3) a less degenerate value
   signal in lost positions.
-- **Log:** —
+- **Log:** Run S → [F15](../FINDINGS.md)
 
 ### AE16 — Opening book
-- **Status:** proposed
+- **Status:** proposed (deprioritized for 4p Classic, 2026-07-07 — Pentobi's own
+  shipped `book_classic.blksgf` is 173 *bytes* vs Duo's 22.5 KB: even the reference
+  engine found books barely worth having on the 4p Classic start. The latency half
+  of the objective stands; revisit the strength half with P20 M2 / Duo.)
 - **Objective:** kill worst-case early-move latency (extreme tier: tens of seconds)
   and bank strength on the fixed start position.
 - **Hypothesis:** moves 1–3 recur across games (fixed corners, symmetric start), so
@@ -458,4 +484,65 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** large and open-ended — state-space growth may wall at 7×7;
   the ladder keeps the spend incremental. Shares exact-search machinery with
   AE13 (endgame solver).
+- **Log:** —
+
+### AE24 — Trained softmax move priors (soft pruning replaces the beam)
+- **Status:** proposed — the primary F14 follow-up. Pentobi Classic L1/L2 use **3/30
+  simulations** (`libpentobi_mcts/Player.cpp` level counts, github.com/enz/pentobi)
+  yet L2 matches our 500-iteration extreme: a ~17× per-simulation quality gap, and
+  its prior knowledge is the biggest identifiable share.
+- **Objective:** initialize children at expansion with a move prior + value from
+  `gamma = exp(φ·x)` over a small feature vector, replacing the fixed heuristic
+  beam's hard cutoff with soft pruning (every legal child kept, priors steer).
+- **Hypothesis:** Pentobi's feature set — attach-point structure, adjacency to
+  own/opponent colors, locality to recent opponent attach points, per-piece gamma,
+  opening dist-to-center pruning, child value init `root_val·sqrt(gamma/max_gamma)`
+  (`libpentobi_mcts/PriorKnowledge.h`) — transfers to our engine and closes a large
+  part of that gap at matched iterations. Assumption (M4): per-expansion feature
+  cost stays small enough on the AE9 bitboards (Pentobi amortizes it with
+  incremental structures); measure iters/s alongside.
+- **Method:** staged with a cheap gate. **A — hand-set gammas:** implement feature
+  extraction on the bitboards, weights hand-tuned from Pentobi's published
+  semantics; arena vs incumbent extreme at matched iterations. **B — only if A
+  moves the needle:** softmax-train the ~20 weights from self-play outcomes
+  (Pentobi precedent: `learn_tool/`), reusing the dormant AE4 pipeline
+  (`selfplay-dump` + trainer, AE18's `--jobs` sharding). **C —** standing external
+  readout: extreme+priors vs Pentobi L2 (then L3), n≥200 per level
+  (`npm run arena:pentobi`).
+- **Success criteria:** game-share vs incumbent extreme at matched iterations,
+  Wilson 95% CI lower bound > 52%, ≥600 pooled games; external ladder readout
+  reported either way. Stage-A gate: directional win (≥55% point estimate, n≥200)
+  before investing in the training pipeline.
+- **Cost / risk:** moderate–large. Feature cost per expansion is the main risk;
+  correctness guarded by the differential-test pattern (F12). Likely subsumes AE14
+  (progressive widening) and strengthens AE20 (Gumbel wants priors). AE3's RAVE
+  no-win is worth a cheap revisit *after* this lands — Pentobi runs RAVE in
+  combination with priors + policy playouts, not alone.
+- **Log:** —
+
+### AE25 — WASM(+SIMD) search core (the client-side JS ceiling, part 1)
+- **Status:** proposed — sequence *after* the knowledge track (AE15/AE11/AE24)
+  stabilizes the engine, so the port happens once.
+- **Objective:** raise per-core iters/s by porting the hot loop (bitboard move-gen +
+  playout) to WASM with SIMD; the TS implementation stays as the byte-identical
+  differential reference (F12 pattern). Browser workers and the Node arena load the
+  same module, so research and shipped bots remain one engine.
+- **Hypothesis:** ≥2× iters/s over the AE9 TS bitboard path (2–4× expected — the JS
+  is already bitboard-optimized, so not 10×); by F6, each budget doubling ≈ +5 pts.
+- **Method:** Rust→wasm (or AssemblyScript) module exposing move-gen + rollout;
+  golden differential tests vs the TS path (byte-identical move streams); iters/s
+  via `scripts/profile-mcts.ts`; strength via F12's framing — identical output at
+  fixed iterations means matched wall-clock is an iteration-ratio head-to-head,
+  ≥600 pooled games.
+- **Success criteria:** ≥2× iters/s with byte-identical output, and matched
+  wall-clock game-share vs the TS engine with Wilson CI clear of 52%.
+- **Cost / risk:** large — toolchain, Vite/worker build plumbing, and permanent
+  dual-implementation maintenance. **Ceiling notes:** (a) shared-memory tree
+  parallelism (WASM threads / SharedArrayBuffer) is deliberately out of scope
+  behind a deployment constraint — it requires COOP/COEP cross-origin isolation
+  headers on the app *and* assets; verify hosting supports them before any part-2
+  entry. (b) Root-parallel workers (AE17) need none of that and stack with this
+  entry (~10–15× combined at fixed wall-clock ≈ Pentobi-L6 compute). (c) The full
+  escape to L7+ compute (70k–1.7M sims/move) is server-hosted bots — product P11
+  territory, an online-only-tier product decision, not a research lever.
 - **Log:** —

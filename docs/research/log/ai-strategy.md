@@ -660,3 +660,40 @@ every prior figure was self-relative.
 placed: easy < L1, extreme ≈ L1–L2 (beats L1 CI-clear, even-ish vs L2). Standing
 external readout for future AE entries. extreme-vs-L2 left directional (n=100); a
 firm L2 call is a cheap follow-up if a candidate claims to reach it. → AE19 closed.
+
+### Run S — Score-margin reward shaping: rank-normalized reward vs winner-take-all (AE15)
+Does blending Pentobi's rank-normalized placement term into the winner-take-all
+reward make a losing bot fight for 2nd-vs-4th without costing wins? (backlog AE15)
+Head-to-head, 2 shaped seats vs 2 plain seats, matched MCTS budget (iters 48,
+rolloutDepth 12, beam 16), differing only in `rankRewardWeight`. Reward becomes
+`(1−w)·winner + w·rankNorm`, rankNorm = ties-averaged `(beaten+(tied−1)/2)/(n−1)`
+over placed squares. Configs `scripts/experiments/ae15.json` (w=0.5),
+`ae15-w025.json` (w=0.25). n=600 each (25×24 seeds, baseSeed 5); game-share pooled
+with a 48-game directional probe (baseSeed 1, disjoint seeds) → n=648. Placement
+lower = better; placed = 89 − remaining, higher = better. Placement diff CI uses the
+exact within-game anti-pairing (shaped-seat mean + plain-seat mean = 5 ⇒ std_d =
+2·seed-std, df=23); placed diff CI assumes seed independence (conservative).
+
+| w    | placement shaped−plain (95% CI) | placed shaped−plain (95% CI) | shaped game-share (Wilson, n=648) |
+|------|---------------------------------|------------------------------|-----------------------------------|
+| 0.25 | **−0.24 [−0.35, −0.13]**        | **+1.30 [+0.64, +1.96]**     | **53.2% [49.4, 57.1]**            |
+| 0.50 | −0.16 [−0.27, −0.05]            | +1.20 [+0.60, +1.80]         | 49.2% [45.4, 53.1]                |
+
+Directional single-seed n=8 probe first showed shaped *losing* game-share 31/69 —
+pure M1 noise; it inverted by n=48 and held through n=600.
+
+**Read.** Both weights improve final placement and placed squares CI-clear — the
+winner-take-all reward genuinely left a gradient on the table between 2nd and 4th.
+The split is on the win guard: **w=0.25 keeps game-share CI above the 48% floor**
+(lower bound 49.4%, even leans >50%, one-sided p=0.049), while **w=0.5 over-trades**
+— placement still improves but game-share CI sinks to 45.4%, under the floor. That's
+the M4 fit-check firing exactly as AE15 pre-registered it: heavy score-greed conflicts
+with win-seeking. Light shaping sits in the sweet spot — a losing bot fills ~1.3 more
+squares and ranks ~0.24 higher without paying in wins.
+
+**Decision:** won at **w=0.25** — clears AE15's bar (placement/score improve CI-clear,
+game-share CI ≥ 48%). w=0.5 rejected (guard fail). `rankRewardWeight` default stays 0
+(byte-identical, AE18 golden intact); 0.25 is the recommended shipping value. Feeds
+the advisor a non-degenerate value signal in lost positions (AD2/AD3). Product ship
+decision (P13): this is a *lost-position* behavior lever, not a ceiling lever, so it's
+a retune-in-place for existing tiers, never a new rung — hand to /ship.
