@@ -343,7 +343,7 @@ four classic colors as accents, shapes as the star.
 The "why come back" layer — daily hooks and a memory of your journey across games.
 
 ### P14 — Daily puzzle
-- **Status:** proposed
+- **Status:** in-progress — building M1 (solitaire) this session.
 - **Value:** a daily reason to open the app — same seeded challenge for everyone,
   shareable emoji-grid result (Wordle-style; renderer built in P26, reused here rather
   than re-scoped). Converts an evergreen board game into a habit.
