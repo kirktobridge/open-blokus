@@ -1,14 +1,19 @@
 /**
- * Daily puzzle — seeded solitaire (product P14 M1).
+ * Daily puzzle — seeded contested solitaire (product P14 M1).
  *
- * The same seed for everyone on a given calendar day produces the same mid-game
- * position: a fresh 4-player game self-played a fixed number of plies by the
- * shipped heuristic, then handed to the player as one color. The player fits as
- * many of that color's remaining pieces as they can; score = squares placed.
+ * The same seed for everyone on a given calendar day seeds a short opening
+ * (a fresh 4-player game self-played a few plies by the shipped heuristic), then
+ * hands one color to the player. Unlike a static packing puzzle, the opponents
+ * keep playing: after each of the player's placements the other three colors each
+ * answer with a heuristic move (see `advanceOpponents`), contesting corners and
+ * lanes the way a real game does. The player fits as many of their color's pieces
+ * as they can; score = squares they place (a personal best), so the number is
+ * theirs regardless of who wins.
  *
  * Pure module — no React, no boardgame.io, no I/O. Everything is a deterministic
- * function of the date key, so any day's puzzle is regenerable from its string.
+ * function of the date key + the rng passed in, so a day is regenerable/replayable.
  */
+import { BOARD_SIZE } from '../../shared/constants';
 import type { Color, GameState } from '../types';
 import { COLOR_ORDER } from '../types';
 import { createInitialState } from '../modes';
@@ -18,11 +23,15 @@ import { remainingSquares } from '../scoring';
 import { heuristicStrategy, mulberry32 } from '../ai/arena';
 
 /**
- * Plies of heuristic self-play before handoff (4 colors × ~5 pieces). Enough to
- * crowd the board into a real puzzle while leaving the player a full-ish hand.
- * Tunable — the M1 puzzle isn't difficulty-graded (that's a later milestone).
+ * Plies of heuristic self-play before handoff (4 colors × ~2 pieces). Just enough
+ * to make each day's opening distinct — the bulk of the game is then played live
+ * under contest, so the player builds their own color rather than inheriting a
+ * near-finished one. Tunable; M1 isn't difficulty-graded (that's a later milestone).
  */
-export const PUZZLE_SETUP_PLIES = 20;
+export const PUZZLE_SETUP_PLIES = 8;
+
+/** Heuristic policy the contesting opponents play (deterministic given its rng). */
+const opponentStrategy = heuristicStrategy();
 
 /** The color handed to the player. Blue opens, so its corner sits top-left. */
 export const PUZZLE_COLOR: Color = 'blue';
@@ -88,6 +97,31 @@ export function generateDailyPuzzle(dateKey: string = dailyDateKey()): DailyPuzz
     state,
     ceiling: remainingSquares(state.colors[PUZZLE_COLOR]),
   };
+}
+
+/**
+ * Let each opponent color answer the player's last move, in turn order after
+ * `playerColor`, one heuristic placement each (a color with no legal move is
+ * skipped). Mutates `state` and returns the board indices the opponents filled —
+ * the caller highlights them as "their replies." Deterministic given `rng`, so a
+ * daily replays identically for a player who repeats their moves.
+ */
+export function advanceOpponents(
+  state: GameState,
+  playerColor: Color,
+  rng: () => number,
+): number[] {
+  const start = COLOR_ORDER.indexOf(playerColor);
+  const changed: number[] = [];
+  for (let step = 1; step < COLOR_ORDER.length; step++) {
+    const color = COLOR_ORDER[(start + step) % COLOR_ORDER.length];
+    const move = opponentStrategy(state, color, rng);
+    if (!move) continue;
+    const cells = resolveCells(move);
+    applyPlacement(state, color, move.pieceId, cells);
+    for (const c of cells) changed.push(c.y * BOARD_SIZE + c.x);
+  }
+  return changed;
 }
 
 /** Squares the player has fit since handoff = ceiling − current remaining. */
