@@ -4,7 +4,9 @@ import type { GameState } from '../../game/types';
 import { resolveCells } from '../../game/pieces';
 import { isLegalPlacement, applyPlacement } from '../../game/placement';
 import { hasAnyMove } from '../../game/moves';
+import { mulberry32 } from '../../game/ai/arena';
 import {
+  advanceOpponents,
   cellsPlaced,
   dailyDateKey,
   dailyShareText,
@@ -47,11 +49,15 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
   const [board, setBoard] = useState<GameState>(puzzle.state);
   const [done, setDone] = useState(false);
   const [copied, setCopied] = useState(false);
+  // The opponents' shared rng — offset from the setup seed so their live replies
+  // draw a fresh deterministic stream. Rebuilt when the puzzle (day) changes.
+  const oppRng = useRef(mulberry32((puzzle.seed ^ 0x9e3779b9) >>> 0));
   // Reset if the puzzle changes (e.g. crossing midnight remounts with a new key).
   useEffect(() => {
     setBoard(puzzle.state);
     setDone(false);
     setCopied(false);
+    oppRng.current = mulberry32((puzzle.seed ^ 0x9e3779b9) >>> 0);
   }, [puzzle]);
 
   const sel = useSelection();
@@ -127,6 +133,10 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
     if (!isLegalPlacement(board, color, sel.pieceId, placed)) return false;
     const next = structuredClone(board);
     applyPlacement(next, color, sel.pieceId, placed);
+    // The three opponents answer your move; highlight their replies (fall back to
+    // your own placement if every opponent is stuck).
+    const replies = advanceOpponents(next, color, oppRng.current);
+    if (replies.length > 0) next.lastMove = replies;
     setBoard(next);
     sel.reset();
     return true;
@@ -284,7 +294,8 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
             <h2 style={{ margin: '0 0 6px', fontWeight: 800, fontSize: 18 }}>Today's puzzle</h2>
             <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13 }}>
               Fit as many <strong style={{ color: colors[color] }}>{cap(color)}</strong> pieces as
-              you can. Score is squares placed — you play alone against the board.
+              you can. The other three colors answer every move, so grab corners before
+              they do — score is the squares you place.
             </p>
             <div data-testid="puzzle-score" style={{ display: 'flex', gap: 18 }}>
               <div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PUZZLE_COLOR,
+  advanceOpponents,
   cellsPlaced,
   dailyDateKey,
   dailyShareText,
@@ -13,6 +14,7 @@ import { hasAnyMove, generateLegalMoves } from '../src/game/moves';
 import { applyPlacement } from '../src/game/placement';
 import { resolveCells, pieceSize } from '../src/game/pieces';
 import { remainingSquares } from '../src/game/scoring';
+import { mulberry32 } from '../src/game/ai/arena';
 
 const clone = <T>(v: T): T => structuredClone(v);
 
@@ -74,6 +76,46 @@ describe('score tracking', () => {
     applyPlacement(next, PUZZLE_COLOR, move.pieceId, resolveCells(move));
     expect(cellsPlaced(p, next)).toBe(pieceSize(move.pieceId));
     expect(piecesPlaced(p, next)).toBe(1);
+  });
+});
+
+describe('advanceOpponents', () => {
+  it('lets the three other colors reply without touching the player color', () => {
+    const p = generateDailyPuzzle('2026-07-10');
+    const state = clone(p.state);
+    const before = COLOR_ORDER.map((c) => state.colors[c].remaining.length);
+    const playerBefore = state.colors[PUZZLE_COLOR].remaining.slice();
+
+    const changed = advanceOpponents(state, PUZZLE_COLOR, mulberry32(1));
+
+    // Each opponent (that had a move) placed exactly one piece; the player's hand
+    // is untouched.
+    expect(state.colors[PUZZLE_COLOR].remaining).toEqual(playerBefore);
+    let opponentsMoved = 0;
+    COLOR_ORDER.forEach((c, i) => {
+      if (c === PUZZLE_COLOR) return;
+      const placed = before[i] - state.colors[c].remaining.length;
+      expect(placed === 0 || placed === 1).toBe(true);
+      if (placed === 1) opponentsMoved += 1;
+    });
+    expect(opponentsMoved).toBeGreaterThan(0);
+    // Returned indices are exactly the opponent-colored cells that appeared.
+    expect(changed.length).toBeGreaterThan(0);
+    for (const idx of changed) {
+      const cell = state.board[idx];
+      expect(cell).not.toBeNull();
+      expect(cell).not.toBe(PUZZLE_COLOR);
+    }
+  });
+
+  it('is deterministic for a given rng seed', () => {
+    const p = generateDailyPuzzle('2026-07-10');
+    const a = clone(p.state);
+    const b = clone(p.state);
+    const ra = advanceOpponents(a, PUZZLE_COLOR, mulberry32(42));
+    const rb = advanceOpponents(b, PUZZLE_COLOR, mulberry32(42));
+    expect(rb).toEqual(ra);
+    expect(b.board).toEqual(a.board);
   });
 });
 
