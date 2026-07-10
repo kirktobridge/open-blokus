@@ -279,11 +279,22 @@ four classic colors as accents, shapes as the star.
   (P20 M1) the clock keeps running while you're holding nothing, so a mis-click silently
   costs you the move and the timeout plays a random one. A carried piece makes selection
   *sticky*: it goes away only when you mean it to.
-- **Scope / milestones:** M1 sticky carry — once selected, the piece follows the cursor
-  and survives any click that isn't a deliberate release; deselect narrows to `Esc` or
-  dropping it back on the tray; re-clicking the held thumb no longer toggles off;
-  rotate/flip (scroll, WASD, arrows) keep working mid-carry. M2 true drag —
-  press-drag-release from the tray, plus touch/pointer-event support.
+- **Scope / milestones:**
+  - M1 sticky carry — once selected, the piece follows the cursor and survives any click
+    that isn't a deliberate release; deselect narrows to `Esc` or dropping it back on the
+    tray; re-clicking the held thumb no longer toggles off; rotate/flip (scroll, WASD,
+    arrows) keep working mid-carry.
+  - M2 true drag — press-drag-release from the tray, plus touch/pointer-event support.
+  - **Staged-state click semantics.** With a piece staged, a click **outside** the staged
+    footprint unstages it (back to positioning; hover resumes following the cursor) rather
+    than silently re-staging at the clicked cell, which is today's behavior and reads as an
+    accidental relocation. A click **inside** the footprint is the deliberate "pick it back
+    up" gesture and also unstages. Placement remains submit-only; no click ever places.
+    Costs one extra click to *move* a staged piece (click to unstage, click to re-stage) —
+    accepted: relocating is rarer than cancelling, and dragging (M2) makes it moot.
+    *Why here:* the board click handler stages unconditionally and hover is frozen while
+    staged, so a stray click relocates your placement and can fire P16's shake — P23 owns
+    that handler, so fixing it separately would rewrite it twice under two contracts.
 - **Interaction contract:** **drop == stage, not submit** (decided at intake) — the
   explicit submit step stays, because the staged-but-unsubmitted state is what P16's
   illegal-placement shake and P3's advisor overlay both hang off. P6's keyboard-only
