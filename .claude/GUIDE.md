@@ -1,8 +1,9 @@
 # Skill framework — quick guide
 
-Four skills, one loop: **triage** an idea in → **research** or build it → **ship**
-the docs → **checkpoint** the session. Each tracking file has exactly one skill
-that writes it, so nothing goes stale or gets double-edited.
+Six skills, one loop: **triage** an idea in → **implement** (product) or
+**research** (experiment) it on a branch → **land** the branch on main →
+**ship** the docs → **checkpoint** the session. Each tracking file has exactly
+one skill that writes it, so nothing goes stale or gets double-edited.
 
 ## The skills
 
@@ -33,14 +34,38 @@ arena, log the run, distil the finding, close the entry. Owns all of
 
 Arena setups go in `scripts/experiments/<id>.json` — never edited into src.
 
-### /ship — "it's built, sync the docs"
-Minimal doc updates when something ships: flip the product-backlog status, tick
-BUILD_ORDER, touch up ARCHITECTURE's *why*. Owns those three files only.
+### /implement — "build P#"
+Takes one product-backlog entry (or one milestone of it) to verified code on a
+feature branch. Claims the entry `in-progress` on main first (via /ship) so
+parallel sessions see the claim; writes code + tests only, never the docs.
+
+```
+/implement P4
+pick up P3 R1
+```
+
+### /land — "merge it into main"
+The integration step: merge one finished branch into main, re-run the full suite
+on the merged result, then run /ship's doc flips there. Doc flips happen at land
+time — never on the branch — so parallel branches can't conflict on the backlog.
+Runs in a forked subagent (`context: fork`), so the merge/test output doesn't eat
+the session's context — you get back a compact landing report.
+
+```
+/land feat/p10-long-move-feedback
+land this branch
+```
+
+### /ship — "sync the docs"
+The pen for the product docs — nothing else writes BACKLOG.md, BUILD_ORDER.md,
+or ARCHITECTURE.md, and it writes them **on main only**. Flips statuses (claims
++ terminal), refreshes `## Next up`, appends approved /triage drafts. Usually
+runs as /land's last step.
 
 ```
 /ship                          ← figure out what shipped from git
-we shipped P10, update docs
 mark P5 partial — tray finish landed
+add the approved draft to the backlog
 ```
 
 It will *propose* GAME_SPEC or CLAUDE.md changes to you but never edit them —
@@ -48,8 +73,10 @@ those are yours.
 
 ### /checkpoint — "wrap up the session"
 End-of-session closeout: checks nothing is dangling (statuses honest, tree
-clean), makes tidy commits, writes `.claude/HANDOFF.md` so next session starts
-in seconds.
+clean, unmerged branches accounted for), makes tidy commits, and updates **this
+branch's section** of `.claude/HANDOFF.md`. HANDOFF holds one section per
+in-flight branch — parallel sessions each own theirs — and marks which branches
+are ready for /land.
 
 ```
 /checkpoint
@@ -60,13 +87,17 @@ wrap up
 
 **Research idea → answered:**
 ```
-/triage <idea>  →  /research run AE#  →  /research record  →  /research findings  →  /checkpoint
+/triage <idea>  →  /research run AE#  →  /research record  →  /research findings  →  /land  →  /checkpoint
 ```
 
 **Product/UI idea → shipped:**
 ```
-/triage <idea>  →  (plan + build + npm test)  →  /ship  →  /checkpoint
+/triage <idea>  →  /implement P#  →  /land  →  /checkpoint
 ```
+
+**Parallel sessions:** one branch per session (use `git worktree` for truly
+simultaneous work); each /checkpoint touches only its own HANDOFF section;
+/land integrates one branch at a time, on main.
 
 **Starting a fresh session:**
 ```
@@ -75,9 +106,9 @@ read .claude/HANDOFF.md   (or just: "what's next?")
 
 ## Who writes what (the single-writer map)
 
-| File | Only writer |
-|---|---|
-| `docs/research/` (backlog, log, FINDINGS) | /research |
-| `docs/product/BACKLOG.md`, `BUILD_ORDER.md`, `ARCHITECTURE.md` | /ship |
-| `.claude/HANDOFF.md` | /checkpoint |
-| `GAME_SPEC.md`, `CLAUDE.md`, `docs/dev_notes/` | **you** (human-only) |
+| File | Only writer | Where |
+|---|---|---|
+| `docs/research/` (backlog, log, FINDINGS) | /research | branch or main |
+| `docs/product/BACKLOG.md`, `BUILD_ORDER.md`, `ARCHITECTURE.md` | /ship | **main only** |
+| `.claude/HANDOFF.md` | /checkpoint (own branch's section only) | local, gitignored |
+| `GAME_SPEC.md`, `CLAUDE.md`, `docs/dev_notes/` | **you** (human-only) | — |

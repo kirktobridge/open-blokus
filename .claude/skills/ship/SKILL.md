@@ -1,12 +1,14 @@
 ---
 name: ship
-description: When a feature/change ships, update the docs it makes stale — flip the product-backlog status, tick BUILD_ORDER, keep ARCHITECTURE's *why* current — minimally, without restating code. Use for "mark X shipped", "we shipped Y, update docs", "ship the feature", "/ship". Product-side complement to /research (which handles experiments).
+description: The sole pen for the product docs — flip product-backlog statuses (claims and terminal), tick BUILD_ORDER, keep ARCHITECTURE's *why* current, and append approved /triage drafts — minimally, without restating code. Runs on main, usually as /land's last step. Use for "mark X shipped", "we shipped Y, update docs", "add the approved draft to the backlog", "flip P# to in-progress", "/ship". Product-side complement to /research (which handles experiments).
 ---
 
-# Ship — doc sync on feature completion
+# Ship — the pen for the product docs
 
-Lightweight. When something ships, keep the docs honest with the **minimum** edits —
-usually a status flip + a one-line note. This is not a rewrite pass.
+This skill is the pen for the product docs: every edit to them — shipped flips,
+`in-progress` claims, intake appends — goes through here, whatever the occasion.
+Lightweight: keep the docs honest with the **minimum** edits — usually a status
+flip + a one-line note. This is not a rewrite pass.
 
 Project doc discipline (CLAUDE.md) governs: **code + tests own the *what*; docs keep
 the *why*.** Don't restate signatures or duplicate what the code already says.
@@ -17,6 +19,14 @@ the *why*.** Don't restate signatures or duplicate what the code already says.
 [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md). It writes **nothing else** —
 `docs/research/**` belongs to /research; GAME_SPEC.md and CLAUDE.md are human-owned
 (propose diffs, never edit).
+
+**Edits land on main only.** Feature branches never carry edits to these three files
+(two parallel branches touching `## Next up` conflict every time). So: the
+`in-progress` claim is committed on main *before* branching — that's what makes it
+visible to other sessions — and the terminal flip + Next up refresh happen at land
+time, with /ship running as **/land**'s last step after the merge passes tests.
+Only work that never leaves main (docs-only, tiny fixes) gets its /ship pass
+directly.
 
 ## Steps
 1. **Identify what shipped** — from the user's description or git: `git log --oneline -5`,
@@ -56,6 +66,8 @@ When /triage hands over an approved **product** draft, append it to
 just the pen for the product backlog.
 
 ## Not this skill
+- Merging a branch / testing the merged result → **/land** (this skill is its last
+  step, not a replacement for it).
 - Running, recording, or **closing** an experiment → **/research** (sole writer of
   `docs/research/`).
 - Classifying/drafting a new idea → **/triage**.
