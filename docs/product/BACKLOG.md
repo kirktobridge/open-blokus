@@ -345,8 +345,9 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ### P14 — Daily puzzle
 - **Status:** partial — **M1 shipped** (reshaped from static solitaire to a *contested*
-  personal-best puzzle): a fixed daily seed plays a short opening, hands the player one
-  color, then the other three colors answer every player placement with a heuristic move
+  personal-best puzzle): a fixed daily seed plays a deep opening (~11 pieces per color),
+  hands the player one color, then the other three colors answer every player placement
+  one at a time with a heuristic move
   (`src/game/puzzle/daily.ts`, pure), so corners and lanes get contested like a real game
   rather than a frozen packing position. Score = squares you place (a personal best,
   yours regardless of who wins); plain-text "Copy result" share on finish (emoji-grid
@@ -354,7 +355,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Value:** a daily reason to open the app — same seeded challenge for everyone,
   shareable emoji-grid result (Wordle-style; renderer built in P26, reused here rather
   than re-scoped). Converts an evergreen board game into a habit.
-- **Scope / milestones:** M1 *contested* — fixed daily seed, short opening, opponents
+- **Scope / milestones:** M1 *contested* — fixed daily seed, deep opening, opponents
   answer every move, "fit as many of your pieces as you can," score = cells you place,
   local share text. M2 *best-move* — "find the strongest placement,"
   graded against MCTS. M3 — server-shared leaderboard.
