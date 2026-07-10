@@ -305,6 +305,22 @@ four classic colors as accents, shapes as the star.
   (lifted piece tilts + shadow, snaps flat on drop) is the visual layer over *this*
   interaction; build the carry/drag substrate once, here, so P8 only adds rendering.
 
+### P26 — Emoji-grid share (Wordle-style board in "Copy result")
+- **Status:** proposed
+- **Value:** the game-over "Copy result" currently copies two lines of text (headline +
+  scores). A Wordle-style emoji grid of the final board — 🟦🟨🟥🟩 for placed cells, ⬜
+  for empty — is instantly recognizable, screenshots itself, and turns a finished game
+  into a share. Cheap: the board and the palette→square mapping already exist.
+- **Scope:** a pure `G → string` renderer (flat `G.board`, 20×20, color→emoji, null→⬜)
+  behind the existing Copy result button in `GameOverModal`; keep the headline + final
+  scores as caption lines above the grid. One share string, no new UI surface. Decide:
+  full 20×20 (400 glyphs — faithful but large in some clients) vs a downscaled block
+  grid; default to full, revisit if it wraps badly where people actually paste.
+- **Depends on:** nothing (board + palette exist; `resultSummary` in `drama.ts` is the
+  seam). **P14 reuses this** — its Value already promises a "shareable emoji-grid result
+  (Wordle-style)"; build the renderer here, P14's daily share calls the same function
+  instead of re-scoping it.
+
 ---
 
 ## Epic: Engagement & retention
@@ -314,8 +330,8 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 ### P14 — Daily puzzle
 - **Status:** proposed
 - **Value:** a daily reason to open the app — same seeded challenge for everyone,
-  shareable emoji-grid result (Wordle-style). Converts an evergreen board game into
-  a habit.
+  shareable emoji-grid result (Wordle-style; renderer built in P26, reused here rather
+  than re-scoped). Converts an evergreen board game into a habit.
 - **Scope / milestones:** M1 *solitaire* — seeded mid-game position (self-play to
   turn N with a fixed daily seed), "fit as many remaining pieces as you can," score =
   cells placed, local share text. M2 *best-move* — "find the strongest placement,"
