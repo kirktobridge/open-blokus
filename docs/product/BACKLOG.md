@@ -32,11 +32,11 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    boardgame.io transport.
 3. **P24** — blitz clock legibility: the shipped countdown sits in the top bar, out of
    the player's field of view; cheap UI fix to a mode that already works.
-4. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
+4. **P25** — blitz bot pacing: bots aren't on the clock and snipe in ~0.5s; pairs with
+   P24 as the other half of making the shipped mode feel fair.
+5. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
-5. **P18** — bot personas: named AI opponents with light flavor over the shipped
-   tiers; nothing blocking, mostly UI.
 
 ---
 
@@ -379,6 +379,29 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   first so blitz is legible without audio (sound is deferred, and muted tabs are common).
 - **Explicitly out of scope:** whether the clock *should* keep running mid-composition
   (pause / grace period). That's a fairness question, deliberately left untriaged.
+
+### P25 — Blitz bot pacing (make the CPU take a human amount of time)
+- **Status:** proposed
+- **Value:** in blitz (P20 M1) only the human is on a clock. Bot think-time is set by its
+  tier, not the match: easy ~0.6s, medium ~0.5s, hard ~2s. Against a 5s human clock that
+  reads as the CPU sniping instantly while you sweat — the mode feels rigged even though
+  the rules are identical for both sides.
+- **Scope:**
+  - Pace `easy`/`medium`/`hard` in blitz only: floor each bot's visible think-time to a
+    randomized, human-plausible interval (jittered, not a constant, so it doesn't read as
+    a fixed animation), scaled by tier so a stronger opponent visibly "thinks longer".
+  - **Disable `extreme` while blitz is on** — it has no time budget (`iterations: 500`,
+    ~12s/move), already longer than a 5s or 10s limit, so pacing cannot fix it. The
+    difficulty `<select>` disables that option and says why, concisely, in place — e.g.
+    the option renders as `extreme — needs untimed play`. No modal, no separate warning
+    banner. If a saved Quick Play setup carries `extreme` + blitz, resolve it (drop to
+    `hard`, or clear blitz) rather than starting an unwinnable race.
+- **Pacing is presentation:** it delays the *submit*, never the search. No tier's strength
+  changes, so the ladder anchored by F14/F15 stays valid. `?botDelay=` must still force 0
+  for e2e.
+- **Non-goal:** slowing bots in untimed play — the current pace is right there.
+- **Depends on:** P20 M1 (shipped). No research dependency: excluding `extreme` is what
+  removes the "can a capped extreme still be a tier?" question from the critical path.
 
 ---
 
