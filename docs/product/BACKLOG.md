@@ -382,7 +382,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 ## Epic: Social & multiplayer presence
 
 ### P19 — Multiplayer identity & reactions
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** online opponents are literally "P0/P1" today — anonymous games feel
   dead. A nickname and a few canned reactions ("nice move," "ouch," …) change the
   social temperature cheaply, without open-chat moderation burden.
