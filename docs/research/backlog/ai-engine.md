@@ -16,10 +16,11 @@ The dependency-ready head, highest-payoff first — the authoritative "what to r
 Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
 test (product P21) fails CI if any ID here is missing or terminal.
 
-1. **AE11** — smarter rollout policy: direct F6/F11 follow-up, ~30-line change;
-   Pentobi's gamma-sampled playout is the reference spec.
+1. **AE26** — rollout width (`rolloutSamples`): AE11's control arm hit 54.4% and the
+   knob already exists — cheapest live lead on the board (F16).
 2. **AE24** — trained softmax move priors: the main share of the ~17× per-simulation
-   quality gap vs Pentobi (F14).
+   quality gap vs Pentobi (F14). F16 sharpens it — priors must beat *width*, not the
+   old 6-sample baseline.
 3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
 4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
@@ -174,9 +175,15 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** Run J → [F8](../FINDINGS.md)
 
 ### AE11 — Smarter rollout policy
-- **Status:** proposed — direct F6/F11 follow-up: rollout quality is the proven
-  strength lever and F11 showed the leaf signal can't be replaced, but the rollout
-  *policy* itself (sample ~6, keep biggest piece) has never been tuned.
+- **Status:** no-win — Run T / [F16](../FINDINGS.md). Score-biasing the playout
+  candidates (greedy `score` 48.8% CI [44.9,52.8]; `softmax` T=8 49.3% CI [45.3,53.3],
+  n=600 each) buys nothing at matched wall-clock — the 52% bar is not met and both
+  point estimates sit ≤50%. The *width* control arm (candidates 6→12, size-greedy)
+  did move (54.4%, CI [50.4,58.3], p=0.016) but that's a different hypothesis than
+  the one this entry pre-registered → carried to **AE26**, not retrofitted here (M2).
+  Config knobs `rolloutPolicy: 'score'|'softmax'` + `rolloutSamples` /
+  `rolloutTemperature` kept in [mcts.ts](../../../src/game/ai/mcts.ts); defaults
+  byte-identical. Cost note refuted: smarter playouts cost ~1% throughput, not more.
 - **Objective:** raise leaf-estimate quality by making rollout moves smarter at
   similar cost.
 - **Hypothesis:** biasing rollout samples toward frontier-creating / corner-denying
@@ -195,7 +202,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   at matched wall-clock over ≥600 games.
 - **Cost / risk:** small — ~30-line policy swaps; risk is added per-move cost eating
   the quality gain (measure iters/s alongside).
-- **Log:** —
+- **Log:** [Run T](../log/ai-strategy.md) (2026-07-09)
 
 ### AE12 — Move-time management (chess-clock budgeting)
 - **Status:** proposed
@@ -545,4 +552,37 @@ test (product P21) fails CI if any ID here is missing or terminal.
   entry (~10–15× combined at fixed wall-clock ≈ Pentobi-L6 compute). (c) The full
   escape to L7+ compute (70k–1.7M sims/move) is server-hosted bots — product P11
   territory, an online-only-tier product decision, not a research lever.
+- **Log:** —
+
+### AE26 — Rollout width: how many candidates should a playout move sample?
+- **Status:** proposed — spun out of AE11 (Run T / [F16](../FINDINGS.md)): the
+  *control* arm moved, not the hypothesis. Doubling the rejection-sample pool
+  (6→12) under the unchanged size-greedy rule scored 54.4% game-share (CI
+  [50.4,58.3], p=0.016, n=600) at matched wall-clock. That's a distinct claim from
+  AE11's "smarter ranking", so it gets its own pre-registered bar rather than
+  inheriting one written for a rejected hypothesis (M2).
+- **Objective:** find the strength-optimal `rolloutSamples`, i.e. where the
+  better-playout / fewer-playouts trade turns over.
+- **Hypothesis:** rollout strength rises with the sampled-candidate max (bigger piece
+  played) while iteration count falls only slowly — because a bigger-piece playout
+  terminates in fewer plies, `rolloutSamples` 12 is *1.23× faster* than 6, not slower
+  (Run T bench). So the curve is non-monotone with an interior optimum > 6, and the
+  usual cost/quality tradeoff is inverted over part of the range. Assumption (M4): the
+  playout's contribution to the leaf estimate is dominated by piece size, which F16's
+  score-vs-size split supports.
+- **Method:** sweep `rolloutSamples` ∈ {6, 12, 24, 48} head-to-head vs the shipped
+  6 (2v2, `rolloutDepth 0`, `beam 16`, `rankRewardWeight 0.25`), each arm at its own
+  matched-wall-clock iteration count from `scripts/bench-rollout.ts`. Configs
+  `scripts/experiments/ae26-*.json`, sharded via the `ae11-sweep.sh` pattern.
+  Report iters/s and mean rollout plies alongside game-share — the mechanism claim
+  (shorter playouts) should be visible directly. Watch the `fallbackMove` rate: at
+  large sample counts, late-game positions may exhaust rejection sampling.
+- **Success criteria:** some `rolloutSamples` > 6 has game-share Wilson CI clearing
+  52% vs 6 at matched wall-clock, ≥600 games per arm (n≈2400 if the point estimate
+  stays near 54% — Run T's n=600 CI is too wide to clear 52% on its own).
+- **Cost / risk:** small code (knob exists, config-only), compute-heavy (4 arms ×
+  ≥600 games ≈ 4 h at 14-way, more if powered to n=2400). Risk: the effect is really
+  the extra iterations rather than the width, which this design cannot separate —
+  an `rolloutSamples 6 @ 59 it` arm is the control that isolates it, and it's cheap
+  to add. Interacts with AE24 (learned priors would replace the sampler outright).
 - **Log:** —

@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Build a specific product-backlog item (P#) from docs/product/BACKLOG.md — check its dependencies, pick the milestone, branch, implement, test, and verify — then hand the doc flips to /ship. Use for "implement P4", "build the tutorial item", "pick up P3 R1", or /implement. Code-side complement to /research (which runs experiments); writes code + tests only, never the backlog docs.
+description: Build a specific product-backlog item (P#) from docs/product/BACKLOG.md — check its dependencies, pick the milestone, branch, implement, test, and verify — then hand integration to /land (which runs /ship's doc flips on main). Use for "implement P4", "build the tutorial item", "pick up P3 R1", or /implement. Code-side complement to /research (which runs experiments); writes code + tests only, never the backlog docs.
 ---
 
 # Implement — build a product backlog item
@@ -38,9 +38,11 @@ are human-owned.
 - **CLEAN-TREE GATE:** `git status` must be clean before branching. Dirty tree =
   another task's live state — bounce to /checkpoint; don't branch over it. For a
   deliberately parallel session, take a `git worktree` instead of sharing the tree.
-- Branch off main: `feat/p<#>-<slug>` (matches existing convention, e.g.
+- Flip the entry to `in-progress` **via /ship, committed on main before branching** —
+  a flip made on your branch is invisible to other sessions, which defeats the claim
+  gate. (/ship edits its files on main only.)
+- Then branch off main: `feat/p<#>-<slug>` (matches existing convention, e.g.
   `feat/p1-game-logging`).
-- Flip the entry to `in-progress` **via /ship** (it's the sole writer of BACKLOG.md).
 - For anything nontrivial, plan first (plan mode / a short written plan naming the
   files to touch) before editing.
 
@@ -60,13 +62,15 @@ are human-owned.
 - `npm test` (vitest **and** Playwright e2e — always both), `npm run typecheck`,
   `npm run lint`. Wrap long runs with `time`.
 - Run **/verify** — drive the affected flow in the real app, not just tests.
-- Commit on the feature branch. Then run **/ship** to flip the status
-  (`shipped`, or `partial` + which milestone) and sync any other stale doc.
+- Commit on the feature branch. Then **/land** merges it into main, re-runs the
+  suite on the merged result, and runs /ship's terminal flip there (`shipped`, or
+  `partial` + which milestone) — doc flips never happen on the branch.
 - If the work surfaced a *measurable* follow-up question, route it through
   **/triage** — don't tack an experiment onto the feature branch.
 
 ## Not this skill
 - A research experiment (`AE#`/`AD#`) → **/research**.
+- Merging into main → **/land**.
 - Doc/status edits of any kind → **/ship** (product docs) or **/research** (research docs).
 - Classifying a new idea → **/triage**.
 - Session wrap-up, commits-as-closeout, handoff → **/checkpoint**.

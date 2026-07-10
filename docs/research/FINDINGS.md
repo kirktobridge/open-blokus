@@ -98,6 +98,30 @@ non-degenerate value signal for the advisor (AD2/AD3) where winner-take-all read
 flat 0. Per P13 this is a lost-position lever (not a ceiling lever) → retune tiers
 in place, not a new rung.
 
+### F16 — Rollout *width* beats rollout *smarts*: scoring playout candidates buys nothing
+`significant` (rejection) / `directional` (the width lever). F6 named rollout quality
+as the strength lever, so AE11 tried to make each playout move smarter: rank the
+rejection-sampled candidates by the full heuristic (size + frontier + center + block)
+instead of by size alone, greedily (`score`) or Boltzmann-sampled (`softmax`,
+Pentobi's gamma-sampled playout in spirit). **Neither buys anything** at matched
+wall-clock: 48.8% (CI [44.9,52.8]) and 49.3% (CI [45.3,53.3]) game-share over n=600
+each (Run T). The signal that *did* move was the control arm — same size-greedy rule,
+candidate pool 6→12: **54.4% (CI [50.4,58.3], p=0.016)**, plus better placement (2.41
+vs 2.59) and placed squares (73.1 vs 71.6). Under the pre-registered 52% bar, so AE11
+closes `no-win` and the width lever moves to AE26 with its own bar.
+
+Two things worth carrying forward. **(1) Smarter playouts are not slower here.** A
+playout that plays bigger pieces reaches terminal in fewer plies, and at `rolloutDepth
+0` that shortening pays for the extra scoring — `score`/`softmax` cost ~1% throughput,
+and 12-sample size-greedy is *1.23× faster* than 6-sample. The usual "policy cost eats
+the quality gain" tradeoff does not bind. **(2) The lever is the max, not the ranking.**
+Sampling more candidates and taking the largest raises the *size* of the piece played;
+re-ranking the same 6 candidates by a richer score does not. This is consistent with
+F2 (frontier is load-bearing) only in the tree, not in the playout: inside a rollout,
+positional terms appear to be noise the terminal reward washes out, while piece size
+compounds directly into the placed-leader signal. A rollout policy should be judged by
+what it does to the *reward's* variance, not by how well it plays.
+
 ---
 
 ## Engine

@@ -23,7 +23,7 @@ import { remainingSquares } from '../scoring';
 import { COLOR_ORDER } from '../types';
 import type { Cell, Color, GameState, PieceId, Placement } from '../types';
 import { cloneState, recomputeStuck, applyAndAdvance } from './simstate';
-import { chooseMove, scorePlacement, WEIGHTS } from './heuristic';
+import { chooseMove, scoreCells, scorePlacement, WEIGHTS } from './heuristic';
 import type { Strategy } from './arena';
 
 /** Total squares one color owns across all 21 pieces (sum of sizes). */
@@ -50,8 +50,29 @@ export interface MctsConfig {
   minIterations: number;
   /** UCT exploration constant. */
   explorationC: number;
-  /** Rollout move policy. */
-  rolloutPolicy: 'heuristic' | 'random';
+  /**
+   * Rollout move policy (AE11). All non-`random` policies rejection-sample
+   * `rolloutSamples` legal candidates and then choose among them:
+   * - `random`   — first legal sample, no choice at all.
+   * - `heuristic`— keep the largest piece (size only). The pre-AE11 default.
+   * - `score`    — keep the best full heuristic score (size + frontier + center
+   *                + block), i.e. greedy over the same signal the beam uses.
+   * - `softmax`  — sample ∝ exp(score / rolloutTemperature) (Pentobi's
+   *                gamma-sampled playout in spirit): biased, but not greedy, so
+   *                rollouts keep the variance that makes their outcomes informative.
+   */
+  rolloutPolicy: 'heuristic' | 'random' | 'score' | 'softmax';
+  /**
+   * Legal candidates to rejection-sample per rollout move before choosing among
+   * them (ignored by `random`). Larger = better rollout moves, fewer rollouts.
+   */
+  rolloutSamples: number;
+  /**
+   * Softmax temperature over candidate scores (`softmax` only). Scores span
+   * roughly 10–60, so T≈8 is moderately peaked; T→0 degenerates to `score`,
+   * T→∞ to a uniform pick among the samples.
+   */
+  rolloutTemperature: number;
   /** Truncate rollouts after this many plies (0 = play to terminal). */
   rolloutDepth: number;
   /** Prune each node's action set to the heuristic's top-K (0 = keep all). */
@@ -88,6 +109,8 @@ const DEFAULTS: MctsConfig = {
   minIterations: 8,
   explorationC: Math.SQRT2,
   rolloutPolicy: 'heuristic',
+  rolloutSamples: 6,
+  rolloutTemperature: 8,
   rolloutDepth: 0,
   beam: 16,
   rave: false,
@@ -252,8 +275,6 @@ interface SampledMove {
 
 /** How many random (piece, orientation, position) draws to try before giving up. */
 const ROLLOUT_ATTEMPTS = 24;
-/** Heuristic rollout: legal moves to sample before picking the largest piece. */
-const HEURISTIC_SAMPLES = 6;
 
 /**
  * Rejection-sample one legal move for `color`: pick a random remaining piece,
@@ -309,14 +330,51 @@ function rolloutMove(
   if (cfg.rolloutPolicy === 'random') {
     return sampleLegalMove(G, color, rng, bb) ?? fallbackMove(G, color, rng);
   }
-  // Heuristic: sample a few legal moves, keep the largest piece (size is the
-  // dominant heuristic term — see research/log/ai-strategy.md). Cheap vs full enumeration.
-  let best: SampledMove | null = null;
-  for (let k = 0; k < HEURISTIC_SAMPLES; k++) {
-    const s = sampleLegalMove(G, color, rng, bb);
-    if (s && (!best || s.cells.length > best.cells.length)) best = s;
+  const n = cfg.rolloutSamples;
+
+  if (cfg.rolloutPolicy === 'heuristic') {
+    // Sample a few legal moves, keep the largest piece (size is the dominant
+    // heuristic term — see research/log/ai-strategy.md). Cheap vs full enumeration.
+    let best: SampledMove | null = null;
+    for (let k = 0; k < n; k++) {
+      const s = sampleLegalMove(G, color, rng, bb);
+      if (s && (!best || s.cells.length > best.cells.length)) best = s;
+    }
+    return best ?? fallbackMove(G, color, rng);
   }
-  return best ?? fallbackMove(G, color, rng);
+
+  // score / softmax: rank the same samples by the *full* heuristic score, so a
+  // rollout move also weighs frontier gain, centrality and corner denial — the
+  // AE11 hypothesis that a better-playing rollout is a more predictive one.
+  const cands: SampledMove[] = [];
+  const scores: number[] = [];
+  let bestScore = -Infinity;
+  for (let k = 0; k < n; k++) {
+    const s = sampleLegalMove(G, color, rng, bb);
+    if (!s) continue;
+    const v = scoreCells(G, color, s.cells, WEIGHTS);
+    cands.push(s);
+    scores.push(v);
+    if (v > bestScore) bestScore = v;
+  }
+  if (cands.length === 0) return fallbackMove(G, color, rng);
+
+  if (cfg.rolloutPolicy === 'score') {
+    for (let i = 0; i < cands.length; i++) if (scores[i] === bestScore) return cands[i];
+  }
+
+  // Boltzmann over the candidates, shifted by the max for numerical stability.
+  let sum = 0;
+  for (let i = 0; i < scores.length; i++) {
+    scores[i] = Math.exp((scores[i] - bestScore) / cfg.rolloutTemperature);
+    sum += scores[i];
+  }
+  let r = rng() * sum;
+  for (let i = 0; i < cands.length; i++) {
+    r -= scores[i];
+    if (r <= 0) return cands[i];
+  }
+  return cands[cands.length - 1];
 }
 
 /**

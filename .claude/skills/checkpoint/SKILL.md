@@ -7,8 +7,10 @@ description: Session-end closeout — verify no dangling state (backlog statuses
 
 A session may end only when: (a) every backlog `Status:` matches reality, (b) the
 working tree is clean, (c) `HANDOFF.md` says what's next. This skill enforces that.
-It is the **sole writer of `.claude/HANDOFF.md`** (local-only — `.claude/` is
-gitignored by design; HANDOFF is session state, not project history).
+It is the **sole writer of `.claude/HANDOFF.md`** (local-only — HANDOFF is
+gitignored by design; it's session state, not project history). Sessions run in
+parallel on different branches, so HANDOFF is **sectioned per branch**: rewrite only
+the current branch's section, never another session's.
 
 ## Checks (fix or surface each hit — don't silently pass)
 1. `git status --short` — uncommitted changes? Group them into checkpoint commits
@@ -18,12 +20,18 @@ gitignored by design; HANDOFF is session state, not project history).
    entry must have a matching run in `log/` (check via
    `grep "^### Run" docs/research/log/*.md | tail`). Dangling → tell the user the
    loop is open; /research closes it, not this skill.
-3. `grep -n "Status:" docs/product/BACKLOG.md | grep -i in-progress` — anything
-   in-progress that actually shipped this session should have gone through /ship;
-   run it now if missed.
+3. `grep -n "Status:" docs/product/BACKLOG.md | grep -i in-progress` — an
+   in-progress entry whose work is **already merged to main** is missing its /ship
+   flip; run /ship now (on main). Work that's finished but still on its branch is
+   fine — mark the branch **ready to land** in its HANDOFF section and point the
+   user at /land; the flip happens there, not here.
 4. `## Next up` staleness (product P22) — the P21 schema test already fails CI on a
    dangling/terminal queue, so a green `npm test` covers it; if a feature shipped this
    session, confirm /ship refreshed the head.
+5. `git branch --no-merged main` — every unmerged branch should have a HANDOFF
+   section saying whether it's ready to land or what blocks it. A branch with no
+   section is an unknown — flag it to the user. Landing is **/land**'s job, not
+   this skill's; just report which branches are ready.
 
 ## Checkpoint commits (tied to completions, never time)
 One commit per completed unit, code and docs separate:
@@ -37,19 +45,26 @@ One commit per completed unit, code and docs separate:
 Don't bundle unrelated units; don't commit with failing tests without saying so in
 the message and to the user.
 
-## HANDOFF.md (overwrite each session — it's a baton, not a log)
-Write `.claude/HANDOFF.md`, exactly this shape, a few lines each:
+## HANDOFF.md (one section per in-flight branch — a baton rack, not a log)
+`.claude/HANDOFF.md` holds one `##` section per unmerged branch. Rewrite **only the
+current branch's section** (a few lines each); leave other sections untouched —
+parallel sessions own those. Prune sections whose branch is merged into main or
+deleted.
 
 ```markdown
-# Handoff — <date>
+# Handoff
+
+## <branch> — <date>
 - **Changed:** <what landed this session, with commit shas>
 - **In flight:** <open loops: active experiments, half-done features, failing tests + why>
 - **Next:** <the single most likely next action, with its backlog ID>
+- **Land:** ready | blocked on <what>
 ```
 
 **Next session's entry path:** read HANDOFF.md, then orient with the Phase-0 grep
 from /research — not by re-reading the tree.
 
 ## Not this skill
-- Closing a research loop → **/research**. Doc sync → **/ship**. This skill only
-  verifies they ran, commits, and writes the baton.
+- Closing a research loop → **/research**. Doc sync → **/ship**. Merging a
+  finished branch into main → **/land**. This skill only verifies they ran,
+  commits, and writes the baton.
