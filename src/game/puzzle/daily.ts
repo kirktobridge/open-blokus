@@ -23,12 +23,12 @@ import { remainingSquares } from '../scoring';
 import { heuristicStrategy, mulberry32 } from '../ai/arena';
 
 /**
- * Plies of heuristic self-play before handoff (4 colors × ~2 pieces). Just enough
- * to make each day's opening distinct — the bulk of the game is then played live
- * under contest, so the player builds their own color rather than inheriting a
- * near-finished one. Tunable; M1 isn't difficulty-graded (that's a later milestone).
+ * Plies of heuristic self-play before handoff (4 colors × ~11 pieces). A deep
+ * mid-game: corners and lanes are largely committed, so the player inherits a
+ * crowded board and squeezes their remaining pieces into the gaps under live
+ * contest. Tunable; M1 isn't difficulty-graded (that's a later milestone).
  */
-export const PUZZLE_SETUP_PLIES = 8;
+export const PUZZLE_SETUP_PLIES = 44;
 
 /** Heuristic policy the contesting opponents play (deterministic given its rng). */
 const opponentStrategy = heuristicStrategy();
@@ -99,27 +99,45 @@ export function generateDailyPuzzle(dateKey: string = dailyDateKey()): DailyPuzz
   };
 }
 
+/** The opponents, in the turn order they answer after `playerColor`. */
+export function opponentOrder(playerColor: Color): Color[] {
+  const start = COLOR_ORDER.indexOf(playerColor);
+  const order: Color[] = [];
+  for (let step = 1; step < COLOR_ORDER.length; step++) {
+    order.push(COLOR_ORDER[(start + step) % COLOR_ORDER.length]);
+  }
+  return order;
+}
+
+/**
+ * Play one heuristic placement for `color` (no-op if it has no legal move).
+ * Mutates `state`; returns the board indices it filled — the caller highlights
+ * them as "their reply." Deterministic given `rng`. Splitting one opponent per
+ * call lets the UI reveal replies one at a time (paced) while the rng stream
+ * stays identical to answering them all at once (`advanceOpponents`).
+ */
+export function stepOpponent(state: GameState, color: Color, rng: () => number): number[] {
+  const move = opponentStrategy(state, color, rng);
+  if (!move) return [];
+  const cells = resolveCells(move);
+  applyPlacement(state, color, move.pieceId, cells);
+  return cells.map((c) => c.y * BOARD_SIZE + c.x);
+}
+
 /**
  * Let each opponent color answer the player's last move, in turn order after
- * `playerColor`, one heuristic placement each (a color with no legal move is
- * skipped). Mutates `state` and returns the board indices the opponents filled —
- * the caller highlights them as "their replies." Deterministic given `rng`, so a
- * daily replays identically for a player who repeats their moves.
+ * `playerColor`, one heuristic placement each. Mutates `state` and returns all
+ * the board indices the opponents filled. Deterministic given `rng`, so a daily
+ * replays identically for a player who repeats their moves.
  */
 export function advanceOpponents(
   state: GameState,
   playerColor: Color,
   rng: () => number,
 ): number[] {
-  const start = COLOR_ORDER.indexOf(playerColor);
   const changed: number[] = [];
-  for (let step = 1; step < COLOR_ORDER.length; step++) {
-    const color = COLOR_ORDER[(start + step) % COLOR_ORDER.length];
-    const move = opponentStrategy(state, color, rng);
-    if (!move) continue;
-    const cells = resolveCells(move);
-    applyPlacement(state, color, move.pieceId, cells);
-    for (const c of cells) changed.push(c.y * BOARD_SIZE + c.x);
+  for (const color of opponentOrder(playerColor)) {
+    changed.push(...stepOpponent(state, color, rng));
   }
   return changed;
 }

@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { GameState } from '../../game/types';
+import type { Color, GameState } from '../../game/types';
 import { resolveCells } from '../../game/pieces';
 import { isLegalPlacement, applyPlacement } from '../../game/placement';
 import { hasAnyMove } from '../../game/moves';
 import { mulberry32 } from '../../game/ai/arena';
 import {
-  advanceOpponents,
   cellsPlaced,
   dailyDateKey,
   dailyShareText,
   generateDailyPuzzle,
+  opponentOrder,
   piecesPlaced,
+  stepOpponent,
 } from '../../game/puzzle/daily';
 import { Board } from '../board/Board';
 import { HandTray } from '../tray/HandTray';
@@ -27,10 +28,14 @@ import { LeaveIcon } from '../icons';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
+/** Delay between each opponent's paced reply (ms) — matches the vs-AI easy pace. */
+const REPLY_DELAY_MS = 600;
+
 /**
- * Daily-puzzle solitaire (product P14 M1). A seeded mid-game position handed to
- * one color; the player fits as many of that color's remaining pieces as they
- * can. Score = squares placed. No opponents, no turn rotation, no boardgame.io —
+ * Daily-puzzle contested solitaire (product P14 M1). A seeded deep mid-game
+ * position handed to one color; after each of the player's placements the other
+ * three colors answer (paced, one at a time). The player fits as many of their
+ * color's remaining pieces as they can; score = squares placed. No boardgame.io —
  * just the pure rules core over local React state, reusing the shared Board,
  * HandTray and Controls primitives.
  */
@@ -49,16 +54,39 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
   const [board, setBoard] = useState<GameState>(puzzle.state);
   const [done, setDone] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Opponent colors still to answer the player's last move (turn order); while
+  // non-empty the board is locked and their replies reveal one at a time.
+  const [replying, setReplying] = useState<Color[]>([]);
   // The opponents' shared rng — offset from the setup seed so their live replies
   // draw a fresh deterministic stream. Rebuilt when the puzzle (day) changes.
   const oppRng = useRef(mulberry32((puzzle.seed ^ 0x9e3779b9) >>> 0));
+  // Latest board, read by the (timer-driven) reply effect without re-subscribing.
+  const boardRef = useRef(board);
+  boardRef.current = board;
   // Reset if the puzzle changes (e.g. crossing midnight remounts with a new key).
   useEffect(() => {
     setBoard(puzzle.state);
     setDone(false);
     setCopied(false);
+    setReplying([]);
     oppRng.current = mulberry32((puzzle.seed ^ 0x9e3779b9) >>> 0);
   }, [puzzle]);
+
+  // Pace the opponents: reveal one reply per REPLY_DELAY_MS. Reading the live
+  // board from a ref (not the setBoard updater) keeps the rng advancing exactly
+  // once per opponent even under StrictMode's double-invoked effects.
+  useEffect(() => {
+    if (replying.length === 0) return;
+    const next = replying[0];
+    const id = setTimeout(() => {
+      const board = structuredClone(boardRef.current);
+      const filled = stepOpponent(board, next, oppRng.current);
+      if (filled.length > 0) board.lastMove = filled;
+      setBoard(board);
+      setReplying((rest) => rest.slice(1));
+    }, REPLY_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [replying]);
 
   const sel = useSelection();
   const colors = usePaletteColors();
@@ -66,7 +94,8 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
 
   const stuck = useMemo(() => !hasAnyMove(board, color), [board, color]);
   const finished = done || stuck;
-  const canPlay = !finished;
+  // Locked while the opponents are mid-reply.
+  const canPlay = !finished && replying.length === 0;
 
   const cells = cellsPlaced(puzzle, board);
   const pieces = piecesPlaced(puzzle, board);
@@ -133,11 +162,12 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
     if (!isLegalPlacement(board, color, sel.pieceId, placed)) return false;
     const next = structuredClone(board);
     applyPlacement(next, color, sel.pieceId, placed);
-    // The three opponents answer your move; highlight their replies (fall back to
-    // your own placement if every opponent is stuck).
-    const replies = advanceOpponents(next, color, oppRng.current);
-    if (replies.length > 0) next.lastMove = replies;
     setBoard(next);
+    // Your move lands first; the three opponents then answer one at a time (paced
+    // by the reply effect) — unless you just placed your last piece (puzzle over).
+    if (next.colors[color].remaining.length > 0) {
+      setReplying(opponentOrder(color));
+    }
     sel.reset();
     return true;
   }
@@ -220,6 +250,7 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
 
   let statusMain: ReactNode;
   if (finished) statusMain = 'Puzzle complete — see your result.';
+  else if (replying.length > 0) statusMain = 'The others are answering…';
   else if (!sel.pieceId) statusMain = 'Select a piece from your hand to begin.';
   else if (sel.staged && !legal) statusMain = 'Illegal spot — reposition or cancel.';
   else if (sel.staged && legal) statusMain = 'Locked — press Enter or PLAY MOVE to confirm.';
