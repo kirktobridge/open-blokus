@@ -4,6 +4,7 @@ import { COLOR_ORDER } from '../../game/types';
 import { ownersFor } from '../../game/modes';
 import { loadQuickPlay, saveQuickPlay, type MatchInfo } from './config';
 import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
+import { BLITZ_OPTIONS, type BlitzSeconds } from '../blitz/blitz';
 import { CreateMatchForm } from './CreateMatchForm';
 import { MatchList } from './MatchList';
 import { HeroBoard } from './HeroBoard';
@@ -65,6 +66,7 @@ export function HomeScreen({
     mode: GameMode,
     aiCount: number,
     botDifficulties: Record<string, Difficulty>,
+    blitzSeconds: BlitzSeconds,
   ) => void;
   onOpenTutorial: () => void;
   joinError?: string | null;
@@ -77,6 +79,7 @@ export function HomeScreen({
   const [botDifficulties, setBotDifficulties] = useState<Record<string, Difficulty>>(
     saved?.botDifficulties ?? {},
   );
+  const [blitzSeconds, setBlitzSeconds] = useState<BlitzSeconds>(saved?.blitzSeconds ?? null);
 
   const botSeats = useMemo(() => botSeatLabels(aiMode, aiCount), [aiMode, aiCount]);
 
@@ -92,8 +95,8 @@ export function HomeScreen({
 
   // Persist the setup and launch — used by both Quick Play and the Customize form.
   const start = () => {
-    saveQuickPlay({ mode: aiMode, aiCount, botDifficulties });
-    onStartAI(aiMode, aiCount, botDifficulties);
+    saveQuickPlay({ mode: aiMode, aiCount, botDifficulties, blitzSeconds });
+    onStartAI(aiMode, aiCount, botDifficulties, blitzSeconds);
   };
 
   const humanCount = aiMode - aiCount;
@@ -102,7 +105,9 @@ export function HomeScreen({
     (aiCount === aiMode ? 'watch (all AI)' : `you${humanCount > 1 ? ` +${humanCount - 1}` : ''} vs ${aiCount} AI`) +
     (botSeats.length > 0
       ? ` · ${botSeats.map(({ seat }) => botDifficulties[seat] ?? 'easy').join(', ')}`
-      : '');
+      : '') +
+    // The clock only ever runs on a human seat, so a watch game never advertises it.
+    (blitzSeconds != null && humanCount > 0 ? ` · blitz ${blitzSeconds}s` : '');
 
   return (
     <div style={{ background: 'var(--table-bg)', minHeight: '100vh', fontFamily: FONT_UI }}>
@@ -202,6 +207,27 @@ export function HomeScreen({
                         {Array.from({ length: aiMode + 1 }, (_, n) => (
                           <option key={n} value={n}>
                             {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label
+                      style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
+                      title="Per-move time limit. Run out and a random legal move is played for you."
+                    >
+                      Blitz:{' '}
+                      <select
+                        data-testid="blitz-select"
+                        value={blitzSeconds ?? 0}
+                        onChange={(e) => {
+                          const n = Number(e.target.value);
+                          setBlitzSeconds(n === 0 ? null : n);
+                        }}
+                        style={FIELD}
+                      >
+                        {BLITZ_OPTIONS.map(({ value, label }) => (
+                          <option key={label} value={value ?? 0}>
+                            {label}
                           </option>
                         ))}
                       </select>

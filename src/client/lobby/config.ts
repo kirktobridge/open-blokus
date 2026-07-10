@@ -1,5 +1,6 @@
 import type { GameMode } from '../../game/types';
 import type { Difficulty } from '../ai/difficulty';
+import type { BlitzSeconds } from '../blitz/blitz';
 
 export const SERVER_URL = import.meta.env.VITE_SERVER ?? 'http://localhost:8000';
 
@@ -39,6 +40,8 @@ export interface QuickPlayConfig {
   mode: GameMode;
   aiCount: number;
   botDifficulties: Record<string, Difficulty>;
+  /** Blitz per-move limit in seconds; null/absent = untimed (P20 M1). */
+  blitzSeconds?: BlitzSeconds;
 }
 
 export function loadQuickPlay(): QuickPlayConfig | null {
