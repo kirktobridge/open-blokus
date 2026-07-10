@@ -344,17 +344,19 @@ four classic colors as accents, shapes as the star.
 The "why come back" layer — daily hooks and a memory of your journey across games.
 
 ### P14 — Daily puzzle
-- **Status:** partial — **M1 (solitaire) shipped**: a fixed daily seed self-plays a
-  fresh 4-player game to a mid-game position (`src/game/puzzle/daily.ts`, pure), hands
-  the player one color, and scores squares placed as they fit their remaining pieces;
-  plain-text "Copy result" share on finish (emoji-grid rendering awaits P26). M2
-  (best-move, blocked on AD4) + M3 (server leaderboard) pending.
+- **Status:** partial — **M1 shipped** (reshaped from static solitaire to a *contested*
+  personal-best puzzle): a fixed daily seed plays a short opening, hands the player one
+  color, then the other three colors answer every player placement with a heuristic move
+  (`src/game/puzzle/daily.ts`, pure), so corners and lanes get contested like a real game
+  rather than a frozen packing position. Score = squares you place (a personal best,
+  yours regardless of who wins); plain-text "Copy result" share on finish (emoji-grid
+  rendering awaits P26). M2 (best-move, blocked on AD4) + M3 (server leaderboard) pending.
 - **Value:** a daily reason to open the app — same seeded challenge for everyone,
   shareable emoji-grid result (Wordle-style; renderer built in P26, reused here rather
   than re-scoped). Converts an evergreen board game into a habit.
-- **Scope / milestones:** M1 *solitaire* — seeded mid-game position (self-play to
-  turn N with a fixed daily seed), "fit as many remaining pieces as you can," score =
-  cells placed, local share text. M2 *best-move* — "find the strongest placement,"
+- **Scope / milestones:** M1 *contested* — fixed daily seed, short opening, opponents
+  answer every move, "fit as many of your pieces as you can," score = cells you place,
+  local share text. M2 *best-move* — "find the strongest placement,"
   graded against MCTS. M3 — server-shared leaderboard.
 - **Depends on:** M1: nothing (engine + seeded self-play exist). M2: research
   [AD4](../research/backlog/advisor.md) (move-grading signal must be trustworthy
