@@ -1,0 +1,9 @@
+{
+  "title": "AE11 confound: size-greedy over 12 samples (59 iters, matched clock) vs 6 samples (48 iters)",
+  "seats": [
+    { "name": "size12", "strategy": "mcts", "options": { "iterations": 59, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 12 } },
+    { "name": "size6", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "size12", "strategy": "mcts", "options": { "iterations": 59, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 12 } },
+    { "name": "size6", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } }
+  ]
+}

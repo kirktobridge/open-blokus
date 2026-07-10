@@ -1,0 +1,9 @@
+{
+  "title": "AE11: softmax rollout (6 samples, T=8) vs size-greedy rollout, matched wall-clock",
+  "seats": [
+    { "name": "softmax", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "softmax", "rolloutSamples": 6, "rolloutTemperature": 8 } },
+    { "name": "size", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "softmax", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "softmax", "rolloutSamples": 6, "rolloutTemperature": 8 } },
+    { "name": "size", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } }
+  ]
+}

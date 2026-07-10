@@ -33,6 +33,18 @@ function table(
   s: number = seeds,
 ): void {
   const r = runTournamentSeeds(contestants, { games: g, seeds: s, baseSeed });
+  // `--result`: one machine-readable line per name for shard pooling — the human
+  // table rounds game-share to a whole percent, which loses the fractional wins
+  // (ties split) that the stats helper needs. Emitted alongside the table.
+  if (flags.has('--result')) {
+    const n = g * s;
+    for (const row of r.rows) {
+      console.log(
+        `RESULT\t${row.name}\t${(row.meanGameShare * n).toFixed(4)}\t${n}\t` +
+          `${row.meanPlacement.toFixed(4)}\t${row.meanPlacedSquares.toFixed(4)}`,
+      );
+    }
+  }
   console.log(
     `\n${title}  (${s}×${g} games, base seed ${baseSeed}, mean ties ${r.meanTies.toFixed(1)})`,
   );

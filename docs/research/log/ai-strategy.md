@@ -697,3 +697,66 @@ game-share CI ≥ 48%). w=0.5 rejected (guard fail). `rankRewardWeight` default 
 the advisor a non-degenerate value signal in lost positions (AD2/AD3). Product ship
 decision (P13): this is a *lost-position* behavior lever, not a ceiling lever, so it's
 a retune-in-place for existing tiers, never a new rung — hand to /ship.
+
+### Run T — Smarter rollout policy: score-biased vs size-greedy playouts (AE11)
+Does biasing rollout moves toward frontier-creating / corner-denying moves (the
+full heuristic score, greedy or softmax-sampled) make rollout outcomes more
+predictive, at matched wall-clock? (backlog AE11; bar pre-registered: game-share
+Wilson CI clears 52% vs the current rollout policy, ≥600 games.)
+
+**Setup.** New `rolloutPolicy` values `score` (argmax full heuristic over the
+sampled candidates) and `softmax` (Boltzmann, `exp(score/T)`), plus a
+`rolloutSamples` knob, in [mcts.ts](../../../src/game/ai/mcts.ts); `scoreCells`
+split out of `scorePlacement` so rollouts score sampled cells without re-resolving.
+Defaults unchanged ⇒ byte-identical (AE18 golden test intact). Head-to-head 2v2,
+shipped engine context (`rolloutDepth 0`, `beam 16`, `rankRewardWeight 0.25`),
+n=600 each (25 games × 24 seeds, baseSeed 1..24), configs
+`scripts/experiments/ae11-{score,softmax,samples12}.json`, sharded via
+`ae11-sweep.sh`. Wall 237 min (52 CPU-hours, 14-way).
+
+**Matched wall-clock via measured throughput, not a timer.** Timed-mode arenas
+can't be sharded (contention changes strength, not just wall-time), so the clock
+match is converted to an iteration match using benched iters/s
+(`scripts/bench-rollout.ts`, fixed mid-opening position, branching 541,
+`rolloutDepth 0`, best-of-3):
+
+| policy | iters/s | vs baseline | matched-clock iters |
+|--------|---------|-------------|---------------------|
+| heuristic-6 (baseline) | 47 | 1.00× | 48 |
+| heuristic-12 | 57 | **1.23×** | 59 |
+| score-6 | 46 | 0.99× | 47 |
+| softmax-6 T=8 | 46 | 0.99× | 47 |
+| softmax-6 T=3 | 46 | 0.98× | 47 |
+
+Smarter rollouts are *not* slower: a playout that plays bigger pieces reaches
+terminal in fewer plies, and at `rolloutDepth 0` that shortening pays for the extra
+scoring. AE11's stated cost risk (per-move cost eating the gain) did not fire.
+
+**Results.** Game-share of the candidate vs `size-6`; placement lower = better,
+placed = 89 − remaining, higher = better. Stats via `stats.py`.
+
+| arm (candidate vs size-6) | game-share (Wilson, n=600) | one-sided p | placement cand/base | placed cand/base |
+|---------------------------|----------------------------|-------------|---------------------|------------------|
+| `score-6` @48 it          | 48.8% [44.9, 52.8]         | 0.72        | 2.506 / 2.494       | 71.93 / 71.90    |
+| `softmax-6` T=8 @48 it    | 49.3% [45.3, 53.3]         | 0.63        | 2.458 / 2.542       | 72.24 / 71.49    |
+| **`size-12` @59 it**      | **54.4% [50.4, 58.3]**     | **0.016**   | **2.410 / 2.590**   | **73.05 / 71.61**|
+
+**Read.** The AE11 hypothesis is not supported: scoring the rollout candidates by
+the full heuristic — greedy or temperature-sampled — buys nothing (both CIs straddle
+50%, both point estimates ≤ 50%). The arm that moved was the *control*: keeping the
+size-greedy rule and doubling the candidate pool (6→12), which at matched wall-clock
+also buys 59 iters vs 48. It clears 50% (p=0.016) but its CI lower bound is 50.4% —
+**below the pre-registered 52% bar**. Placement and placed squares move with
+game-share in the same arm (both CI-consistent directions), and softmax's placement
+edge (2.458) without a win edge mirrors the AE15 w=0.5 pattern: score-greed without
+win-conversion.
+
+Attribution caveat: `size-12`'s win is the *joint* effect of a bigger candidate pool
+and the extra iterations its speedup buys — that pairing is what "matched wall-clock"
+means here, and the two are not separable within this design.
+
+**Decision:** no-win on the pre-registered bar — the rollout-*policy* hypothesis
+(score-bias) is rejected at n=600; the rollout-*width* lever (`rolloutSamples`)
+clears 50% but not the 52% bar and is left open as a follow-up (sweep 12/24, power
+to n≥2400 if the point estimate holds). Code kept: `rolloutSamples` /
+`score` / `softmax` are config-only, defaults byte-identical.

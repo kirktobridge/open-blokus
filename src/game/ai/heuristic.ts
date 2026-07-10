@@ -63,6 +63,25 @@ function centerScore(cells: Cell[]): number {
   return -avg;
 }
 
+/**
+ * Heuristic value of an already-resolved cell set for `color` (higher is better).
+ * Split out from `scorePlacement` so rollouts — which sample cells directly and
+ * never build a `Placement` — can score candidates without re-resolving them.
+ */
+export function scoreCells(
+  G: GameState,
+  color: Color,
+  cells: Cell[],
+  weights: Weights = WEIGHTS,
+): number {
+  return (
+    cells.length * weights.size +
+    newFrontier(G, color, cells) * weights.frontier +
+    centerScore(cells) * weights.center +
+    opponentCornersDenied(G, color, cells) * weights.block
+  );
+}
+
 /** Heuristic value of a single placement for `color` (higher is better). */
 export function scorePlacement(
   G: GameState,
@@ -70,13 +89,7 @@ export function scorePlacement(
   placement: Placement,
   weights: Weights = WEIGHTS,
 ): number {
-  const cells = resolveCells(placement);
-  return (
-    cells.length * weights.size +
-    newFrontier(G, color, cells) * weights.frontier +
-    centerScore(cells) * weights.center +
-    opponentCornersDenied(G, color, cells) * weights.block
-  );
+  return scoreCells(G, color, resolveCells(placement), weights);
 }
 
 /**

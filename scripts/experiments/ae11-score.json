@@ -1,0 +1,9 @@
+{
+  "title": "AE11: score-greedy rollout (6 samples) vs size-greedy rollout, matched wall-clock",
+  "seats": [
+    { "name": "score", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "score", "rolloutSamples": 6 } },
+    { "name": "size", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "score", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "score", "rolloutSamples": 6 } },
+    { "name": "size", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } }
+  ]
+}
