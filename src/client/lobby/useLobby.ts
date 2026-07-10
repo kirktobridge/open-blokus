@@ -23,14 +23,19 @@ export function useLobby() {
         return matches as unknown as MatchInfo[];
       },
 
-      /** Join the first free seat of a match. */
-      async join(matchID: string): Promise<Session> {
+      /**
+       * Join the first free seat of a match. A trimmed `nickname` is sent as the
+       * seat's name; when absent we fall back to `Player N` so the seat still
+       * counts as occupied (MatchList) but reads as anonymous (see isRealName).
+       */
+      async join(matchID: string, nickname?: string): Promise<Session> {
         const match = (await client.getMatch(GAME_NAME, matchID)) as unknown as MatchInfo;
         const free = match.players.find((p) => !p.name);
         const seat = free ? String(free.id) : undefined;
+        const name = nickname?.trim();
         const { playerID, playerCredentials } = await client.joinMatch(GAME_NAME, matchID, {
           playerID: seat,
-          playerName: `Player ${seat ?? '?'}`,
+          playerName: name || `Player ${seat ?? '?'}`,
         });
         return {
           matchID,

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameMode, ScoringVariant } from '../game/types';
 import { useLobby } from './lobby/useLobby';
-import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/config';
+import {
+  loadNick,
+  loadSession,
+  saveNick,
+  saveSession,
+  type MatchInfo,
+  type Session,
+} from './lobby/config';
 import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
@@ -15,6 +22,7 @@ import { ControlsHelp } from './ControlsHelp';
 export function App() {
   const lobby = useLobby();
   const [session, setSession] = useState<Session | null>(() => loadSession());
+  const [nickname, setNickname] = useState<string>(() => loadNick());
   const [matches, setMatches] = useState<MatchInfo[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -43,6 +51,15 @@ export function App() {
     setSession(s);
   };
 
+  // Read the live nickname from a ref so the once-run invite effect and the
+  // memoized join callbacks always send the current name, not a stale closure.
+  const nicknameRef = useRef(nickname);
+  const changeNickname = useCallback((n: string) => {
+    setNickname(n);
+    nicknameRef.current = n;
+    saveNick(n);
+  }, []);
+
   // Invite deep-link: `?join=<matchID>` on load joins that match, then strips the
   // param so a refresh (which restores via obk:session) won't try to rejoin. Runs
   // once; the ref guards against StrictMode's double-invoke consuming two seats.
@@ -58,7 +75,7 @@ export function App() {
     if (session) return; // already seated (restored session) — ignore the link
     void (async () => {
       try {
-        enter(await lobby.join(joinId));
+        enter(await lobby.join(joinId, nicknameRef.current));
       } catch {
         setJoinError('That table is full or no longer exists.');
       }
@@ -68,7 +85,7 @@ export function App() {
   const onCreate = useCallback(
     async (mode: GameMode, scoring: ScoringVariant) => {
       const matchID = await lobby.createMatch(mode, scoring);
-      enter(await lobby.join(matchID));
+      enter(await lobby.join(matchID, nicknameRef.current));
     },
     [lobby],
   );
@@ -76,7 +93,7 @@ export function App() {
   const onJoin = useCallback(
     async (matchID: string) => {
       try {
-        enter(await lobby.join(matchID));
+        enter(await lobby.join(matchID, nicknameRef.current));
       } catch {
         setJoinError('Could not join that table — it may be full or gone.');
       }
@@ -93,7 +110,7 @@ export function App() {
   const onPlayAgain = useCallback(async () => {
     if (!session) return;
     const nextMatchID = await lobby.playAgain(session);
-    enter(await lobby.join(nextMatchID));
+    enter(await lobby.join(nextMatchID, nicknameRef.current));
   }, [lobby, session]);
 
   let screen;
@@ -117,6 +134,8 @@ export function App() {
     screen = (
       <HomeScreen
         matches={matches}
+        nickname={nickname}
+        onNicknameChange={changeNickname}
         onCreate={onCreate}
         onJoin={onJoin}
         onRefresh={refresh}

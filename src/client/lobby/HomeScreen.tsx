@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Color, GameMode, ScoringVariant } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { ownersFor } from '../../game/modes';
-import { loadQuickPlay, saveQuickPlay, type MatchInfo } from './config';
+import { loadQuickPlay, saveQuickPlay, MAX_NICK_LEN, type MatchInfo } from './config';
 import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
 import { BLITZ_OPTIONS, type BlitzSeconds } from '../blitz/blitz';
 import { CreateMatchForm } from './CreateMatchForm';
@@ -50,6 +50,8 @@ const QP_DEFAULT = { mode: 4 as GameMode, aiCount: 3 };
 
 export function HomeScreen({
   matches,
+  nickname,
+  onNicknameChange,
   onCreate,
   onJoin,
   onRefresh,
@@ -60,6 +62,8 @@ export function HomeScreen({
   onDismissError,
 }: {
   matches: MatchInfo[];
+  nickname: string;
+  onNicknameChange: (nick: string) => void;
   onCreate: (mode: GameMode, scoring: ScoringVariant) => void;
   onJoin: (matchID: string) => void;
   onRefresh: () => void;
@@ -307,6 +311,25 @@ export function HomeScreen({
             {/* Play online — create a table, then share the invite link. */}
             <section style={{ ...PANEL, padding: 20 }}>
               <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Play online</h2>
+              <label
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  alignItems: 'center',
+                  fontSize: 14,
+                  marginBottom: 12,
+                }}
+              >
+                Nickname:{' '}
+                <input
+                  data-testid="nickname-input"
+                  value={nickname}
+                  maxLength={MAX_NICK_LEN}
+                  onChange={(e) => onNicknameChange(e.target.value)}
+                  placeholder="shown to opponents"
+                  style={{ ...FIELD, cursor: 'text', flex: 1, minWidth: 0 }}
+                />
+              </label>
               <CreateMatchForm onCreate={onCreate} />
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
                 <span style={{ color: 'var(--mut)', fontSize: 13 }}>Have a match ID?</span>

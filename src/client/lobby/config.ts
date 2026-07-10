@@ -6,6 +6,10 @@ export const SERVER_URL = import.meta.env.VITE_SERVER ?? 'http://localhost:8000'
 
 export const SESSION_KEY = 'obk:session';
 export const QUICKPLAY_KEY = 'obk:quickplay';
+export const NICK_KEY = 'obk:nick';
+
+/** Trimmed cap on a nickname — long enough for a name, short enough for a card. */
+export const MAX_NICK_LEN = 16;
 
 export interface Session {
   matchID: string;
@@ -33,6 +37,34 @@ export function loadSession(): Session | null {
 export function saveSession(session: Session | null): void {
   if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   else localStorage.removeItem(SESSION_KEY);
+}
+
+/** The locally-saved nickname sent when joining online matches (P19). */
+export function loadNick(): string {
+  try {
+    return localStorage.getItem(NICK_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveNick(nick: string): void {
+  try {
+    const trimmed = nick.trim().slice(0, MAX_NICK_LEN);
+    if (trimmed) localStorage.setItem(NICK_KEY, trimmed);
+    else localStorage.removeItem(NICK_KEY);
+  } catch {
+    // storage unavailable; the join just falls back to the default seat name
+  }
+}
+
+/**
+ * A seat name is a "real" nickname only if the player chose it — the lobby sends
+ * `Player N` as the default so a seat always counts as occupied (MatchList), so
+ * the default reads as "anonymous" for display. Reactions/cards suppress it.
+ */
+export function isRealName(name: string | undefined): name is string {
+  return !!name && !/^Player \d+$/.test(name);
 }
 
 /** Last-used vs-AI setup, so Quick Play can start it in one click. */

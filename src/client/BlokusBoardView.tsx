@@ -14,12 +14,16 @@ import { HandTray } from './tray/HandTray';
 import { Standings } from './controls/ScorePanel';
 import { PlayerCard, type SeatTag } from './controls/PlayerCard';
 import { Controls } from './controls/Controls';
+import { ReactionBar } from './controls/ReactionBar';
 import { GameOverModal, type GameOverPayload } from './controls/GameOverModal';
 import { EventBeats } from './controls/EventBeats';
 import { matchAction, type PlacementAction } from './controls/keymap';
 import { useSelection } from './hooks/useSelection';
 import { useGameEvents } from './hooks/useGameEvents';
 import { useReducedMotion } from './hooks/useReducedMotion';
+import { useReactions } from './hooks/useReactions';
+import { isRealName } from './lobby/config';
+import { reactionMessage } from './lobby/reactions';
 import { usePaletteColors } from './palettes';
 import { useInventoryDisplay } from './settings';
 import { FONT_MONO, FONT_UI } from './theme';
@@ -54,6 +58,10 @@ export function BlokusBoardView({
   isActive,
   playerID,
   botDifficulties,
+  matchData,
+  chatMessages,
+  sendChatMessage,
+  isMultiplayer,
 }: BoardProps<GameState> & { botDifficulties?: Record<string, Difficulty> }) {
   const sel = useSelection();
   const colors = usePaletteColors();
@@ -63,6 +71,20 @@ export function BlokusBoardView({
   const inventoryDisplay = useInventoryDisplay();
   const reduce = useReducedMotion();
   const { beats } = useGameEvents(G);
+
+  // Multiplayer identity & reactions (P19). Seat nicknames come from the match
+  // metadata (the default `Player N` reads as anonymous); reactions ride the chat
+  // transport and surface as per-seat bubbles. Both are inert offline (matchData /
+  // chat props are absent), so nothing renders in the vs-AI table.
+  const seatNames = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const m of matchData ?? []) {
+      if (isRealName(m.name)) out[String(m.id)] = m.name;
+    }
+    return out;
+  }, [matchData]);
+  const reactions = useReactions(chatMessages);
+  const onReact = (id: string) => sendChatMessage?.(reactionMessage(id));
 
   // Board-frame shake on a rejected placement (P16). Uses the Web Animations API
   // so it replays on the same element without a remount hack; no-op if motion is
@@ -276,7 +298,8 @@ export function BlokusBoardView({
     const owner = G.config.owners[c];
     const isYou = playerID != null && owner === playerID;
     const diff = owner !== 'shared' ? botDifficulties?.[owner] : undefined;
-    const nameSuffix = isYou ? 'You' : (diff ?? null);
+    const nick = owner !== 'shared' ? seatNames[owner] : undefined;
+    const nameSuffix = isYou ? 'You' : (diff ?? nick ?? null);
 
     let tag: SeatTag = null;
     if (ctx.gameover && owner !== 'shared' && winners.includes(owner)) tag = 'winner';
@@ -322,6 +345,7 @@ export function BlokusBoardView({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250 }}>
         {COLOR_ORDER.map((c) => {
           const { nameSuffix, tag } = seatMeta(c);
+          const owner = G.config.owners[c];
           return (
             <PlayerCard
               key={c}
@@ -332,6 +356,7 @@ export function BlokusBoardView({
               tag={tag}
               active={c === activeColor && !ctx.gameover}
               inventoryDisplay={inventoryDisplay}
+              reaction={owner !== 'shared' ? reactions[owner] : undefined}
             />
           );
         })}
@@ -469,6 +494,10 @@ export function BlokusBoardView({
           onSubmit={submitMove}
           onCancel={cancel}
         />
+
+        {/* Reactions (P19) — online only; offline has no transport to broadcast on
+            (the vs-AI table builds boardProps without the multiplayer flag). */}
+        {isMultiplayer && <ReactionBar onReact={onReact} />}
       </div>
 
       {/* Right column — your hand + standings */}
