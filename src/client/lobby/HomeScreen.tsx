@@ -55,6 +55,7 @@ export function HomeScreen({
   onRefresh,
   onStartAI,
   onOpenTutorial,
+  onOpenPuzzle,
   joinError,
   onDismissError,
 }: {
@@ -69,6 +70,7 @@ export function HomeScreen({
     blitzSeconds: BlitzSeconds,
   ) => void;
   onOpenTutorial: () => void;
+  onOpenPuzzle: () => void;
   joinError?: string | null;
   onDismissError?: () => void;
 }) {
@@ -162,6 +164,21 @@ export function HomeScreen({
           <HeroBoard size={280} />
 
           <div style={{ flex: '1 1 380px', display: 'flex', flexDirection: 'column', gap: 16, minWidth: 300 }}>
+            {/* Daily puzzle — one seeded solitaire challenge a day (P14). */}
+            <section style={{ ...PANEL, padding: 20 }}>
+              <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Daily puzzle</h2>
+              <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>
+                Same board for everyone today — fit as many pieces as you can.
+              </p>
+              <button
+                data-testid="open-puzzle"
+                onClick={onOpenPuzzle}
+                style={{ ...PRIMARY_BTN, width: '100%' }}
+              >
+                Play today's puzzle
+              </button>
+            </section>
+
             {/* Play vs computer — Quick Play hero + collapsible Customize. */}
             <section style={{ ...PANEL, padding: 20 }}>
               <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play vs computer</h2>

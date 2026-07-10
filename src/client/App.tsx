@@ -5,6 +5,7 @@ import { loadSession, saveSession, type MatchInfo, type Session } from './lobby/
 import { HomeScreen } from './lobby/HomeScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
+import { DailyPuzzleGame } from './puzzle/DailyPuzzleGame';
 import { Tutorial } from './tutorial/Tutorial';
 import type { Difficulty } from './ai/difficulty';
 import type { BlitzSeconds } from './blitz/blitz';
@@ -17,6 +18,7 @@ export function App() {
   const [matches, setMatches] = useState<MatchInfo[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showPuzzle, setShowPuzzle] = useState(false);
   const [aiConfig, setAiConfig] = useState<{
     mode: GameMode;
     aiCount: number;
@@ -97,6 +99,8 @@ export function App() {
   let screen;
   if (showTutorial) {
     screen = <Tutorial onExit={() => setShowTutorial(false)} />;
+  } else if (showPuzzle) {
+    screen = <DailyPuzzleGame onLeave={() => setShowPuzzle(false)} />;
   } else if (aiConfig) {
     screen = (
       <LocalAIGame
@@ -120,6 +124,7 @@ export function App() {
           setAiConfig({ mode, aiCount, botDifficulties, blitzSeconds })
         }
         onOpenTutorial={() => setShowTutorial(true)}
+        onOpenPuzzle={() => setShowPuzzle(true)}
         joinError={joinError}
         onDismissError={() => setJoinError(null)}
       />
