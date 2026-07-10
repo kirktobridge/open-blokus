@@ -321,6 +321,21 @@ four classic colors as accents, shapes as the star.
   (Wordle-style)"; build the renderer here, P14's daily share calls the same function
   instead of re-scoping it.
 
+### P27 — Landscape lobby layout (use the width on desktop)
+- **Status:** proposed
+- **Value:** the home screen (P17) caps at 920px and stacks Play-vs-computer, Play-online,
+  and Progression in one narrow column beside the hero board, so a desktop/landscape
+  viewport shows a tall centered strip with wide dead margins on both sides. The content
+  exists to fill a row; the layout doesn't let it.
+- **Scope:** a responsive breakpoint — above it, lay the three cards out horizontally (row
+  or 2-up grid) and raise/relax the 920px cap so they use the width; below it, the current
+  single-column stack is preserved unchanged (portrait/mobile must not regress). Decide
+  where MatchList and the hero board sit in the wide layout (hero is decorative — it
+  shouldn't claim prime horizontal space over the actionable cards). CSS/layout only, no
+  new components, no behavior change to any card.
+- **Depends on:** nothing. Revises P17's shipped home layout (surface: `HomeScreen.tsx`);
+  reuses the existing `PANEL` primitives, so cards restyle for free.
+
 ---
 
 ## Epic: Engagement & retention
