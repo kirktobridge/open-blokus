@@ -26,17 +26,18 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P14** (M1) — daily-puzzle solitaire: a daily reason to open the app; engine +
-   seeded self-play already exist.
-2. **P19** — multiplayer identity & reactions: cheap social win; reuses the
+1. **P19** — multiplayer identity & reactions: cheap social win; reuses the
    boardgame.io transport.
-3. **P24** — blitz clock legibility: the shipped countdown sits in the top bar, out of
+2. **P24** — blitz clock legibility: the shipped countdown sits in the top bar, out of
    the player's field of view; cheap UI fix to a mode that already works.
-4. **P25** — blitz bot pacing: bots aren't on the clock and snipe in ~0.5s; pairs with
+3. **P25** — blitz bot pacing: bots aren't on the clock and snipe in ~0.5s; pairs with
    P24 as the other half of making the shipped mode feel fair.
-5. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
+4. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
+5. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
+   existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
+   share waiting on exactly this (P2 recap reuses it too).
 
 ---
 
@@ -343,7 +344,11 @@ four classic colors as accents, shapes as the star.
 The "why come back" layer — daily hooks and a memory of your journey across games.
 
 ### P14 — Daily puzzle
-- **Status:** in-progress — building M1 (solitaire) this session.
+- **Status:** partial — **M1 (solitaire) shipped**: a fixed daily seed self-plays a
+  fresh 4-player game to a mid-game position (`src/game/puzzle/daily.ts`, pure), hands
+  the player one color, and scores squares placed as they fit their remaining pieces;
+  plain-text "Copy result" share on finish (emoji-grid rendering awaits P26). M2
+  (best-move, blocked on AD4) + M3 (server leaderboard) pending.
 - **Value:** a daily reason to open the app — same seeded challenge for everyone,
   shareable emoji-grid result (Wordle-style; renderer built in P26, reused here rather
   than re-scoped). Converts an evergreen board game into a habit.
