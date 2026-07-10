@@ -146,6 +146,19 @@ export function BlokusBoardView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stagedIllegal]);
 
+  // Clear a half-composed placement when your turn ends. Submitting resets the
+  // selection itself, but blitz ends a turn *without* a submit (P20 M1) — leaving
+  // the staged ghost, often an illegal red one, painted into your next turn. The
+  // tray is only interactive on your own turn, so there's never a pre-selection to
+  // lose here.
+  const yourTurn = homeColor != null && activeColor === homeColor;
+  const resetSelection = sel.reset;
+  const wasYourTurn = useRef(yourTurn);
+  useEffect(() => {
+    if (wasYourTurn.current && !yourTurn) resetSelection();
+    wasYourTurn.current = yourTurn;
+  }, [yourTurn, resetSelection]);
+
   // Before your color's first move, mark its required opening corner.
   const startHint =
     canPlay && !G.colors[activeColor].hasStarted ? CORNERS[activeColor] : undefined;

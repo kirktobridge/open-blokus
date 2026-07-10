@@ -23,6 +23,9 @@ import { LeaveIcon } from '../icons';
 import { useBotRunner } from './useBotRunner';
 import { AiThinkingIndicator } from './AiThinkingIndicator';
 import { mctsConfigFor, type Difficulty } from './difficulty';
+import { BlitzClock } from '../blitz/BlitzClock';
+import { useBlitzClock } from '../blitz/useBlitzClock';
+import { pickRandomMove, resolveBlitzSeconds, type BlitzSeconds } from '../blitz/blitz';
 
 /**
  * Bot pacing in ms. A `?botDelay=` query param wins (so e2e can force instant
@@ -45,12 +48,15 @@ export function LocalAIGame({
   mode,
   aiCount,
   botDifficulties,
+  blitzSeconds = null,
   onLeave,
 }: {
   mode: GameMode;
   aiCount: number;
   /** Difficulty per bot seat (playerID). Seats absent here are human. */
   botDifficulties: Record<string, Difficulty>;
+  /** Blitz per-move limit for human seats; null = untimed (P20 M1). */
+  blitzSeconds?: BlitzSeconds;
   onLeave: () => void;
 }) {
   // debug:false so the redesigned table owns the full width (no bgio panel).
@@ -179,9 +185,30 @@ export function LocalAIGame({
   );
 
   const state = client.getState();
+
+  // Blitz (P20 M1): the clock runs only on a human seat's turn — bot seats pace
+  // themselves (their tier's time budget is their clock). On expiry the seat plays
+  // a random legal move: Blokus has no pass, so the timeout costs you the *choice*
+  // of move, not the turn. Bot turns and watch games (no human seat) are untimed.
+  const blitzLimit = useMemo(() => resolveBlitzSeconds(blitzSeconds), [blitzSeconds]);
+  const humanToPlay =
+    state != null && humanSeats.has(state.ctx.currentPlayer) && !state.ctx.gameover;
+
+  const remainingMs = useBlitzClock({
+    seconds: blitzLimit,
+    running: humanToPlay,
+    turnKey: state?._stateID ?? -1,
+    onExpire: () => {
+      const s = client.getState();
+      if (!s || s.ctx.gameover) return;
+      const move = pickRandomMove(s.G, COLOR_ORDER[s.G.activeColorIndex]);
+      if (move) client.moves.placePiece(move);
+    },
+  });
+
   if (!state) return <div style={{ padding: 16 }}>Loading…</div>;
 
-  const isActive = humanSeats.has(state.ctx.currentPlayer) && !state.ctx.gameover;
+  const isActive = humanToPlay;
   // Orient the board to the first human seat (undefined for all-AI watch games).
   const viewSeat = humanCount > 0 ? '0' : undefined;
   const boardProps = {
@@ -226,8 +253,10 @@ export function LocalAIGame({
           </span>
           <span style={{ fontSize: 12.5, color: 'var(--top-mut)' }}>
             {humanCount} human / {aiCount} AI
+            {blitzLimit != null && ` · blitz ${blitzLimit}s`}
           </span>
           <AiThinkingIndicator since={thinkingSince} />
+          <BlitzClock remainingMs={remainingMs} />
 
           <span style={{ flex: 1 }} />
 

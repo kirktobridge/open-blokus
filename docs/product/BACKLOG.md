@@ -30,8 +30,8 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    seeded self-play already exist.
 2. **P19** — multiplayer identity & reactions: cheap social win; reuses the
    boardgame.io transport.
-3. **P20** (M1) — blitz mode: per-move timer + auto-skip on expiry; UI + turn glue
-   only, no rules-core change.
+3. **P24** — blitz clock legibility: the shipped countdown sits in the top bar, out of
+   the player's field of view; cheap UI fix to a mode that already works.
 4. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
@@ -237,7 +237,7 @@ four classic colors as accents, shapes as the star.
   - 3D "table" / play-area presentation
   - tilted / piled piece-inventory tray (pieces as a pile on a table)
   - drag "swing": a lifted piece tilts + casts a shadow as it nears the board, snaps flat
-    on drop
+    on drop — visual layer only; it sits on the carry/drag substrate built in P23
 - **Depends on:** nothing hard; it's an investment tied to whether these angled surfaces
   get built.
 - **Likely shape:** keep the DOM cell grid for interaction/preview/a11y; add a
@@ -271,6 +271,28 @@ four classic colors as accents, shapes as the star.
 - **Deviation:** GameOverModal did **not** adopt the shared `PANEL` — it keeps its
   heavier modal shadow (overlay dialog, e2e-covered); the "one source" consolidation
   is left for a later pass.
+
+### P23 — Carried-piece placement (pointer holds the piece until you drop it)
+- **Status:** proposed
+- **Value:** today a selected piece is dropped by a stray click — `selectPiece` toggles
+  off when you re-click the thumb you already hold. Harmless in untimed play; in blitz
+  (P20 M1) the clock keeps running while you're holding nothing, so a mis-click silently
+  costs you the move and the timeout plays a random one. A carried piece makes selection
+  *sticky*: it goes away only when you mean it to.
+- **Scope / milestones:** M1 sticky carry — once selected, the piece follows the cursor
+  and survives any click that isn't a deliberate release; deselect narrows to `Esc` or
+  dropping it back on the tray; re-clicking the held thumb no longer toggles off;
+  rotate/flip (scroll, WASD, arrows) keep working mid-carry. M2 true drag —
+  press-drag-release from the tray, plus touch/pointer-event support.
+- **Interaction contract:** **drop == stage, not submit** (decided at intake) — the
+  explicit submit step stays, because the staged-but-unsubmitted state is what P16's
+  illegal-placement shake and P3's advisor overlay both hang off. P6's keyboard-only
+  path must stay complete and a11y-equivalent (it's covered by e2e). Cheat-resistant
+  `(pieceId, rotation, reflected, x, y)` dispatch unchanged — this is pointer semantics
+  only, no rules-core or move-shape change.
+- **Depends on:** nothing hard. **Shares assets with P8** — its deferred drag "swing"
+  (lifted piece tilts + shadow, snaps flat on drop) is the visual layer over *this*
+  interaction; build the carry/drag substrate once, here, so P8 only adds rendering.
 
 ---
 
@@ -323,7 +345,12 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 ## Epic: Game modes
 
 ### P20 — Variety: Blokus Duo & blitz
-- **Status:** proposed
+- **Status:** partial — **M1 (blitz) shipped**: per-move countdown for human seats in the
+  offline vs-AI table. **M2 (Duo) not started**, still blocked on rules-core board-size
+  generalization.
+- **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
+  move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
+  entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
 - **Value:** classic 20×20 is the only way to play. Duo (14×14, center-adjacent
   starts) is *the* canonical 2-player experience; blitz (per-move timer) makes the
   same engine feel like a different game.
@@ -332,6 +359,26 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   config (touches rules core → GAME_SPEC + ARCHITECTURE updates required).
 - **Depends on:** M1: nothing. M2: rules-core generalization (board size is
   currently a constant).
+
+### P24 — Blitz clock legibility (put the countdown where the eyes are)
+- **Status:** proposed
+- **Value:** the blitz clock (P20 M1) renders in the top bar, but during a timed move the
+  player is looking at the board and the tray — nowhere near it. A shrinking number is
+  also its only urgency cue. Observed while verifying P20: at a 5s limit the timeout
+  fires before you register the clock exists, and a random move gets played for you. The
+  feature is fair but currently illegible, which reads as the game cheating.
+- **Scope:** move or mirror the countdown into the player's field of view (candidates:
+  the active PlayerCard, a board-frame treatment, a ring around the staged piece);
+  escalate the existing `data-urgent` state (<3s) from a color/weight change into
+  something peripherally visible — board-edge tint, pulse, or tick.
+- **Constraints:** any motion cue must respect `useReducedMotion` (it gates all P16
+  ceremony); the top-bar chip stays as the precise readout even if a second surface
+  becomes the primary cue — don't trade precision for peripherality.
+- **Depends on:** P20 M1 (shipped). **Synergy with P7 (sound)** — a final-seconds tick is
+  the obvious audio cue and rides P16's existing event hooks; the visual cue should land
+  first so blitz is legible without audio (sound is deferred, and muted tabs are common).
+- **Explicitly out of scope:** whether the clock *should* keep running mid-composition
+  (pause / grace period). That's a fairness question, deliberately left untriaged.
 
 ---
 

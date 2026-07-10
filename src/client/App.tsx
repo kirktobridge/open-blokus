@@ -7,6 +7,7 @@ import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
 import { Tutorial } from './tutorial/Tutorial';
 import type { Difficulty } from './ai/difficulty';
+import type { BlitzSeconds } from './blitz/blitz';
 import { SettingsPanel } from './SettingsPanel';
 import { ControlsHelp } from './ControlsHelp';
 
@@ -20,6 +21,7 @@ export function App() {
     mode: GameMode;
     aiCount: number;
     botDifficulties: Record<string, Difficulty>;
+    blitzSeconds: BlitzSeconds;
   } | null>(null);
 
   const refresh = useCallback(async () => {
@@ -101,6 +103,7 @@ export function App() {
         mode={aiConfig.mode}
         aiCount={aiConfig.aiCount}
         botDifficulties={aiConfig.botDifficulties}
+        blitzSeconds={aiConfig.blitzSeconds}
         onLeave={() => setAiConfig(null)}
       />
     );
@@ -113,8 +116,8 @@ export function App() {
         onCreate={onCreate}
         onJoin={onJoin}
         onRefresh={refresh}
-        onStartAI={(mode, aiCount, botDifficulties) =>
-          setAiConfig({ mode, aiCount, botDifficulties })
+        onStartAI={(mode, aiCount, botDifficulties, blitzSeconds) =>
+          setAiConfig({ mode, aiCount, botDifficulties, blitzSeconds })
         }
         onOpenTutorial={() => setShowTutorial(true)}
         joinError={joinError}
