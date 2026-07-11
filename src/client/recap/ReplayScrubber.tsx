@@ -4,6 +4,7 @@ import { BOARD_SIZE } from '../../shared/constants';
 import type { GameRecord } from '../../game/ai/selfplay';
 import { buildRecap } from '../../game/recap';
 import { Board } from '../board/Board';
+import { TURNS_TO_BOTTOM_RIGHT, humanColor } from '../board/orientation';
 import { ScoreTimeline } from './ScoreTimeline';
 import { usePaletteColors } from '../palettes';
 import { CELL_PX, FONT_MONO, FONT_UI, SECONDARY_BTN } from '../theme';
@@ -35,6 +36,11 @@ export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClos
 
   const clamp = (p: number) => Math.max(0, Math.min(lastPly, p));
   const frame = frames[ply];
+
+  // Show the board in the same orientation the player saw: their color's corner
+  // bottom-right (matches the play screen's default). All-AI records leave it upright.
+  const home = humanColor(record.seats);
+  const boardTurns = home ? TURNS_TO_BOTTOM_RIGHT[home] : 0;
 
   // Any manual navigation pauses playback so it never fights the timer.
   const seekTo = (p: number) => {
@@ -150,11 +156,15 @@ export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClos
           >
             <div style={{ width: BOARD_PX * BOARD_SCALE, height: BOARD_PX * BOARD_SCALE, overflow: 'hidden', borderRadius: 5 }}>
               <div style={{ transform: `scale(${BOARD_SCALE})`, transformOrigin: 'top left', width: BOARD_PX, height: BOARD_PX }}>
-                <Board
-                  board={frame.board}
-                  activeColor={frame.move?.color ?? 'blue'}
-                  lastMove={frame.moveCells}
-                />
+                {/* Rotate to the player's orientation; the board is square, so a
+                    quarter-turn about center stays within the same box. */}
+                <div style={{ transform: `rotate(${boardTurns * 90}deg)`, transformOrigin: 'center', width: BOARD_PX, height: BOARD_PX }}>
+                  <Board
+                    board={frame.board}
+                    activeColor={frame.move?.color ?? 'blue'}
+                    lastMove={frame.moveCells}
+                  />
+                </div>
               </div>
             </div>
           </div>
