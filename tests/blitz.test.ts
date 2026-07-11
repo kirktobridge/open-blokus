@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   BLITZ_OPTIONS,
+  blitzFraction,
   formatRemaining,
   pickRandomMove,
   resolveBlitzSeconds,
@@ -103,5 +104,25 @@ describe('formatRemaining', () => {
 
   it('never renders a negative clock (a late tick reads 0.0, not -0.1)', () => {
     expect(formatRemaining(-120)).toBe('0.0');
+  });
+});
+
+describe('blitzFraction (P24 board bar width)', () => {
+  it('maps remaining/limit to a [0,1] fraction', () => {
+    expect(blitzFraction(5000, 10000)).toBe(0.5);
+    expect(blitzFraction(10000, 10000)).toBe(1);
+    expect(blitzFraction(0, 10000)).toBe(0);
+  });
+
+  it('clamps a late tick past the deadline to 0, not negative', () => {
+    expect(blitzFraction(-200, 5000)).toBe(0);
+  });
+
+  it('clamps an over-limit remaining to 1', () => {
+    expect(blitzFraction(6000, 5000)).toBe(1);
+  });
+
+  it('is 0 for a degenerate/zero limit (no divide-by-zero overflow)', () => {
+    expect(blitzFraction(1000, 0)).toBe(0);
   });
 });

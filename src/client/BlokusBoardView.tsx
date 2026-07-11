@@ -24,6 +24,8 @@ import { useReducedMotion } from './hooks/useReducedMotion';
 import { useReactions } from './hooks/useReactions';
 import { isRealName } from './lobby/config';
 import { reactionMessage } from './lobby/reactions';
+import { BlitzBoardBar } from './blitz/BlitzBoardBar';
+import { BLITZ_URGENT_MS } from './blitz/blitz';
 import { usePaletteColors } from './palettes';
 import { useInventoryDisplay } from './settings';
 import { FONT_MONO, FONT_UI } from './theme';
@@ -58,11 +60,18 @@ export function BlokusBoardView({
   isActive,
   playerID,
   botDifficulties,
+  blitzRemainingMs,
+  blitzLimitMs,
   matchData,
   chatMessages,
   sendChatMessage,
   isMultiplayer,
-}: BoardProps<GameState> & { botDifficulties?: Record<string, Difficulty> }) {
+}: BoardProps<GameState> & {
+  botDifficulties?: Record<string, Difficulty>;
+  /** Live blitz countdown for the board-side bar (P24); null/absent = no clock. */
+  blitzRemainingMs?: number | null;
+  blitzLimitMs?: number | null;
+}) {
   const sel = useSelection();
   const colors = usePaletteColors();
   const activeColor = COLOR_ORDER[G.activeColorIndex];
@@ -85,6 +94,11 @@ export function BlokusBoardView({
   }, [matchData]);
   const reactions = useReactions(chatMessages);
   const onReact = (id: string) => sendChatMessage?.(reactionMessage(id));
+
+  // Blitz legibility (P24): in the final seconds the board frame itself gains a
+  // red glow ring — a peripheral board-edge tint dead-center in the field of view.
+  // Static (reduced-motion-safe); the breathing lives on the countdown bar's fill.
+  const blitzUrgent = blitzRemainingMs != null && blitzRemainingMs <= BLITZ_URGENT_MS;
 
   // Board-frame shake on a rejected placement (P16). Uses the Web Animations API
   // so it replays on the same element without a remount hack; no-op if motion is
@@ -364,6 +378,13 @@ export function BlokusBoardView({
 
       {/* Center column — framed board · rotate · status · dock */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+        {/* Blitz countdown, in the field of view (P24). Inert unless a clock runs. */}
+        <BlitzBoardBar
+          remainingMs={blitzRemainingMs ?? null}
+          limitMs={blitzLimitMs ?? null}
+          reduce={reduce}
+        />
+
         {/* Walnut frame + recessed mat around the (unchanged) board grid. */}
         <div
           ref={frameRef}
@@ -371,8 +392,10 @@ export function BlokusBoardView({
             background: 'linear-gradient(160deg, var(--frame-a), var(--frame-b))',
             borderRadius: 16,
             padding: 19,
-            boxShadow:
-              'inset 0 1px 0 var(--frame-hi), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 48px rgba(15,9,3,.42)',
+            boxShadow: blitzUrgent
+              ? 'inset 0 1px 0 var(--frame-hi), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 48px rgba(15,9,3,.42), 0 0 0 3px rgba(220,38,38,.85), 0 0 26px 4px rgba(220,38,38,.5)'
+              : 'inset 0 1px 0 var(--frame-hi), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 48px rgba(15,9,3,.42)',
+            transition: 'box-shadow 0.2s ease',
           }}
         >
           <div

@@ -272,7 +272,12 @@ export function LocalAIGame({
             <LeaveIcon />
           </button>
         </div>
-        <BlokusBoardView {...boardProps} botDifficulties={botDifficulties} />
+        <BlokusBoardView
+          {...boardProps}
+          botDifficulties={botDifficulties}
+          blitzRemainingMs={remainingMs}
+          blitzLimitMs={blitzLimit != null ? blitzLimit * 1000 : null}
+        />
       </div>
       <MilestoneToasts items={milestoneToasts} onDismiss={dismissMilestones} />
     </SessionActionsContext.Provider>
