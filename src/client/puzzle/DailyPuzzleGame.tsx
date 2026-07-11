@@ -252,8 +252,9 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
   if (finished) statusMain = 'Puzzle complete — see your result.';
   else if (replying.length > 0) statusMain = 'The others are answering…';
   else if (!sel.pieceId) statusMain = 'Select a piece from your hand to begin.';
-  else if (sel.staged && !legal) statusMain = 'Illegal spot — reposition or cancel.';
-  else if (sel.staged && legal) statusMain = 'Locked — press Enter or PLAY MOVE to confirm.';
+  else if (sel.staged && !legal) statusMain = 'Illegal spot — click to pick it back up, or cancel.';
+  else if (sel.staged && legal)
+    statusMain = 'Locked — Enter or PLAY MOVE to confirm · click to reposition.';
   else
     statusMain = (
       <>
@@ -388,14 +389,7 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
                 onCellEnter={
                   interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
                 }
-                onCellClick={
-                  interactive
-                    ? (x, y) => {
-                        sel.setHover({ x, y });
-                        sel.stage();
-                      }
-                    : undefined
-                }
+                onCellClick={interactive ? sel.stageAt : undefined}
                 onLeave={() => {
                   if (!sel.staged) sel.setHover(null);
                 }}

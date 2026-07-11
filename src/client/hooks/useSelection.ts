@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Cell, PieceId, Rotation } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 
@@ -17,9 +17,19 @@ export function useSelection() {
   const [hover, setHover] = useState<Cell | null>(null);
   const [staged, setStaged] = useState(false);
 
+  // Live mirrors so the stable ([]-dep) callbacks below can branch on the current
+  // selection without being torn down and rebuilt on every change.
+  const pieceIdRef = useRef(pieceId);
+  pieceIdRef.current = pieceId;
+  const stagedRef = useRef(staged);
+  stagedRef.current = staged;
+
   const selectPiece = useCallback((id: PieceId) => {
-    // Toggle off if the same piece is clicked again; reset orientation otherwise.
-    setPieceId((cur) => (cur === id ? null : id));
+    // Sticky carry (P23 M1): re-clicking the piece you're already holding is a no-op,
+    // not a toggle-off — a stray click no longer drops the piece. Deselect is Esc.
+    // Switching to a different piece resets orientation and any staged lock.
+    if (pieceIdRef.current === id) return;
+    setPieceId(id);
     setRotation(0);
     setReflected(false);
     setStaged(false);
@@ -46,6 +56,22 @@ export function useSelection() {
   const stage = useCallback(() => setStaged(true), []);
   const unstage = useCallback(() => setStaged(false), []);
 
+  /**
+   * A board click while composing (P23 M1). Placement stays submit-only — a click
+   * never places. If nothing is staged yet, lock the placement at the clicked cell.
+   * If a placement is already staged, any click (inside or outside the footprint) is
+   * "pick it back up": unstage back to positioning without relocating; the next hover
+   * resumes following the cursor.
+   */
+  const stageAt = useCallback((x: number, y: number) => {
+    if (stagedRef.current) {
+      setStaged(false);
+    } else {
+      setHover({ x, y });
+      setStaged(true);
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setPieceId(null);
     setRotation(0);
@@ -67,6 +93,7 @@ export function useSelection() {
     move,
     stage,
     unstage,
+    stageAt,
     reset,
   };
 }

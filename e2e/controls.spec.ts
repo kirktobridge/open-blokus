@@ -60,8 +60,12 @@ test('Submit enables only for a legal, staged placement', async ({ page }) => {
   await page.getByTestId('cell-5-5').click();
   await expect(page.getByTestId('submit-move')).toBeDisabled();
 
-  // Lock on the legal corner: Submit enables; committing advances the turn.
-  await page.getByTestId('cell-0-0').click();
+  // Relocating a staged piece costs two clicks (P23 M1): the first board click picks
+  // it back up (unstage) rather than silently relocating; the second re-stages at the
+  // new cell. Unstage, then lock the legal corner — Submit enables and commits.
+  await page.getByTestId('cell-0-0').click(); // pick it back up (unstage)
+  await expect(page.getByTestId('submit-move')).toBeDisabled();
+  await page.getByTestId('cell-0-0').click(); // re-stage on the legal corner
   await expect(page.getByTestId('submit-move')).toBeEnabled();
   await page.getByTestId('submit-move').click();
   await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue');

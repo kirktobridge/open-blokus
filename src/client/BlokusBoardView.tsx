@@ -329,8 +329,9 @@ export function BlokusBoardView({
   if (ctx.gameover) statusMain = 'Game over — see the results.';
   else if (!canPlay) statusMain = `Waiting — ${cap(activeColor)} to move…`;
   else if (!sel.pieceId) statusMain = 'Select a piece from your hand to begin.';
-  else if (sel.staged && !legal) statusMain = 'Illegal spot — reposition or cancel.';
-  else if (sel.staged && legal) statusMain = 'Locked — press Enter or PLAY MOVE to confirm.';
+  else if (sel.staged && !legal) statusMain = 'Illegal spot — click to pick it back up, or cancel.';
+  else if (sel.staged && legal)
+    statusMain = 'Locked — Enter or PLAY MOVE to confirm · click to reposition.';
   else
     statusMain = (
       <>
@@ -425,14 +426,7 @@ export function BlokusBoardView({
                 onCellEnter={
                   interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
                 }
-                onCellClick={
-                  interactive
-                    ? (x, y) => {
-                        sel.setHover({ x, y });
-                        sel.stage();
-                      }
-                    : undefined
-                }
+                onCellClick={interactive ? sel.stageAt : undefined}
                 onLeave={() => {
                   if (!sel.staged) sel.setHover(null);
                 }}
