@@ -76,6 +76,13 @@ order runs foundation → offline surfaces → live surfaces.
   R2 — **"retry from this turn"**: jump into the game at a flagged turn and play it
   out vs bots (replay to turn N via the pure rules core, hand control to the human) —
   closes the learn-loop. Shares assets with P3.
+  **R0.1 (proposed) — scrubber playback + vertical ranking:** (a) auto-play — a
+  play/pause button steps plies on a timer, with a small inline speed button that cycles
+  1× → 2× → 5× → 1×, showing the active speed as its label; (b) the bottom player list,
+  already reordered by score-rank at the scrubbed turn, laid out as a vertical ranked
+  hierarchy (1st on top, descending) so standings read top-to-bottom. Playback removes
+  manual stepping; vertical ranks parse faster than a reordered row. No evaluator — stays
+  clear of AD4/AD2. Depends on: nothing (R0 shipped).
 - **Depends on:** P1 (logs) for all milestones; R0 needs nothing else. R1+: research
   [AD4](../research/backlog/advisor.md) computes/validates the signal (MCTS
   best-move gap + eval-swing); research AD2 for the score. AD4 also feeds P14 M2
@@ -396,6 +403,11 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Scope:** nickname field (persisted locally, sent on join); canned-reaction button
   row broadcast via the existing transport; shown as toasts by the player card.
 - **Depends on:** nothing hard; reuses boardgame.io transport.
+- **P19.1 (proposed) — text-only reactions:** drop the emoji glyphs; reactions render as
+  their `label` text only (`Nice move` / `Wow` / `Thinking…`) in both the `ReactionBar`
+  picker and the `PlayerCard` toast. Matches the product's emoji-free monochrome tone
+  (cf. the emoji-free top-bar icons in P12). Keep or drop the `emoji` field — rendering
+  just stops using it. Depends on: nothing (P19 shipped).
 
 ---
 
