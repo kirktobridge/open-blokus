@@ -1,11 +1,15 @@
 import { test, expect, request as pwRequest } from '@playwright/test';
 
-const SERVER = 'http://localhost:8000';
+// The admin panel runs on its own game-server instance (:8001), separate from the
+// :8000 server the other specs use. That port is never reused (playwright.config),
+// so it always has the admin creds — a developer's own `npm run serve` on :8000
+// can't shadow it and make these tests flap.
+const SERVER = 'http://localhost:8001';
 const CREDS = { username: 'admin', password: 'test-pass' };
 
 /**
- * The admin panel is served by the game server on :8000 (not the Vite app), and
- * is gated by Basic auth (credentials injected via playwright.config webServer env).
+ * The admin panel is served by the game server (not the Vite app), gated by Basic
+ * auth (credentials injected via playwright.config webServer env).
  */
 test.describe('admin panel', () => {
   test('lists a match and kills it', async ({ browser }) => {

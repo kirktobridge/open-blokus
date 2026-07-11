@@ -13,7 +13,16 @@ export default defineConfig({
       url: 'http://localhost:8000/games',
       reuseExistingServer: true,
       timeout: 60_000,
-      env: { OBK_ADMIN_USER: 'admin', OBK_ADMIN_PASS: 'test-pass' }, // enable admin panel
+    },
+    // Admin panel lives on its own port so a developer's own `npm run serve` on
+    // :8000 (which lacks the admin creds) can't shadow it. Never reused — Playwright
+    // always launches this one with the creds, so admin.spec's auth is deterministic.
+    {
+      command: 'npm run serve',
+      url: 'http://localhost:8001/games',
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env: { PORT: '8001', OBK_ADMIN_USER: 'admin', OBK_ADMIN_PASS: 'test-pass' },
     },
     {
       command: 'npm run dev -- --port 5173 --strictPort',
