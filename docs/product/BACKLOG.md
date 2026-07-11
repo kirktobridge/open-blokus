@@ -26,14 +26,14 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
-   "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
-   scrubber shared with P15 M2.
-2. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
+1. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
    existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
    share waiting on exactly this (P2 recap reuses it too).
-3. **P27** — landscape lobby layout: the home/setup screen wastes horizontal space and
+2. **P27** — landscape lobby layout: the home/setup screen wastes horizontal space and
    forces scrolling on wide viewports; a responsive two-column pass; nothing blocks it.
+3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
+   timeline) shipped; here to stay visible, but the next milestone is blocked on research
+   AD4 (blunder signal) + AD2 (evaluator), so it's no longer the dependency-ready head.
 
 ---
 
@@ -63,8 +63,10 @@ order runs foundation → offline surfaces → live surfaces.
   are already cheat-resistant canonical tuples, replay is exact.
 
 ### P2 — Post-game recap (play-by-play, blunders, key moments)
-- **Status:** in-progress (R0 — replay scrubber + score-over-time timeline). R1+ still
-  blocked on research AD4 signal, AD2 evaluator.
+- **Status:** partial — **R0 shipped**: post-game replay scrubber (step through every
+  ply, board + last-move highlight, keyboard nav) + score-over-time timeline, no AI.
+  The scrubber modal `src/client/recap/ReplayScrubber` is shared for P15 M2 (history
+  replay) to reuse. R1+ still blocked on research AD4 signal, AD2 evaluator.
 - **Value:** turn-level annotations after a game — "good plays," blunders, swings, with
   plain-English messages ("Turn 6: you closed your own corridor"). Special interest:
   games where humans beat the AI. A local LLM could later narrate the structured signal.
@@ -370,8 +372,8 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Status:** partial — **M1 shipped**: a "Your progress" home-screen card backed by
   a localStorage store (games, per-tier win rate, best score, current/best streak,
   perfect clears) with one-time milestone toasts (first win vs each tier, perfect
-  clear). M2 (game history list + replay scrubber) pending — shares the scrubber
-  with P2 R0.
+  clear). M2 (game history list + replay scrubber) pending — the scrubber is now
+  built and ready to reuse: `src/client/recap/ReplayScrubber` (shipped with P2 R0).
 - **Value:** games leave a residue — beating `extreme` the first time should look
   different from losing your first game. Makes P13's named tiers *feel* like a ladder.
 - **Scope / milestones:** M1 localStorage counters — games played, win rate per tier,
