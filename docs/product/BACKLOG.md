@@ -234,7 +234,8 @@ four classic colors as accents, shapes as the star.
   - 3D "table" / play-area presentation
   - tilted / piled piece-inventory tray (pieces as a pile on a table)
   - drag "swing": a lifted piece tilts + casts a shadow as it nears the board, snaps flat
-    on drop — visual layer only; it sits on the carry/drag substrate built in P23
+    on drop — needs a press-drag substrate first (P23 M2 was dropped, so P23 shipped only
+    click-based sticky carry; this feature must build its own drag/pointer layer)
 - **Depends on:** nothing hard; it's an investment tied to whether these angled surfaces
   get built.
 - **Likely shape:** keep the DOM cell grid for interaction/preview/a11y; add a
@@ -282,14 +283,17 @@ four classic colors as accents, shapes as the star.
     that isn't a deliberate release; deselect narrows to `Esc` or dropping it back on the
     tray; re-clicking the held thumb no longer toggles off; rotate/flip (scroll, WASD,
     arrows) keep working mid-carry.
-  - M2 true drag — press-drag-release from the tray, plus touch/pointer-event support.
+  - M2 true drag — **dropped** (not deferred): sticky carry (M1) already fixed the
+    mis-click/blitz-forfeit problem, so press-drag-release + touch/pointer-event support
+    isn't worth its cost. Revisit only if touch demand resurfaces.
   - **Staged-state click semantics.** With a piece staged, a click **outside** the staged
     footprint unstages it (back to positioning; hover resumes following the cursor) rather
     than silently re-staging at the clicked cell, which is today's behavior and reads as an
     accidental relocation. A click **inside** the footprint is the deliberate "pick it back
     up" gesture and also unstages. Placement remains submit-only; no click ever places.
     Costs one extra click to *move* a staged piece (click to unstage, click to re-stage) —
-    accepted: relocating is rarer than cancelling, and dragging (M2) makes it moot.
+    accepted: relocating is rarer than cancelling (M2 drag, which would have made it moot,
+    is dropped, so this is the permanent trade).
     *Why here:* the board click handler stages unconditionally and hover is frozen while
     staged, so a stray click relocates your placement and can fire P16's shake — P23 owns
     that handler, so fixing it separately would rewrite it twice under two contracts.
@@ -299,9 +303,10 @@ four classic colors as accents, shapes as the star.
   path must stay complete and a11y-equivalent (it's covered by e2e). Cheat-resistant
   `(pieceId, rotation, reflected, x, y)` dispatch unchanged — this is pointer semantics
   only, no rules-core or move-shape change.
-- **Depends on:** nothing hard. **Shares assets with P8** — its deferred drag "swing"
-  (lifted piece tilts + shadow, snaps flat on drop) is the visual layer over *this*
-  interaction; build the carry/drag substrate once, here, so P8 only adds rendering.
+- **Depends on:** nothing hard. **P8 note (was "shares assets"):** with M2 dropped, M1
+  shipped only *click-based* sticky carry — no press-drag substrate. P8's deferred drag
+  "swing" (lifted piece tilts + shadow, snaps flat on drop) therefore has nothing to hang
+  off here; if built it must add its own drag/pointer substrate first.
 
 ### P26 — Emoji-grid share (Wordle-style board in "Copy result")
 - **Status:** proposed
