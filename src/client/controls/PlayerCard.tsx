@@ -97,8 +97,8 @@ export function PlayerCard({
           : '0 5px 14px rgba(20,12,4,.24)',
       }}
     >
-      {/* Reaction toast (P19): a canned emoji from this seat, keyed per message so
-          a fresh reaction replays the pop. Removed by useReactions' TTL. */}
+      {/* Reaction toast (P19): a canned text reaction from this seat, keyed per
+          message so a fresh reaction replays the pop. Removed by useReactions' TTL. */}
       {reaction && (
         <span
           key={reaction.key}
@@ -110,9 +110,12 @@ export function PlayerCard({
             position: 'absolute',
             top: -12,
             right: -8,
-            fontSize: 22,
+            fontSize: 11,
+            fontWeight: 800,
             lineHeight: 1,
-            padding: '4px 6px',
+            whiteSpace: 'nowrap',
+            color: 'var(--ink)',
+            padding: '5px 9px',
             borderRadius: 999,
             background: 'var(--pnl)',
             border: '1px solid var(--pnl-bd)',
@@ -121,7 +124,7 @@ export function PlayerCard({
             pointerEvents: 'none',
           }}
         >
-          {reaction.reaction.emoji}
+          {reaction.reaction.label}
         </span>
       )}
 

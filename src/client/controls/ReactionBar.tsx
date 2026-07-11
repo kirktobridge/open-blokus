@@ -28,16 +28,18 @@ export function ReactionBar({ onReact }: { onReact: (id: string) => void }) {
           aria-label={r.label}
           style={{
             fontFamily: FONT_UI,
-            fontSize: 17,
+            fontSize: 12,
+            fontWeight: 700,
             lineHeight: 1,
+            color: 'var(--ink)',
             border: '1px solid var(--top-bd)',
             background: 'var(--top-bg)',
             borderRadius: 999,
-            padding: '6px 10px',
+            padding: '6px 12px',
             cursor: 'pointer',
           }}
         >
-          {r.emoji}
+          {r.label}
         </button>
       ))}
     </div>
