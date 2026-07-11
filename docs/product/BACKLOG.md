@@ -29,8 +29,9 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 1. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
    existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
    share waiting on exactly this (P2 recap reuses it too).
-2. **P27** — landscape lobby layout: the home/setup screen wastes horizontal space and
-   forces scrolling on wide viewports; a responsive two-column pass; nothing blocks it.
+2. **P18** — bot personas: name/face/quips + real play-style weight variants over the
+   shipped tiers (aggressive blocker vs greedy expander), turning the difficulty dropdown
+   into rivals; nothing blocks it.
 3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped; here to stay visible, but the next milestone is blocked on research
    AD4 (blunder signal) + AD2 (evaluator), so it's no longer the dependency-ready head.
@@ -336,7 +337,12 @@ four classic colors as accents, shapes as the star.
   instead of re-scoping it.
 
 ### P27 — Landscape lobby layout (use the width on desktop)
-- **Status:** in-progress
+- **Status:** shipped — above a 1200px breakpoint the three action cards lay out in a row
+  and the cap relaxes 920→1280px; the open-matches list takes a wide slot below beside a
+  secondary progression + decorative-hero column. Below the breakpoint the original
+  single-column stack renders unchanged. Each home block is built once and arranged by the
+  layout (no duplicated JSX, no behavior change); new reactive `useWideLayout` hook mirrors
+  `useReducedMotion`. `src/client/lobby/HomeScreen.tsx`, `src/client/hooks/useWideLayout.ts`.
 - **Value:** the home screen (P17) caps at 920px and stacks Play-vs-computer, Play-online,
   and Progression in one narrow column beside the hero board, so a desktop/landscape
   viewport shows a tall centered strip with wide dead margins on both sides. The content
