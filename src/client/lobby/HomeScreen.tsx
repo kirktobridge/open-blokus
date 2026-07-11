@@ -11,6 +11,7 @@ import { HeroBoard } from './HeroBoard';
 import { ProgressionPanel } from '../progression/ProgressionPanel';
 import { SettingsPanel } from '../SettingsPanel';
 import { ControlsHelp } from '../ControlsHelp';
+import { useWideLayout } from '../hooks/useWideLayout';
 import {
   FIELD,
   FONT_MONO,
@@ -78,6 +79,7 @@ export function HomeScreen({
   joinError?: string | null;
   onDismissError?: () => void;
 }) {
+  const wide = useWideLayout();
   const saved = useMemo(() => loadQuickPlay(), []);
   const [id, setId] = useState('');
   const [aiMode, setAiMode] = useState<GameMode>(saved?.mode ?? QP_DEFAULT.mode);
@@ -119,6 +121,246 @@ export function HomeScreen({
     // The clock only ever runs on a human seat, so a watch game never advertises it.
     (blitzSeconds != null && humanCount > 0 ? ` · blitz ${blitzSeconds}s` : '');
 
+  // Each home block is built once and arranged by the layout below, so the wide
+  // (landscape) and narrow (stacked) layouts render the *same* nodes — no
+  // duplicated JSX and no behavior difference between breakpoints (P27).
+  const joinBanner = joinError && (
+    <div
+      data-testid="join-error"
+      style={{
+        ...WELL_ROW,
+        background: 'rgba(220, 38, 38, 0.12)',
+        border: '1px solid rgba(220, 38, 38, 0.4)',
+        color: 'var(--ink)',
+        marginBottom: 16,
+      }}
+    >
+      <span style={{ flex: 1 }}>{joinError}</span>
+      {onDismissError && (
+        <button
+          onClick={onDismissError}
+          aria-label="Dismiss"
+          style={{ ...SECONDARY_BTN, padding: '4px 10px', fontSize: 12 }}
+        >
+          Dismiss
+        </button>
+      )}
+    </div>
+  );
+
+  const hero = (
+    <div data-testid="home-hero" style={{ display: 'flex', justifyContent: 'center' }}>
+      <HeroBoard size={280} />
+    </div>
+  );
+
+  // Daily puzzle — one seeded solitaire challenge a day (P14).
+  const dailyCard = (
+    <section data-testid="card-daily" style={{ ...PANEL, padding: 20 }}>
+      <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Daily puzzle</h2>
+      <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>
+        Same board for everyone today — fit as many pieces as you can.
+      </p>
+      <button
+        data-testid="open-puzzle"
+        onClick={onOpenPuzzle}
+        style={{ ...PRIMARY_BTN, width: '100%' }}
+      >
+        Play today's puzzle
+      </button>
+    </section>
+  );
+
+  // Play vs computer — Quick Play hero + collapsible Customize.
+  const vsComputerCard = (
+    <section data-testid="card-vs-computer" style={{ ...PANEL, padding: 20 }}>
+      <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play vs computer</h2>
+      <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>{setupSummary}</p>
+      <button data-testid="quick-play" onClick={start} style={{ ...PRIMARY_BTN, width: '100%' }}>
+        Quick Play
+      </button>
+
+      <details style={{ marginTop: 12 }}>
+        <summary
+          data-testid="customize-toggle"
+          style={{ cursor: 'pointer', color: 'var(--mut)', fontSize: 13.5, fontWeight: 600 }}
+        >
+          Customize…
+        </summary>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
+              Players:{' '}
+              <select
+                data-testid="ai-mode-select"
+                value={aiMode}
+                onChange={(e) => {
+                  const m = Number(e.target.value) as GameMode;
+                  setAiMode(m);
+                  setAiCount((c) => Math.min(c, m));
+                }}
+                style={FIELD}
+              >
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+              </select>
+            </label>
+            <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
+              AI opponents:{' '}
+              <select
+                data-testid="ai-count-select"
+                value={aiCount}
+                onChange={(e) => setAiCount(Number(e.target.value))}
+                style={FIELD}
+              >
+                {Array.from({ length: aiMode + 1 }, (_, n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label
+              style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
+              title="Per-move time limit. Run out and a random legal move is played for you."
+            >
+              Blitz:{' '}
+              <select
+                data-testid="blitz-select"
+                value={blitzSeconds ?? 0}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  const next = n === 0 ? null : n;
+                  setBlitzSeconds(next);
+                  // Turning blitz on retires any extreme seat — it can't race
+                  // the clock (P25); keep the UI and the setup consistent.
+                  setBotDifficulties((prev) => resolveExtremeForBlitz(prev, next));
+                }}
+                style={FIELD}
+              >
+                {BLITZ_OPTIONS.map(({ value, label }) => (
+                  <option key={label} value={value ?? 0}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {botSeats.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {botSeats.map(({ seat, label }) => (
+                <label key={seat} style={{ ...WELL_ROW, fontSize: 14 }}>
+                  <span style={{ minWidth: 140 }}>{label}:</span>
+                  <select
+                    data-testid={`ai-difficulty-${seat}`}
+                    value={botDifficulties[seat] ?? 'easy'}
+                    onChange={(e) =>
+                      setBotDifficulties((prev) => ({
+                        ...prev,
+                        [seat]: e.target.value as Difficulty,
+                      }))
+                    }
+                    style={FIELD}
+                  >
+                    {DIFFICULTIES.map((d) => {
+                      // Extreme has no time budget (~12s/move), so it can't be
+                      // paced into a blitz clock — disable it and say why in
+                      // place, no modal (P25).
+                      const blocked = d === 'extreme' && blitzSeconds != null;
+                      return (
+                        <option key={d} value={d} disabled={blocked}>
+                          {blocked ? 'extreme — needs untimed play' : d}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+              ))}
+            </div>
+          )}
+
+          <button data-testid="start-ai" onClick={start} style={{ ...SECONDARY_BTN, alignSelf: 'flex-start' }}>
+            Start this setup
+          </button>
+        </div>
+      </details>
+
+      <button
+        data-testid="open-tutorial"
+        onClick={onOpenTutorial}
+        style={{
+          marginTop: 12,
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          color: 'var(--mut)',
+          fontFamily: FONT_UI,
+          fontSize: 13.5,
+          fontWeight: 600,
+          cursor: 'pointer',
+          textDecoration: 'underline',
+        }}
+      >
+        New to Blokus? Learn how to play →
+      </button>
+    </section>
+  );
+
+  // Play online — create a table, then share the invite link.
+  const onlineCard = (
+    <section data-testid="card-online" style={{ ...PANEL, padding: 20 }}>
+      <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Play online</h2>
+      <label
+        style={{
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          fontSize: 14,
+          marginBottom: 12,
+        }}
+      >
+        Nickname:{' '}
+        <input
+          data-testid="nickname-input"
+          value={nickname}
+          maxLength={MAX_NICK_LEN}
+          onChange={(e) => onNicknameChange(e.target.value)}
+          placeholder="shown to opponents"
+          style={{ ...FIELD, cursor: 'text', flex: 1, minWidth: 0 }}
+        />
+      </label>
+      <CreateMatchForm onCreate={onCreate} />
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+        <span style={{ color: 'var(--mut)', fontSize: 13 }}>Have a match ID?</span>
+        <input
+          data-testid="join-id-input"
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+          placeholder="match id"
+          style={{ ...FIELD, cursor: 'text' }}
+        />
+        <button
+          data-testid="join-id-submit"
+          onClick={() => id && onJoin(id)}
+          style={{ ...SECONDARY_BTN, padding: '7px 14px', fontSize: 13 }}
+        >
+          Join
+        </button>
+      </div>
+    </section>
+  );
+
+  // Local progression — lifetime vs-AI stats (P15).
+  const progression = <ProgressionPanel />;
+
+  const matchListSection = (
+    <section style={{ ...PANEL, padding: 20 }}>
+      <MatchList matches={matches} onJoin={onJoin} onRefresh={onRefresh} />
+    </section>
+  );
+
   return (
     <div style={{ background: 'var(--table-bg)', minHeight: '100vh', fontFamily: FONT_UI }}>
       {/* TopBar — wordmark · lobby chip · spacer · utility chips (matches the table). */}
@@ -143,235 +385,43 @@ export function HomeScreen({
         <ControlsHelp docked />
       </div>
 
-      <div style={{ maxWidth: 920, margin: '0 auto', padding: '8px 26px 40px' }}>
-        {joinError && (
-          <div
-            data-testid="join-error"
-            style={{
-              ...WELL_ROW,
-              background: 'rgba(220, 38, 38, 0.12)',
-              border: '1px solid rgba(220, 38, 38, 0.4)',
-              color: 'var(--ink)',
-              marginBottom: 16,
-            }}
-          >
-            <span style={{ flex: 1 }}>{joinError}</span>
-            {onDismissError && (
-              <button
-                onClick={onDismissError}
-                aria-label="Dismiss"
-                style={{ ...SECONDARY_BTN, padding: '4px 10px', fontSize: 12 }}
-              >
-                Dismiss
-              </button>
-            )}
-          </div>
-        )}
+      {/* Wide: relax the cap so the row of cards can use the width (P27). */}
+      <div style={{ maxWidth: wide ? 1280 : 920, margin: '0 auto', padding: '8px 26px 40px' }}>
+        {joinBanner}
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <HeroBoard size={280} />
-
-          <div style={{ flex: '1 1 380px', display: 'flex', flexDirection: 'column', gap: 16, minWidth: 300 }}>
-            {/* Daily puzzle — one seeded solitaire challenge a day (P14). */}
-            <section style={{ ...PANEL, padding: 20 }}>
-              <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Daily puzzle</h2>
-              <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>
-                Same board for everyone today — fit as many pieces as you can.
-              </p>
-              <button
-                data-testid="open-puzzle"
-                onClick={onOpenPuzzle}
-                style={{ ...PRIMARY_BTN, width: '100%' }}
-              >
-                Play today's puzzle
-              </button>
-            </section>
-
-            {/* Play vs computer — Quick Play hero + collapsible Customize. */}
-            <section style={{ ...PANEL, padding: 20 }}>
-              <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play vs computer</h2>
-              <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>{setupSummary}</p>
-              <button data-testid="quick-play" onClick={start} style={{ ...PRIMARY_BTN, width: '100%' }}>
-                Quick Play
-              </button>
-
-              <details style={{ marginTop: 12 }}>
-                <summary
-                  data-testid="customize-toggle"
-                  style={{ cursor: 'pointer', color: 'var(--mut)', fontSize: 13.5, fontWeight: 600 }}
-                >
-                  Customize…
-                </summary>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
-                      Players:{' '}
-                      <select
-                        data-testid="ai-mode-select"
-                        value={aiMode}
-                        onChange={(e) => {
-                          const m = Number(e.target.value) as GameMode;
-                          setAiMode(m);
-                          setAiCount((c) => Math.min(c, m));
-                        }}
-                        style={FIELD}
-                      >
-                        <option value={2}>2</option>
-                        <option value={3}>3</option>
-                        <option value={4}>4</option>
-                      </select>
-                    </label>
-                    <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
-                      AI opponents:{' '}
-                      <select
-                        data-testid="ai-count-select"
-                        value={aiCount}
-                        onChange={(e) => setAiCount(Number(e.target.value))}
-                        style={FIELD}
-                      >
-                        {Array.from({ length: aiMode + 1 }, (_, n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label
-                      style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
-                      title="Per-move time limit. Run out and a random legal move is played for you."
-                    >
-                      Blitz:{' '}
-                      <select
-                        data-testid="blitz-select"
-                        value={blitzSeconds ?? 0}
-                        onChange={(e) => {
-                          const n = Number(e.target.value);
-                          const next = n === 0 ? null : n;
-                          setBlitzSeconds(next);
-                          // Turning blitz on retires any extreme seat — it can't race
-                          // the clock (P25); keep the UI and the setup consistent.
-                          setBotDifficulties((prev) => resolveExtremeForBlitz(prev, next));
-                        }}
-                        style={FIELD}
-                      >
-                        {BLITZ_OPTIONS.map(({ value, label }) => (
-                          <option key={label} value={value ?? 0}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  {botSeats.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {botSeats.map(({ seat, label }) => (
-                        <label key={seat} style={{ ...WELL_ROW, fontSize: 14 }}>
-                          <span style={{ minWidth: 140 }}>{label}:</span>
-                          <select
-                            data-testid={`ai-difficulty-${seat}`}
-                            value={botDifficulties[seat] ?? 'easy'}
-                            onChange={(e) =>
-                              setBotDifficulties((prev) => ({
-                                ...prev,
-                                [seat]: e.target.value as Difficulty,
-                              }))
-                            }
-                            style={FIELD}
-                          >
-                            {DIFFICULTIES.map((d) => {
-                              // Extreme has no time budget (~12s/move), so it can't be
-                              // paced into a blitz clock — disable it and say why in
-                              // place, no modal (P25).
-                              const blocked = d === 'extreme' && blitzSeconds != null;
-                              return (
-                                <option key={d} value={d} disabled={blocked}>
-                                  {blocked ? 'extreme — needs untimed play' : d}
-                                </option>
-                              );
-                            })}
-                          </select>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  <button data-testid="start-ai" onClick={start} style={{ ...SECONDARY_BTN, alignSelf: 'flex-start' }}>
-                    Start this setup
-                  </button>
-                </div>
-              </details>
-
-              <button
-                data-testid="open-tutorial"
-                onClick={onOpenTutorial}
-                style={{
-                  marginTop: 12,
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  color: 'var(--mut)',
-                  fontFamily: FONT_UI,
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                New to Blokus? Learn how to play →
-              </button>
-            </section>
-
-            {/* Play online — create a table, then share the invite link. */}
-            <section style={{ ...PANEL, padding: 20 }}>
-              <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Play online</h2>
-              <label
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  alignItems: 'center',
-                  fontSize: 14,
-                  marginBottom: 12,
-                }}
-              >
-                Nickname:{' '}
-                <input
-                  data-testid="nickname-input"
-                  value={nickname}
-                  maxLength={MAX_NICK_LEN}
-                  onChange={(e) => onNicknameChange(e.target.value)}
-                  placeholder="shown to opponents"
-                  style={{ ...FIELD, cursor: 'text', flex: 1, minWidth: 0 }}
-                />
-              </label>
-              <CreateMatchForm onCreate={onCreate} />
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
-                <span style={{ color: 'var(--mut)', fontSize: 13 }}>Have a match ID?</span>
-                <input
-                  data-testid="join-id-input"
-                  value={id}
-                  onChange={(e) => setId(e.target.value)}
-                  placeholder="match id"
-                  style={{ ...FIELD, cursor: 'text' }}
-                />
-                <button
-                  data-testid="join-id-submit"
-                  onClick={() => id && onJoin(id)}
-                  style={{ ...SECONDARY_BTN, padding: '7px 14px', fontSize: 13 }}
-                >
-                  Join
-                </button>
+        {wide ? (
+          // Landscape: three action cards across the top get prime horizontal
+          // space; below them the actionable open-games list sits beside a
+          // secondary column of progression + the decorative hero.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, alignItems: 'start' }}>
+              {dailyCard}
+              {vsComputerCard}
+              {onlineCard}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, alignItems: 'start' }}>
+              {matchListSection}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {progression}
+                {hero}
               </div>
-            </section>
-
-            {/* Local progression — lifetime vs-AI stats (P15). */}
-            <ProgressionPanel />
+            </div>
           </div>
-        </div>
-
-        <section style={{ ...PANEL, padding: 20, marginTop: 20 }}>
-          <MatchList matches={matches} onJoin={onJoin} onRefresh={onRefresh} />
-        </section>
+        ) : (
+          // Portrait/mobile: preserve the original single-column stack unchanged.
+          <>
+            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {hero}
+              <div style={{ flex: '1 1 380px', display: 'flex', flexDirection: 'column', gap: 16, minWidth: 300 }}>
+                {dailyCard}
+                {vsComputerCard}
+                {onlineCard}
+                {progression}
+              </div>
+            </div>
+            <div style={{ marginTop: 20 }}>{matchListSection}</div>
+          </>
+        )}
       </div>
     </div>
   );
