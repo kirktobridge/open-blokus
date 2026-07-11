@@ -1,0 +1,88 @@
+import { describe, it, expect } from 'vitest';
+import { COLOR_ORDER } from '../src/game/types';
+import type { Color } from '../src/game/types';
+import { mulberry32, heuristicStrategy, greedySizeStrategy } from '../src/game/ai/arena';
+import type { Strategy } from '../src/game/ai/arena';
+import { playRecordedGame, replayGame, type GameRecord } from '../src/game/ai/selfplay';
+import { finalScores, remainingSquares } from '../src/game/scoring';
+import { buildRecap } from '../src/game/recap';
+
+function seededRecord(seed: number): GameRecord {
+  const pool: Strategy[] = [
+    heuristicStrategy(),
+    greedySizeStrategy,
+    heuristicStrategy(),
+    greedySizeStrategy,
+  ];
+  const byColor = Object.fromEntries(COLOR_ORDER.map((c, i) => [c, pool[i]])) as Record<
+    Color,
+    Strategy
+  >;
+  const seats = Object.fromEntries(COLOR_ORDER.map((c) => [c, 'heur'])) as Record<Color, string>;
+  return playRecordedGame(byColor, seats, seed, mulberry32(seed));
+}
+
+describe('buildRecap', () => {
+  it('produces one frame per move plus an empty opening frame', () => {
+    const record = seededRecord(7);
+    const frames = buildRecap(record);
+    expect(frames).toHaveLength(record.moves.length + 1);
+    expect(frames[0].ply).toBe(0);
+    expect(frames[0].move).toBeNull();
+    expect(frames[0].moveCells).toEqual([]);
+    expect(frames[0].board.every((c) => c === null)).toBe(true);
+    // Frame indices are contiguous plies.
+    frames.forEach((f, i) => expect(f.ply).toBe(i));
+  });
+
+  it('each non-opening frame records its move and the cells it filled', () => {
+    const frames = buildRecap(seededRecord(11));
+    for (let i = 1; i < frames.length; i++) {
+      const f = frames[i];
+      expect(f.move).toEqual(frames[i].move); // present
+      expect(f.moveCells.length).toBeGreaterThan(0);
+      // Every cell the move claims is that color on this frame's board…
+      for (const idx of f.moveCells) expect(f.board[idx]).toBe(f.move!.color);
+      // …and was empty on the previous frame.
+      for (const idx of f.moveCells) expect(frames[i - 1].board[idx]).toBeNull();
+    }
+  });
+
+  it('placed-squares is monotonic per color and matches the final scores', () => {
+    const record = seededRecord(3);
+    const frames = buildRecap(record);
+
+    // Monotonic non-decreasing per color.
+    for (let i = 1; i < frames.length; i++) {
+      for (const c of COLOR_ORDER) {
+        expect(frames[i].placed[c]).toBeGreaterThanOrEqual(frames[i - 1].placed[c]);
+      }
+    }
+
+    // Final placed == 89 − remaining (89 = total squares of the 21 pieces).
+    const finalG = replayGame(record.moves, undefined, record.mode, record.scoring);
+    const last = frames[frames.length - 1];
+    for (const c of COLOR_ORDER) {
+      expect(last.placed[c]).toBe(89 - remainingSquares(finalG.colors[c]));
+    }
+  });
+
+  it("final frame's board matches a full replay", () => {
+    const record = seededRecord(5);
+    const frames = buildRecap(record);
+    const finalG = replayGame(record.moves, undefined, record.mode, record.scoring);
+    expect(frames[frames.length - 1].board).toEqual(finalG.board);
+    // And the scores derived from that board are the record's scores.
+    expect(finalScores(finalG).colors).toEqual(record.scores);
+  });
+
+  it('throws on a corrupt (illegal) move rather than rendering a bogus frame', () => {
+    const record = seededRecord(9);
+    const corrupt: GameRecord = {
+      ...record,
+      // Force an illegal move: drop a piece onto a cell an earlier move already filled.
+      moves: [record.moves[0], { ...record.moves[0], color: record.moves[1].color }],
+    };
+    expect(() => buildRecap(corrupt)).toThrow(/illegal replayed move/);
+  });
+});

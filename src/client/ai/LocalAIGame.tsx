@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Client } from 'boardgame.io/client';
 import type { BoardProps } from 'boardgame.io/react';
 import type { Bot } from 'boardgame.io/ai';
@@ -12,6 +12,7 @@ import { remainingSquares } from '../../game/scoring';
 import { BlokusBoardView } from '../BlokusBoardView';
 import { useGameRecorder } from '../log/useGameRecorder';
 import type { RecorderClient } from '../log/recorder';
+import type { GameRecord } from '../../game/ai/selfplay';
 import { useProgressionRecorder, type ProgressionClient } from '../progression/useProgressionRecorder';
 import { MilestoneToasts } from '../progression/MilestoneToasts';
 import { hardestTier } from '../progression/progression';
@@ -161,9 +162,14 @@ export function LocalAIGame({
     // botDifficulties is read via the stable difficultyKey proxy (as elsewhere here).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, humanCount, difficultyKey]);
+  // The finished-game record, surfaced for the game-over "Review game" scrubber
+  // (P2 R0). Cleared when a new game starts (client.reset via Play Again) so a
+  // stale record never shows against a fresh board.
+  const [gameRecord, setGameRecord] = useState<GameRecord | null>(null);
   useGameRecorder(
     client as unknown as RecorderClient,
     useMemo(() => ({ seats, src: 'vs-ai' }), [seats]),
+    setGameRecord,
   );
 
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -234,7 +240,13 @@ export function LocalAIGame({
 
   return (
     <SessionActionsContext.Provider
-      value={{ onPlayAgain: () => client.reset(), onLeave }}
+      value={{
+        onPlayAgain: () => {
+          setGameRecord(null);
+          client.reset();
+        },
+        onLeave,
+      }}
     >
       <div style={{ background: 'var(--table-bg)', minHeight: '100vh' }}>
         {/* TopBar — wordmark · match chip · status · utility chips */}
@@ -290,6 +302,7 @@ export function LocalAIGame({
           botDifficulties={botDifficulties}
           blitzRemainingMs={remainingMs}
           blitzLimitMs={blitzLimit != null ? blitzLimit * 1000 : null}
+          gameRecord={gameRecord}
         />
       </div>
       <MilestoneToasts items={milestoneToasts} onDismiss={dismissMilestones} />

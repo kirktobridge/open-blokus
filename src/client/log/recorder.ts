@@ -79,6 +79,12 @@ export function attachRecorder(
   client: RecorderClient,
   header: RecorderHeader,
   sink: (record: GameRecord) => void = (record) => void saveRecord(record),
+  /**
+   * Called with the finished, replay-validated record the moment a game ends —
+   * the same record handed to `sink`. Lets the UI review the game just played
+   * (product P2 R0) without re-parsing the log or waiting on persistence.
+   */
+  onRecord?: (record: GameRecord) => void,
 ): () => void {
   let consumed = 0;
   let saved = false;
@@ -136,6 +142,7 @@ export function attachRecorder(
           return;
         }
         sink(record);
+        onRecord?.(record);
       } catch (err) {
         console.warn('[gamelog] capture failed:', err);
       }

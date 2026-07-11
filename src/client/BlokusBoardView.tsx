@@ -30,6 +30,7 @@ import { usePaletteColors } from './palettes';
 import { useInventoryDisplay } from './settings';
 import { FONT_MONO, FONT_UI } from './theme';
 import type { Difficulty } from './ai/difficulty';
+import type { GameRecord } from '../game/ai/selfplay';
 
 /** Clockwise quarter-turns that bring each color's corner to the bottom-right. */
 const TURNS_TO_BOTTOM_RIGHT: Record<Color, number> = { blue: 2, yellow: 1, red: 0, green: 3 };
@@ -62,6 +63,7 @@ export function BlokusBoardView({
   botDifficulties,
   blitzRemainingMs,
   blitzLimitMs,
+  gameRecord,
   matchData,
   chatMessages,
   sendChatMessage,
@@ -71,6 +73,8 @@ export function BlokusBoardView({
   /** Live blitz countdown for the board-side bar (P24); null/absent = no clock. */
   blitzRemainingMs?: number | null;
   blitzLimitMs?: number | null;
+  /** Finished-game record for the game-over "Review game" scrubber (P2 R0). */
+  gameRecord?: GameRecord | null;
 }) {
   const sel = useSelection();
   const colors = usePaletteColors();
@@ -553,6 +557,7 @@ export function BlokusBoardView({
             const owner = G.config.owners[c];
             return owner !== 'shared' && winners.includes(owner);
           })}
+          gameRecord={gameRecord}
         />
       )}
     </div>
