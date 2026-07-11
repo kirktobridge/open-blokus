@@ -411,7 +411,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   currently a constant).
 
 ### P24 — Blitz clock legibility (put the countdown where the eyes are)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** the blitz clock (P20 M1) renders in the top bar, but during a timed move the
   player is looking at the board and the tray — nowhere near it. A shrinking number is
   also its only urgency cue. Observed while verifying P20: at a 5s limit the timeout
