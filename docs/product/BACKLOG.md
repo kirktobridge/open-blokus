@@ -356,6 +356,29 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing. Revises P17's shipped home layout (surface: `HomeScreen.tsx`);
   reuses the existing `PANEL` primitives, so cards restyle for free.
 
+### P28 — Lobby visual hierarchy pass (rank the front door)
+- **Status:** in-progress
+- **Value:** P17/P27 got the lobby *placed*, but it reads flat: three co-equal primary
+  buttons (Quick Play / Create match / Play puzzle) so nothing leads; the hero board — the
+  brightest object on the page — floats orphaned away from any action; "Play online" and
+  "Open matches" are one intent (find a game with people) split across two surfaces; and on
+  dark the panel/well/border tokens sit too close to separate, so cards melt into the table.
+  The page doesn't rank itself, so the eye has nowhere to land.
+- **Scope:** a hierarchy + grouping pass over `HomeScreen.tsx`, not a rebuild.
+  (a) **One primary on the page** — Quick Play stays `PRIMARY_BTN`; Create match →
+  secondary; Customize / tutorial / Join-by-ID / Refresh → a new `GHOST_BTN` tier (third
+  step below secondary, added to `theme.ts`). (b) **Dock the hero board inside** the
+  Play-vs-computer card so the page's most colorful object decorates the primary action
+  instead of floating. (c) **Merge** Play-online + Open-matches into one "Play with friends"
+  card (create → open list → join-by-ID, in intent order). (d) **Slim the Daily row** from a
+  full card to a one-line hook. (e) **Progress rail** — reuse `ProgressionPanel`, consolidate
+  its 5 stat tiles → 3 + a streak line. (f) **Dark elevation retune** in `theme.css`
+  (`--pnl`/`--pnl-bd`/`--well` stepped apart + a dark panel-shadow token via `--pnl-shadow`).
+  Two-column play-column + progress-rail on wide, single stack on narrow (keep P27's
+  no-regression contract). No behavior change to any card's action; layout/visual only.
+- **Depends on:** nothing. Revises P17+P27's shipped home layout (surface: `HomeScreen.tsx`,
+  `ProgressionPanel.tsx`, `theme.ts`, `theme.css`). Mockup approved before build.
+
 ---
 
 ## Epic: Engagement & retention
