@@ -38,6 +38,25 @@ test('review a finished game: scrub the board and the score timeline', async ({ 
   await page.getByTestId('scrubber-slider').fill('10');
   await expect(ply).toHaveText(`10 / ${total}`);
 
+  // Standings (P2 R0.1) are ranked vertically leader-first and re-rank as you scrub.
+  await expect(page.getByTestId('scrubber-standings')).toBeVisible();
+
+  // Speed toggle cycles 1× → 2× → 5× → 1×.
+  const speed = page.getByTestId('scrubber-speed');
+  await expect(speed).toHaveText('1×');
+  await speed.click();
+  await expect(speed).toHaveText('2×');
+  await speed.click();
+  await expect(speed).toHaveText('5×');
+
+  // Auto-play from a few plies before the end runs to the final position and stops.
+  await page.getByTestId('scrubber-slider').fill(String(total - 5));
+  const play = page.getByTestId('scrubber-play');
+  await expect(play).toHaveText(/Play/);
+  await play.click();
+  await expect(ply).toHaveText(`${total} / ${total}`, { timeout: 10_000 });
+  await expect(play).toHaveText(/Play/); // auto-stopped at the end
+
   // Close returns to the game-over screen (still visible behind the scrubber).
   await page.getByTestId('close-scrubber').click();
   await expect(scrubber).toBeHidden();

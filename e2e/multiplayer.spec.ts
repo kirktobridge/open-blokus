@@ -76,8 +76,10 @@ test('nicknames show on opponent cards and reactions toast across clients', asyn
     await expect(a.getByText('Grace')).toBeVisible({ timeout: 10_000 });
 
     // A sends a reaction → B sees a toast on A's (blue) card, and A sees its own.
+    // Reactions are text-only (P19.1): the toast shows the label, no emoji.
     await a.getByTestId('react-nice').click();
     await expect(b.getByTestId('reaction-blue')).toBeVisible({ timeout: 10_000 });
+    await expect(b.getByTestId('reaction-blue')).toHaveText('Nice move');
     await expect(a.getByTestId('reaction-blue')).toBeVisible({ timeout: 10_000 });
 
     // The bubble is transient — it clears itself after the TTL.
