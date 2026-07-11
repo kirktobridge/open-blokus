@@ -437,7 +437,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   (pause / grace period). That's a fairness question, deliberately left untriaged.
 
 ### P25 — Blitz bot pacing (make the CPU take a human amount of time)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** in blitz (P20 M1) only the human is on a clock. Bot think-time is set by its
   tier, not the match: easy ~0.6s, medium ~0.5s, hard ~2s. Against a 5s human clock that
   reads as the CPU sniping instantly while you sweat — the mode feels rigged even though
