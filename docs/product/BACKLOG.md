@@ -336,7 +336,7 @@ four classic colors as accents, shapes as the star.
   instead of re-scoping it.
 
 ### P27 — Landscape lobby layout (use the width on desktop)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** the home screen (P17) caps at 920px and stacks Play-vs-computer, Play-online,
   and Progression in one narrow column beside the hero board, so a desktop/landscape
   viewport shows a tall centered strip with wide dead margins on both sides. The content
