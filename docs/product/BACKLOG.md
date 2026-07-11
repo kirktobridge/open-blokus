@@ -63,7 +63,8 @@ order runs foundation → offline surfaces → live surfaces.
   are already cheat-resistant canonical tuples, replay is exact.
 
 ### P2 — Post-game recap (play-by-play, blunders, key moments)
-- **Status:** proposed (blocked on P1 + research AD4 signal, AD2 evaluator)
+- **Status:** in-progress (R0 — replay scrubber + score-over-time timeline). R1+ still
+  blocked on research AD4 signal, AD2 evaluator.
 - **Value:** turn-level annotations after a game — "good plays," blunders, swings, with
   plain-English messages ("Turn 6: you closed your own corridor"). Special interest:
   games where humans beat the AI. A local LLM could later narrate the structured signal.
