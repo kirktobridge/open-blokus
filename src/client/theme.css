@@ -244,6 +244,26 @@ select {
   animation: ob-hint-pulse 1.6s ease-in-out infinite;
 }
 
+/* Reaction bubble (P19) — a canned emoji reaction pops in over the sender's
+   player card, then is removed by its TTL. */
+@keyframes ob-react-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.ob-react-pop {
+  animation: ob-react-pop 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Honor reduced-motion: drop the decorative in-game animations entirely. The
    JS-driven ceremony (count-ups, racing bars, shake) checks the same media
    query and snaps to its end state. */
@@ -253,7 +273,8 @@ select {
   .ob-beat,
   .ob-hint-pulse,
   .ob-spin,
-  .ob-toast {
+  .ob-toast,
+  .ob-react-pop {
     animation: none;
   }
   .ob-settle {

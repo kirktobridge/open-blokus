@@ -45,6 +45,49 @@ test('two players in separate browsers see each other’s moves', async ({ brows
   }
 });
 
+test('nicknames show on opponent cards and reactions toast across clients', async ({
+  browser,
+}) => {
+  const ctxA = await browser.newContext();
+  const ctxB = await browser.newContext();
+  const a = await ctxA.newPage();
+  const b = await ctxB.newPage();
+
+  try {
+    // A sets a nickname, then creates a 4-player match (seated P0 = blue).
+    await a.goto('/');
+    await a.getByTestId('nickname-input').fill('Ada');
+    await a.getByTestId('mode-select').selectOption('4');
+    await a.getByTestId('create-match').click();
+    await expect(a.getByTestId('match-id')).toBeVisible();
+    const matchID = ((await a.getByTestId('match-id').textContent()) ?? '')
+      .replace('Match:', '')
+      .trim();
+
+    // B sets a nickname and joins by ID (seated P1 = yellow).
+    await b.goto('/');
+    await b.getByTestId('nickname-input').fill('Grace');
+    await b.getByTestId('join-id-input').fill(matchID);
+    await b.getByTestId('join-id-submit').click();
+    await expect(b.getByTestId('match-id')).toContainText(matchID);
+
+    // Each sees the other's nickname on the opponent's player card.
+    await expect(b.getByText('Ada')).toBeVisible({ timeout: 10_000 });
+    await expect(a.getByText('Grace')).toBeVisible({ timeout: 10_000 });
+
+    // A sends a reaction → B sees a toast on A's (blue) card, and A sees its own.
+    await a.getByTestId('react-nice').click();
+    await expect(b.getByTestId('reaction-blue')).toBeVisible({ timeout: 10_000 });
+    await expect(a.getByTestId('reaction-blue')).toBeVisible({ timeout: 10_000 });
+
+    // The bubble is transient — it clears itself after the TTL.
+    await expect(b.getByTestId('reaction-blue')).toBeHidden({ timeout: 10_000 });
+  } finally {
+    await ctxA.close();
+    await ctxB.close();
+  }
+});
+
 test('an invite link deep-joins the second player into the match', async ({ browser }) => {
   const ctxA = await browser.newContext();
   const ctxB = await browser.newContext();

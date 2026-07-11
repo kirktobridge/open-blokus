@@ -6,6 +6,7 @@ import type { PaletteColors } from '../palettes';
 import type { InventoryDisplay } from '../settings';
 import { PieceThumb } from '../tray/PieceThumb';
 import { CountUp } from './CountUp';
+import type { ActiveReaction } from '../hooks/useReactions';
 
 /** Which state pill a seat shows. Priority resolved by the parent. */
 export type SeatTag = 'active' | 'onDeck' | 'played' | 'noMoves' | 'winner' | null;
@@ -64,6 +65,7 @@ export function PlayerCard({
   tag,
   active,
   inventoryDisplay = 'silhouette',
+  reaction,
 }: {
   color: Color;
   state: ColorState;
@@ -74,6 +76,8 @@ export function PlayerCard({
   /** Active seat gets a blue keyline + lifted shadow. */
   active: boolean;
   inventoryDisplay?: InventoryDisplay;
+  /** Live reaction bubble for this seat (P19); absent when the seat is quiet. */
+  reaction?: ActiveReaction;
 }) {
   const remaining = new Set(state.remaining);
   const squares = remainingSquares(state);
@@ -81,6 +85,7 @@ export function PlayerCard({
   return (
     <div
       style={{
+        position: 'relative',
         background: 'var(--pnl)',
         border: '1px solid var(--pnl-bd)',
         borderRadius: 12,
@@ -92,6 +97,34 @@ export function PlayerCard({
           : '0 5px 14px rgba(20,12,4,.24)',
       }}
     >
+      {/* Reaction toast (P19): a canned emoji from this seat, keyed per message so
+          a fresh reaction replays the pop. Removed by useReactions' TTL. */}
+      {reaction && (
+        <span
+          key={reaction.key}
+          className="ob-react-pop"
+          data-testid={`reaction-${color}`}
+          data-reaction={reaction.reaction.id}
+          title={reaction.reaction.label}
+          style={{
+            position: 'absolute',
+            top: -12,
+            right: -8,
+            fontSize: 22,
+            lineHeight: 1,
+            padding: '4px 6px',
+            borderRadius: 999,
+            background: 'var(--pnl)',
+            border: '1px solid var(--pnl-bd)',
+            boxShadow: '0 4px 12px rgba(20,12,4,.32)',
+            zIndex: 2,
+            pointerEvents: 'none',
+          }}
+        >
+          {reaction.reaction.emoji}
+        </span>
+      )}
+
       {/* Row 1: color tile · name · state tag */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
         <span
