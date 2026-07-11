@@ -16,6 +16,7 @@ import {
   FIELD,
   FONT_MONO,
   FONT_UI,
+  GHOST_BTN,
   PANEL,
   PRIMARY_BTN,
   SECONDARY_BTN,
@@ -112,14 +113,21 @@ export function HomeScreen({
   };
 
   const humanCount = aiMode - aiCount;
-  const setupSummary =
-    `${aiMode} players · ` +
-    (aiCount === aiMode ? 'watch (all AI)' : `you${humanCount > 1 ? ` +${humanCount - 1}` : ''} vs ${aiCount} AI`) +
-    (botSeats.length > 0
-      ? ` · ${botSeats.map(({ seat }) => botDifficulties[seat] ?? 'easy').join(', ')}`
-      : '') +
-    // The clock only ever runs on a human seat, so a watch game never advertises it.
-    (blitzSeconds != null && humanCount > 0 ? ` · blitz ${blitzSeconds}s` : '');
+  // Human-readable one-liner for the setup: who's playing · the bots' tier(s) ·
+  // the clock. Collapses a uniform lineup to "all easy" and names the clock as
+  // "untimed" when off, so the summary reads like a sentence, not a debug dump.
+  const tiers = botSeats.map(({ seat }) => botDifficulties[seat] ?? 'easy');
+  const uniformTier = tiers.length > 0 && tiers.every((t) => t === tiers[0]);
+  const setupSummary = [
+    aiCount === aiMode
+      ? `Watch — ${aiMode} bots`
+      : `You${humanCount > 1 ? ` +${humanCount - 1}` : ''} vs ${aiCount} ${aiCount === 1 ? 'bot' : 'bots'}`,
+    tiers.length === 0 ? null : uniformTier ? `all ${tiers[0]}` : tiers.join(', '),
+    // The clock only ever runs on a human seat, so a watch game stays silent on it.
+    humanCount > 0 ? (blitzSeconds != null ? `blitz ${blitzSeconds}s` : 'untimed') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   // Each home block is built once and arranged by the layout below, so the wide
   // (landscape) and narrow (stacked) layouts render the *same* nodes — no
@@ -154,31 +162,44 @@ export function HomeScreen({
     </div>
   );
 
-  // Daily puzzle — one seeded solitaire challenge a day (P14).
+  // Daily puzzle — a slim one-line hook (P28), not a full card competing with the
+  // primary action: title + one line on the left, a secondary CTA on the right.
   const dailyCard = (
-    <section data-testid="card-daily" style={{ ...PANEL, padding: 20 }}>
-      <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Daily puzzle</h2>
-      <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>
-        Same board for everyone today — fit as many pieces as you can.
-      </p>
-      <button
-        data-testid="open-puzzle"
-        onClick={onOpenPuzzle}
-        style={{ ...PRIMARY_BTN, width: '100%' }}
-      >
+    <section
+      data-testid="card-daily"
+      style={{ ...PANEL, padding: '16px 22px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}
+    >
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Daily puzzle</h2>
+        <p style={{ margin: '3px 0 0', color: 'var(--mut)', fontSize: 13 }}>
+          Same board for everyone today — fit as many pieces as you can.
+        </p>
+      </div>
+      <button data-testid="open-puzzle" onClick={onOpenPuzzle} style={SECONDARY_BTN}>
         Play today's puzzle
       </button>
     </section>
   );
 
-  // Play vs computer — Quick Play hero + collapsible Customize.
+  // Play vs computer — the page's primary action, with the hero board docked
+  // beside it (P28) so the most colorful object decorates the main verb. On wide
+  // the board sits to the right of the body; on narrow it stacks on top.
   const vsComputerCard = (
-    <section data-testid="card-vs-computer" style={{ ...PANEL, padding: 20 }}>
-      <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play vs computer</h2>
-      <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>{setupSummary}</p>
-      <button data-testid="quick-play" onClick={start} style={{ ...PRIMARY_BTN, width: '100%' }}>
-        Quick Play
-      </button>
+    <section data-testid="card-vs-computer" style={{ ...PANEL, padding: 22 }}>
+      <div
+        style={
+          wide
+            ? { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 24, alignItems: 'center' }
+            : { display: 'flex', flexDirection: 'column', gap: 18 }
+        }
+      >
+        {!wide && hero}
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play vs computer</h2>
+          <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>{setupSummary}</p>
+          <button data-testid="quick-play" onClick={start} style={{ ...PRIMARY_BTN, width: '100%' }}>
+            Quick Play
+          </button>
 
       <details style={{ marginTop: 12 }}>
         <summary
@@ -287,40 +308,30 @@ export function HomeScreen({
         </div>
       </details>
 
-      <button
-        data-testid="open-tutorial"
-        onClick={onOpenTutorial}
-        style={{
-          marginTop: 12,
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          color: 'var(--mut)',
-          fontFamily: FONT_UI,
-          fontSize: 13.5,
-          fontWeight: 600,
-          cursor: 'pointer',
-          textDecoration: 'underline',
-        }}
-      >
-        New to Blokus? Learn how to play →
-      </button>
+          <button
+            data-testid="open-tutorial"
+            onClick={onOpenTutorial}
+            style={{ ...GHOST_BTN, display: 'block', marginTop: 12, padding: '6px 0', textDecoration: 'underline' }}
+          >
+            New to Blokus? Learn how to play →
+          </button>
+        </div>
+        {wide && hero}
+      </div>
     </section>
   );
 
-  // Play online — create a table, then share the invite link.
-  const onlineCard = (
-    <section data-testid="card-online" style={{ ...PANEL, padding: 20 }}>
-      <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Play online</h2>
-      <label
-        style={{
-          display: 'flex',
-          gap: 8,
-          alignItems: 'center',
-          fontSize: 14,
-          marginBottom: 12,
-        }}
-      >
+  // Play with friends (P28) — "start a game with people" was one intent split
+  // across a Play-online card and a separate Open-matches list; merged into one
+  // surface, top-to-bottom in intent order: create a table → browse open tables →
+  // join by ID.
+  const friendsCard = (
+    <section data-testid="card-friends" style={{ ...PANEL, padding: 22 }}>
+      <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Play with friends</h2>
+      <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13.5 }}>
+        Create a table and share the invite link, or join one below.
+      </p>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 12 }}>
         Nickname:{' '}
         <input
           data-testid="nickname-input"
@@ -332,21 +343,22 @@ export function HomeScreen({
         />
       </label>
       <CreateMatchForm onCreate={onCreate} />
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+
+      <div style={{ borderTop: '1px solid var(--pnl-bd)', margin: '18px 0 16px' }} />
+
+      <MatchList matches={matches} onJoin={onJoin} onRefresh={onRefresh} />
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 14 }}>
         <span style={{ color: 'var(--mut)', fontSize: 13 }}>Have a match ID?</span>
         <input
           data-testid="join-id-input"
           value={id}
           onChange={(e) => setId(e.target.value)}
           placeholder="match id"
-          style={{ ...FIELD, cursor: 'text' }}
+          style={{ ...FIELD, cursor: 'text', width: 130 }}
         />
-        <button
-          data-testid="join-id-submit"
-          onClick={() => id && onJoin(id)}
-          style={{ ...SECONDARY_BTN, padding: '7px 14px', fontSize: 13 }}
-        >
-          Join
+        <button data-testid="join-id-submit" onClick={() => id && onJoin(id)} style={GHOST_BTN}>
+          Join →
         </button>
       </div>
     </section>
@@ -354,12 +366,6 @@ export function HomeScreen({
 
   // Local progression — lifetime vs-AI stats (P15).
   const progression = <ProgressionPanel />;
-
-  const matchListSection = (
-    <section style={{ ...PANEL, padding: 20 }}>
-      <MatchList matches={matches} onJoin={onJoin} onRefresh={onRefresh} />
-    </section>
-  );
 
   return (
     <div style={{ background: 'var(--table-bg)', minHeight: '100vh', fontFamily: FONT_UI }}>
@@ -385,42 +391,27 @@ export function HomeScreen({
         <ControlsHelp docked />
       </div>
 
-      {/* Wide: relax the cap so the row of cards can use the width (P27). */}
-      <div style={{ maxWidth: wide ? 1280 : 920, margin: '0 auto', padding: '8px 26px 40px' }}>
+      {/* Wide: a ranked play column (primary → daily hook → friends) beside a
+          progress rail; narrow: one centered stack in the same rank order (P28). */}
+      <div style={{ maxWidth: wide ? 1180 : 640, margin: '0 auto', padding: '8px 26px 44px' }}>
         {joinBanner}
 
         {wide ? (
-          // Landscape: three action cards across the top get prime horizontal
-          // space; below them the actionable open-games list sits beside a
-          // secondary column of progression + the decorative hero.
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, alignItems: 'start' }}>
-              {dailyCard}
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: 24, alignItems: 'start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {vsComputerCard}
-              {onlineCard}
+              {dailyCard}
+              {friendsCard}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, alignItems: 'start' }}>
-              {matchListSection}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {progression}
-                {hero}
-              </div>
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>{progression}</div>
           </div>
         ) : (
-          // Portrait/mobile: preserve the original single-column stack unchanged.
-          <>
-            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {hero}
-              <div style={{ flex: '1 1 380px', display: 'flex', flexDirection: 'column', gap: 16, minWidth: 300 }}>
-                {dailyCard}
-                {vsComputerCard}
-                {onlineCard}
-                {progression}
-              </div>
-            </div>
-            <div style={{ marginTop: 20 }}>{matchListSection}</div>
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {vsComputerCard}
+            {dailyCard}
+            {friendsCard}
+            {progression}
+          </div>
         )}
       </div>
     </div>

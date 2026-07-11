@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GameMode, ScoringVariant } from '../../game/types';
-import { FIELD, PRIMARY_BTN, FONT_UI } from '../theme';
+import { FIELD, SECONDARY_BTN, FONT_UI } from '../theme';
 
 const labelStyle = { display: 'flex', gap: 6, alignItems: 'center', fontFamily: FONT_UI, fontSize: 14 };
 
@@ -39,7 +39,7 @@ export function CreateMatchForm({
           <option value="advanced">advanced</option>
         </select>
       </label>
-      <button data-testid="create-match" onClick={() => onCreate(mode, scoring)} style={PRIMARY_BTN}>
+      <button data-testid="create-match" onClick={() => onCreate(mode, scoring)} style={SECONDARY_BTN}>
         Create match
       </button>
     </div>

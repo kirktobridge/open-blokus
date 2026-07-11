@@ -65,13 +65,15 @@ export const ICON_BTN: CSSProperties = {
  * reads as the same room as the board. GameOverModal keeps its heavier modal
  * shadow (it's an overlay dialog); these are for in-flow cards. */
 
-/** Resting card surface — panel fill, hairline border, soft (non-modal) lift. */
+/** Resting card surface — panel fill, hairline border, soft (non-modal) lift.
+ *  The lift is a token (`--pnl-shadow` + `--pnl-inset`) so dark mode can carry a
+ *  heavier shadow that actually reads on the lamplight ground (P28). */
 export const PANEL: CSSProperties = {
   background: 'var(--pnl)',
   color: 'var(--ink)',
   border: '1px solid var(--pnl-bd)',
   borderRadius: 14,
-  boxShadow: '0 10px 28px rgba(15, 9, 3, 0.18)',
+  boxShadow: 'var(--pnl-shadow), var(--pnl-inset)',
   fontFamily: FONT_UI,
 };
 
@@ -97,6 +99,20 @@ export const SECONDARY_BTN: CSSProperties = {
   border: '1px solid var(--pnl-bd)',
   background: 'var(--well)',
   color: 'var(--ink)',
+  cursor: 'pointer',
+};
+
+/** Ghost button — the third tier below SECONDARY, for demoted actions (Customize,
+ *  tutorial link, Refresh, Join-by-ID) so the page carries exactly one primary and
+ *  a clear step-down of emphasis (P28). No fill or border; reads as a text action. */
+export const GHOST_BTN: CSSProperties = {
+  border: 'none',
+  background: 'none',
+  padding: '6px 8px',
+  fontFamily: FONT_UI,
+  fontWeight: 600,
+  fontSize: 13.5,
+  color: 'var(--mut)',
   cursor: 'pointer',
 };
 
