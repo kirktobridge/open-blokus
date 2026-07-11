@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { mctsConfigFor } from '../src/client/ai/difficulty';
+import {
+  blitzPaceMs,
+  mctsConfigFor,
+  resolveExtremeForBlitz,
+  type Difficulty,
+} from '../src/client/ai/difficulty';
 
 // Structural guard for F8 / AE5: a time budget delivers few iterations (~30 for
 // medium), so the beam must stay narrow — a wide beam spreads rollouts too thin
@@ -29,5 +34,45 @@ describe('difficulty MCTS config', () => {
     expect(x.rolloutDepth).toBe(0);
     // Enough rollouts per child to stay reliable at its beam (≥ ~5, per F8).
     expect(x.iterations! / x.beam!).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe('blitz bot pacing (P25)', () => {
+  it('stays within each tier jitter band, both extremes of rand', () => {
+    for (const tier of ['easy', 'medium', 'hard'] as Difficulty[]) {
+      const lo = blitzPaceMs(tier, () => 0);
+      const hi = blitzPaceMs(tier, () => 0.999999);
+      expect(lo).toBeLessThan(hi); // it's a range, not a constant → doesn't read as an animation
+      expect(lo).toBeGreaterThan(0);
+    }
+  });
+
+  it('paces long enough to not read as sniping (well above ~0.5s)', () => {
+    // The complaint is bots replying in ~0.5s; every paced floor clears 1s.
+    for (const tier of ['easy', 'medium', 'hard'] as Difficulty[]) {
+      expect(blitzPaceMs(tier, () => 0)).toBeGreaterThanOrEqual(300);
+    }
+    expect(blitzPaceMs('easy', () => 0)).toBeGreaterThanOrEqual(1000);
+  });
+
+  it('never paces extreme (it is excluded from blitz, so it would never be called)', () => {
+    expect(blitzPaceMs('extreme', () => 0.5)).toBe(0);
+  });
+});
+
+describe('resolveExtremeForBlitz (P25)', () => {
+  it('drops extreme seats to hard when a blitz clock is set', () => {
+    const out = resolveExtremeForBlitz({ '1': 'extreme', '2': 'easy' }, 5);
+    expect(out).toEqual({ '1': 'hard', '2': 'easy' });
+  });
+
+  it('is a no-op (same reference) with blitz off', () => {
+    const input = { '1': 'extreme' as Difficulty };
+    expect(resolveExtremeForBlitz(input, null)).toBe(input);
+  });
+
+  it('is a no-op (same reference) when no seat is extreme', () => {
+    const input = { '1': 'hard' as Difficulty, '2': 'medium' as Difficulty };
+    expect(resolveExtremeForBlitz(input, 10)).toBe(input);
   });
 });

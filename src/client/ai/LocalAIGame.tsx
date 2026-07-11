@@ -22,7 +22,7 @@ import { ICON_CHIP, FONT_MONO, FONT_UI } from '../theme';
 import { LeaveIcon } from '../icons';
 import { useBotRunner } from './useBotRunner';
 import { AiThinkingIndicator } from './AiThinkingIndicator';
-import { mctsConfigFor, type Difficulty } from './difficulty';
+import { blitzPaceMs, mctsConfigFor, type Difficulty } from './difficulty';
 import { BlitzClock } from '../blitz/BlitzClock';
 import { useBlitzClock } from '../blitz/useBlitzClock';
 import { pickRandomMove, resolveBlitzSeconds, type BlitzSeconds } from '../blitz/blitz';
@@ -120,14 +120,27 @@ export function LocalAIGame({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficultyKey]);
 
-  // Heuristic (easy) needs an artificial pace to be watchable; MCTS's own search is
-  // the pace, so it runs with no extra delay.
+  // Blitz per-move limit actually in force (?blitz= wins); null = untimed. Computed
+  // here (above delayForSeat) because it also gates bot pacing.
+  const blitzLimit = useMemo(() => resolveBlitzSeconds(blitzSeconds), [blitzSeconds]);
+
+  // Bot pacing. Untimed: heuristic (easy) needs an artificial pace to be watchable;
+  // MCTS's own search is the pace, so it runs with no extra delay. Blitz (P25): only
+  // the human is on a clock, so every pace-able tier gets a jittered, human-plausible
+  // delay before it submits — otherwise the CPU snipes instantly while you sweat. This
+  // delays the submit, never the search (strength unchanged). `?botDelay=0` (e2e)
+  // forces instant regardless, so timed specs stay fast.
   const delayForSeat = useMemo(() => {
-    const heuristicDelay = resolveBotDelay();
-    return (seat: string) =>
-      (botDifficulties[seat] ?? 'easy') === 'easy' ? heuristicDelay : 0;
+    const baseDelay = resolveBotDelay();
+    const paced = baseDelay > 0 && blitzLimit != null && humanCount > 0;
+    return (seat: string) => {
+      const tier = botDifficulties[seat] ?? 'easy';
+      if (paced) return blitzPaceMs(tier);
+      return tier === 'easy' ? baseDelay : 0;
+    };
+    // botDifficulties read via the stable difficultyKey proxy (as elsewhere here).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [difficultyKey]);
+  }, [difficultyKey, blitzLimit, humanCount]);
 
   const humanSeats = useMemo(
     () => new Set(Array.from({ length: humanCount }, (_, i) => String(i))),
@@ -187,10 +200,10 @@ export function LocalAIGame({
   const state = client.getState();
 
   // Blitz (P20 M1): the clock runs only on a human seat's turn — bot seats pace
-  // themselves (their tier's time budget is their clock). On expiry the seat plays
-  // a random legal move: Blokus has no pass, so the timeout costs you the *choice*
-  // of move, not the turn. Bot turns and watch games (no human seat) are untimed.
-  const blitzLimit = useMemo(() => resolveBlitzSeconds(blitzSeconds), [blitzSeconds]);
+  // themselves (their tier's time budget is their clock; P25 adds a visible pacing
+  // delay). On expiry the seat plays a random legal move: Blokus has no pass, so the
+  // timeout costs you the *choice* of move, not the turn. Watch games are untimed.
+  // (`blitzLimit` is computed up by delayForSeat, which also gates pacing on it.)
   const humanToPlay =
     state != null && humanSeats.has(state.ctx.currentPlayer) && !state.ctx.gameover;
 
