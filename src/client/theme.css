@@ -264,6 +264,22 @@ select {
   animation: ob-react-pop 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Blitz urgency (P24) — the board-side countdown fill breathes in its final
+   seconds, a peripheral "hurry up" cue on top of the red tint + frame ring.
+   Reduced motion drops the breathing; the color/tint carries the signal alone. */
+@keyframes ob-blitz-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.ob-blitz-pulse {
+  animation: ob-blitz-pulse 0.7s ease-in-out infinite;
+}
+
 /* Honor reduced-motion: drop the decorative in-game animations entirely. The
    JS-driven ceremony (count-ups, racing bars, shake) checks the same media
    query and snaps to its end state. */
@@ -274,7 +290,8 @@ select {
   .ob-hint-pulse,
   .ob-spin,
   .ob-toast,
-  .ob-react-pop {
+  .ob-react-pop,
+  .ob-blitz-pulse {
     animation: none;
   }
   .ob-settle {

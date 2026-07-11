@@ -116,6 +116,36 @@ test('the clock turns urgent in its final seconds', async ({ page }) => {
   await expect(clock).toHaveAttribute('data-urgent', 'true', { timeout: 5_000 });
 });
 
+test('the board-side countdown bar (P24) tracks the human turn and escalates', async ({
+  page,
+}) => {
+  await page.goto('/?botDelay=0&blitz=5');
+  await page.getByTestId('quick-play').click();
+
+  // The bar sits in the field of view during a timed human turn, starting calm.
+  await expect(page.getByText(/active blue/)).toBeVisible();
+  const bar = page.getByTestId('blitz-board-bar');
+  await expect(bar).toBeVisible();
+  await expect(bar).toHaveAttribute('data-urgent', 'false');
+
+  // It escalates in the final seconds — the peripheral urgency cue P24 adds.
+  await expect(bar).toHaveAttribute('data-urgent', 'true', { timeout: 6_000 });
+
+  // It's tied to the human clock: hand the turn to the AI and the bar disappears.
+  await page.getByTestId('piece-blue-I2').click();
+  await page.getByTestId('cell-0-0').click();
+  await page.getByTestId('submit-move').click();
+  await expect(bar).toBeHidden();
+});
+
+test('no board-side bar when blitz is off', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('quick-play').click();
+
+  await expect(page.getByText(/active blue/)).toBeVisible();
+  await expect(page.getByTestId('blitz-board-bar')).toBeHidden();
+});
+
 test('blitz off (the default) shows no clock and never moves for you', async ({ page }) => {
   await page.goto('/?botDelay=0');
   await page.getByTestId('quick-play').click();

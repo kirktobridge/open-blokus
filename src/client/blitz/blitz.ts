@@ -57,3 +57,13 @@ export function pickRandomMove(
 export function formatRemaining(remainingMs: number): string {
   return (Math.max(0, remainingMs) / 1000).toFixed(1);
 }
+
+/**
+ * Remaining fraction [0, 1] of a per-move limit — the width of the board-side
+ * countdown bar (P24). Clamped both ways so a late tick past the deadline or a
+ * degenerate/zero limit can't produce a negative or overflowing bar.
+ */
+export function blitzFraction(remainingMs: number, limitMs: number): number {
+  if (!(limitMs > 0)) return 0;
+  return Math.max(0, Math.min(1, remainingMs / limitMs));
+}
