@@ -26,17 +26,17 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P25** — blitz bot pacing: bots aren't on the clock and snipe in ~0.5s; pairs with
-   the just-shipped P24 as the other half of making blitz feel fair.
-2. **P23** — carried-piece placement: a stray click drops the held piece, and in blitz the
+1. **P23** — carried-piece placement: a stray click drops the held piece, and in blitz the
    clock keeps running while you hold nothing — a mis-click silently costs the move. Sticky
    carry fixes it; nothing hard blocks it, and it's the drag substrate P8 builds on.
-3. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
+2. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
-4. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
+3. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
    existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
    share waiting on exactly this (P2 recap reuses it too).
+4. **P27** — landscape lobby layout: the home/setup screen wastes horizontal space and
+   forces scrolling on wide viewports; a responsive two-column pass; nothing blocks it.
 
 ---
 
@@ -436,8 +436,14 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Explicitly out of scope:** whether the clock *should* keep running mid-composition
   (pause / grace period). That's a fairness question, deliberately left untriaged.
 
-### P25 — Blitz bot pacing (make the CPU take a human amount of time)
-- **Status:** in-progress
+### P25 — Blitz bot pacing (make the CPU take a human amount of time) — SHIPPED
+- **Status:** shipped — in blitz, `easy`/`medium`/`hard` bots floor their visible
+  think-time to a jittered, tier-scaled interval before submitting (`blitzPaceMs`, delays
+  the submit not the search; `?botDelay=0` still forces instant for e2e). `extreme` is
+  excluded from blitz — the difficulty `<select>` disables it in place
+  (`extreme — needs untimed play`) and `resolveExtremeForBlitz` drops any extreme seat to
+  `hard` on blitz-enable, saved-setup load, and launch. No tier's search or strength
+  changes. (`src/client/ai/difficulty.ts` + `LocalAIGame.tsx` + `HomeScreen.tsx`; merge 7c768d1.)
 - **Value:** in blitz (P20 M1) only the human is on a clock. Bot think-time is set by its
   tier, not the match: easy ~0.6s, medium ~0.5s, hard ~2s. Against a 5s human clock that
   reads as the CPU sniping instantly while you sweat — the mode feels rigged even though
