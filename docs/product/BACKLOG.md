@@ -26,16 +26,13 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P23** — carried-piece placement: a stray click drops the held piece, and in blitz the
-   clock keeps running while you hold nothing — a mis-click silently costs the move. Sticky
-   carry fixes it; nothing hard blocks it, and it's the drag substrate P8 builds on.
-2. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
+1. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
-3. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
+2. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
    existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
    share waiting on exactly this (P2 recap reuses it too).
-4. **P27** — landscape lobby layout: the home/setup screen wastes horizontal space and
+3. **P27** — landscape lobby layout: the home/setup screen wastes horizontal space and
    forces scrolling on wide viewports; a responsive two-column pass; nothing blocks it.
 
 ---
@@ -272,8 +269,9 @@ four classic colors as accents, shapes as the star.
   heavier modal shadow (overlay dialog, e2e-covered); the "one source" consolidation
   is left for a later pass.
 
-### P23 — Carried-piece placement (pointer holds the piece until you drop it)
-- **Status:** in-progress (M1 sticky carry)
+### P23 — Carried-piece placement (pointer holds the piece until you drop it) — SHIPPED
+- **Status:** shipped — M1 sticky carry landed (staged-state click semantics included).
+  M2 (true drag) dropped; sticky carry resolves the mis-click/blitz-forfeit problem.
 - **Value:** today a selected piece is dropped by a stray click — `selectPiece` toggles
   off when you re-click the thumb you already hold. Harmless in untimed play; in blitz
   (P20 M1) the clock keeps running while you're holding nothing, so a mis-click silently
