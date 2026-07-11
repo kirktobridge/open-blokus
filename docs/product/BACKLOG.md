@@ -273,7 +273,7 @@ four classic colors as accents, shapes as the star.
   is left for a later pass.
 
 ### P23 — Carried-piece placement (pointer holds the piece until you drop it)
-- **Status:** proposed
+- **Status:** in-progress (M1 sticky carry)
 - **Value:** today a selected piece is dropped by a stray click — `selectPiece` toggles
   off when you re-click the thumb you already hold. Harmless in untimed play; in blitz
   (P20 M1) the clock keeps running while you're holding nothing, so a mis-click silently
