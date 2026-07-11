@@ -1,4 +1,5 @@
 import type { MctsConfig } from '../../game/ai/mcts';
+import type { BlitzSeconds } from '../blitz/blitz';
 
 /**
  * Offline-AI difficulty. Easy = heuristic bot; medium/hard = MCTS on a per-move
@@ -36,4 +37,52 @@ const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
 
 export function mctsConfigFor(difficulty: MctsTier): Partial<MctsConfig> {
   return MCTS_TIERS[difficulty];
+}
+
+/**
+ * Blitz bot pacing (P25). In blitz only the human is on a clock, so an instant bot
+ * reply reads as the CPU sniping while you sweat. Floor each pace-able tier's
+ * *visible* think-time to a jittered, human-plausible delay before it submits.
+ *
+ * This delays the submit, never the search — no tier's strength changes (the
+ * ladder anchored by F14/F15 stays valid). The ranges are tuned against each
+ * tier's own search cost (easy ≈ instant, medium ≈ 0.5 s, hard ≈ 2 s budget) so
+ * total visible time stays human and rises with tier. `extreme` is excluded from
+ * blitz entirely (see resolveExtremeForBlitz), so it never paces.
+ */
+const BLITZ_PACE_MS: Record<Exclude<Difficulty, 'extreme'>, [number, number]> = {
+  easy: [1200, 2200],
+  medium: [1000, 1800],
+  hard: [300, 900],
+};
+
+/** A jittered per-move pacing delay in ms for `tier` under a blitz clock. */
+export function blitzPaceMs(tier: Difficulty, rand: () => number = Math.random): number {
+  if (tier === 'extreme') return 0; // excluded from blitz; never paced
+  const [lo, hi] = BLITZ_PACE_MS[tier];
+  return lo + Math.floor(rand() * (hi - lo + 1));
+}
+
+/**
+ * Sanitize a setup so `extreme` never races a blitz clock (P25). Extreme has no
+ * time budget (~12 s/move), already longer than a 5–10 s limit, so pacing can't
+ * fix it — with blitz on, any extreme seat drops to `hard`. Returns the same
+ * object reference when nothing changes (blitz off, or no extreme seats).
+ */
+export function resolveExtremeForBlitz(
+  botDifficulties: Record<string, Difficulty>,
+  blitzSeconds: BlitzSeconds,
+): Record<string, Difficulty> {
+  if (blitzSeconds == null) return botDifficulties;
+  let changed = false;
+  const next: Record<string, Difficulty> = {};
+  for (const [seat, d] of Object.entries(botDifficulties)) {
+    if (d === 'extreme') {
+      next[seat] = 'hard';
+      changed = true;
+    } else {
+      next[seat] = d;
+    }
+  }
+  return changed ? next : botDifficulties;
 }

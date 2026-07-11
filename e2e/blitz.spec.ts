@@ -146,6 +146,27 @@ test('no board-side bar when blitz is off', async ({ page }) => {
   await expect(page.getByTestId('blitz-board-bar')).toBeHidden();
 });
 
+test('blitz excludes the extreme tier from the setup (P25)', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('ai-mode-select').selectOption('4');
+  await page.getByTestId('ai-count-select').selectOption('1'); // one bot seat (P3)
+
+  const extremeOption = page.getByTestId('ai-difficulty-3').locator('option[value="extreme"]');
+
+  // Untimed: extreme is a normal, selectable option. (Read the DOM property directly
+  // — assertions like toBeDisabled are unreliable on a closed select's options.)
+  await expect(extremeOption).toHaveJSProperty('disabled', false);
+  await page.getByTestId('ai-difficulty-3').selectOption('extreme');
+
+  // Turn blitz on: extreme is disabled with an in-place reason, and the seat that
+  // was extreme is retired to hard rather than left racing an unwinnable clock.
+  await page.getByTestId('blitz-select').selectOption({ label: '5s' });
+  await expect(extremeOption).toHaveJSProperty('disabled', true);
+  await expect(extremeOption).toHaveText(/needs untimed play/);
+  await expect(page.getByTestId('ai-difficulty-3')).toHaveValue('hard');
+});
+
 test('blitz off (the default) shows no clock and never moves for you', async ({ page }) => {
   await page.goto('/?botDelay=0');
   await page.getByTestId('quick-play').click();

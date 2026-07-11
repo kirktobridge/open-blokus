@@ -3,7 +3,7 @@ import type { Color, GameMode, ScoringVariant } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { ownersFor } from '../../game/modes';
 import { loadQuickPlay, saveQuickPlay, MAX_NICK_LEN, type MatchInfo } from './config';
-import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
+import { DIFFICULTIES, resolveExtremeForBlitz, type Difficulty } from '../ai/difficulty';
 import { BLITZ_OPTIONS, type BlitzSeconds } from '../blitz/blitz';
 import { CreateMatchForm } from './CreateMatchForm';
 import { MatchList } from './MatchList';
@@ -82,10 +82,12 @@ export function HomeScreen({
   const [id, setId] = useState('');
   const [aiMode, setAiMode] = useState<GameMode>(saved?.mode ?? QP_DEFAULT.mode);
   const [aiCount, setAiCount] = useState(saved?.aiCount ?? QP_DEFAULT.aiCount);
-  const [botDifficulties, setBotDifficulties] = useState<Record<string, Difficulty>>(
-    saved?.botDifficulties ?? {},
-  );
   const [blitzSeconds, setBlitzSeconds] = useState<BlitzSeconds>(saved?.blitzSeconds ?? null);
+  // Sanitize the saved setup on load: a stored `extreme + blitz` can't race the clock
+  // (P25), so drop extreme to hard rather than start an unwinnable game.
+  const [botDifficulties, setBotDifficulties] = useState<Record<string, Difficulty>>(() =>
+    resolveExtremeForBlitz(saved?.botDifficulties ?? {}, saved?.blitzSeconds ?? null),
+  );
 
   const botSeats = useMemo(() => botSeatLabels(aiMode, aiCount), [aiMode, aiCount]);
 
@@ -100,9 +102,11 @@ export function HomeScreen({
   }, [botSeats]);
 
   // Persist the setup and launch — used by both Quick Play and the Customize form.
+  // Sanitize once more at the boundary so no extreme+blitz combo can ever launch (P25).
   const start = () => {
-    saveQuickPlay({ mode: aiMode, aiCount, botDifficulties, blitzSeconds });
-    onStartAI(aiMode, aiCount, botDifficulties, blitzSeconds);
+    const tiers = resolveExtremeForBlitz(botDifficulties, blitzSeconds);
+    saveQuickPlay({ mode: aiMode, aiCount, botDifficulties: tiers, blitzSeconds });
+    onStartAI(aiMode, aiCount, tiers, blitzSeconds);
   };
 
   const humanCount = aiMode - aiCount;
@@ -242,7 +246,11 @@ export function HomeScreen({
                         value={blitzSeconds ?? 0}
                         onChange={(e) => {
                           const n = Number(e.target.value);
-                          setBlitzSeconds(n === 0 ? null : n);
+                          const next = n === 0 ? null : n;
+                          setBlitzSeconds(next);
+                          // Turning blitz on retires any extreme seat — it can't race
+                          // the clock (P25); keep the UI and the setup consistent.
+                          setBotDifficulties((prev) => resolveExtremeForBlitz(prev, next));
                         }}
                         style={FIELD}
                       >
@@ -271,11 +279,17 @@ export function HomeScreen({
                             }
                             style={FIELD}
                           >
-                            {DIFFICULTIES.map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
-                            ))}
+                            {DIFFICULTIES.map((d) => {
+                              // Extreme has no time budget (~12s/move), so it can't be
+                              // paced into a blitz clock — disable it and say why in
+                              // place, no modal (P25).
+                              const blocked = d === 'extreme' && blitzSeconds != null;
+                              return (
+                                <option key={d} value={d} disabled={blocked}>
+                                  {blocked ? 'extreme — needs untimed play' : d}
+                                </option>
+                              );
+                            })}
                           </select>
                         </label>
                       ))}
