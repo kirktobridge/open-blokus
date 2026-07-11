@@ -26,10 +26,11 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P24** — blitz clock legibility: the shipped countdown sits in the top bar, out of
-   the player's field of view; cheap UI fix to a mode that already works.
-2. **P25** — blitz bot pacing: bots aren't on the clock and snipe in ~0.5s; pairs with
-   P24 as the other half of making the shipped mode feel fair.
+1. **P25** — blitz bot pacing: bots aren't on the clock and snipe in ~0.5s; pairs with
+   the just-shipped P24 as the other half of making blitz feel fair.
+2. **P23** — carried-piece placement: a stray click drops the held piece, and in blitz the
+   clock keeps running while you hold nothing — a mis-click silently costs the move. Sticky
+   carry fixes it; nothing hard blocks it, and it's the drag substrate P8 builds on.
 3. **P2** (R0) — post-game replay scrubber + score-over-time timeline: genuine
    "when did I fall behind?" advice with zero evaluator risk; P1 logs shipped,
    scrubber shared with P15 M2.
@@ -410,8 +411,13 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Depends on:** M1: nothing. M2: rules-core generalization (board size is
   currently a constant).
 
-### P24 — Blitz clock legibility (put the countdown where the eyes are)
-- **Status:** in-progress
+### P24 — Blitz clock legibility (put the countdown where the eyes are) — SHIPPED
+- **Status:** shipped — a board-side countdown bar (mono readout + depleting fill,
+  spanning the board width just above the frame) puts the clock in the field of view;
+  in the final seconds (<3s) the bar breathes red and the board frame gains a static red
+  glow ring — a peripheral cue dead-center in view. The top-bar chip stays as the precise
+  readout. Motion gated by `useReducedMotion`; inert online and when no clock runs.
+  (`src/client/blitz/BlitzBoardBar.tsx` + `blitzFraction`; merge 531e3e1.)
 - **Value:** the blitz clock (P20 M1) renders in the top bar, but during a timed move the
   player is looking at the board and the tray — nowhere near it. A shrinking number is
   also its only urgency cue. Observed while verifying P20: at a 5s limit the timeout
