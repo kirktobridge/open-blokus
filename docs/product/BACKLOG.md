@@ -357,7 +357,10 @@ four classic colors as accents, shapes as the star.
   reuses the existing `PANEL` primitives, so cards restyle for free.
 
 ### P28 — Lobby visual hierarchy pass (rank the front door)
-- **Status:** in-progress
+- **Status:** shipped — hierarchy + grouping pass over `HomeScreen.tsx`: one primary
+  (Quick Play) with a `GHOST_BTN` tier below secondary, hero board docked into the
+  play-vs-computer card, Play-online + Open-matches merged into one card, slimmed Daily
+  row, a consolidated progress rail, and a dark-elevation retune in `theme.css`.
 - **Value:** P17/P27 got the lobby *placed*, but it reads flat: three co-equal primary
   buttons (Quick Play / Create match / Play puzzle) so nothing leads; the hero board — the
   brightest object on the page — floats orphaned away from any action; "Play online" and
