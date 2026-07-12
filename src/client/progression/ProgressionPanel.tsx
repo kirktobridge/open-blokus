@@ -38,13 +38,24 @@ export function ProgressionPanel() {
         </p>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginBottom: 14 }}>
+          {/* Three headline tiles + a one-line streak read: five equal tiles wrapped
+              to an orphaned second row and buried the lead (P28). */}
+          <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginBottom: 10 }}>
             <Stat label="Games" value={String(p.gamesPlayed)} testid="stat-games" />
             <Stat label="Win rate" value={pct(winRate(p.gamesPlayed, p.wins))} testid="stat-winrate" />
             <Stat label="Best score" value={p.bestScore == null ? '—' : String(p.bestScore)} testid="stat-best-score" />
-            <Stat label="Streak" value={String(p.currentStreak)} testid="stat-streak" />
-            <Stat label="Best streak" value={String(p.bestStreak)} testid="stat-best-streak" />
           </div>
+          <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13 }}>
+            Streak:{' '}
+            <strong data-testid="stat-streak" style={{ color: 'var(--ink)', fontFamily: FONT_MONO }}>
+              {p.currentStreak}
+            </strong>{' '}
+            current ·{' '}
+            <strong data-testid="stat-best-streak" style={{ color: 'var(--ink)', fontFamily: FONT_MONO }}>
+              {p.bestStreak}
+            </strong>{' '}
+            best
+          </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {DIFFICULTIES.map((d) => {

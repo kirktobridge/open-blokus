@@ -1,5 +1,5 @@
 import type { MatchInfo } from './config';
-import { FONT_MONO, FONT_UI, PRIMARY_BTN, SECONDARY_BTN, WELL_ROW } from '../theme';
+import { FONT_MONO, FONT_UI, GHOST_BTN, PRIMARY_BTN, WELL_ROW } from '../theme';
 import { CopyInvite } from './CopyInvite';
 
 export function MatchList({
@@ -15,11 +15,7 @@ export function MatchList({
     <div style={{ fontFamily: FONT_UI }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <h3 style={{ margin: 0, fontWeight: 800, color: 'var(--ink)' }}>Open matches</h3>
-        <button
-          data-testid="refresh"
-          onClick={onRefresh}
-          style={{ ...SECONDARY_BTN, padding: '5px 12px', fontSize: 13 }}
-        >
+        <button data-testid="refresh" onClick={onRefresh} style={GHOST_BTN}>
           ↻ Refresh
         </button>
       </div>

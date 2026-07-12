@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-// P27 — the home screen switches between a landscape (row) layout on wide
-// viewports and the original single-column stack on narrow ones. Assert the
-// geometry, not the pixels: cards side-by-side vs stacked.
+// P27 + P28 — the home screen ranks itself into a play column (primary → daily
+// hook → friends) beside a progress rail on wide viewports, and collapses to one
+// centered stack in the same order on narrow ones. Assert the geometry, not pixels.
 
 async function box(page: import('@playwright/test').Page, testId: string) {
   const b = await page.getByTestId(testId).boundingBox();
@@ -10,40 +10,51 @@ async function box(page: import('@playwright/test').Page, testId: string) {
   return b;
 }
 
-test('wide viewport lays the three action cards out in a row', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+test('wide viewport: ranked play column beside a progress rail', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
 
-  const daily = await box(page, 'card-daily');
   const vs = await box(page, 'card-vs-computer');
-  const online = await box(page, 'card-online');
+  const daily = await box(page, 'card-daily');
+  const friends = await box(page, 'card-friends');
+  const rail = await box(page, 'progression-panel');
 
-  // Same row: tops aligned, left→right in reading order.
-  expect(Math.abs(daily.y - vs.y)).toBeLessThan(4);
-  expect(Math.abs(vs.y - online.y)).toBeLessThan(4);
-  expect(vs.x).toBeGreaterThan(daily.x);
-  expect(online.x).toBeGreaterThan(vs.x);
+  // Play column: the three cards stack in one column, same left edge, top→bottom
+  // in rank order (primary → daily → friends).
+  expect(Math.abs(vs.x - daily.x)).toBeLessThan(4);
+  expect(Math.abs(daily.x - friends.x)).toBeLessThan(4);
+  expect(daily.y).toBeGreaterThan(vs.y);
+  expect(friends.y).toBeGreaterThan(daily.y);
 
-  // Hero is decorative — it sits below the action row, not beside it.
+  // Rail sits to the right of the play column, aligned to the top card.
+  expect(rail.x).toBeGreaterThan(vs.x + vs.width - 4);
+  expect(Math.abs(rail.y - vs.y)).toBeLessThan(4);
+
+  // Hero board is docked inside the primary card, not floating on its own.
   const hero = await box(page, 'home-hero');
-  expect(hero.y).toBeGreaterThan(daily.y + daily.height);
+  expect(hero.x + hero.width).toBeLessThanOrEqual(vs.x + vs.width + 1);
+  expect(hero.y).toBeGreaterThanOrEqual(vs.y - 1);
 });
 
-test('narrow viewport stacks the cards in one column, hero on top', async ({ page }) => {
-  await page.setViewportSize({ width: 500, height: 1000 });
+test('narrow viewport: one centered stack in rank order', async ({ page }) => {
+  await page.setViewportSize({ width: 560, height: 1100 });
   await page.goto('/');
 
-  const hero = await box(page, 'home-hero');
-  const daily = await box(page, 'card-daily');
   const vs = await box(page, 'card-vs-computer');
-  const online = await box(page, 'card-online');
+  const daily = await box(page, 'card-daily');
+  const friends = await box(page, 'card-friends');
+  const rail = await box(page, 'progression-panel');
 
-  // Single column: same left edge, stacked top→bottom.
-  expect(Math.abs(daily.x - vs.x)).toBeLessThan(4);
-  expect(Math.abs(vs.x - online.x)).toBeLessThan(4);
-  expect(vs.y).toBeGreaterThan(daily.y);
-  expect(online.y).toBeGreaterThan(vs.y);
+  // Single column: same left edge, stacked top→bottom, rail last.
+  for (const b of [daily, friends, rail]) {
+    expect(Math.abs(b.x - vs.x)).toBeLessThan(4);
+  }
+  expect(daily.y).toBeGreaterThan(vs.y);
+  expect(friends.y).toBeGreaterThan(daily.y);
+  expect(rail.y).toBeGreaterThan(friends.y);
 
-  // Portrait keeps the hero above the stack (unchanged from before P27).
+  // Hero still docked inside the primary card (stacked on top of its body here).
+  const hero = await box(page, 'home-hero');
+  expect(hero.y).toBeGreaterThanOrEqual(vs.y - 1);
   expect(hero.y).toBeLessThan(daily.y);
 });

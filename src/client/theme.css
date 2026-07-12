@@ -45,6 +45,11 @@
   --top-bg: rgba(58, 50, 37, 0.05);
   --brass: #a8834b;
   --table-bg: radial-gradient(1150px 780px at 50% 40%, #f0e9db, #e6dcca 55%, #d5c8b0);
+  /* Card lift — a token so dark can carry a heavier shadow + fainter top inset
+     (P28); the light shadow reads on the linen table, but it's invisible on the
+     lamplight ground, so dark needs its own. */
+  --pnl-shadow: 0 10px 28px rgba(15, 9, 3, 0.18);
+  --pnl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 [data-theme='dark'] {
@@ -62,15 +67,18 @@
   --cell-outline: rgba(0, 0, 0, 0.4);
   --last-move-ring: rgba(255, 255, 255, 0.9);
 
-  /* Study Table — Lamplight (dark) */
+  /* Study Table — Lamplight (dark). Elevation retuned (P28): panel stepped a
+     clear notch above the table, wells a notch below the panel, border light
+     enough to read at 1px — so cards separate from the ground instead of melting
+     into it. */
   --frame-a: #4a3826;
   --frame-b: #2b2013;
   --frame-hi: rgba(255, 255, 255, 0.16);
   --mat: #211d17;
   --grid: #3a3327;
-  --pnl: #2c261e;
-  --pnl-bd: #41392c;
-  --well: #221d16;
+  --pnl: #332c22;
+  --pnl-bd: #4e4433;
+  --well: #1e1913;
   --ink: #ece3d0;
   --mut: #a1947c;
   --top-ink: #e8ddc6;
@@ -79,6 +87,8 @@
   --top-bg: rgba(232, 221, 198, 0.06);
   --brass: #c9a05e;
   --table-bg: radial-gradient(1150px 780px at 50% 40%, #332a20, #262019 55%, #191512);
+  --pnl-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --pnl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* Walnut — the prototype hero. Opt-in via [data-theme='walnut']. */
@@ -114,6 +124,9 @@
   --top-bg: rgba(239, 230, 212, 0.08);
   --brass: #c29a58;
   --table-bg: radial-gradient(1150px 780px at 50% 40%, #584a3c, #493e33 55%, #372f27);
+  /* Walnut panels are light on a dark table, so they take the light-style lift. */
+  --pnl-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  --pnl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 body {
