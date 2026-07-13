@@ -25,4 +25,10 @@ test('keyboard rotate places a rotated piece, with last-move highlight', async (
   // The placed cells carry the last-move highlight.
   await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-lastmove', 'true');
   await expect(page.getByTestId('cell-0-1')).toHaveAttribute('data-lastmove', 'true');
+
+  // …and the ring traces the *piece*, not its cells (P31): a vertical I2 is two cells
+  // sharing one edge, so its outline is 6 segments — not the 8 you'd get boxing each
+  // cell, which would stroke the seam through the piece's middle.
+  const d = (await page.getByTestId('last-move-ring').getAttribute('d')) ?? '';
+  expect(d.match(/M/g) ?? []).toHaveLength(6);
 });
