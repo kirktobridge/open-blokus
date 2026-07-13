@@ -435,8 +435,11 @@ four classic colors as accents, shapes as the star.
   either fold into this entry or become its first milestone. No dead "Coming soon" row ships
   in P29's menu meanwhile.
 
-### P31 — Last-move ring outlines the piece, not its cells
-- **Status:** in-progress — claimed on `feat/p31-last-move-ring`
+### P31 — Last-move ring outlines the piece, not its cells — SHIPPED
+- **Status:** shipped — the ring is one silhouette around the move's cells, stroked on the
+  outline and clipped to the piece so it hugs the border without bleeding onto a neighbour.
+  The silhouette walk came out of `buildRegions` into a pure `cellOutline()`
+  (`src/client/board/outline.ts`), now shared by the bevel and the ring.
 - **Value:** the just-played piece is the one thing on the board a player and their
   opponents need to find instantly. The brass ring is drawn per-cell, so a 5-square piece
   reads as five boxed squares with their shared edges stroked through the middle — it
