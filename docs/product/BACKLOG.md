@@ -435,6 +435,24 @@ four classic colors as accents, shapes as the star.
   either fold into this entry or become its first milestone. No dead "Coming soon" row ships
   in P29's menu meanwhile.
 
+### P31 — Last-move ring outlines the piece, not its cells
+- **Status:** proposed
+- **Value:** the just-played piece is the one thing on the board a player and their
+  opponents need to find instantly. The brass ring is drawn per-cell, so a 5-square piece
+  reads as five boxed squares with their shared edges stroked through the middle — it
+  fights the skeuomorphic finish (which correctly bevels only the silhouette) and makes
+  the piece harder to read as one object, not easier.
+- **Scope:** in `PlacedLayer`, draw the last-move ring as a single silhouette around the
+  union of the move's cells — emit only edges facing a cell *outside* the move — instead
+  of one inset rect per cell. The technique already exists a few lines up: `buildRegions`
+  builds the bevel's silhouette exactly this way. Since same-color pieces may never share
+  an edge, a move's cells are always one 4-connected blob, so no special-casing. Out of
+  scope: the advisor's legal-move hints, which mark *independent candidate squares* and
+  are correct as per-cell boxes.
+- **Depends on:** nothing. One component; the fix reaches every surface that renders a
+  board through `PlacedLayer` at once — live game, recap scrubber (P2 R0), daily puzzle
+  (P14), tutorial (P4).
+
 ---
 
 ## Epic: Engagement & retention
