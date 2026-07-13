@@ -4,6 +4,7 @@ import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 import type { PaletteColors } from '../palettes';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { cellOutline } from './outline';
 
 const C = CELL_PX;
 const SIZE = BOARD_SIZE * C;
@@ -110,6 +111,11 @@ export function PlacedLayer({
   const glowSet = glowColors && glowColors.length > 0 ? new Set(glowColors) : undefined;
   // Remount key so the settle flash replays exactly once per placement.
   const settleKey = lastMove && lastMove.length > 0 ? lastMove.join(',') : '';
+  // The last move's own silhouette + fill (the fill is only ever a clip for the ring).
+  const ring = useMemo(
+    () => (lastMove && lastMove.length > 0 ? cellOutline(lastMove) : null),
+    [lastMove],
+  );
 
   return (
     <svg
@@ -173,6 +179,12 @@ export function PlacedLayer({
             <path d={r.fillD} />
           </clipPath>
         ))}
+        {/* Clip for the last-move ring — the just-played piece only. */}
+        {ring && (
+          <clipPath id="pl-last">
+            <path d={ring.fillD} />
+          </clipPath>
+        )}
       </defs>
 
       {/* Winner glow (reveal only): blurred colored copies beneath the fills so
@@ -233,23 +245,22 @@ export function PlacedLayer({
         opacity={0.06}
       />
 
-      {/* Last-move ring, crisp above the finish. */}
-      {lastMove?.map((idx) => {
-        const x = idx % BOARD_SIZE;
-        const y = (idx / BOARD_SIZE) | 0;
-        return (
-          <rect
-            key={idx}
-            x={x * C + 1.5}
-            y={y * C + 1.5}
-            width={C - 3}
-            height={C - 3}
+      {/* Last-move ring, crisp above the finish: one outline around the *piece*, not a
+          box per cell — the piece's internal seams aren't its border (P31). Stroked on
+          the silhouette and clipped to the piece, so only the inner half shows and the
+          ring can't bleed onto a neighbor sharing that edge. */}
+      {ring && (
+        <g clipPath="url(#pl-last)">
+          <path
+            data-testid="last-move-ring"
+            d={ring.outlineD}
             fill="none"
-            strokeWidth={3}
+            strokeWidth={6}
+            strokeLinecap="square"
             style={{ stroke: 'var(--brass)' }}
           />
-        );
-      })}
+        </g>
+      )}
 
       {/* Placement settle: a one-shot white flash over the just-placed cells that
           pops and fades, reading as the piece landing. Keyed so it replays per
