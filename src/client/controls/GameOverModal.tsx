@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Color, GameState } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
-import { CELL_PX, FONT_MONO, FONT_UI, SECONDARY_BTN } from '../theme';
-import { usePaletteColors } from '../palettes';
+import { CELL_PX, FONT_MONO, FONT_UI, PIECE_VAR, SECONDARY_BTN } from '../theme';
 import { useSessionActions } from '../lobby/sessionContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Board } from '../board/Board';
@@ -43,7 +42,6 @@ export function GameOverModal({
   gameRecord?: GameRecord | null;
 }) {
   const actions = useSessionActions();
-  const colors = usePaletteColors();
   const reduce = useReducedMotion();
   const [reviewing, setReviewing] = useState(false);
 
@@ -164,7 +162,7 @@ export function GameOverModal({
                   width: 13,
                   height: 13,
                   borderRadius: 4,
-                  background: colors[r.color],
+                  background: PIECE_VAR[r.color],
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,.4)',
                   flexShrink: 0,
                 }}
@@ -183,12 +181,12 @@ export function GameOverModal({
                   style={{
                     height: '100%',
                     width: `${(revealed ? r.placed / maxPlaced : 0) * 100}%`,
-                    background: colors[r.color],
+                    background: PIECE_VAR[r.color],
                     borderRadius: 999,
                     transition: reduce
                       ? undefined
                       : `width 850ms cubic-bezier(.22,1,.36,1) ${i * 110}ms`,
-                    boxShadow: r.isWinner ? `0 0 10px ${colors[r.color]}` : undefined,
+                    boxShadow: r.isWinner ? `0 0 10px ${PIECE_VAR[r.color]}` : undefined,
                   }}
                 />
               </div>

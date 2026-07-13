@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Color, PieceId } from '../../game/types';
 import { PIECES } from '../../game/pieces';
-import { THUMB_PX } from '../theme';
-import type { PaletteColors } from '../palettes';
+import { PIECE_VAR, THUMB_PX } from '../theme';
 
 /** Dashed outline used for a placed (spent) piece, per the study-table design. */
 const PLACED_DASH = '#c8b997';
@@ -22,7 +21,6 @@ const CELL_BEVEL =
 export function PieceThumb({
   pieceId,
   color,
-  colors,
   placed,
   selected = false,
   onClick,
@@ -31,7 +29,6 @@ export function PieceThumb({
 }: {
   pieceId: PieceId;
   color: Color;
-  colors: PaletteColors;
   placed: boolean;
   selected?: boolean;
   onClick?: () => void;
@@ -65,13 +62,13 @@ export function PieceThumb({
         } else if (micro) {
           cellStyle = {
             ...cellStyle,
-            background: colors[color],
+            background: PIECE_VAR[color],
             border: '1px solid rgba(0,0,0,.32)',
           };
         } else {
           cellStyle = {
             ...cellStyle,
-            background: colors[color],
+            background: PIECE_VAR[color],
             borderRadius: 2,
             boxShadow: CELL_BEVEL,
           };

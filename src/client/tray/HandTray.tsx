@@ -2,8 +2,7 @@ import type { Color, ColorState, PieceId } from '../../game/types';
 import { PIECE_IDS } from '../../game/types';
 import { pieceSize } from '../../game/pieces';
 import { remainingSquares } from '../../game/scoring';
-import { FONT_MONO, FONT_UI } from '../theme';
-import { usePaletteColors } from '../palettes';
+import { FONT_MONO, FONT_UI, PIECE_VAR } from '../theme';
 import { PieceThumb } from './PieceThumb';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
@@ -34,7 +33,6 @@ export function HandTray({
   onSelect?: (id: PieceId) => void;
 }) {
   const remaining = new Set(state.remaining);
-  const colors = usePaletteColors();
 
   return (
     <div
@@ -56,7 +54,7 @@ export function HandTray({
             width: 18,
             height: 18,
             borderRadius: 5,
-            background: colors[color],
+            background: PIECE_VAR[color],
             boxShadow:
               'inset 0 2px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.3)',
           }}
@@ -90,7 +88,6 @@ export function HandTray({
                   key={id}
                   pieceId={id}
                   color={color}
-                  colors={colors}
                   placed={placed}
                   selected={interactive && selectedId === id}
                   onClick={interactive && !placed ? () => onSelect?.(id) : undefined}

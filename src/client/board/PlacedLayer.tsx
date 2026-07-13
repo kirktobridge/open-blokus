@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import type { Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
-import { CELL_PX } from '../theme';
-import type { PaletteColors } from '../palettes';
+import { CELL_PX, PIECE_VAR } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { cellOutline } from './outline';
 
@@ -86,17 +85,16 @@ function buildRegions(board: (Color | null)[], exclude: ReadonlySet<number>): Re
  * interactive cell grid (pointer-events: none, so clicks fall through). Each
  * piece is a single joined polyomino: translucent fill, one soft contact
  * shadow, global top-down volume shading, per-piece silhouette bevel, and a
- * faint grain. Parameterized entirely by the palette's hex colors.
+ * faint grain. Piece fills come from the `--piece-*` tokens, so a theme switch
+ * recolors the finish with no re-render.
  */
 export function PlacedLayer({
   board,
-  colors,
   previewCells,
   lastMove,
   glowColors,
 }: {
   board: (Color | null)[];
-  colors: PaletteColors;
   /** Board indices currently under a placement preview (excluded from finish). */
   previewCells?: ReadonlySet<number>;
   /** Board indices of the most recent placement (drawn with a highlight ring). */
@@ -194,7 +192,7 @@ export function PlacedLayer({
           {regions
             .filter((r) => glowSet.has(r.color))
             .map((r, i) => (
-              <path key={i} d={r.fillD} fill={colors[r.color]} />
+              <path key={i} d={r.fillD} fill={PIECE_VAR[r.color]} />
             ))}
         </g>
       )}
@@ -202,7 +200,7 @@ export function PlacedLayer({
       {/* Translucent fills sharing one contact shadow. */}
       <g filter="url(#pl-shadow)">
         {regions.map((r, i) => (
-          <path key={i} d={r.fillD} fill={colors[r.color]} fillOpacity={0.92} />
+          <path key={i} d={r.fillD} fill={PIECE_VAR[r.color]} fillOpacity={0.92} />
         ))}
       </g>
 

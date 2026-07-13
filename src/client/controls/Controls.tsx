@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Color, PieceId } from '../../game/types';
 import { PIECES, pieceSize } from '../../game/pieces';
-import { FONT_MONO, FONT_UI } from '../theme';
-import type { PaletteColors } from '../palettes';
+import { FONT_MONO, FONT_UI, PIECE_VAR } from '../theme';
 import { primaryKey } from './keymap';
 
 /** A small keycap badge, e.g. `Enter` inside PLAY MOVE. */
@@ -29,15 +28,7 @@ function Keycap({ children, tone = 'dark' }: { children: string; tone?: 'dark' |
 }
 
 /** A tiny fixed-size preview of a piece's base shape (in-hand slot). */
-function SlotPreview({
-  pieceId,
-  color,
-  colors,
-}: {
-  pieceId: PieceId;
-  color: Color;
-  colors: PaletteColors;
-}) {
+function SlotPreview({ pieceId, color }: { pieceId: PieceId; color: Color }) {
   const cells = PIECES[pieceId];
   const w = Math.max(...cells.map((c) => c.x)) + 1;
   const h = Math.max(...cells.map((c) => c.y)) + 1;
@@ -53,7 +44,7 @@ function SlotPreview({
           style={{
             width: px,
             height: px,
-            background: on ? colors[color] : 'transparent',
+            background: on ? PIECE_VAR[color] : 'transparent',
             borderRadius: on ? 2 : 0,
             boxShadow: on ? 'inset 0 1px 0 rgba(255,255,255,.4)' : undefined,
           }}
@@ -92,7 +83,6 @@ const DIVIDER: CSSProperties = { width: 1, height: 46, background: 'var(--pnl-bd
 export function Controls({
   pieceId,
   color,
-  colors,
   disabled,
   staged,
   canSubmit,
@@ -103,7 +93,6 @@ export function Controls({
 }: {
   pieceId: PieceId | null;
   color: Color;
-  colors: PaletteColors;
   disabled: boolean;
   staged: boolean;
   canSubmit: boolean;
@@ -143,7 +132,7 @@ export function Controls({
           flexShrink: 0,
         }}
       >
-        {pieceId ? <SlotPreview pieceId={pieceId} color={color} colors={colors} /> : null}
+        {pieceId ? <SlotPreview pieceId={pieceId} color={color} /> : null}
       </div>
 
       {/* 2. Label block */}

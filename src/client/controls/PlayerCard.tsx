@@ -1,8 +1,7 @@
 import type { Color, ColorState } from '../../game/types';
 import { PIECE_IDS } from '../../game/types';
 import { remainingSquares } from '../../game/scoring';
-import { FONT_MONO, FONT_UI } from '../theme';
-import type { PaletteColors } from '../palettes';
+import { FONT_MONO, FONT_UI, PIECE_VAR } from '../theme';
 import type { InventoryDisplay } from '../settings';
 import { PieceThumb } from '../tray/PieceThumb';
 import { CountUp } from './CountUp';
@@ -60,7 +59,6 @@ function StateTag({ tag, brass }: { tag: SeatTag; brass: string }) {
 export function PlayerCard({
   color,
   state,
-  colors,
   nameSuffix,
   tag,
   active,
@@ -69,7 +67,6 @@ export function PlayerCard({
 }: {
   color: Color;
   state: ColorState;
-  colors: PaletteColors;
   /** Lighter-weight suffix after the color name — `You` or a difficulty label. */
   nameSuffix?: string | null;
   tag: SeatTag;
@@ -135,7 +132,7 @@ export function PlayerCard({
             width: 20,
             height: 20,
             borderRadius: 5,
-            background: colors[color],
+            background: PIECE_VAR[color],
             boxShadow: TILE_BEVEL,
             flexShrink: 0,
           }}
@@ -179,7 +176,7 @@ export function PlayerCard({
                     width: 6,
                     height: 6,
                     borderRadius: 3,
-                    background: colors[color],
+                    background: PIECE_VAR[color],
                     opacity: placed ? 0.18 : 0.95,
                   }}
                 />
@@ -190,7 +187,6 @@ export function PlayerCard({
                 key={id}
                 pieceId={id}
                 color={color}
-                colors={colors}
                 placed={!remaining.has(id)}
                 cellPx={5}
                 micro

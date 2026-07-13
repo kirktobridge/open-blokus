@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import type { Color } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import type { RecapFrame } from '../../game/recap';
-import { FONT_MONO } from '../theme';
+import { FONT_MONO, PIECE_VAR } from '../theme';
 
 /**
  * Score-over-time timeline (product P2 R0) — the "when did I fall behind?" read.
@@ -19,12 +18,10 @@ const PLOT_H = H - PAD.top - PAD.bottom;
 export function ScoreTimeline({
   frames,
   ply,
-  colors,
   onSeek,
 }: {
   frames: RecapFrame[];
   ply: number;
-  colors: Record<Color, string>;
   /** Seek to a ply when the plot is clicked/dragged. */
   onSeek?: (ply: number) => void;
 }) {
@@ -106,12 +103,12 @@ export function ScoreTimeline({
 
       {/* One line per participating color. */}
       {paths.map((p) => (
-        <path key={p.color} d={p.d} fill="none" stroke={colors[p.color]} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path key={p.color} d={p.d} fill="none" stroke={PIECE_VAR[p.color]} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
       ))}
 
       {/* Dot on each line at the current ply. */}
       {activeColors.map((c) => (
-        <circle key={c} cx={px(ply)} cy={py(frames[ply].placed[c])} r={2.6} fill={colors[c]} />
+        <circle key={c} cx={px(ply)} cy={py(frames[ply].placed[c])} r={2.6} fill={PIECE_VAR[c]} />
       ))}
 
       {/* X-axis caption. */}

@@ -1,7 +1,9 @@
-/* Theme tokens. Piece colors (blue/red/…) live in theme.ts and are shared by
- * both schemes; these are the neutral UI surfaces that flip for dark mode.
- * Inline styles reference these via var(); switching [data-theme] on <html>
- * re-skins the whole app with no re-render.
+/* Theme tokens. Every theme is a complete assignment of this vocabulary —
+ * including the piece colors (--piece-*), which are seeded to the classic scheme
+ * in all three but are retunable like any other token. Inline styles reference
+ * these via var(); switching [data-theme] on <html> re-skins the whole app with
+ * no re-render. User themes fork a built-in by writing *only* their overrides as
+ * inline vars on <html> (see appearance.ts).
  *
  * "The Study Table" redesign adds a warm surface set (frame / mat / panel /
  * ink / brass + a table backdrop). :root = Linen (light), [data-theme='dark']
@@ -10,6 +12,12 @@
  * warm without touching Cell/PlacedLayer. */
 :root {
   color-scheme: light;
+
+  /* Piece colors — the classic scheme, identical in every built-in theme. */
+  --piece-blue: #2563eb;
+  --piece-yellow: #eab308;
+  --piece-red: #dc2626;
+  --piece-green: #16a34a;
 
   /* Typography tokens — shared across schemes; retunable in Settings. */
   --font-ui: 'Nunito', system-ui, sans-serif;
@@ -54,6 +62,12 @@
 
 [data-theme='dark'] {
   color-scheme: dark;
+
+  --piece-blue: #2563eb;
+  --piece-yellow: #eab308;
+  --piece-red: #dc2626;
+  --piece-green: #16a34a;
+
   --bg: #0f1115;
   --fg: #e5e7eb;
   --fg-muted: #9ca3af;
@@ -94,6 +108,12 @@
 /* Walnut — the prototype hero. Opt-in via [data-theme='walnut']. */
 [data-theme='walnut'] {
   color-scheme: dark;
+
+  --piece-blue: #2563eb;
+  --piece-yellow: #eab308;
+  --piece-red: #dc2626;
+  --piece-green: #16a34a;
+
   --bg: #372f27;
   --fg: #efe6d4;
   --fg-muted: #bfb29b;

@@ -4,7 +4,7 @@ import type { BoardProps } from 'boardgame.io/react';
 import { Board } from '../src/client/board/Board';
 import { PieceThumb } from '../src/client/tray/PieceThumb';
 import { BlokusBoardView } from '../src/client/BlokusBoardView';
-import { COLOR_HEX } from '../src/client/theme';
+import { PIECE_VAR } from '../src/client/theme';
 import { createInitialState } from '../src/game/modes';
 import { applyPlacement } from '../src/game/placement';
 import type { GameMode, GameState } from '../src/game/types';
@@ -22,26 +22,23 @@ describe('Board', () => {
     // 400 cells + 1 grid container = 401 divs (the placed-piece finish is an
     // absolutely-positioned <svg> overlay, not a div).
     expect(occurrences(html, '<div')).toBe(401);
-    // Two blue cell backgrounds + one joined-piece fill in the SVG overlay.
-    expect(occurrences(html, COLOR_HEX.blue)).toBe(3);
-    expect(occurrences(html, COLOR_HEX.red)).toBe(0);
+    // Two blue cell backgrounds + one joined-piece fill in the SVG overlay. Pieces
+    // paint from the --piece-* tokens, so the markup carries the var(), not a hex.
+    expect(occurrences(html, PIECE_VAR.blue)).toBe(3);
+    expect(occurrences(html, PIECE_VAR.red)).toBe(0);
   });
 });
 
 describe('PieceThumb', () => {
   it('shows the color when available and dims when placed', () => {
-    const avail = renderToStaticMarkup(
-      <PieceThumb pieceId="I5" color="green" colors={COLOR_HEX} placed={false} />,
-    );
-    expect(avail.includes(COLOR_HEX.green)).toBe(true);
+    const avail = renderToStaticMarkup(<PieceThumb pieceId="I5" color="green" placed={false} />);
+    expect(avail.includes(PIECE_VAR.green)).toBe(true);
     expect(avail.includes('opacity:1')).toBe(true);
 
-    const placed = renderToStaticMarkup(
-      <PieceThumb pieceId="I5" color="green" colors={COLOR_HEX} placed={true} />,
-    );
+    const placed = renderToStaticMarkup(<PieceThumb pieceId="I5" color="green" placed={true} />);
     // Study-table design: a placed piece is a dimmed dashed ghost (no fill).
     expect(placed.includes('opacity:0.8')).toBe(true);
-    expect(placed.includes(COLOR_HEX.green)).toBe(false); // ghosted, not colored
+    expect(placed.includes(PIECE_VAR.green)).toBe(false); // ghosted, not colored
   });
 });
 

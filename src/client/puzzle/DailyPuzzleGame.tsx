@@ -19,11 +19,18 @@ import { HandTray } from '../tray/HandTray';
 import { Controls } from '../controls/Controls';
 import { useSelection } from '../hooks/useSelection';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { usePaletteColors } from '../palettes';
 import { matchAction, type PlacementAction } from '../controls/keymap';
 import { SettingsPanel } from '../SettingsPanel';
 import { ControlsHelp } from '../ControlsHelp';
-import { FONT_MONO, FONT_UI, ICON_CHIP, PANEL, PRIMARY_BTN, SECONDARY_BTN } from '../theme';
+import {
+  FONT_MONO,
+  FONT_UI,
+  ICON_CHIP,
+  PANEL,
+  PIECE_VAR,
+  PRIMARY_BTN,
+  SECONDARY_BTN,
+} from '../theme';
 import { LeaveIcon } from '../icons';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
@@ -89,7 +96,6 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
   }, [replying]);
 
   const sel = useSelection();
-  const colors = usePaletteColors();
   const reduce = useReducedMotion();
 
   const stuck = useMemo(() => !hasAnyMove(board, color), [board, color]);
@@ -325,7 +331,7 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
           <div style={{ ...PANEL, padding: 18 }}>
             <h2 style={{ margin: '0 0 6px', fontWeight: 800, fontSize: 18 }}>Today's puzzle</h2>
             <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13 }}>
-              Fit as many <strong style={{ color: colors[color] }}>{cap(color)}</strong> pieces as
+              Fit as many <strong style={{ color: PIECE_VAR[color] }}>{cap(color)}</strong> pieces as
               you can. The other three colors answer every move, so grab corners before
               they do — score is the squares you place.
             </p>
@@ -410,7 +416,6 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
           <Controls
             pieceId={sel.pieceId}
             color={color}
-            colors={colors}
             disabled={!canPlay}
             staged={sel.staged}
             canSubmit={canSubmit}

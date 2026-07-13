@@ -1,118 +1,52 @@
 import { COLOR_ORDER } from '../game/types';
-import {
-  createPalette,
-  deletePalette,
-  selectPalette,
-  updatePalette,
-  useActivePalette,
-  usePalettes,
-  type Palette,
-} from './palettes';
+import { PIECE_TOKEN } from './theme';
+import { clearTokenOverride, effectiveToken, setTokenOverride, useActiveTheme } from './appearance';
 
-/** Swatch strip showing a palette's four colors. */
-function Swatches({ palette }: { palette: Palette }) {
-  return (
-    <span style={{ display: 'inline-flex', gap: 2 }}>
-      {COLOR_ORDER.map((c) => (
-        <span
-          key={c}
-          title={`${c}: ${palette.colors[c]}`}
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 3,
-            background: palette.colors[c],
-            border: '1px solid var(--cell-outline)',
-          }}
-        />
-      ))}
-    </span>
-  );
-}
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
 
-/** Editable color inputs for a custom palette. */
-function PaletteEditor({ palette }: { palette: Palette }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
-      {COLOR_ORDER.map((c) => (
-        <label key={c} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-          <input
-            type="color"
-            value={palette.colors[c]}
-            aria-label={`${palette.name} ${c}`}
-            onChange={(e) =>
-              updatePalette(palette.id, { colors: { ...palette.colors, [c]: e.target.value } })
-            }
-            style={{ width: 28, height: 20, padding: 0, border: 'none', background: 'none' }}
-          />
-          <span style={{ textTransform: 'capitalize' }}>{c}</span>
-        </label>
-      ))}
-    </div>
-  );
-}
-
-function PaletteRow({ palette, selected }: { palette: Palette; selected: boolean }) {
-  return (
-    <div
-      style={{
-        border: `1px solid ${selected ? 'var(--outline-strong)' : 'var(--cell-outline)'}`,
-        borderRadius: 6,
-        padding: 8,
-      }}
-    >
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-        <input
-          type="radio"
-          name="palette"
-          checked={selected}
-          onChange={() => selectPalette(palette.id)}
-        />
-        <Swatches palette={palette} />
-        {palette.immutable ? (
-          <span style={{ fontSize: 13 }}>{palette.name}</span>
-        ) : (
-          <input
-            type="text"
-            value={palette.name}
-            aria-label={`palette name ${palette.name}`}
-            onChange={(e) => updatePalette(palette.id, { name: e.target.value })}
-            style={{ fontSize: 13, flex: 1, minWidth: 0 }}
-          />
-        )}
-      </label>
-
-      {selected && !palette.immutable && <PaletteEditor palette={palette} />}
-
-      {!palette.immutable && (
-        <button
-          onClick={() => deletePalette(palette.id)}
-          style={{ marginTop: 6, fontSize: 12, cursor: 'pointer' }}
-        >
-          Delete
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** Reusable palette list + creator, for embedding in the Settings panel. */
+/**
+ * Piece-color editor for the active theme — the four `--piece-*` tokens. Editing
+ * one while a built-in is selected forks it (appearance.ts), so "custom palettes"
+ * are just user themes; the built-ins keep the classic scheme forever.
+ */
 export function PaletteControls() {
-  const palettes = usePalettes();
-  const active = useActivePalette();
+  const { theme } = useActiveTheme();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {palettes.map((p) => (
-        <PaletteRow key={p.id} palette={p} selected={p.id === active.id} />
-      ))}
-      <button
-        data-testid="palette-new"
-        onClick={() => createPalette(`Custom ${palettes.length}`, active.colors)}
-        style={{ padding: '4px 8px', cursor: 'pointer', alignSelf: 'flex-start' }}
-      >
-        + New palette
-      </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {COLOR_ORDER.map((c) => {
+        const token = PIECE_TOKEN[c];
+        const value = effectiveToken(token);
+        const overridden = theme != null && token in theme.overrides;
+        return (
+          <div key={c} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+            <input
+              type="color"
+              // <input type="color"> only accepts #rrggbb; a token tuned to any
+              // other CSS color still shows a sane swatch to drag from.
+              value={HEX6.test(value) ? value : '#000000'}
+              aria-label={`${c} piece color`}
+              onChange={(e) => setTokenOverride(token, e.target.value)}
+              style={{ width: 28, height: 20, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ textTransform: 'capitalize', flex: 1 }}>{c}</span>
+            <button
+              onClick={() => clearTokenOverride(token)}
+              disabled={!overridden}
+              title="Reset to theme default"
+              aria-label={`Reset ${c} piece color`}
+              style={{
+                fontSize: 11,
+                padding: '2px 6px',
+                cursor: overridden ? 'pointer' : 'default',
+                opacity: overridden ? 1 : 0.3,
+              }}
+            >
+              ↺
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -6,8 +6,7 @@ import { buildRecap } from '../../game/recap';
 import { Board } from '../board/Board';
 import { TURNS_TO_BOTTOM_RIGHT, humanColor } from '../board/orientation';
 import { ScoreTimeline } from './ScoreTimeline';
-import { usePaletteColors } from '../palettes';
-import { CELL_PX, FONT_MONO, FONT_UI, SECONDARY_BTN } from '../theme';
+import { CELL_PX, FONT_MONO, FONT_UI, PIECE_VAR, SECONDARY_BTN } from '../theme';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
@@ -27,7 +26,6 @@ const BASE_STEP_MS = 1600;
  * every frame is a pure replay of the recorded moves (src/game/recap.ts).
  */
 export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClose: () => void }) {
-  const colors = usePaletteColors();
   const frames = useMemo(() => buildRecap(record), [record]);
   const lastPly = frames.length - 1;
   const [ply, setPly] = useState(lastPly); // open on the final position
@@ -176,7 +174,7 @@ export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClos
 
         {/* Score-over-time timeline (click/drag to seek). */}
         <div style={{ marginBottom: 6 }}>
-          <ScoreTimeline frames={frames} ply={ply} colors={colors} onSeek={seekTo} />
+          <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
         </div>
 
         {/* Standings at this ply — squares placed, ranked vertically leader-first
@@ -188,7 +186,7 @@ export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClos
           {legend.map((c, i) => (
             <div key={c} data-testid={`rank-${c}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <span style={{ fontFamily: FONT_MONO, color: 'var(--mut)', width: 16, textAlign: 'right' }}>{i + 1}</span>
-              <span style={{ width: 12, height: 12, borderRadius: 3, background: colors[c] }} />
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: PIECE_VAR[c] }} />
               <span style={{ flex: 1 }}>{cap(c)}</span>
               <span style={{ fontFamily: FONT_MONO, color: 'var(--mut)' }}>{frame.placed[c]}</span>
             </div>

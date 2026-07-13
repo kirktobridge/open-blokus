@@ -3,7 +3,6 @@ import type { Color } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
-import { usePaletteColors } from '../palettes';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { PlacedLayer } from '../board/PlacedLayer';
 import { AMBIENT_GAMES } from './ambientGames';
@@ -38,7 +37,6 @@ const FULL_PX = BOARD_SIZE * CELL_PX;
  * timers at all and simply shows a finished game.
  */
 export function AmbientBoard({ size = 260 }: { size?: number }) {
-  const colors = usePaletteColors();
   const reduce = useReducedMotion();
   const [gameIndex, setGameIndex] = useState(0);
   const [ply, setPly] = useState(START_PLY);
@@ -112,7 +110,7 @@ export function AmbientBoard({ size = 260 }: { size?: number }) {
           boxShadow: 'inset 0 0 0 1px var(--pnl-bd)',
         }}
       >
-        <PlacedLayer board={board} colors={colors} lastMove={lastMove} />
+        <PlacedLayer board={board} lastMove={lastMove} />
       </div>
     </div>
   );

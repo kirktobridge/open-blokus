@@ -1,13 +1,12 @@
 import type { Beat } from '../hooks/useGameEvents';
-import type { PaletteColors } from '../palettes';
-import { FONT_UI } from '../theme';
+import { FONT_UI, PIECE_VAR } from '../theme';
 
 /**
  * Transient centered banners for in-game beats (P16) — currently "X is out of
  * moves". Fixed near the top of the board area, above everything, pointer-through
  * so they never block play. Each beat animates in/out via the `ob-beat` class.
  */
-export function EventBeats({ beats, colors }: { beats: Beat[]; colors: PaletteColors }) {
+export function EventBeats({ beats }: { beats: Beat[] }) {
   if (beats.length === 0) return null;
   return (
     <div
@@ -49,7 +48,7 @@ export function EventBeats({ beats, colors }: { beats: Beat[]; colors: PaletteCo
               width: 12,
               height: 12,
               borderRadius: 4,
-              background: colors[b.color],
+              background: PIECE_VAR[b.color],
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,.4)',
             }}
           />

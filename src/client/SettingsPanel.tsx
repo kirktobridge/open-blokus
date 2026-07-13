@@ -2,20 +2,27 @@ import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { FONT_MONO, ICON_BTN, ICON_CHIP } from './theme';
 import { GearIcon } from './icons';
-import { THEME_CYCLE, THEME_META, setTheme, useThemeMode } from './ThemeToggle';
 import {
+  PIECE_GROUP,
+  THEME_CYCLE,
+  THEME_META,
   TOKEN_GROUPS,
   clearTokenOverride,
+  deleteUserTheme,
   effectiveToken,
-  resetAllTokens,
-  setInventoryDisplay,
+  renameUserTheme,
+  setActiveTheme,
   setTokenOverride,
-  useSettings,
-  type InventoryDisplay,
-} from './settings';
+  useAppearance,
+  useActiveTheme,
+} from './appearance';
+import { setInventoryDisplay, usePrefs, type InventoryDisplay } from './settings';
 import { PaletteControls } from './PalettePicker';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
+
+/** Groups shown under "Design tokens" — the piece colors get their own section. */
+const DESIGN_GROUPS = TOKEN_GROUPS.filter((g) => g.group !== PIECE_GROUP);
 
 const sectionLabel: CSSProperties = {
   fontFamily: FONT_MONO,
@@ -109,16 +116,21 @@ function TokenRow({ name, label, overridden }: { name: string; label: string; ov
 }
 
 /**
- * One panel for every user-facing setting: inventory display, theme, piece
- * colors, and live overrides for every font/color design token. Fixed
- * bottom-left by default; `docked` renders an in-flow top-bar chip.
+ * One panel for every user-facing setting: the inventory preference, plus the
+ * whole appearance model — pick a theme (a built-in, or one of your own), then
+ * retune its piece colors and design tokens. Tuning a built-in forks it into a
+ * named user theme (appearance.ts), so the built-ins are never dirtied and an
+ * override can't leak across themes. Fixed bottom-left by default; `docked`
+ * renders an in-flow top-bar chip.
  */
 export function SettingsPanel({ docked = false }: { docked?: boolean }) {
   const [open, setOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const settings = useSettings();
-  const theme = useThemeMode();
+  const prefs = usePrefs();
+  const { userThemes, activeId } = useAppearance();
+  const { theme, base } = useActiveTheme();
   const toggleGroup = (g: string) => setOpenGroups((s) => ({ ...s, [g]: !s[g] }));
+  const overrides = theme?.overrides ?? {};
 
   return (
     <div
@@ -165,7 +177,7 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
             {(['silhouette', 'dots'] as InventoryDisplay[]).map((mode) => (
               <SegButton
                 key={mode}
-                active={settings.inventoryDisplay === mode}
+                active={prefs.inventoryDisplay === mode}
                 onClick={() => setInventoryDisplay(mode)}
               >
                 {mode === 'silhouette' ? 'Pieces' : 'Dots'}
@@ -173,14 +185,74 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
             ))}
           </div>
 
-          {/* Theme */}
+          {/* Theme — the built-ins, then the user's own (forks of a built-in). */}
           <div style={sectionLabel}>Theme</div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
             {THEME_CYCLE.map((mode) => (
-              <SegButton key={mode} active={theme === mode} onClick={() => setTheme(mode)}>
+              <SegButton
+                key={mode}
+                active={activeId === mode}
+                onClick={() => setActiveTheme(mode)}
+              >
                 {THEME_META[mode].name}
               </SegButton>
             ))}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+            {userThemes.map((t) => {
+              const selected = t.id === activeId;
+              return (
+                <div
+                  key={t.id}
+                  data-testid="user-theme"
+                  data-selected={selected}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 7px',
+                    borderRadius: 8,
+                    border: `1px solid ${selected ? 'var(--brass)' : 'var(--cell-outline)'}`,
+                    background: selected ? 'var(--well)' : 'transparent',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="theme"
+                    checked={selected}
+                    aria-label={`Theme ${t.name}`}
+                    onChange={() => setActiveTheme(t.id)}
+                  />
+                  <input
+                    type="text"
+                    value={t.name}
+                    aria-label={`Rename ${t.name}`}
+                    onChange={(e) => renameUserTheme(t.id, e.target.value)}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: 12.5,
+                      padding: '2px 5px',
+                      borderRadius: 5,
+                      border: '1px solid var(--cell-outline)',
+                      background: 'var(--surface)',
+                      color: 'var(--fg)',
+                    }}
+                  />
+                  <span style={{ fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                    ← {THEME_META[t.base].name}
+                  </span>
+                  <button
+                    onClick={() => deleteUserTheme(t.id)}
+                    title={`Delete ${t.name}`}
+                    aria-label={`Delete ${t.name}`}
+                    style={{ fontSize: 11, padding: '2px 6px', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* Piece colors */}
@@ -199,21 +271,24 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
             }}
           >
             <div style={{ ...sectionLabel, margin: '4px 0' }}>Design tokens</div>
+            {/* Resetting = discarding the fork; the built-in it came from is
+                pristine, so selecting it back *is* the reset. */}
             <button
-              onClick={resetAllTokens}
-              disabled={Object.keys(settings.tokens).length === 0}
+              onClick={() => theme && deleteUserTheme(theme.id)}
+              disabled={!theme}
+              title={theme ? `Discard "${theme.name}" and go back to ${THEME_META[base].name}` : undefined}
               style={{
                 fontSize: 11,
-                cursor: Object.keys(settings.tokens).length ? 'pointer' : 'default',
-                opacity: Object.keys(settings.tokens).length ? 1 : 0.4,
+                cursor: theme ? 'pointer' : 'default',
+                opacity: theme ? 1 : 0.4,
               }}
             >
               Reset all
             </button>
           </div>
-          {TOKEN_GROUPS.map((g) => {
+          {DESIGN_GROUPS.map((g) => {
             const expanded = openGroups[g.group] ?? false;
-            const changed = g.tokens.filter((t) => t.name in settings.tokens).length;
+            const changed = g.tokens.filter((t) => t.name in overrides).length;
             return (
               <div key={g.group} style={{ marginBottom: 6 }}>
                 <button
@@ -259,7 +334,7 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                         key={t.name}
                         name={t.name}
                         label={t.label}
-                        overridden={t.name in settings.tokens}
+                        overridden={t.name in overrides}
                       />
                     ))}
                   </div>

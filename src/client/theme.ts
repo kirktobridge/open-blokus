@@ -1,16 +1,27 @@
 import type { CSSProperties } from 'react';
 import type { Color } from '../game/types';
 
-/** Display colors for each Blokus color. */
-export const COLOR_HEX: Record<Color, string> = {
-  blue: '#2563eb',
-  yellow: '#eab308',
-  red: '#dc2626',
-  green: '#16a34a',
+/** CSS custom property holding each Blokus color — a token like any other, so a
+ *  theme (built-in or user fork) owns the piece colors too. The classic hexes
+ *  live in theme.css (every built-in seeds the same ones); nothing duplicates
+ *  them here. */
+export const PIECE_TOKEN: Record<Color, string> = {
+  blue: '--piece-blue',
+  yellow: '--piece-yellow',
+  red: '--piece-red',
+  green: '--piece-green',
+};
+
+/** How every piece is painted: `var(--piece-blue)` &c. Drop-in for a hex. */
+export const PIECE_VAR: Record<Color, string> = {
+  blue: 'var(--piece-blue)',
+  yellow: 'var(--piece-yellow)',
+  red: 'var(--piece-red)',
+  green: 'var(--piece-green)',
 };
 
 // Neutral UI surfaces resolve from CSS vars (see theme.css) so dark mode flips
-// them without re-render. Piece colors above stay identical across schemes.
+// them without re-render.
 export const EMPTY_CELL = 'var(--empty-cell)';
 export const GRID_LINE = 'var(--grid-line)';
 export const PLACED_PIECE = 'var(--placed-piece)';

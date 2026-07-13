@@ -1,6 +1,5 @@
 import { COLOR_ORDER } from '../../game/types';
-import { usePaletteColors } from '../palettes';
-import { FONT_UI } from '../theme';
+import { FONT_UI, PIECE_VAR } from '../theme';
 
 /**
  * The wordmark: a 2×2 four-color piece glyph beside the name. The glyph draws the
@@ -8,7 +7,6 @@ import { FONT_UI } from '../theme';
  * one instead of hard-coding a brand blue.
  */
 export function Wordmark({ size = 26 }: { size?: number }) {
-  const colors = usePaletteColors();
   const cell = Math.round(size * 0.42);
   const gap = Math.max(2, Math.round(size * 0.09));
 
@@ -32,7 +30,7 @@ export function Wordmark({ size = 26 }: { size?: number }) {
               width: cell,
               height: cell,
               borderRadius: Math.max(2, Math.round(cell * 0.22)),
-              background: colors[c],
+              background: PIECE_VAR[c],
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,.35), 0 1px 2px rgba(0,0,0,.25)',
             }}
           />

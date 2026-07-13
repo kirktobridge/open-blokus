@@ -1,8 +1,7 @@
 import type { GameState } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import { remainingSquares } from '../../game/scoring';
-import { FONT_MONO } from '../theme';
-import { usePaletteColors } from '../palettes';
+import { FONT_MONO, PIECE_VAR } from '../theme';
 import { CountUp } from './CountUp';
 
 /**
@@ -10,7 +9,6 @@ import { CountUp } from './CountUp';
  * squares (fewest = leading). The leader is ringed in brass.
  */
 export function Standings({ G, showLeader = true }: { G: GameState; showLeader?: boolean }) {
-  const colors = usePaletteColors();
   const ranked = [...COLOR_ORDER].sort(
     (a, b) => remainingSquares(G.colors[a]) - remainingSquares(G.colors[b]),
   );
@@ -54,7 +52,7 @@ export function Standings({ G, showLeader = true }: { G: GameState; showLeader?:
                   width: 11,
                   height: 11,
                   borderRadius: 3,
-                  background: colors[c],
+                  background: PIECE_VAR[c],
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,.35)',
                 }}
               />

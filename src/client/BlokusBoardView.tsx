@@ -26,9 +26,8 @@ import { isRealName } from './lobby/config';
 import { reactionMessage } from './lobby/reactions';
 import { BlitzBoardBar } from './blitz/BlitzBoardBar';
 import { BLITZ_URGENT_MS } from './blitz/blitz';
-import { usePaletteColors } from './palettes';
 import { useInventoryDisplay } from './settings';
-import { FONT_MONO, FONT_UI } from './theme';
+import { FONT_MONO, FONT_UI, PIECE_VAR } from './theme';
 import type { Difficulty } from './ai/difficulty';
 import type { GameRecord } from '../game/ai/selfplay';
 import { TURNS_TO_BOTTOM_RIGHT } from './board/orientation';
@@ -75,7 +74,6 @@ export function BlokusBoardView({
   gameRecord?: GameRecord | null;
 }) {
   const sel = useSelection();
-  const colors = usePaletteColors();
   const activeColor = COLOR_ORDER[G.activeColorIndex];
   // Single-player passes isActive=true for the current player; multiplayer gates it.
   const canPlay = isActive !== false && !ctx.gameover;
@@ -166,9 +164,9 @@ export function BlokusBoardView({
     const cells = advisorTargets.filter((c) => !hovered.has(c));
     // Tint the hints in the active color so they read as "where your piece fits".
     return cells.length > 0
-      ? [{ id: 'legal', cells, tone: 'legal', color: colors[activeColor] }]
+      ? [{ id: 'legal', cells, tone: 'legal', color: PIECE_VAR[activeColor] }]
       : [];
-  }, [advisorTargets, oriented, colors, activeColor]);
+  }, [advisorTargets, oriented, activeColor]);
 
   const canSubmit = sel.staged && legal;
 
@@ -368,7 +366,6 @@ export function BlokusBoardView({
               key={c}
               color={c}
               state={G.colors[c]}
-              colors={colors}
               nameSuffix={nameSuffix}
               tag={tag}
               active={c === activeColor && !ctx.gameover}
@@ -497,14 +494,13 @@ export function BlokusBoardView({
           {statusMain}
           <span style={{ color: 'var(--top-mut)' }}>
             {' · '}active{' '}
-            <span style={{ color: colors[activeColor], fontWeight: 700 }}>{activeColor}</span>
+            <span style={{ color: PIECE_VAR[activeColor], fontWeight: 700 }}>{activeColor}</span>
           </span>
         </p>
 
         <Controls
           pieceId={sel.pieceId}
           color={activeColor}
-          colors={colors}
           disabled={!canPlay}
           staged={sel.staged}
           canSubmit={canSubmit}
@@ -545,7 +541,7 @@ export function BlokusBoardView({
         </div>
       </div>
 
-      <EventBeats beats={beats} colors={colors} />
+      <EventBeats beats={beats} />
 
       {ctx.gameover && (
         <GameOverModal

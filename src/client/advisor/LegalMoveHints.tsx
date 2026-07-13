@@ -10,7 +10,8 @@ export interface Hint {
   cells: number[];
   tone: HintTone;
   /** Override the tone with a specific color (e.g. the active player's own color,
-   *  so legal-move hints read as "where *your* piece fits"). Hex only. */
+   *  so legal-move hints read as "where *your* piece fits"). Any CSS color,
+   *  including a `var(--piece-*)` so it re-tints with the theme. */
   color?: string;
 }
 
@@ -21,11 +22,12 @@ const TONE: Record<HintTone, { fill: string; ring: string }> = {
   anchor: { fill: 'rgba(52, 104, 207, 0.22)', ring: '#3468cf' },
 };
 
-/** Fill + ring for a hint: the active-color override when given (hex + ~23% alpha
- *  fill), else the tone palette. */
+/** Fill + ring for a hint: the color override when given (the color at ~23% for
+ *  the fill — mixed in CSS, so a var() override needs no resolution here), else
+ *  the tone palette. */
 function hintStyle(h: Hint): { fill: string; ring: string } {
-  if (h.color && /^#[0-9a-fA-F]{6}$/.test(h.color)) {
-    return { fill: `${h.color}3A`, ring: h.color };
+  if (h.color) {
+    return { fill: `color-mix(in srgb, ${h.color} 23%, transparent)`, ring: h.color };
   }
   return TONE[h.tone];
 }

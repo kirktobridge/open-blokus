@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import type { Cell as CellCoord, Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
-import { usePaletteColors } from '../palettes';
 import { Cell } from './Cell';
 import { PlacedLayer } from './PlacedLayer';
 import { LegalMoveHints, type Hint } from '../advisor/LegalMoveHints';
@@ -50,7 +49,6 @@ export function Board({
   hints?: Hint[];
 }) {
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
-  const colors = usePaletteColors();
   const ref = useRef<HTMLDivElement>(null);
 
   // Board indices under the current preview — the placed-piece finish skips
@@ -111,7 +109,6 @@ export function Board({
             staged={inPreview && (preview?.staged ?? false)}
             startHint={startHint?.x === x && startHint?.y === y}
             previewColor={activeColor}
-            colors={colors}
             lastMove={lastMoveSet?.has(i) ?? false}
             testId={`cell-${x}-${y}`}
             label={`cell ${x},${y}${value ? ` ${value}` : ' empty'}`}
@@ -122,7 +119,6 @@ export function Board({
       })}
       <PlacedLayer
         board={board}
-        colors={colors}
         previewCells={previewIdx}
         lastMove={lastMove}
         glowColors={glowColors}
