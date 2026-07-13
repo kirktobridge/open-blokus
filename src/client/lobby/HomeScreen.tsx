@@ -5,7 +5,7 @@ import { loadPuzzleSeen, MAX_NICK_LEN, type MatchInfo } from './config';
 import { loadSetup, persistSetup, setupSummary, type AiSetup } from './aiSetup';
 import { ActionMenu, type ActionRow } from './ActionMenu';
 import { CreateMatchForm } from './CreateMatchForm';
-import { HeroBoard } from './HeroBoard';
+import { AmbientBoard } from './AmbientBoard';
 import { LobbyTopBar } from './LobbyTopBar';
 import { MatchList } from './MatchList';
 import { Modal } from './Modal';
@@ -168,7 +168,6 @@ export function HomeScreen({
   // *viewport*, not off constants: a fixed-px front door leaves a large screen mostly
   // empty. The board takes the height the page gives it (bounded so it can't outrun
   // its column), and the menu column scales with width.
-  // (M2 makes this board play itself.)
   const { w, h } = useViewport();
   const CHROME = 130; // top bar + the row's own vertical padding
   const boardSize = wide
@@ -181,7 +180,7 @@ export function HomeScreen({
       data-testid="home-hero"
       style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
     >
-      <HeroBoard size={boardSize} />
+      <AmbientBoard size={boardSize} />
     </div>
   );
 
