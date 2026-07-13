@@ -5,6 +5,7 @@ import { CELL_PX } from '../theme';
 import { Cell } from './Cell';
 import { PlacedLayer } from './PlacedLayer';
 import { LegalMoveHints, type Hint } from '../advisor/LegalMoveHints';
+import { CutMarks, type CutMark } from './CutMarks';
 
 export interface BoardPreview {
   /** Set of "x,y" keys that the previewed piece would occupy. */
@@ -29,6 +30,7 @@ export function Board({
   onFlip,
   glowColors,
   hints,
+  cutMarks,
 }: {
   board: (Color | null)[];
   activeColor: Color;
@@ -47,6 +49,8 @@ export function Board({
   glowColors?: Color[];
   /** Advisor overlay markers — legal-placement hints (P3 R1). Display-only. */
   hints?: Hint[];
+  /** Corners a `cut` just destroyed, marked briefly (P32). Display-only. */
+  cutMarks?: CutMark[];
 }) {
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
   const ref = useRef<HTMLDivElement>(null);
@@ -124,6 +128,7 @@ export function Board({
         glowColors={glowColors}
       />
       {hints && hints.length > 0 && <LegalMoveHints hints={hints} />}
+      {cutMarks && cutMarks.length > 0 && <CutMarks marks={cutMarks} />}
     </div>
   );
 }

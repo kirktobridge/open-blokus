@@ -81,6 +81,16 @@ export function BlokusBoardView({
   const reduce = useReducedMotion();
   const { beats } = useGameEvents(G);
 
+  // A cut beat carries the corners it destroyed (P32); mark them on the board for
+  // exactly as long as the beat lives, so the banner and the scars share one TTL.
+  const cutMarks = useMemo(
+    () =>
+      beats
+        .filter((b) => b.kind === 'cut' && b.color && b.lostCells?.length)
+        .map((b) => ({ id: b.id, color: b.color as Color, cells: b.lostCells! })),
+    [beats],
+  );
+
   // Multiplayer identity & reactions (P19). Seat nicknames come from the match
   // metadata (the default `Player N` reads as anonymous); reactions ride the chat
   // transport and surface as per-seat bubbles. Both are inert offline (matchData /
@@ -432,6 +442,7 @@ export function BlokusBoardView({
                 onRotate={interactive ? sel.rotate : undefined}
                 onFlip={interactive ? sel.flip : undefined}
                 hints={advisorHints}
+                cutMarks={cutMarks}
               />
             </div>
           </div>
