@@ -383,7 +383,7 @@ four classic colors as accents, shapes as the star.
   `ProgressionPanel.tsx`, `theme.ts`, `theme.css`). Mockup approved before build.
 
 ### P29 — Front door: ambient board + action menu
-- **Status:** proposed
+- **Status:** in-progress — **M1** (shell, menu, destinations) claimed on `feat/p29-front-door`
 - **Value:** the lobby (P17→P27→P28) is a stack of cards that *describes* the game; a
   chess.com-style front door *shows* it — a large, living board carrying the page while a
   single vertical menu says exactly where you can go. Ranked cards fixed the hierarchy, but
