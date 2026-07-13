@@ -436,7 +436,7 @@ four classic colors as accents, shapes as the star.
   in P29's menu meanwhile.
 
 ### P31 — Last-move ring outlines the piece, not its cells
-- **Status:** proposed
+- **Status:** in-progress — claimed on `feat/p31-last-move-ring`
 - **Value:** the just-played piece is the one thing on the board a player and their
   opponents need to find instantly. The brass ring is drawn per-cell, so a 5-square piece
   reads as five boxed squares with their shared edges stroked through the middle — it
