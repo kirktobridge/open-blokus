@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('advisor toggle highlights the selected piece’s legal placements', async ({ page }) => {
   await page.goto('/');
+  await page.getByTestId('open-friends').click();
   await page.getByTestId('mode-select').selectOption('4');
   await page.getByTestId('create-match').click();
   await expect(page.getByTestId('match-id')).toBeVisible();

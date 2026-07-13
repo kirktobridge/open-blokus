@@ -22,6 +22,7 @@ test('progression panel renders lifetime stats from storage (P15)', async ({ pag
     localStorage.setItem('openblokus-progression', JSON.stringify(seed));
   }, SEED);
   await page.goto('/');
+  await page.getByTestId('open-stats').click();
 
   const panel = page.getByTestId('progression-panel');
   await expect(panel).toBeVisible();
@@ -42,6 +43,7 @@ test('progression panel renders lifetime stats from storage (P15)', async ({ pag
 
 test('progression panel shows an empty state before any game (P15)', async ({ page }) => {
   await page.goto('/');
+  await page.getByTestId('open-stats').click();
   await expect(page.getByTestId('progression-panel')).toBeVisible();
   await expect(page.getByTestId('progression-empty')).toBeVisible();
   await expect(page.getByTestId('stat-games')).toHaveCount(0);

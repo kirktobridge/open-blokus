@@ -25,12 +25,20 @@ function Stat({ label, value, testid }: { label: string; value: string; testid: 
   );
 }
 
-export function ProgressionPanel() {
+/**
+ * Lifetime vs-AI record (P15). `flush` drops the card chrome and the heading for a
+ * host that already supplies them — the front door's Your Stats modal (P29) — so the
+ * panel doesn't render a card inside a card.
+ */
+export function ProgressionPanel({ flush = false }: { flush?: boolean } = {}) {
   const p = useProgression();
 
   return (
-    <section data-testid="progression-panel" style={{ ...PANEL, padding: 20 }}>
-      <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Your progress</h2>
+    <section
+      data-testid="progression-panel"
+      style={flush ? { fontFamily: PANEL.fontFamily } : { ...PANEL, padding: 20 }}
+    >
+      {!flush && <h2 style={{ margin: '0 0 12px', fontWeight: 800 }}>Your progress</h2>}
 
       {p.gamesPlayed === 0 ? (
         <p data-testid="progression-empty" style={{ margin: 0, color: 'var(--mut)', fontSize: 13.5 }}>

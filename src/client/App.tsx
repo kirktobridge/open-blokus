@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameMode, ScoringVariant } from '../game/types';
+import { dailyDateKey } from '../game/puzzle/daily';
 import { useLobby } from './lobby/useLobby';
 import {
   loadNick,
   loadSession,
   saveNick,
+  savePuzzleSeen,
   saveSession,
   type MatchInfo,
   type Session,
 } from './lobby/config';
 import { HomeScreen } from './lobby/HomeScreen';
+import { CustomGameScreen } from './lobby/CustomGameScreen';
 import { MatchScreen } from './lobby/MatchScreen';
 import { LocalAIGame } from './ai/LocalAIGame';
 import { DailyPuzzleGame } from './puzzle/DailyPuzzleGame';
 import { Tutorial } from './tutorial/Tutorial';
-import type { Difficulty } from './ai/difficulty';
-import type { BlitzSeconds } from './blitz/blitz';
+import type { AiSetup } from './lobby/aiSetup';
 import { SettingsPanel } from './SettingsPanel';
 import { ControlsHelp } from './ControlsHelp';
 
@@ -27,12 +29,20 @@ export function App() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showPuzzle, setShowPuzzle] = useState(false);
-  const [aiConfig, setAiConfig] = useState<{
-    mode: GameMode;
-    aiCount: number;
-    botDifficulties: Record<string, Difficulty>;
-    blitzSeconds: BlitzSeconds;
-  } | null>(null);
+  const [showCustom, setShowCustom] = useState(false);
+  const [aiConfig, setAiConfig] = useState<AiSetup | null>(null);
+
+  // Starting a game leaves the Custom Game screen behind, so backing out of the game
+  // lands on the front door rather than the form you launched from.
+  const startAI = useCallback((setup: AiSetup) => {
+    setShowCustom(false);
+    setAiConfig(setup);
+  }, []);
+
+  const openPuzzle = useCallback(() => {
+    savePuzzleSeen(dailyDateKey());
+    setShowPuzzle(true);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -130,6 +140,8 @@ export function App() {
     );
   } else if (session) {
     screen = <MatchScreen session={session} onLeave={onLeave} onPlayAgain={onPlayAgain} />;
+  } else if (showCustom) {
+    screen = <CustomGameScreen onStart={startAI} onBack={() => setShowCustom(false)} />;
   } else {
     screen = (
       <HomeScreen
@@ -139,11 +151,10 @@ export function App() {
         onCreate={onCreate}
         onJoin={onJoin}
         onRefresh={refresh}
-        onStartAI={(mode, aiCount, botDifficulties, blitzSeconds) =>
-          setAiConfig({ mode, aiCount, botDifficulties, blitzSeconds })
-        }
+        onStartAI={startAI}
+        onOpenCustom={() => setShowCustom(true)}
         onOpenTutorial={() => setShowTutorial(true)}
-        onOpenPuzzle={() => setShowPuzzle(true)}
+        onOpenPuzzle={openPuzzle}
         joinError={joinError}
         onDismissError={() => setJoinError(null)}
       />

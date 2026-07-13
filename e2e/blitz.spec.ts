@@ -148,7 +148,7 @@ test('no board-side bar when blitz is off', async ({ page }) => {
 
 test('blitz excludes the extreme tier from the setup (P25)', async ({ page }) => {
   await page.goto('/?botDelay=0');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('1'); // one bot seat (P3)
 

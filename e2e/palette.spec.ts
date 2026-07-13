@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('custom palette recolors placed pieces; default stays selectable', async ({ page }) => {
   await page.goto('/');
+  await page.getByTestId('open-friends').click();
   await page.getByTestId('mode-select').selectOption('4');
   await page.getByTestId('create-match').click();
   await expect(page.getByText(/active blue/)).toBeVisible();

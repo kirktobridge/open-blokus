@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 // the fast path to exercise the Review UI end-to-end without playing by hand.
 test('review a finished game: scrub the board and the score timeline', async ({ page }) => {
   await page.goto('/?botDelay=0');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
   await page.getByTestId('start-ai').click();
