@@ -16,7 +16,7 @@ import { generateLegalMoves } from '../moves';
 import { applyPlacement } from '../placement';
 import { remainingSquares } from '../scoring';
 import { COLOR_ORDER } from '../types';
-import type { Color, ColorState, GameState, Placement } from '../types';
+import type { Cell, Color, ColorState, GameState, Placement } from '../types';
 import { scorePlacement, WEIGHTS } from './heuristic';
 import type { Weights } from './heuristic';
 import type { Strategy } from './arena';
@@ -71,6 +71,17 @@ export function placedSquares(cs: ColorState): number {
  * if it's diagonally adjacent to the color and not orthogonally adjacent to it.
  * Before the color's first move, only its assigned corner counts.
  */
+function isAttachCell(G: GameState, color: Color, cell: Cell): boolean {
+  if (G.board[idx(cell.x, cell.y)] !== null) return false;
+  const diagOwn = diagNeighbors(cell).some(
+    (d) => inBounds(d.x, d.y) && G.board[idx(d.x, d.y)] === color,
+  );
+  if (!diagOwn) return false;
+  return !orthoNeighbors(cell).some(
+    (o) => inBounds(o.x, o.y) && G.board[idx(o.x, o.y)] === color,
+  );
+}
+
 export function attachPoints(G: GameState, color: Color): number {
   if (!G.colors[color].hasStarted) {
     const corner = CORNERS[color];
@@ -79,19 +90,31 @@ export function attachPoints(G: GameState, color: Color): number {
   let n = 0;
   for (let y = 0; y < 20; y++) {
     for (let x = 0; x < 20; x++) {
-      if (G.board[idx(x, y)] !== null) continue;
-      const cell = { x, y };
-      const diagOwn = diagNeighbors(cell).some(
-        (d) => inBounds(d.x, d.y) && G.board[idx(d.x, d.y)] === color,
-      );
-      if (!diagOwn) continue;
-      const orthoOwn = orthoNeighbors(cell).some(
-        (o) => inBounds(o.x, o.y) && G.board[idx(o.x, o.y)] === color,
-      );
-      if (!orthoOwn) n++;
+      if (G.board[idx(x, y)] !== null) continue; // cheap reject before allocating a Cell
+      if (isAttachCell(G, color, { x, y })) n++;
     }
   }
   return n;
+}
+
+/**
+ * The attach-points themselves — same predicate as `attachPoints`, but returning
+ * the cells. Used off the search path (P32 cut detection needs *which* corners a
+ * placement killed, not just how many).
+ */
+export function attachCells(G: GameState, color: Color): Cell[] {
+  if (!G.colors[color].hasStarted) {
+    const corner = CORNERS[color];
+    return G.board[idx(corner.x, corner.y)] === null ? [corner] : [];
+  }
+  const cells: Cell[] = [];
+  for (let y = 0; y < 20; y++) {
+    for (let x = 0; x < 20; x++) {
+      if (G.board[idx(x, y)] !== null) continue;
+      if (isAttachCell(G, color, { x, y })) cells.push({ x, y });
+    }
+  }
+  return cells;
 }
 
 const SIZE = 20;

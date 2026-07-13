@@ -1,23 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Color, GameState } from '../../game/types';
-import { newlyStuckColors, outOfMovesText } from '../drama';
+import type { Cell, Color, GameState } from '../../game/types';
+import { detectEvents } from '../drama';
+import type { EventId } from '../drama';
 
-/** A transient on-board announcement (currently: a color running out of moves). */
+/** A transient on-board announcement — one detected `DramaEvent`, given a lifetime. */
 export interface Beat {
   id: number;
-  color: Color;
+  kind: EventId;
+  /** Subject color; null for board-wide beats (endgame). */
+  color: Color | null;
   text: string;
+  /** `cut` only: the attach points the placement destroyed (board highlight). */
+  lostCells?: Cell[];
 }
 
-/** How long an out-of-moves beat stays on screen before fading out (ms). */
+/** How long a beat stays on screen before fading out (ms). */
 const BEAT_TTL = 2800;
 
 /**
  * Watches game state for the moments P16 gives ceremony to and surfaces them as
- * transient "beats". Today that's a color transitioning to stuck ("X is out of
- * moves"); the same detector is where P7 (sound) will hang its cues. Beats
- * self-expire; timers are cleared only on unmount so a fresh placement within
- * the TTL window never strands an earlier beat.
+ * transient "beats". The vocabulary itself lives in `drama.ts` / `docs/EVENTS.md`
+ * (P32); this hook only gives events a lifetime. It's the same seam P7 (sound) hangs
+ * its cues on. Beats self-expire; timers are cleared only on unmount so a fresh
+ * placement within the TTL window never strands an earlier beat.
  */
 export function useGameEvents(G: GameState): { beats: Beat[] } {
   const prevRef = useRef<GameState>(G);
@@ -34,13 +39,15 @@ export function useGameEvents(G: GameState): { beats: Beat[] } {
     const prev = prevRef.current;
     prevRef.current = G;
     if (prev === G) return; // initial mount / no change
-    const stuck = newlyStuckColors(prev, G);
-    if (stuck.length === 0) return;
+    const events = detectEvents(prev, G);
+    if (events.length === 0) return;
 
-    const added: Beat[] = stuck.map((color) => ({
+    const added: Beat[] = events.map((e) => ({
       id: ++idRef.current,
-      color,
-      text: outOfMovesText(color),
+      kind: e.kind,
+      color: e.color,
+      text: e.text,
+      lostCells: e.lostCells,
     }));
     setBeats((b) => [...b, ...added]);
 

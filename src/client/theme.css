@@ -277,6 +277,29 @@ select {
   animation: ob-hint-pulse 1.6s ease-in-out infinite;
 }
 
+/* Cut scars (P32) — the corners an opponent's placement just took away, marked in
+   the victim's color. Lands hard, then fades over the life of the cut beat that
+   carries them (same 2800ms TTL), so the banner and the board tell one story. */
+@keyframes ob-cut-mark {
+  0% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.ob-cut-mark {
+  animation: ob-cut-mark 2800ms ease-out forwards;
+}
+
 /* Reaction bubble (P19) — a canned emoji reaction pops in over the sender's
    player card, then is removed by its TTL. */
 @keyframes ob-react-pop {
@@ -349,6 +372,7 @@ select {
   .ob-glow,
   .ob-beat,
   .ob-hint-pulse,
+  .ob-cut-mark,
   .ob-spin,
   .ob-toast,
   .ob-react-pop,
