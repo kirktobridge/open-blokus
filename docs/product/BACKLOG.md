@@ -493,7 +493,8 @@ four classic colors as accents, shapes as the star.
   (P14), tutorial (P4).
 
 ### P32 — In-game event vocabulary (cuts, mobility swings, endgame beats) + maintained registry
-- **Status:** proposed
+- **Status:** in-progress — `feat/p32-event-vocabulary` (M1 = detectors + `docs/EVENTS.md`
+  registry + beats; M2 = cut-region board highlight)
 - **Value:** P16 built the ceremony pipeline but its vocabulary is one event ("X is
   out of moves") — the game's dramatic verbs (cutting off a corner, squeezing an
   opponent's room, the final rounds) are never detected, so board drama is silent
