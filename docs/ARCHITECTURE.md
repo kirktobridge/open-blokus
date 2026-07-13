@@ -328,6 +328,23 @@ The board view reads authoritative data from props: `G` (board, colors), `ctx`
 (currentPlayer, gameover), and `playerID` (which seat this browser is). It disables
 input when `ctx.currentPlayer`'s color isn't owned by this `playerID`.
 
+### Derived events (the drama layer)
+
+The moments the app notices out loud — *cut*, *cramped*, *endgame*, *out-of-moves* — are
+**derived, never rules concepts**: detectors in `src/client/drama.ts` are pure functions of
+`(prev, cur)` game states and touch `G` not at all. They fire on the ply a condition
+*becomes* true (a crossing, not a state machine), which is what makes them **replay-safe** —
+a recap can run the same detectors over a logged game and get exactly the beats a live
+player saw, so live play and review can't disagree. Anti-spam is structural (one beat per
+color per ply) rather than timer-based, for the same reason.
+
+The vocabulary is a **maintained registry**: [EVENTS.md](EVENTS.md) is its single source of
+truth (ids, triggers, thresholds, consumers) and `tests/events-registry.test.ts` holds doc
+and code together in both directions, so an undocumented event — or a threshold that drifts
+from the code — fails CI. Presentation rides one seam (`useGameEvents` → `EventBeats`, plus
+the board's cut marks); future consumers (sound, recap moments, mobility surfaces) key off
+the event id.
+
 ### Appearance & preferences (client-only)
 
 **One token vocabulary, one store.** Every appearance value — fonts, surfaces, board,

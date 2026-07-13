@@ -29,14 +29,16 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 1. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
    existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
    share waiting on exactly this (P2 recap reuses it too).
-2. **P32** — in-game event vocabulary (cuts, mobility swings, endgame beats): nothing
-   blocks it, and it's the content layer P7 (sound), P2 R1 (recap moments), and P34
-   (mobility surfaces) all consume — build it first and three entries get cheaper.
+2. **P7** — sound design: un-deferred now that P32 shipped the vocabulary it was waiting
+   on — the cues map 1:1 onto the event registry, so the design work is picking sounds,
+   not deciding when they fire. Highest payoff-per-effort of what P32 unblocked.
 3. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
-   review surface is ready; ground-truth signal, no evaluator risk.
+   review surface is ready; P32 shipped `attachCells` as the shared frontier metric, so the
+   signal is ground truth with no evaluator risk.
 4. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
-   timeline) shipped; here to stay visible, but the next milestone is blocked on research
-   AD4 (blunder signal) + AD2 (evaluator), so it's no longer the dependency-ready head.
+   timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
+   free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
+   it's not the dependency-ready head.
 
 ---
 
@@ -259,8 +261,8 @@ four classic colors as accents, shapes as the star.
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P7 — Sound design
-- **Status:** deferred — sequenced after P32 so sound has a language to voice (a
-  vocabulary of one event would leave it four lonely cues).
+- **Status:** proposed — un-deferred: P32 shipped, so the language it was waiting on
+  exists (four events, each with a `data-kind` to hang a cue on).
 - **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds. Should be deeply satisfying.
 - **Scope:** placement/UI SFX, palette of nostalgic cues, mapped 1:1 onto P32's event
   registry (placement click-clack, cut thud, blitz final-seconds tick — the seat P24
@@ -493,8 +495,14 @@ four classic colors as accents, shapes as the star.
   (P14), tutorial (P4).
 
 ### P32 — In-game event vocabulary (cuts, mobility swings, endgame beats) + maintained registry
-- **Status:** in-progress — `feat/p32-event-vocabulary` (M1 = detectors + `docs/EVENTS.md`
-  registry + beats; M2 = cut-region board highlight)
+- **Status:** shipped — both milestones. The registry is [`docs/EVENTS.md`](../EVENTS.md)
+  (ids, triggers, thresholds, consumers), held to the detectors in both directions by
+  `tests/events-registry.test.ts`; the *why* is [ARCHITECTURE §6](../ARCHITECTURE.md).
+  Thresholds were **measured, not guessed** — over 20 self-play games a placement can bury
+  at most 3 attach points, so the intuitive "3+ lost = a cut" bar was the ceiling and fired
+  once per *20 games*; the shipped bars run ~2.8 cuts / 1 cramped / 1 endgame per game.
+  Re-measure the rate before retuning. Cut victims' buried corners are scarred on the board
+  per-cell (M2) — lost corners are scattered points, not one connected blob.
 - **Value:** P16 built the ceremony pipeline but its vocabulary is one event ("X is
   out of moves") — the game's dramatic verbs (cutting off a corner, squeezing an
   opponent's room, the final rounds) are never detected, so board drama is silent
