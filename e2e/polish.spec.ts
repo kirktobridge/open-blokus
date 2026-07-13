@@ -4,6 +4,7 @@ test('keyboard rotate places a rotated piece, with last-move highlight', async (
   page,
 }) => {
   await page.goto('/');
+  await page.getByTestId('open-friends').click();
   await page.getByTestId('mode-select').selectOption('4');
   await page.getByTestId('create-match').click();
   await expect(page.getByTestId('match-id')).toBeVisible();

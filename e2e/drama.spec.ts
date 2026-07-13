@@ -5,7 +5,7 @@ test('game-over reveal: glow mosaic, racing score bars, winner tag, shareable re
 }) => {
   // All-AI watch game runs to completion in seconds with instant bots.
   await page.goto('/?botDelay=0');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
   await page.getByTestId('start-ai').click();
@@ -28,7 +28,7 @@ test('game-over reveal: glow mosaic, racing score bars, winner tag, shareable re
 test('copy result copies a text summary of the outcome', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/?botDelay=0');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4');
   await page.getByTestId('start-ai').click();

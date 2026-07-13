@@ -9,6 +9,7 @@ test('two players in separate browsers see each other’s moves', async ({ brows
   try {
     // Player A creates a 4-player match and is seated as P0.
     await a.goto('/');
+    await a.getByTestId('open-friends').click();
     await a.getByTestId('mode-select').selectOption('4');
     await a.getByTestId('create-match').click();
     await expect(a.getByTestId('match-id')).toBeVisible();
@@ -18,6 +19,7 @@ test('two players in separate browsers see each other’s moves', async ({ brows
 
     // Player B joins the same match by ID → seated as P1.
     await b.goto('/');
+    await b.getByTestId('open-friends').click();
     await b.getByTestId('join-id-input').fill(matchID);
     await b.getByTestId('join-id-submit').click();
     await expect(b.getByTestId('match-id')).toContainText(matchID);
@@ -56,6 +58,7 @@ test('nicknames show on opponent cards and reactions toast across clients', asyn
   try {
     // A sets a nickname, then creates a 4-player match (seated P0 = blue).
     await a.goto('/');
+    await a.getByTestId('open-friends').click();
     await a.getByTestId('nickname-input').fill('Ada');
     await a.getByTestId('mode-select').selectOption('4');
     await a.getByTestId('create-match').click();
@@ -66,6 +69,7 @@ test('nicknames show on opponent cards and reactions toast across clients', asyn
 
     // B sets a nickname and joins by ID (seated P1 = yellow).
     await b.goto('/');
+    await b.getByTestId('open-friends').click();
     await b.getByTestId('nickname-input').fill('Grace');
     await b.getByTestId('join-id-input').fill(matchID);
     await b.getByTestId('join-id-submit').click();
@@ -99,6 +103,7 @@ test('an invite link deep-joins the second player into the match', async ({ brow
   try {
     // A creates a match and is seated as P0.
     await a.goto('/');
+    await a.getByTestId('open-friends').click();
     await a.getByTestId('mode-select').selectOption('4');
     await a.getByTestId('create-match').click();
     await expect(a.getByTestId('match-id')).toBeVisible();

@@ -7,6 +7,7 @@ export const SERVER_URL = import.meta.env.VITE_SERVER ?? 'http://localhost:8000'
 export const SESSION_KEY = 'obk:session';
 export const QUICKPLAY_KEY = 'obk:quickplay';
 export const NICK_KEY = 'obk:nick';
+export const PUZZLE_SEEN_KEY = 'obk:puzzle-seen';
 
 /** Trimmed cap on a nickname — long enough for a name, short enough for a card. */
 export const MAX_NICK_LEN = 16;
@@ -90,6 +91,27 @@ export function saveQuickPlay(cfg: QuickPlayConfig): void {
     localStorage.setItem(QUICKPLAY_KEY, JSON.stringify(cfg));
   } catch {
     // storage unavailable; Quick Play just falls back to defaults next time
+  }
+}
+
+/**
+ * The last daily-puzzle day the player actually opened (`YYYY-MM-DD`), which is what
+ * the front door's "New today" badge is asking about (P29) — the badge is a nudge
+ * toward an unseen puzzle, so opening it is enough to spend; finishing isn't required.
+ */
+export function loadPuzzleSeen(): string | null {
+  try {
+    return localStorage.getItem(PUZZLE_SEEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function savePuzzleSeen(dateKey: string): void {
+  try {
+    localStorage.setItem(PUZZLE_SEEN_KEY, dateKey);
+  } catch {
+    // storage unavailable; the badge just keeps showing
   }
 }
 

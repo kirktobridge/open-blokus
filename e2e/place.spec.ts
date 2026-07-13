@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 // Create a 4p match and enter as P0 (blue), who moves first.
 async function createMatchAsBlue(page: import('@playwright/test').Page) {
   await page.goto('/');
+  await page.getByTestId('open-friends').click();
   await page.getByTestId('mode-select').selectOption('4');
   await page.getByTestId('create-match').click();
   await expect(page.getByTestId('match-id')).toBeVisible();

@@ -4,7 +4,7 @@ test('human vs 3 AI: human opens, the three AIs reply on their corners', async (
   page,
 }) => {
   await page.goto('/?botDelay=0');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('3'); // you = P0 (blue)
   await page.getByTestId('start-ai').click();
@@ -50,7 +50,7 @@ test('AI thinking indicator shows a live elapsed-seconds counter (P10)', async (
   // A deliberate 1.5 s bot delay makes the counter observable without needing a
   // slow MCTS tier; the indicator ticks the same way for the real `extreme` wait.
   await page.goto('/?botDelay=1500');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('3'); // you = P0 (blue)
   await page.getByTestId('start-ai').click();
@@ -69,7 +69,7 @@ test('AI thinking indicator shows a live elapsed-seconds counter (P10)', async (
 
 test('all-AI watch game plays to completion with no human input', async ({ page }) => {
   await page.goto('/?botDelay=0');
-  await page.getByTestId('customize-toggle').click();
+  await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
   await page.getByTestId('start-ai').click();
