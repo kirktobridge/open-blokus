@@ -328,14 +328,28 @@ The board view reads authoritative data from props: `G` (board, colors), `ctx`
 (currentPlayer, gameover), and `playerID` (which seat this browser is). It disables
 input when `ctx.currentPlayer`'s color isn't owned by this `playerID`.
 
-### Theming & settings (client-only)
+### Appearance & preferences (client-only)
 
-Theme schemes and every design token are **CSS custom properties** on `<html>`; the
-Settings panel switches scheme and writes per-token overrides by setting them inline, so
-the whole app retints with **no React re-render**. Piece palettes, token overrides,
-theme, and the inventory-display choice persist to `localStorage` (`settings.ts`,
-`palettes.ts`, `ThemeToggle.tsx`). This is why display concerns stay out of `G` and why
-custom palettes keep working everywhere colors resolve via `usePaletteColors()`.
+**One token vocabulary, one store.** Every appearance value — fonts, surfaces, board,
+accents, *and the four piece colors* (`--piece-blue` &c.) — is a CSS custom property on
+`<html>`, so the whole app retints with **no React re-render** and there is no second
+(JS-prop) rail for colors: components paint with `PIECE_VAR[color]`.
+
+A **theme** is a complete assignment of that vocabulary. The three built-ins are the
+`[data-theme]` blocks in `theme.css` (this keeps the no-flash boot and the
+`prefers-color-scheme` default). A **user theme** is a *sparse fork of a built-in*:
+`{ base, overrides }`. `appearance.ts` is the only place values compose —
+`effective(token) = activeTheme?.overrides[token] ?? builtin(base)[token]` — applied by
+setting `data-theme` to the base and writing **only the active theme's overrides** as
+inline vars (clearing all others). Precedence is therefore correct by construction rather
+than an accident of the cascade: an override cannot survive a theme switch, and a built-in
+is pristine no matter how much you tinker.
+
+Editing any token while a built-in is active **forks it** ("Linen (custom)"), which is
+also what "custom palettes" now are. State: one store, one key (`openblokus-appearance`);
+it migrates the four pre-unification keys on first load. Behavioral preferences
+(inventory display) are *not* appearance — they live in `settings.ts` /
+`openblokus-settings`. This is why display concerns stay out of `G`.
 
 ---
 

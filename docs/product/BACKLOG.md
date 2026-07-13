@@ -223,9 +223,15 @@ four classic colors as accents, shapes as the star.
   toggle (piece silhouettes vs 21-dot), and live overrides for **every** font/color
   design token (grouped, collapsible; per-token reset + reset-all).
 - **Value:** deep visual customization with no code; instant retint.
-- **Notes:** themes + tokens are CSS custom properties swapped on `<html>` (no React
-  re-render); palette, token overrides, theme, and inventory choice persist to
-  localStorage. Top-bar triggers are emoji-free monochrome SVG icons.
+- **Notes:** unified into **one appearance model** (2026-07): every value — fonts,
+  surfaces, board, *and the four piece colors* — is a CSS custom property on `<html>`
+  (no React re-render), a theme is a complete assignment of that vocabulary, and tuning
+  any token **forks** the active built-in into a named user theme — which is what
+  "custom palettes" now are. So built-ins stay pristine and an override can't leak
+  across themes; the old four-store split (theme / token overrides / palettes) made
+  precedence an accident of the CSS cascade. Inventory display is a *preference*, not
+  appearance, and stays in its own store. Why → [../ARCHITECTURE.md](../ARCHITECTURE.md)
+  §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P7 — Sound design
 - **Status:** proposed (deferred — later release)
