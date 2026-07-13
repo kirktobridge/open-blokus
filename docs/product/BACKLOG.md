@@ -29,10 +29,12 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 1. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
    existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
    share waiting on exactly this (P2 recap reuses it too).
-2. **P18** — bot personas: name/face/quips + real play-style weight variants over the
-   shipped tiers (aggressive blocker vs greedy expander), turning the difficulty dropdown
-   into rivals; nothing blocks it.
-3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
+2. **P32** — in-game event vocabulary (cuts, mobility swings, endgame beats): nothing
+   blocks it, and it's the content layer P7 (sound), P2 R1 (recap moments), and P34
+   (mobility surfaces) all consume — build it first and three entries get cheaper.
+3. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
+   review surface is ready; ground-truth signal, no evaluator risk.
+4. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped; here to stay visible, but the next milestone is blocked on research
    AD4 (blunder signal) + AD2 (evaluator), so it's no longer the dependency-ready head.
 
@@ -88,7 +90,9 @@ order runs foundation → offline surfaces → live surfaces.
 - **Depends on:** P1 (logs) for all milestones; R0 needs nothing else. R1+: research
   [AD4](../research/backlog/advisor.md) computes/validates the signal (MCTS
   best-move gap + eval-swing); research AD2 for the score. AD4 also feeds P14 M2
-  (daily-puzzle move grading) — shared payoff.
+  (daily-puzzle move grading) — shared payoff. **R2 note (2026-07-13):** the
+  replay-fork itself isn't blocked on AD4 if the player picks the turn manually —
+  AD4 only automates the flagging. The standalone branching mode is P33.
 
 ### P3 — Mid-game advisor overlay
 - **Status:** partial — **R1 shipped**; R2+ deferred until the evaluator is trustworthy.
@@ -114,6 +118,21 @@ order runs foundation → offline surfaces → live surfaces.
   for growth."
 - **Depends on:** nothing. Mostly UI. Step 3 reuses P3 R1's legal-placement
   highlight component — build once, share.
+
+### P34 — Mobility surfaces (review chart + opt-in advisor meter)
+- **Status:** proposed
+- **Value:** mobility (open corners / legal moves) is what actually diverges
+  mid-game — score tracks closely until late. Surfacing it teaches the game's core
+  heuristic; explicitly a *coaching* feature, so it lives in advisor/review surfaces
+  and never in the default game view.
+- **Scope / milestones:** **M1 — review chart:** mobility-over-time per color in the
+  replay scrubber, alongside the P2 R0 score timeline ("when did my room
+  collapse?"); computed by replay through the rules core. **M2 — live opt-in
+  meter:** a per-player "room" indicator behind an advisor toggle, sibling to the
+  Legal-moves toggle (P3 R1); off by default.
+- **Depends on:** M1: P2 R0 (shipped). M2: nothing hard. Ground-truth signal — no
+  AD2/AD3 evaluator dependency. Shares the frontier computation with P32's
+  detectors — build it once, both consume it.
 
 ---
 
@@ -184,14 +203,20 @@ this epic owns the user-facing feature + its UX.
   current top tier for any actual new rung.
 
 ### P18 — Bot personas
-- **Status:** proposed
+- **Status:** deferred — until the difficulty ladder matures (2026-07-13): best-bot
+  research (AE pool) is still moving and P13 hasn't landed, so personas pinned to
+  today's tiers would need re-authoring when the ladder shifts.
 - **Value:** turns "difficulty dropdown" into rivals — name, face, think-time quips,
   and a *real* play style (heuristic weight variants: aggressive blocker vs greedy
   expander), not just cosmetics.
 - **Scope:** persona definitions mapped onto existing tiers + weight variants; setup
-  UI picks rivals instead of tiers (tier still visible).
-- **Depends on:** nothing. Optional later research follow-up if we want to *verify*
-  styles are distinct (would then get an AE entry).
+  UI picks rivals instead of tiers (tier still visible); **head-to-head rivalry
+  records** — per-persona W/L persisted in the P15 store, surfaced at setup + win
+  screen ("Greta leads you 4–2"). Future framing once tiers are strength contracts:
+  a **campaign/completion roster** — a fixed set of rivals to beat in order.
+- **Depends on:** P13 (tiers as strength contracts) + a settled top tier. Optional
+  later research follow-up if we want to *verify* styles are distinct (would then
+  get an AE entry).
 
 ---
 
@@ -234,9 +259,14 @@ four classic colors as accents, shapes as the star.
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P7 — Sound design
-- **Status:** proposed (deferred — later release)
+- **Status:** deferred — sequenced after P32 so sound has a language to voice (a
+  vocabulary of one event would leave it four lonely cues).
 - **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds. Should be deeply satisfying.
-- **Scope:** placement/UI SFX, palette of nostalgic cues.
+- **Scope:** placement/UI SFX, palette of nostalgic cues, mapped 1:1 onto P32's event
+  registry (placement click-clack, cut thud, blitz final-seconds tick — the seat P24
+  reserved); mute/volume setting following the `useReducedMotion` pattern; cues
+  enumerated in the registry's consumers column so sound coverage stays auditable.
+- **Depends on:** P32 (event vocabulary — the cues' trigger source).
 
 ### P8 — 3D presentation
 - **Status:** deferred — investigated 2026-07-02; 2D gel chosen for the resting board (P5).
@@ -462,6 +492,28 @@ four classic colors as accents, shapes as the star.
   board through `PlacedLayer` at once — live game, recap scrubber (P2 R0), daily puzzle
   (P14), tutorial (P4).
 
+### P32 — In-game event vocabulary (cuts, mobility swings, endgame beats) + maintained registry
+- **Status:** proposed
+- **Value:** P16 built the ceremony pipeline but its vocabulary is one event ("X is
+  out of moves") — the game's dramatic verbs (cutting off a corner, squeezing an
+  opponent's room, the final rounds) are never detected, so board drama is silent
+  regardless of presentation. This is the *content* layer that P7 (sound), P2 R1
+  (recap key moments), and P34 (mobility surfaces) all consume.
+- **Scope:**
+  - Pure detectors in the `drama.ts` pattern (rules-core diffs, side-effect-free,
+    unit-tested): **cut** — an opponent's placement removes a large share of a color's
+    frontier (open corner-attachment points / legal moves); **cramped** — a color's
+    mobility falls below a threshold; **endgame countdown** — last-rounds framing when
+    hands run short. Anti-spam thresholds so only real cuts fire.
+  - Presentation rides the existing `useGameEvents` → `EventBeats` seam (plus a brief
+    highlight of the killed region for cuts).
+  - **The vocabulary is a maintained registry** — `docs/EVENTS.md` as the single
+    source of truth (event name, trigger definition, threshold, consumers), plus a
+    schema-style test (P21 doctrine) asserting doc ↔ detector alignment both ways,
+    so the vocabulary can't drift from code.
+- **Depends on:** nothing. Feeds P7, P2 R1, P34. Threshold tuning is feel, not
+  research.
+
 ---
 
 ## Epic: Engagement & retention
@@ -595,6 +647,21 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Non-goal:** slowing bots in untimed play — the current pace is right there.
 - **Depends on:** P20 M1 (shipped). No research dependency: excluding `extreme` is what
   removes the "can a capped extreme still be a tier?" question from the critical path.
+
+### P33 — What-if mode (branching timelines from any turn)
+- **Status:** deferred — parked deliberately (2026-07-13); the shape is still
+  "something to think about."
+- **Value:** a finished game becomes a playground: fork the timeline at any ply,
+  play the branch out vs bots, and compare outcomes across branches
+  ("multi-dimensional chess") — losses become material instead of terminal. A
+  standalone mode, not just a recap button.
+- **Scope (sketch):** fork from the scrubber at ply N (replay through the pure rules
+  core, hand control to the human — same substrate as P2 R2); persist branches per
+  game; a branch-compare surface (final scores / boards side by side, maybe a tree
+  view). Open design questions: branch UI, how many forks, whether bots replay
+  deterministically per seed.
+- **Depends on:** P1 (logs) + P2 R0 scrubber (both shipped). Subsumes P2 R2's
+  replay-fork substrate if built — build the substrate once (see P2's R2 note).
 
 ---
 
