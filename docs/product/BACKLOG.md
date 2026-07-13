@@ -382,6 +382,54 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing. Revises P17+P27's shipped home layout (surface: `HomeScreen.tsx`,
   `ProgressionPanel.tsx`, `theme.ts`, `theme.css`). Mockup approved before build.
 
+### P29 — Front door: ambient board + action menu
+- **Status:** proposed
+- **Value:** the lobby (P17→P27→P28) is a stack of cards that *describes* the game; a
+  chess.com-style front door *shows* it — a large, living board carrying the page while a
+  single vertical menu says exactly where you can go. Ranked cards fixed the hierarchy, but
+  the page is still inert and its actions are scattered across card bodies. One board, one
+  menu: the game sells itself and every destination is one click, one place.
+- **Scope / milestones:**
+  - **M1 — shell, menu, destinations.** Two-column lobby: board left (static at first),
+    vertical action menu right. Menu rows are **fully uniform** for now — same visual weight,
+    no icons, no accent fill (icons/accents are a later pass). Rows: **Quick Play** (launches
+    the saved setup, as today) · **Custom Game** (→ **new screen** holding the current
+    Customize form: players, AI count, blitz, per-seat difficulty) · **Daily Puzzle**
+    (existing, "New today" badge) · **Tutorial** (opens the shipped How-to-play flow) ·
+    **Play with Friends** (**modal** wrapping P28's existing `card-friends` body) · **Your
+    Stats** (**modal** wrapping `ProgressionPanel`). Screens vs modals is deliberate: Custom
+    Game is a setup flow leading into a game, so it takes the view; the rest are glances, so
+    they overlay. Bring in the 2×2 four-color piece glyph from the approved mockup as the
+    wordmark icon. `App.tsx` routing is a plain state switch, so the new screen is one more
+    branch.
+  - **M2 — ambient self-play board.** The board plays itself by **replaying precomputed
+    games** — a handful of full games generated offline from the simplest heuristic bot (same
+    technique that produced `HeroBoard`'s `HERO_CELLS`), embedded as move lists and replayed
+    one move every ~1–2s, reusing the shipped `ob-settle` placement animation so pieces slot
+    in; on game end, brief hold → fade → next game. **No engine at runtime** — this preserves
+    `HeroBoard`'s deliberate "no engine in the initial bundle" property and stays
+    deterministic. Purely decorative, non-interactive; `prefers-reduced-motion` snaps to a
+    finished position instead of looping.
+- **Depends on:** nothing. Reuses shipped parts wholesale — the friends card (P28), the
+  progression panel (P15/P28), the tutorial (P4), the daily puzzle (P14), the heuristic bot
+  (P9, at generation time only), and the `ob-settle` animation (P16). **Leaderboard is
+  explicitly out of scope** — see P30. Supersedes P28's card-column layout;
+  `home-layout.spec.ts` gets rewritten again.
+
+### P30 — Leaderboard
+- **Status:** deferred
+- **Value:** a shared ranking is the payoff that makes scores *mean* something — the reason
+  to chase a better game rather than just log one. It's the natural sixth row in P29's menu.
+- **Scope:** a server-backed leaderboard + the screen that shows it. Open questions at build
+  time: what's ranked (daily-puzzle score? vs-AI best? online results?), what identity backs
+  an entry (nickname is currently client-supplied and unauthenticated), and anti-cheat —
+  today's scores live in `localStorage` and are trivially forged, so a leaderboard needs a
+  server-side source of truth, not a client upload.
+- **Depends on:** **networked play / server-side persistence** — deferred until that exists
+  (user's call). Overlaps P14 M3 (server leaderboard for the daily puzzle), which should
+  either fold into this entry or become its first milestone. No dead "Coming soon" row ships
+  in P29's menu meanwhile.
+
 ---
 
 ## Epic: Engagement & retention
