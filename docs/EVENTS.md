@@ -36,10 +36,10 @@ id, so an id is a small contract: don't rename one without updating its consumer
 
 | id | beat text | trigger (plain English) | thresholds | consumers |
 |----|-----------|--------------------------|------------|-----------|
-| `out-of-moves` | "Blue is out of moves" | a color that had legal moves has none left — it crossed to `stuck` this ply | — | beats, P7 sound, P2 recap |
-| `cut` | "Red cut off Blue" | an opponent's placement buries a large share of a color's *frontier* (its open corner attach-points) — the victim with the biggest loss, one per placement | `CUT_MIN_LOSS=2` (attach points buried) and `CUT_MIN_SHARE=0.15` (of the frontier it had) | beats, cut highlight, P7 sound, P2 recap |
-| `cramped` | "Blue is running out of room" | a started, unstuck color's frontier falls to a handful of attach-points — fires on the crossing, not while it sits there | `CRAMPED_MAX=5` (attach points at or below = cramped) | beats, P7 sound, P34 mobility surfaces |
-| `endgame` | "Final rounds" | every color still in the game is down to its last few pieces; once per game, no subject color | `ENDGAME_PIECES_LEFT=5` (pieces left per live color) | beats, P7 sound, P2 recap |
+| `out-of-moves` | "Blue is out of moves" | a color that had legal moves has none left — it crossed to `stuck` this ply | — | beats, sound cue, P2 recap |
+| `cut` | "Red cut off Blue" | an opponent's placement buries a large share of a color's *frontier* (its open corner attach-points) — the victim with the biggest loss, one per placement | `CUT_MIN_LOSS=2` (attach points buried) and `CUT_MIN_SHARE=0.15` (of the frontier it had) | beats, cut highlight, sound cue, P2 recap |
+| `cramped` | "Blue is running out of room" | a started, unstuck color's frontier falls to a handful of attach-points — fires on the crossing, not while it sits there | `CRAMPED_MAX=5` (attach points at or below = cramped) | beats, sound cue, P34 mobility surfaces |
+| `endgame` | "Final rounds" | every color still in the game is down to its last few pieces; once per game, no subject color | `ENDGAME_PIECES_LEFT=5` (pieces left per live color) | beats, sound cue, P2 recap |
 
 **Frontier** = `attachCells(G, color)` ([`src/game/ai/alphabeta.ts`](../src/game/ai/alphabeta.ts)):
 empty cells diagonally adjacent to the color and not orthogonally adjacent to it — i.e.
@@ -52,6 +52,6 @@ evaluates with, so "room" means the same thing to the bots and to the drama laye
 |----------|---------------------|
 | beats (shipped) | [`useGameEvents`](../src/client/hooks/useGameEvents.ts) diffs `prev → cur` and gives each event a TTL; [`EventBeats`](../src/client/controls/EventBeats.tsx) renders it as a pill banner with `data-kind` = the id. |
 | cut highlight (shipped) | the `cut` event carries `lostCells` — the victim's destroyed attach-points — which the board briefly marks. |
-| P7 sound | one cue per id, keyed off `data-kind` / the event stream. Not built yet. |
+| sound (shipped) | one synthesised cue per event id — [`CUES`](../src/client/sound/cues.ts) — fired off the same beat stream by [`useGameSound`](../src/client/sound/useGameSound.ts), so a cue and its banner are one moment and P32's anti-spam is inherited for free. [tests/sound-cues.test.ts](../tests/sound-cues.test.ts) fails CI if an event has no cue, so sound coverage can't silently lag the vocabulary. |
 | P2 R1 recap | replays detectors over a logged game to pick out key moments. Not built yet. |
 | P34 mobility surfaces | reuse `attachCells` (the same frontier metric) for charts/meters. Not built yet. |

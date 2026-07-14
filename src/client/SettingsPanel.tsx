@@ -16,8 +16,9 @@ import {
   useAppearance,
   useActiveTheme,
 } from './appearance';
-import { setInventoryDisplay, usePrefs, type InventoryDisplay } from './settings';
+import { setInventoryDisplay, setSound, setVolume, usePrefs, type InventoryDisplay } from './settings';
 import { PaletteControls } from './PalettePicker';
+import { configureSound, play } from './sound/engine';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 
@@ -183,6 +184,56 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                 {mode === 'silhouette' ? 'Pieces' : 'Dots'}
               </SegButton>
             ))}
+          </div>
+
+          {/* Sound (P7) — mute + volume. Every change previews itself: a setting you
+              can't hear is a setting you can't set. The preview pushes the new values
+              into the engine first, because `useGameSound`'s sync effect hasn't run
+              yet (and on the home screen there's no game mounted to run it at all). */}
+          <div style={sectionLabel}>Sound</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}>
+              <input
+                type="checkbox"
+                data-testid="sound-toggle"
+                checked={prefs.sound}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setSound(on);
+                  configureSound({ enabled: on, volume: prefs.volume });
+                  if (on) play('place', 4);
+                }}
+              />
+              {prefs.sound ? 'On' : 'Muted'}
+            </label>
+            <input
+              type="range"
+              data-testid="sound-volume"
+              min={0}
+              max={1}
+              step={0.05}
+              value={prefs.volume}
+              disabled={!prefs.sound}
+              aria-label="Sound volume"
+              onChange={(e) => {
+                const volume = Number(e.target.value);
+                setVolume(volume);
+                configureSound({ enabled: prefs.sound, volume });
+                play('place', 4);
+              }}
+              style={{ flex: 1, minWidth: 0, opacity: prefs.sound ? 1 : 0.4 }}
+            />
+            <span
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 10.5,
+                color: 'var(--fg-muted)',
+                width: 28,
+                textAlign: 'right',
+              }}
+            >
+              {Math.round(prefs.volume * 100)}
+            </span>
           </div>
 
           {/* Theme — the built-ins, then the user's own (forks of a built-in). */}
