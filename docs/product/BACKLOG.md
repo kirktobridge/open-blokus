@@ -359,7 +359,7 @@ four classic colors as accents, shapes as the star.
   off here; if built it must add its own drag/pointer substrate first.
 
 ### P26 — Emoji-grid share (Wordle-style board in "Copy result")
-- **Status:** proposed
+- **Status:** in-progress — `feat/p26-emoji-grid-share`
 - **Value:** the game-over "Copy result" currently copies two lines of text (headline +
   scores). A Wordle-style emoji grid of the final board — 🟦🟨🟥🟩 for placed cells, ⬜
   for empty — is instantly recognizable, screenshots itself, and turns a finished game
