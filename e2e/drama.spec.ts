@@ -25,7 +25,7 @@ test('game-over reveal: glow mosaic, racing score bars, winner tag, shareable re
   await expect(page.getByTestId('play-again')).toBeVisible();
 });
 
-test('copy result copies a text summary of the outcome', async ({ page, context }) => {
+test('copy result copies a text summary plus the emoji board (P26)', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/?botDelay=0');
   await page.getByTestId('open-custom').click();
@@ -40,4 +40,11 @@ test('copy result copies a text summary of the outcome', async ({ page, context 
   await page.getByTestId('copy-result').click();
   const clip = await page.evaluate(() => navigator.clipboard.readText());
   expect(clip).toContain('OpenBlokus');
+
+  // Caption lines, blank line, then a 20×20 grid of square glyphs. A finished
+  // 4-color game must have painted at least one square of every color.
+  const grid = clip.split('\n\n')[1].split('\n');
+  expect(grid).toHaveLength(20);
+  for (const row of grid) expect([...row]).toHaveLength(20);
+  for (const glyph of ['🟦', '🟨', '🟥', '🟩']) expect(clip).toContain(glyph);
 });

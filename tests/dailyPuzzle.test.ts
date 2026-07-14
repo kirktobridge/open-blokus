@@ -9,6 +9,7 @@ import {
   piecesPlaced,
   seedFromDateKey,
 } from '../src/game/puzzle/daily';
+import { emojiBoard } from '../src/game/share';
 import { COLOR_ORDER } from '../src/game/types';
 import { hasAnyMove, generateLegalMoves } from '../src/game/moves';
 import { applyPlacement } from '../src/game/placement';
@@ -120,10 +121,15 @@ describe('advanceOpponents', () => {
 });
 
 describe('dailyShareText', () => {
-  it('summarizes the run in plain text', () => {
-    const text = dailyShareText('2026-07-10', 34, 9);
+  it('summarizes the run, then the board as the shared emoji grid (P26)', () => {
+    const puzzle = generateDailyPuzzle('2026-07-10');
+    const text = dailyShareText('2026-07-10', 34, 9, puzzle.state);
     expect(text).toContain('OpenBlokus Daily 2026-07-10');
     expect(text).toContain('34 squares');
     expect(text).toContain('9 pieces');
+
+    const [caption, grid] = text.split('\n\n');
+    expect(caption.split('\n')).toHaveLength(2);
+    expect(grid).toBe(emojiBoard(puzzle.state)); // same renderer as game-over share
   });
 });

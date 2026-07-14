@@ -245,7 +245,7 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
   }, []);
 
   async function copyShare(): Promise<void> {
-    const text = dailyShareText(dateKey, cells, pieces);
+    const text = dailyShareText(dateKey, cells, pieces, board);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

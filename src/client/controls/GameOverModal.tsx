@@ -237,8 +237,20 @@ export function GameOverModal({
             readOnly
             value={fallback}
             onFocus={(e) => e.currentTarget.select()}
-            rows={2}
-            style={{ ...SECONDARY_BTN, cursor: 'text', width: '100%', marginTop: 14, resize: 'none' }}
+            // Tall enough to show the caption plus a slice of the emoji grid (P26
+            // made the share 23 lines) without pushing the actions out of view;
+            // it scrolls for the rest, and focusing still selects the whole thing.
+            rows={4}
+            style={{
+              ...SECONDARY_BTN,
+              cursor: 'text',
+              width: '100%',
+              marginTop: 14,
+              resize: 'vertical',
+              lineHeight: 1.15,
+              whiteSpace: 'pre',
+              overflow: 'auto',
+            }}
           />
         ) : null}
 
