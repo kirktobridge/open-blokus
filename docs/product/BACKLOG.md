@@ -26,16 +26,13 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P26** — emoji-grid share: a pure `G → string` Wordle-style board renderer behind the
-   existing Copy result button; nothing blocks it, and P14 M1 just shipped with plain-text
-   share waiting on exactly this (P2 recap reuses it too).
-2. **P7** — sound design: un-deferred now that P32 shipped the vocabulary it was waiting
+1. **P7** — sound design: un-deferred now that P32 shipped the vocabulary it was waiting
    on — the cues map 1:1 onto the event registry, so the design work is picking sounds,
    not deciding when they fire. Highest payoff-per-effort of what P32 unblocked.
-3. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
+2. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
    review surface is ready; P32 shipped `attachCells` as the shared frontier metric, so the
    signal is ground truth with no evaluator risk.
-4. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
+3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
    free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
    it's not the dependency-ready head.
@@ -359,7 +356,11 @@ four classic colors as accents, shapes as the star.
   off here; if built it must add its own drag/pointer substrate first.
 
 ### P26 — Emoji-grid share (Wordle-style board in "Copy result")
-- **Status:** in-progress — `feat/p26-emoji-grid-share`
+- **Status:** shipped — `emojiBoard` (a pure `G → string` renderer in the rules core, so
+  the core-only puzzle can reach it too) sits under **both** share surfaces: the game-over
+  summary and P14's daily share. Went with the **full 20×20** — verified faithful against
+  the rendered board — on the reasoning that downscaling blurs the one thing worth sharing,
+  which corners each color owned.
 - **Value:** the game-over "Copy result" currently copies two lines of text (headline +
   scores). A Wordle-style emoji grid of the final board — 🟦🟨🟥🟩 for placed cells, ⬜
   for empty — is instantly recognizable, screenshots itself, and turns a finished game
@@ -536,8 +537,8 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   one at a time with a heuristic move
   (`src/game/puzzle/daily.ts`, pure), so corners and lanes get contested like a real game
   rather than a frozen packing position. Score = squares you place (a personal best,
-  yours regardless of who wins); plain-text "Copy result" share on finish (emoji-grid
-  rendering awaits P26). M2 (best-move, blocked on AD4) + M3 (server leaderboard) pending.
+  yours regardless of who wins); "Copy result" share on finish, now carrying P26's
+  emoji grid. M2 (best-move, blocked on AD4) + M3 (server leaderboard) pending.
 - **Value:** a daily reason to open the app — same seeded challenge for everyone,
   shareable emoji-grid result (Wordle-style; renderer built in P26, reused here rather
   than re-scoped). Converts an evergreen board game into a habit.
