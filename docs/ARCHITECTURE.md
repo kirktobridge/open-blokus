@@ -342,8 +342,16 @@ The vocabulary is a **maintained registry**: [EVENTS.md](EVENTS.md) is its singl
 truth (ids, triggers, thresholds, consumers) and `tests/events-registry.test.ts` holds doc
 and code together in both directions, so an undocumented event — or a threshold that drifts
 from the code — fails CI. Presentation rides one seam (`useGameEvents` → `EventBeats`, plus
-the board's cut marks); future consumers (sound, recap moments, mobility surfaces) key off
-the event id.
+the board's cut marks); further consumers (recap moments, mobility surfaces) key off the
+event id.
+
+**Sound is the seam's second consumer, and the proof it holds.** `src/client/sound/` maps
+cues onto event ids 1:1 and subscribes to the *same* beat stream the banners do, so a cue
+and its banner are one moment by construction and the anti-spam above is inherited rather
+than re-derived — no second, timer-based notion of "too much" to keep in sync. Cues are
+**synthesised** (Web Audio, no assets): the palette stays tunable in code and the bundle
+gains nothing. Audibility is a property the count of scheduled cues can't express, so the
+e2e renders the graph through an `OfflineAudioContext` and asserts on the waveform.
 
 ### Appearance & preferences (client-only)
 

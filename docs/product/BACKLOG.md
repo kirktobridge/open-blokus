@@ -26,12 +26,12 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P7** — sound design: un-deferred now that P32 shipped the vocabulary it was waiting
-   on — the cues map 1:1 onto the event registry, so the design work is picking sounds,
-   not deciding when they fire. Highest payoff-per-effort of what P32 unblocked.
-2. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
+1. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
    review surface is ready; P32 shipped `attachCells` as the shared frontier metric, so the
-   signal is ground truth with no evaluator risk.
+   signal is ground truth with no evaluator risk. Dependency-ready head.
+2. **P5** (rest) — board plastic texture + tray: the sensory layer is now the thing with
+   momentum (P16 juice, P7 sound), and this is the last piece of it that depends on
+   nothing. The gel finish already proved the SVG-overlay approach.
 3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
    free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
@@ -257,16 +257,22 @@ four classic colors as accents, shapes as the star.
   appearance, and stays in its own store. Why → [../ARCHITECTURE.md](../ARCHITECTURE.md)
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
-### P7 — Sound design
-- **Status:** in-progress — claimed on `feat/p7-sound-design`. (Un-deferred once P32
-  shipped: the language it was waiting on exists — four events, each with a `data-kind`
-  to hang a cue on.)
+### P7 — Sound design — SHIPPED
+- **Status:** shipped — a **procedural** cue palette (Web Audio synthesis, zero assets)
+  covering the four [EVENTS.md](../EVENTS.md) ids 1:1, plus pickup, placement (pitch
+  scales with piece size) and the blitz final-seconds tick P24 reserved. Mute/volume
+  prefs follow the `useSyncExternalStore` pattern.
 - **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds. Should be deeply satisfying.
-- **Scope:** placement/UI SFX, palette of nostalgic cues, mapped 1:1 onto P32's event
-  registry (placement click-clack, cut thud, blitz final-seconds tick — the seat P24
-  reserved); mute/volume setting following the `useReducedMotion` pattern; cues
-  enumerated in the registry's consumers column so sound coverage stays auditable.
-- **Depends on:** P32 (event vocabulary — the cues' trigger source).
+- **Why it stayed cheap:** cues ride the beat stream `useGameEvents` already produces, so
+  a cue and its banner are one moment and P32's anti-spam is inherited, not re-derived —
+  the design work really was picking sounds, not deciding when they fire. Synthesis over
+  samples keeps the palette tunable in code (and the bundle asset-free).
+- **Deviation:** the e2e spec asserts on the rendered **waveform** (via
+  `OfflineAudioContext`), not on oscillator counts — a count proves a cue fired, never
+  that it was *audible*. Not academic: it caught the limiter's default 30 dB knee
+  compressing below every cue in the palette, quietly ducking the whole game.
+- **Depended on:** P32 (event vocabulary — the cues' trigger source). Synergy with P16
+  (juice) noted there: same event hooks.
 
 ### P8 — 3D presentation
 - **Status:** deferred — investigated 2026-07-02; 2D gel chosen for the resting board (P5).
