@@ -258,8 +258,9 @@ four classic colors as accents, shapes as the star.
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P7 — Sound design
-- **Status:** proposed — un-deferred: P32 shipped, so the language it was waiting on
-  exists (four events, each with a `data-kind` to hang a cue on).
+- **Status:** in-progress — claimed on `feat/p7-sound-design`. (Un-deferred once P32
+  shipped: the language it was waiting on exists — four events, each with a `data-kind`
+  to hang a cue on.)
 - **Value:** nostalgic 90s/2000s-internet feel; MIDI/Flash-era piece-placement sounds. Should be deeply satisfying.
 - **Scope:** placement/UI SFX, palette of nostalgic cues, mapped 1:1 onto P32's event
   registry (placement click-clack, cut thud, blitz final-seconds tick — the seat P24
