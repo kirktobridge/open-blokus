@@ -15,6 +15,7 @@ import {
   revealRows,
   resultSummary,
 } from '../src/client/drama';
+import { emojiBoard } from '../src/game/share';
 
 describe('placedSquares / TOTAL_SQUARES', () => {
   it('all 21 pieces total 89 squares', () => {
@@ -76,6 +77,16 @@ describe('resultSummary', () => {
     const text = resultSummary(G, finalScores(G));
     expect(text).toContain('Blue wins');
     for (const name of ['Blue', 'Yellow', 'Red', 'Green']) expect(text).toContain(name);
+  });
+
+  it('appends the emoji board below the caption lines (P26)', () => {
+    const G = createInitialState(4, 'basic');
+    G.board[0] = 'blue';
+    const text = resultSummary(G, finalScores(G));
+    const [caption, grid] = text.split('\n\n');
+    expect(caption.split('\n')).toHaveLength(2); // headline + scores
+    expect(grid).toBe(emojiBoard(G));
+    expect(grid.split('\n')).toHaveLength(20);
   });
 });
 

@@ -20,6 +20,7 @@ import { createInitialState } from '../modes';
 import { resolveCells } from '../pieces';
 import { applyPlacement } from '../placement';
 import { remainingSquares } from '../scoring';
+import { emojiBoard } from '../share';
 import { heuristicStrategy, mulberry32 } from '../ai/arena';
 
 /**
@@ -154,9 +155,14 @@ export function piecesPlaced(puzzle: DailyPuzzle, current: GameState): number {
 }
 
 /**
- * Plain-text share blurb for a finished puzzle (M1). The Wordle-style emoji grid
- * is a separate feature (P26) that will slot in above this caption once shipped.
+ * Share blurb for a finished puzzle: caption lines, then the contested board as
+ * the Wordle-style emoji grid (P26) — the same renderer the game-over summary uses.
  */
-export function dailyShareText(dateKey: string, cells: number, pieces: number): string {
-  return `OpenBlokus Daily ${dateKey}\nFit ${cells} squares · ${pieces} pieces`;
+export function dailyShareText(
+  dateKey: string,
+  cells: number,
+  pieces: number,
+  current: GameState,
+): string {
+  return `OpenBlokus Daily ${dateKey}\nFit ${cells} squares · ${pieces} pieces\n\n${emojiBoard(current)}`;
 }

@@ -3,6 +3,7 @@ import { COLOR_ORDER, PIECE_IDS } from '../game/types';
 import { pieceSize } from '../game/pieces';
 import { remainingSquares } from '../game/scoring';
 import { attachCells } from '../game/ai/alphabeta';
+import { emojiBoard } from '../game/share';
 import type { GameOverPayload } from './controls/GameOverModal';
 
 /**
@@ -220,7 +221,10 @@ export function revealRows(G: GameState, gameover: GameOverPayload): RevealRow[]
   });
 }
 
-/** Compact, copy-pasteable result summary for sharing the outcome as text. */
+/**
+ * Compact, copy-pasteable result summary: headline + final scores as caption
+ * lines, then the board itself as a Wordle-style emoji grid (P26).
+ */
 export function resultSummary(G: GameState, gameover: GameOverPayload): string {
   const rows = revealRows(G, gameover);
   const winners = rows.filter((r) => r.isWinner).map((r) => cap(r.color));
@@ -229,5 +233,5 @@ export function resultSummary(G: GameState, gameover: GameOverPayload): string {
       ? 'OpenBlokus — game over'
       : `OpenBlokus — ${winners.join(' & ')} win${winners.length > 1 ? '' : 's'}`;
   const scores = rows.map((r) => `${cap(r.color)} ${r.score}`).join(' · ');
-  return `${head}\n${scores}`;
+  return `${head}\n${scores}\n\n${emojiBoard(G)}`;
 }
