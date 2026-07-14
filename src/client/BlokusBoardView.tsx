@@ -20,6 +20,7 @@ import { EventBeats } from './controls/EventBeats';
 import { matchAction, type PlacementAction } from './controls/keymap';
 import { useSelection } from './hooks/useSelection';
 import { useGameEvents } from './hooks/useGameEvents';
+import { useGameSound } from './sound/useGameSound';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { useReactions } from './hooks/useReactions';
 import { isRealName } from './lobby/config';
@@ -80,6 +81,10 @@ export function BlokusBoardView({
   const inventoryDisplay = useInventoryDisplay();
   const reduce = useReducedMotion();
   const { beats } = useGameEvents(G);
+
+  // Sound (P7) rides the same beat stream the banners do, so a cue and its banner are
+  // the same moment; placement/pickup/blitz-tick cues come from the state below.
+  useGameSound({ G, beats, selectedPieceId: sel.pieceId, blitzRemainingMs });
 
   // A cut beat carries the corners it destroyed (P32); mark them on the board for
   // exactly as long as the beat lives, so the banner and the scars share one TTL.

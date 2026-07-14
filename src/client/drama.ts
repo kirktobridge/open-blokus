@@ -94,6 +94,24 @@ function placedThisUpdate(prev: GameState, cur: GameState): boolean {
   return cur.lastMove.some((c, i) => c !== prev.lastMove[i]);
 }
 
+/** A piece hitting the board: who played it, and how big it was. */
+export interface Placement {
+  color: Color;
+  /** Squares in the placed piece (1–5) — the "weight" of the thunk it makes. */
+  size: number;
+}
+
+/**
+ * The placement itself, as a prev → cur crossing. Not an event (it's not a dramatic
+ * verb — every ply has one), but it's the same pure seam, and P7's click-clack hangs
+ * off it. Null when nothing was placed between the two states.
+ */
+export function detectPlacement(prev: GameState, cur: GameState): Placement | null {
+  if (!placedThisUpdate(prev, cur)) return null;
+  const color = moverColor(cur);
+  return color === null ? null : { color, size: cur.lastMove.length };
+}
+
 const cellKey = (c: Cell) => c.y * 20 + c.x;
 
 /** Attach points present for `color` in `prev` but gone in `cur`. */

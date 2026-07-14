@@ -10,6 +10,7 @@ import {
   newlyStuckColors,
   outOfMovesText,
   detectEvents,
+  detectPlacement,
   EVENT_IDS,
   EVENT_THRESHOLDS,
   revealRows,
@@ -117,6 +118,41 @@ const staircase = (x: number, y: number): Cell[] => [
   { x: x + 2, y: y + 2 },
   { x: x + 3, y: y + 3 },
 ];
+
+describe('detectPlacement', () => {
+  it('reports the mover and the size of the piece that just landed', () => {
+    const prev = createInitialState(4, 'basic');
+    const cur = clone(prev);
+    play(cur, 'blue', [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+    ]);
+    expect(detectPlacement(prev, cur)).toEqual({ color: 'blue', size: 3 });
+  });
+
+  it('is null when no piece landed — a turn that only skipped makes no sound', () => {
+    const prev = createInitialState(4, 'basic');
+    const cur = clone(prev);
+    cur.activeColorIndex = 1; // stuck color auto-skipped; lastMove untouched
+    expect(detectPlacement(prev, cur)).toBeNull();
+    expect(detectPlacement(prev, prev)).toBeNull();
+  });
+
+  it('distinguishes a new placement from the same piece still sitting in lastMove', () => {
+    const first = createInitialState(4, 'basic');
+    play(first, 'blue', [{ x: 0, y: 0 }]);
+    const same = clone(first);
+    expect(detectPlacement(first, same)).toBeNull(); // no new move → no clack
+
+    const next = clone(first);
+    play(next, 'yellow', [
+      { x: 19, y: 0 },
+      { x: 18, y: 0 },
+    ]);
+    expect(detectPlacement(first, next)).toEqual({ color: 'yellow', size: 2 });
+  });
+});
 
 describe('detectEvents — cut', () => {
   it('fires when a placement guts a color’s frontier, and carries the killed cells', () => {
