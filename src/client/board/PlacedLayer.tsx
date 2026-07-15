@@ -83,10 +83,13 @@ function buildRegions(board: (Color | null)[], exclude: ReadonlySet<number>): Re
 /**
  * Skeuomorphic finish for placed pieces, drawn as one SVG overlay above the
  * interactive cell grid (pointer-events: none, so clicks fall through). Each
- * piece is a single joined polyomino: translucent fill, one soft contact
- * shadow, global top-down volume shading, per-piece silhouette bevel, and a
- * faint grain. Piece fills come from the `--piece-*` tokens, so a theme switch
- * recolors the finish with no re-render.
+ * piece is a single joined polyomino, but the finish reads as individually
+ * molded translucent tiles: a per-cell alpha mask (recessed window more
+ * transparent than the frame, so the board mat shows through), per-cell bevels /
+ * window rim / glint / seams, one soft contact shadow, a warm macro lamp-pool,
+ * an ambient-occlusion seam, a darker dye border, and a faint grain. Piece fills
+ * come from the `--piece-*` tokens and the molding from `--tile-*`, so a theme
+ * switch recolors the finish with no re-render.
  */
 export function PlacedLayer({
   board,
@@ -124,13 +127,86 @@ export function PlacedLayer({
       aria-hidden="true"
     >
       <defs>
-        {/* Global top-down volume so lighting is consistent across all pieces.
-            Bright top reads as light entering the translucent plastic. */}
-        <linearGradient id="pl-vol" x1="0" y1="0" x2="0" y2={SIZE} gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.32" />
-          <stop offset="0.45" stopColor="#ffffff" stopOpacity="0" />
-          <stop offset="1" stopColor="#000000" stopOpacity="0.14" />
-        </linearGradient>
+        {/* Macro volume = the warm lamp pool (same geometry as --table-bg): a
+            radial highlight top-of-center falling to a dark rim. Low amplitude —
+            per-cell molding now carries the depth. */}
+        <radialGradient
+          id="pl-vol"
+          cx={SIZE * 0.5}
+          cy={SIZE * 0.4}
+          r={SIZE * 0.8}
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.16" />
+          <stop offset="0.55" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="1" stopColor="#000000" stopOpacity="0.1" />
+        </radialGradient>
+        {/* Per-cell molding, grid-aligned (board cells sit at multiples of C).
+            (a) Translucency mask: the window is more transparent than the frame,
+            so the board mat shows through — glowing on a pale mat, deepening on a
+            dark one, as real translucent plastic does. */}
+        <pattern id="pl-alpha-pat" patternUnits="userSpaceOnUse" width={C} height={C}>
+          <rect width={C} height={C} fill="#ffffff" fillOpacity={0.96} />
+          <rect x={5.5} y={5.5} width={19} height={19} rx={1.5} fill="#ffffff" fillOpacity={0.74} />
+        </pattern>
+        <mask id="pl-tile-alpha">
+          <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#pl-alpha-pat)" />
+        </mask>
+        {/* (b) Detail paint: frame bevel (light top-left, dark bottom-right), an
+            inverted recess rim around the window, a top-edge glint, and a faint
+            seam so same-piece cells still read as individually molded squares. All
+            inset 0.75px so strokes aren't clipped at the tile edge. CSS vars
+            resolve inside inline SVG, so the theme tokens drive the finish. */}
+        <pattern id="pl-tile-detail" patternUnits="userSpaceOnUse" width={C} height={C}>
+          {/* Frame bevel: light top+left, dark bottom+right. */}
+          <path
+            d="M0.75 29.25 L0.75 0.75 L29.25 0.75"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth={1.5}
+            style={{ opacity: 'var(--tile-hi)' }}
+          />
+          <path
+            d="M0.75 29.25 L29.25 29.25 L29.25 0.75"
+            fill="none"
+            stroke="#000000"
+            strokeWidth={1.5}
+            style={{ opacity: 'var(--tile-lo)' }}
+          />
+          {/* Window recess rim, inverted: dark top+left, light bottom+right. */}
+          <path
+            d="M5.5 24.5 L5.5 5.5 L24.5 5.5"
+            fill="none"
+            stroke="#000000"
+            strokeWidth={1}
+            strokeOpacity={0.22}
+          />
+          <path
+            d="M5.5 24.5 L24.5 24.5 L24.5 5.5"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth={1}
+            strokeOpacity={0.15}
+          />
+          {/* Top-edge glint. */}
+          <rect
+            x={4.5}
+            y={1.6}
+            width={6}
+            height={1.6}
+            rx={0.8}
+            style={{ fill: 'var(--tile-glint)' }}
+            opacity={0.5}
+          />
+          {/* Seam (right+bottom) separating same-piece cells. */}
+          <path
+            d="M0.75 29.25 L29.25 29.25 L29.25 0.75"
+            fill="none"
+            stroke="#000000"
+            strokeWidth={0.75}
+            strokeOpacity={0.14}
+          />
+        </pattern>
         {/* One soft contact shadow for the whole placed layer. */}
         <filter id="pl-shadow" x="-5%" y="-5%" width="110%" height="110%">
           <feDropShadow dx="0" dy="0.8" stdDeviation="1" floodColor="#000000" floodOpacity="0.35" />
@@ -145,22 +221,6 @@ export function PlacedLayer({
             result="noise"
           />
           <feColorMatrix in="noise" type="saturate" values="0" />
-        </filter>
-        {/* Glossy plastic sheen: a specular lip along the (blurred) silhouette,
-            lit from the top-left. Pure white highlight, clipped to the shape. */}
-        <filter id="pl-gloss" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="glossBlur" />
-          <feSpecularLighting
-            in="glossBlur"
-            surfaceScale="4"
-            specularConstant="0.75"
-            specularExponent="16"
-            lightingColor="#ffffff"
-            result="glossSpec"
-          >
-            <feDistantLight azimuth="235" elevation="62" />
-          </feSpecularLighting>
-          <feComposite in="glossSpec" in2="SourceAlpha" operator="in" />
         </filter>
         {/* Soft colored halo for glowing (winner) pieces in the reveal mosaic. */}
         <filter id="pl-glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -197,40 +257,56 @@ export function PlacedLayer({
         </g>
       )}
 
-      {/* Translucent fills sharing one contact shadow. */}
+      {/* Translucent fills: one contact shadow (outer <g>) wraps the alpha mask
+          (inner <g>) — nesting order matters, or the mask waffle-textures the
+          drop-shadow. The window's lower alpha lets the board mat show through. */}
       <g filter="url(#pl-shadow)">
-        {regions.map((r, i) => (
-          <path key={i} d={r.fillD} fill={PIECE_VAR[r.color]} fillOpacity={0.92} />
-        ))}
+        <g mask="url(#pl-tile-alpha)">
+          {regions.map((r, i) => (
+            <path key={i} d={r.fillD} fill={PIECE_VAR[r.color]} fillOpacity={0.95} />
+          ))}
+        </g>
       </g>
 
-      {/* Global volume shading, confined to the pieces. */}
-      <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#pl-vol)" clipPath="url(#pl-all)" />
-
-      {/* Per-piece silhouette bevel (clipped to keep the inner half only), plus a
-          thin bright rim on every edge so the dye "light-pipes" at its border. */}
+      {/* Ambient-occlusion seam: a soft dark inset at each piece silhouette (the
+          contact groove around every footprint), clipped to 2px inside. */}
       {regions.map((r, i) => (
         <g key={i} clipPath={`url(#pl-r${i})`}>
           <path
-            d={r.highlightD}
-            fill="none"
-            stroke="#ffffff"
-            strokeOpacity={0.55}
-            strokeWidth={3}
-          />
-          <path d={r.shadowD} fill="none" stroke="#000000" strokeOpacity={0.35} strokeWidth={3} />
-          <path
             d={`${r.highlightD}${r.shadowD}`}
             fill="none"
-            stroke="#ffffff"
-            strokeOpacity={0.22}
-            strokeWidth={1.2}
+            stroke="#000000"
+            strokeOpacity={0.12}
+            strokeWidth={4}
           />
         </g>
       ))}
 
-      {/* Glossy plastic sheen over the pieces. */}
-      <path d={allFillsD} fill="#000000" filter="url(#pl-gloss)" opacity={0.85} />
+      {/* Macro lamp-pool volume, confined to the pieces. */}
+      <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#pl-vol)" clipPath="url(#pl-all)" />
+
+      {/* Per-cell molding detail (bevels, window rim, glint, seams). */}
+      <rect
+        x={0}
+        y={0}
+        width={SIZE}
+        height={SIZE}
+        fill="url(#pl-tile-detail)"
+        clipPath="url(#pl-all)"
+      />
+
+      {/* Thin darker dye border around each piece footprint (the photo's edge),
+          clipped to 1.5px inside so it can't bleed onto a neighbor sharing an edge. */}
+      {regions.map((r, i) => (
+        <g key={i} clipPath={`url(#pl-r${i})`}>
+          <path
+            d={`${r.highlightD}${r.shadowD}`}
+            fill="none"
+            stroke={`color-mix(in srgb, ${PIECE_VAR[r.color]}, black 30%)`}
+            strokeWidth={3}
+          />
+        </g>
+      ))}
 
       {/* Faint grain over the pieces. */}
       <rect
@@ -240,7 +316,7 @@ export function PlacedLayer({
         height={SIZE}
         filter="url(#pl-grain)"
         clipPath="url(#pl-all)"
-        opacity={0.06}
+        opacity={0.04}
       />
 
       {/* Last-move ring, crisp above the finish: one outline around the *piece*, not a

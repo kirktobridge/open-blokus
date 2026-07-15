@@ -36,6 +36,12 @@
   --cell-outline: rgba(0, 0, 0, 0.15);
   --last-move-ring: rgba(255, 255, 255, 0.85);
 
+  /* Molded-tile finish (P5) — per-cell bevel highlight/shadow opacity + glint
+     tint for the translucent-plastic look. Forked automatically by user themes. */
+  --tile-hi: 0.42;
+  --tile-lo: 0.26;
+  --tile-glint: #ffffff;
+
   /* Study Table — Linen (light) */
   --frame-a: #b38e63;
   --frame-b: #8a6845;
@@ -80,6 +86,12 @@
   --pill-idle: #4b5563;
   --cell-outline: rgba(0, 0, 0, 0.4);
   --last-move-ring: rgba(255, 255, 255, 0.9);
+
+  /* Molded-tile finish (P5) — dark mat, so bevels lean on the shadow side and the
+     glint warms toward the lamp. */
+  --tile-hi: 0.3;
+  --tile-lo: 0.38;
+  --tile-glint: #ffe9c4;
 
   /* Study Table — Lamplight (dark). Elevation retuned (P28): panel stepped a
      clear notch above the table, wells a notch below the panel, border light
@@ -126,6 +138,11 @@
   --pill-idle: #6d5e49;
   --cell-outline: rgba(0, 0, 0, 0.2);
   --last-move-ring: rgba(255, 255, 255, 0.9);
+
+  /* Molded-tile finish (P5) — pale mat like Linen, glint faintly warm. */
+  --tile-hi: 0.38;
+  --tile-lo: 0.3;
+  --tile-glint: #fff3dd;
 
   /* Study Table — Walnut (hero) */
   --frame-a: #6d5138;

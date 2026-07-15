@@ -27,7 +27,10 @@ export function Cell({
   onEnter?: () => void;
   onClick?: () => void;
 }) {
-  let background = value ? PIECE_VAR[value] : EMPTY_CELL;
+  // Occupied cells paint the empty mat, not the piece color — the translucent
+  // PlacedLayer finish supplies the color, so the grid studs ghost through the
+  // recessed windows (board-through-plastic). Preview/hint branches still color.
+  let background = EMPTY_CELL;
   let opacity = 1;
   if (preview === 'legal') {
     background = PIECE_VAR[previewColor];
