@@ -205,6 +205,26 @@ this epic owns the user-facing feature + its UX.
   that makes recalibration cheap and trustworthy); a won AE experiment beating the
   current top tier for any actual new rung.
 
+### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
+- **Status:** proposed.
+- **Value:** deploys research win AE15/F15 (rank-normalized reward shaping at
+  w=0.25), which sits won but undeployed behind a shipped default of 0. Buys better
+  lost-position play (bots fight for placement/score when the win is gone, +1.3
+  placed squares / −0.24 placement, both CI-clear at no win-rate cost) and hands the
+  advisor (AD2/AD3) a **non-degenerate value signal** in lost positions instead of a
+  flat winner-take-all reward.
+- **Scope:**
+  - Flip the `rankRewardWeight` default 0 → 0.25 in
+    [mcts.ts](../../src/game/ai/mcts.ts) — a retune-in-place per P13's decision rule
+    (same tiers, better play), not a new rung.
+  - **Replication:** the shipped-defaults rule requires a second independent pooled
+    seed batch confirming F15's game-share guard before landing — or an explicit
+    `replication-pending` label at landing. Run/pool the batch via /research (this is
+    a default change to a shipped tier).
+  - Re-run the ladder monotonicity check (P13 recalibration workflow) after the flip.
+- **Depends on:** research AE15 / F15 (won). No new engine work — config default flip
+  plus the replication batch.
+
 ### P18 — Bot personas
 - **Status:** deferred — until the difficulty ladder matures (2026-07-13): best-bot
   research (AE pool) is still moving and P13 hasn't landed, so personas pinned to
