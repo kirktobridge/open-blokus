@@ -22,9 +22,11 @@ describe('Board', () => {
     // 400 cells + 1 grid container = 401 divs (the placed-piece finish is an
     // absolutely-positioned <svg> overlay, not a div).
     expect(occurrences(html, '<div')).toBe(401);
-    // Two blue cell backgrounds + one joined-piece fill in the SVG overlay. Pieces
+    // Occupied cells paint the empty mat now (the translucent molded finish
+    // supplies the color, P5), so the piece token appears only in the SVG overlay:
+    // once for the joined-piece fill, once inside the dye-border color-mix. Pieces
     // paint from the --piece-* tokens, so the markup carries the var(), not a hex.
-    expect(occurrences(html, PIECE_VAR.blue)).toBe(3);
+    expect(occurrences(html, PIECE_VAR.blue)).toBe(2);
     expect(occurrences(html, PIECE_VAR.red)).toBe(0);
   });
 });
