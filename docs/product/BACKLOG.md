@@ -37,6 +37,9 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
    free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
    it's not the dependency-ready head.
+4. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
+   dependencies (P29 surface, P15 data) shipped, and it's the front door — small effort,
+   every-session visibility.
 
 ---
 
@@ -532,6 +535,31 @@ four classic colors as accents, shapes as the star.
     so the vocabulary can't drift from code.
 - **Depends on:** nothing. Feeds P7, P2 R1, P34. Threshold tuning is feel, not
   research.
+
+### P35 — Lobby menu hierarchy pass (one primary, adaptive rows)
+- **Status:** proposed
+- **Value:** P29 shipped the board-left / menu-right front door with six deliberately
+  co-equal rows — the punted "later pass" is this entry. The board already does tier-one
+  work (ambient demonstration that sells the game); the menu's job is to convert that
+  into one obvious click. Today nothing leads, and Your Stats — a noun in a column of
+  verbs — dilutes the menu's "ways to play" reading.
+- **Scope:** a hierarchy pass over P29's menu column, not a rebuild. (a) **One primary** —
+  Quick Play gets the page's single accent/elevation; every other row stays uniform and
+  neutral. Chosen because it's the only action with no preconditions (no friends online,
+  no config knowledge, not once-a-day), so it doubles as the fallback for users who don't
+  know what they want. Explicitly **no** 3-tier system and **no** grouping — five intents,
+  no natural pairs; order rows by expected frequency instead. (b) **Your Stats → top bar**
+  as an avatar/profile affordance with a glanceable number (rating or streak), opening
+  the existing `ProgressionPanel` modal. Frees the sixth row P30 wants. (c) **No brand-color
+  coding of rows** — the four logo colors mean *seats/pieces* in this game; a red row reads
+  "red player," not "action category," and the calm-menu-vs-colorful-board contrast is
+  itself the hierarchy device. Palette stays reserved for game semantics; one accent on
+  the primary. Binding guidance for the icons/accents pass P29 deferred. (d) **Adaptive
+  rows** — Tutorial de-emphasizes once completed (completion state from P4/P15's local
+  store); Daily Puzzle's "New today" badge extends to carry the P15 streak count. Badging,
+  not reordering — rows stay put so the menu stays learnable.
+- **Depends on:** P29 (shipped — the surface), P15 (shipped — streak/completion data).
+  Cross-ref P30: the freed sixth row is where the leaderboard lands when unblocked.
 
 ---
 
