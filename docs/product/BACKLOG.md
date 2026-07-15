@@ -29,9 +29,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 1. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
    review surface is ready; P32 shipped `attachCells` as the shared frontier metric, so the
    signal is ground truth with no evaluator risk. Dependency-ready head.
-2. **P5** (rest) — board plastic texture + tray: the sensory layer is now the thing with
-   momentum (P16 juice, P7 sound), and this is the last piece of it that depends on
-   nothing. The gel finish already proved the SVG-overlay approach.
+2. **P5** (rest) — board plastic texture + tray: the placed-piece molded-tile finish now
+   shipped, so the remaining sensory work is the mat/board plastic and the piece tray —
+   still dependency-free, and the SVG-overlay approach is proven. Sensory layer has
+   momentum (P16 juice, P7 sound).
 3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
    free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
@@ -226,9 +227,10 @@ Look, feel, and interaction. Curated from [../dev_notes/OPEN_IDEAS.md](../dev_no
 four classic colors as accents, shapes as the star.
 
 ### P5 — Skeuomorphic piece & board finish
-- **Status:** partial — joined-piece translucent **gel finish shipped** for placed cells
-  (PlacedLayer SVG overlay). Remaining: board plastic texture, tray, translucent-plastic
-  polish across all palettes.
+- **Status:** partial — placed cells now carry a **per-cell molded translucent-tile
+  finish** across all three built-in themes (PlacedLayer SVG overlay; supersedes the
+  earlier joined-piece gel — per-cell alpha window over the mat + bevel/glint/seam, no
+  gloss filter). Remaining: board plastic texture, tray.
 - **Value:** the tactile "real Blokus set" identity.
 - **Scope:** hyperrealistic board plastic; per-palette piece finishes; grain/bevel/shadow.
 
