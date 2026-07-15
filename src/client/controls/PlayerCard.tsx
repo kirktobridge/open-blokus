@@ -26,20 +26,16 @@ function StateTag({ tag, brass }: { tag: SeatTag; brass: string }) {
     whiteSpace: 'nowrap' as const,
   };
   switch (tag) {
+    // The active seat is signalled by its blue keyline + lifted shadow (see the
+    // `active` boxShadow below); a text pill here would read "YOUR TURN" on every
+    // active seat, including opponents and bots. Highlight only, no pronoun.
     case 'active':
-      return <span style={{ ...base, background: '#3468cf', color: '#fff' }}>YOUR TURN</span>;
+      return null;
     case 'winner':
       return <span style={{ ...base, background: brass, color: '#fff' }}>WINNER</span>;
     case 'onDeck':
-      return (
-        <span style={{ ...base, border: '1px solid var(--pnl-bd)', color: 'var(--mut)' }}>NEXT</span>
-      );
     case 'played':
-      return (
-        <span style={{ ...base, border: '1px solid var(--pnl-bd)', color: 'var(--mut)' }}>
-          PLAYED
-        </span>
-      );
+      return null;
     case 'noMoves':
       return (
         <span style={{ ...base, border: '1px solid var(--pnl-bd)', color: 'var(--mut)' }}>
