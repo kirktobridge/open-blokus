@@ -63,7 +63,9 @@ dominant factor is rollout depth, not iteration count: at a fixed tiny `it=40`,
 truncated rollouts *lose* (39%) while full rollouts *win big* (68%) — a 29-point
 swing. The placed-leader reward is exact at a terminal state but a weak proxy at a
 mid-rollout cutoff. **Practical takeaway: always full rollouts; spend the move-time
-budget on iterations.** Cost is ~100–1000× the heuristic, so this is a
+budget on iterations.** (The it→strength curve here is per-iteration and
+engine-invariant, but iteration counts per *time* budget are up ~2.5× since AE9
+bitboards — see AE27.) Cost is ~100–1000× the heuristic, so this is a
 budget-capped "hard" bot, not a drop-in.
 
 ### F14 — Absolute strength: our best bot ≈ Pentobi level 1–2 (the first external anchor)
@@ -149,7 +151,9 @@ matching the winning it40/beam8 of F6), not the time budget — which is why har
 (both budgets' p95 move-time already clear the 2.5 s cap). **Confirmed under real
 time budgets** (Run J-confirm): medium 67 % vs easy (was 31 % at beam 16), hard
 63 % vs medium — a monotonic, significant ladder. Runs J / J-confirm; resolved
-[AE10 + AE5](backlog/ai-engine.md).
+[AE10 + AE5](backlog/ai-engine.md). (Beams + the iters-per-time-budget counts here
+were measured pre-AE9 bitboards; timed tiers now complete ~2.5× the iterations per
+budget — see AE27.)
 
 ### F9 — RAVE / AMAF value sharing does not buy strength in Blokus MCTS
 `replicated` (no-win). At **matched iterations** (150 iters, beam 16, rolloutDepth 12),

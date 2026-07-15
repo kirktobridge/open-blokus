@@ -24,6 +24,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
 3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
 4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+5. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
+   guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
+   F8/AE10).
 
 ---
 
@@ -34,6 +37,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** Runs D–K → [F6, F8](../FINDINGS.md). Product follow-ups (long-move UX,
   bot-fill) → [product backlog](../../product/BACKLOG.md); open research levers →
   AE2 / AE9.
+- **Deploys as:** shipped (see Status line).
 
 ### AE2 — Make MCTS faster (more iterations per time cap)
 - **Status:** proposed (partly banked — the anchor optimization already shipped a
@@ -65,6 +69,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
      `rollout`); the rollout clone can be one reusable mutable scratch. Smaller win.
 - **Success criteria:** measurable iters/s gain with byte-identical move output
   (differential test), translating to higher game-share at fixed wall-clock.
+- **Power:** bar not yet numeric — pin via stats.py --power at the Phase-1 start gate.
 - **Cost / risk:** small per item (an afternoon each); correctness guarded by
   differential test. Risk: #1 wasted if AE9 lands immediately after.
 
@@ -113,6 +118,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   time budgets (Run J-confirm). Lesson: **beam must scale *down* with the small,
   phase-varying iteration budget** (`beam ≈ iters/6`, F8) or the low tier breaks.
 - **Log:** Runs J / J-confirm → [F8](../FINDINGS.md)
+- **Deploys as:** shipped (see Status line).
 
 ### AE6 — Push the budget ladder to saturation
 - **Status:** proposed (pure benchmarking; low priority)
@@ -121,6 +127,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   doubling — the ceiling is mid-90s.
 - **Method:** run `it=640/d=0` and beyond, same sharded harness + pooled binomial stats.
 - **Success criteria:** N/A (measurement) — identify the plateau.
+- **Power:** measurement — sized by target CI width, no binomial bar.
 - **Cost / risk:** slow; no code change.
 
 ### AE7 — MCTS mode coverage (2p / 3p)
@@ -131,6 +138,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   revisiting.
 - **Method:** extend arena to 2p/3p; rerun the budget sweep per mode.
 - **Success criteria:** MCTS beats heuristic in each mode, CI clear.
+- **Power:** set at revival.
 - **Cost / risk:** moderate; also unblocks AE8's tree-reuse revisit.
 
 ### AE8 — Tree reuse across turns (revisit in 2p)
@@ -143,6 +151,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Method:** `mctsSearch` + `reRoot` already exist and are unit-tested; measure
   reuse hit-rate and game-share in 2p once AE7 lands.
 - **Success criteria:** non-trivial reuse hit-rate + strength gain in 2p.
+- **Power:** set at revival.
 - **Cost / risk:** none new (mechanism exists). **Don't invest more for 4p.**
 
 ### AE9 — Bitboard move generation
@@ -152,6 +161,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   gates pass. Shipped into `generateLegalMoves`/`hasAnyMove` + the MCTS rollouts;
   `isLegalPlacement` kept as the bgio/UI path + differential reference.
 - **Log:** Run P → [F12](../FINDINGS.md)
+- **Deploys as:** shipped (see Status line).
 - **Objective:** faster legality checks via bitwise ops.
 - **Hypothesis:** representing occupancy + per-color corner/edge masks as bit words
   computes legality far faster than the current scan, same results.
@@ -171,8 +181,11 @@ test (product P21) fails CI if any ID here is missing or terminal.
 ### AE10 — Assess & tune difficulty time-budgets
 - **Status:** won — latency bars pass; found the ladder inverted (medium at
   `beam=16` lost to easy) and handed the fix to AE5 (beam scaling). Strength-vs-iters
-  curve banked: `it40→68 · it80→77 · it160→85 · it320→90` game-share vs heuristic.
+  curve banked: `it40→68 · it80→77 · it160→85 · it320→90` game-share vs heuristic
+  (per-iteration, engine-invariant; but iterations realized per *time* budget are up
+  ~2.5× since AE9 bitboards — see AE27).
 - **Log:** Run J → [F8](../FINDINGS.md)
+- **Deploys as:** shipped (see Status line).
 
 ### AE11 — Smarter rollout policy
 - **Status:** no-win — Run T / [F16](../FINDINGS.md). Score-biasing the playout
@@ -218,6 +231,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   matched *total* game time; ≥600 pooled games.
 - **Success criteria:** game-share CI clears 52% vs flat budget at matched total
   game time; no per-move latency above a stated UX ceiling (e.g. 2× the flat cap).
+- **Power:** n=600 → MDE 56.0%; hypothesized effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** small-moderate; scheduler only, engine untouched. Timed mode is
   nondeterministic (accepted precedent: Run J-confirm).
 - **Log:** —
@@ -237,6 +251,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   endgames better even when the winner is decided).
 - **Success criteria:** game-share CI clears 52% vs plain MCTS at matched time, OR
   mean score improves significantly with win-rate CI not below parity.
+- **Power:** n=600 → MDE 56.0%; hypothesized effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** moderate — threshold detection + a solver mode; risk is the
   tractable window being too short to matter.
 - **Log:** —
@@ -255,6 +270,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Success criteria:** at every tier, game-share CI overlaps or clears 50% vs the
   tuned beam (non-inferiority — the win is removing the knob); `won` only if it
   also clears 52% somewhere.
+- **Power:** n=600 → MDE 56.0% for the 52% won-bar; the primary test is non-inferiority vs 50% (removing the knob), effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** small code change; extra comparisons make it compute-heavy
   (3 tiers × 600 games).
 - **Log:** —
@@ -291,6 +307,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** small; also feeds the advisor (AD2/AD3) a less degenerate value
   signal in lost positions.
 - **Log:** Run S → [F15](../FINDINGS.md)
+- **Deploys as:** product P36 (rankRewardWeight 0.25 retune-in-place).
 
 ### AE16 — Opening book
 - **Status:** proposed (deprioritized for 4p Classic, 2026-07-07 — Pentobi's own
@@ -310,6 +327,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   ≥600 pooled games.
 - **Success criteria:** moves 1–3 latency < 50 ms with game-share CI not below 48%
   vs plain MCTS at matched total time (non-inferiority; latency is the win).
+- **Power:** n=600 → MDE 52.0% vs the 48% non-inferiority floor; strength isn't the win (latency is), effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** moderate — book mining + symmetry canonicalization; strength
   regression risk if book lines are shallow-search artifacts.
 - **Log:** —
@@ -330,6 +348,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Success criteria:** matched wall-clock game-share CI clears 52% vs
   single-thread (phase 2); phase 1 gate: merged K-tree at K×iters beats single
   tree at 1×iters, CI clear.
+- **Power:** n=600 → MDE 56.0% (phase-2 wall-clock); hypothesized effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** moderate — per-seat MCTS workers already exist
   ([mctsWorker.ts](../../../src/client/ai/mctsWorker.ts) + LocalAIGame plumbing),
   so phase 2 is "K workers per seat + root merge," not greenfield; phase 1
@@ -343,6 +362,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   **deferred** with the dormant value-net path (F11); revive with a stronger-net
   attempt.
 - **Log:** Run Q → [F13](../FINDINGS.md)
+- **Deploys as:** shipped (see Status line).
 - **Scope narrowed 2026-07-07 (context shift, M2):** built sub-items (1)
   arena-driver pass-streak + (2) dump sharding; deferred (3) the trainer
   feature-cache — F11 closed the value net as a no-win, so the trainer is dormant
@@ -393,6 +413,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   Node-side); risk is GTP dialect/rules-mapping bugs corrupting results
   (mitigate: replay-verify a sample of bridged games through our rules core).
 - **Log:** Run R (`docs/research/log/ai-strategy.md`).
+- **Deploys as:** shipped (see Status line).
 
 ### AE20 — Gumbel root search (policy improvement at starved budgets)
 - **Status:** proposed
@@ -409,6 +430,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   comparison, `scripts/experiments/ae20.json`.
 - **Success criteria:** game-share Wilson CI clears 52% vs plain UCT at the
   medium (500 ms) budget; the matched-iteration runs isolate mechanism.
+- **Power:** n=600 → MDE 56.0%; hypothesized effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** small-moderate — root-only algorithm swap, well-specified in
   the literature; risk is the guarantee mattering less with only ~6–16 beam
   actions to choose among.
@@ -434,6 +456,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   readout*: the pool ranking reorders or separates at least one pair that
   head-to-head calls equal (i.e. it adds signal), or correlates better with the
   AE19 external ladder than head-to-head does.
+- **Power:** measurement — sized by target CI width, no binomial bar.
 - **Cost / risk:** small-moderate; pure arena tooling, no engine change.
   Compute grows with pool size — prune to ~6–8 members.
 - **Log:** —
@@ -464,6 +487,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Success criteria (final):** game-share Wilson CI clears 52% vs full-rollout
   MCTS at matched per-move wall-clock over ≥600 pooled games (same bar as AE4,
   deliberately — this is the rematch); secondary: climbs ≥1 Pentobi level (AE19).
+- **Power:** n=600 → MDE 56.0%; hypothesized effect not quantified — required n deferred to the start gate.
 - **Cost / risk:** **large** — weeks: training infra (Python/GPU), a client
   runtime dep (ONNX ~MB bundle, a product concern), and inference latency can
   eat the gains (gate C exists for exactly that). Sequencing: after AE9;
@@ -488,6 +512,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Success criteria:** proven value + reproducible PV for ≥1 nontrivial board
   size (≥7×7), independently re-derivable from the committed solver + seed-free
   determinism.
+- **Power:** set at revival.
 - **Cost / risk:** large and open-ended — state-space growth may wall at 7×7;
   the ladder keeps the spend incremental. Shares exact-search machinery with
   AE13 (endgame solver).
@@ -520,6 +545,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   Wilson 95% CI lower bound > 52%, ≥600 pooled games; external ladder readout
   reported either way. Stage-A gate: directional win (≥55% point estimate, n≥200)
   before investing in the training pipeline.
+- **Power:** n=600 → MDE 56.0%; at the stage-A hypothesized ~55% a CI-clear needs n≥1066 (~2400 for ~80% power) — pooled batches planned. Stage-A itself is a directional point-estimate gate (≥55%, n≥200), not a CI test.
 - **Cost / risk:** moderate–large. Feature cost per expansion is the main risk;
   correctness guarded by the differential-test pattern (F12). Likely subsumes AE14
   (progressive widening) and strengthens AE20 (Gumbel wants priors). AE3's RAVE
@@ -543,6 +569,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   ≥600 pooled games.
 - **Success criteria:** ≥2× iters/s with byte-identical output, and matched
   wall-clock game-share vs the TS engine with Wilson CI clear of 52%.
+- **Power:** n=600 → MDE 56.0%; F6's ~+5 pts/budget-doubling implies ~55% at the ≥2× target, needing n≥1066 to clear (pool a second batch) — derived from F6, confirm at the start gate.
 - **Cost / risk:** large — toolchain, Vite/worker build plumbing, and permanent
   dual-implementation maintenance. **Ceiling notes:** (a) shared-memory tree
   parallelism (WASM threads / SharedArrayBuffer) is deliberately out of scope
@@ -580,9 +607,36 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Success criteria:** some `rolloutSamples` > 6 has game-share Wilson CI clearing
   52% vs 6 at matched wall-clock, ≥600 games per arm (n≈2400 if the point estimate
   stays near 54% — Run T's n=600 CI is too wide to clear 52% on its own).
+- **Power:** n=600/arm → MDE 56.0%; at Run T's 54.4% a CI-clear needs n≥1665 — pool to ~2400 as the entry's success criteria already plans.
 - **Cost / risk:** small code (knob exists, config-only), compute-heavy (4 arms ×
   ≥600 games ≈ 4 h at 14-way, more if powered to n=2400). Risk: the effect is really
   the extra iterations rather than the width, which this design cannot separate —
   an `rolloutSamples 6 @ 59 it` arm is the control that isolates it, and it's cheap
   to add. Interacts with AE24 (learned priors would replace the sampler outright).
+- **Log:** —
+
+### AE27 — Re-validate per-tier beam:iteration ratios and the budget ladder post-bitboard
+- **Status:** proposed — retroactive staleness sweep of F8/AE10 after AE9 (F12).
+  The `beam ≈ iters/6` rule and the shipped per-tier beams were tuned on pre-bitboard
+  iteration counts; F12's ~2.5× throughput jump silently changed how many iterations
+  each *timed* tier completes, which is exactly what F8's beam rule reads.
+- **Objective:** confirm the shipped per-tier beams (medium 6, hard 16) still satisfy
+  `beam ≈ iters/6` now that timed tiers complete ~2.5× the iterations F8 measured.
+- **Hypothesis:** medium's iterations/move grew ~2.5× (F8-era ~30 → ~75), so its
+  `beam=6` may now be *too narrow* (`iters/6 ≈ 12`, or ≈25 at the early-game floor);
+  hard is likely still fine. If medium is under-beamed it leaves strength on the table
+  without breaking the ladder's monotonicity.
+- **Method:** phase 1 is **measurement only** — instrument iterations/move per tier at
+  the shipped time budgets via `scripts/profile-mcts.ts` and compare to F8's counts.
+  Phase 2 (conditional): only if the beam:iters ratio drifted >2× from F8, rerun the
+  J-confirm ladder arena (config `scripts/experiments/ae27.json`) sweeping medium's
+  beam, seed-averaged as usual.
+- **Success criteria:** ladder steps stay CI-clear of 50% at J-confirm's n (no
+  regression); if phase-1 drift >2×, a re-tuned medium beam clears its tier's bar.
+- **Power:** phase 1 is instrumentation (iters/move per tier), sized by CI width on
+  the ratio — no binomial bar. The conditional ladder rerun inherits J-confirm's n and
+  bar (each step CI-clear of 50%), powered there; --power run at that gate if a retune
+  is triggered.
+- **Cost / risk:** small — phase 1 is a profiling run, no engine change; phase 2 only
+  fires if the ratio actually drifted. Guards shipped tiers cheaply.
 - **Log:** —

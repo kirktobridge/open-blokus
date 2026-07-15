@@ -15,6 +15,17 @@ Only **human-game** validation is blocked on game logging — roadmap
 can start now on **arena/self-play logs** (the Run O pipeline generated 697k positions),
 with the human-play distribution re-checked once P1 lands.
 
+## Track anchor (M5)
+
+The outside-world readout this track validates against, named before any self-relative
+advisor number is trusted: **final outcomes of logged games** — arena/self-play logs
+now (Run O's 697k positions), with the human-game distribution re-checked once P1 data
+accrues. AD2/AD3 are scored by whether their score / win-probability tracks those
+held-out outcomes. AD4 adds a second, non-outcome anchor: a **blinded human-judgement
+sample** (~20–30 flagged + unflagged moments, judged without seeing the model's
+labels), because "matches a strong observer" doesn't reduce to game outcome. No
+advisor claim ships on a self-relative number alone (M5).
+
 ---
 
 ## Next up
@@ -42,6 +53,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   rollout stats as baselines.
 - **Success criteria:** evaluator score correlates with final placement/win on held-out
   logged games.
+- **Power:** held-out sample = a split of the Run O self-play corpus (697k logged positions), sized by the target correlation CI width; --power n/a (not a binomial game-share bar).
 - **Cost / risk:** low-moderate; largely reuses existing eval + logged data + the
   kept F11 infra (self-play dump, trainer, `leafValue` injection).
 - **Ships as:** part of backlog P2/P3.
@@ -58,6 +70,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Method:** derive win-prob from rollout win-rates or a trained value head; measure
   calibration (reliability curve) on logged games.
 - **Success criteria:** calibrated within tolerance across game phases.
+- **Power:** held-out sample = logged-game outcomes (Run O corpus split now, P1 human games later), sized by per-phase reliability-bin counts; --power n/a (not a binomial game-share bar).
 - **Cost / risk:** moderate; depends on logged-data volume and AD2.
 - **Ships as:** part of backlog P3.
 
@@ -73,8 +86,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
   position and diffing its preferred move / eval-swing against what was played
   surfaces the same key moments a strong observer would flag.
 - **Method:** for each logged turn, compute eval-swing + MCTS best-move gap; threshold
-  into event types. Validate against human judgement. Interest: games where humans beat
-  the AI.
+  into event types. Validate against a **blinded human-judgement benchmark built as
+  part of this entry**: sample ~20–30 flagged + unflagged moments across a handful of
+  games, have a human label each (good / blunder / key-swing) *without seeing the
+  detector's output*, then score detector↔human agreement. Building that sample is a
+  deliverable of AD4, not a footnote. Interest: games where humans beat the AI.
 - **Success criteria:** flagged moments match human judgement on a sample of games.
+- **Power:** held-out sample = the blinded human-judgement benchmark built in Method (~20–30 flagged/unflagged moments), sized by that sample's label-agreement CI; --power n/a (not a binomial game-share bar).
 - **Cost / risk:** moderate; MCTS-over-log is compute-heavy but offline.
 - **Ships as:** backlog P2 (recap) turns this signal into messages + UI.

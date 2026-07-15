@@ -9,14 +9,14 @@ evaluator / game-analysis line of work.
 | Path | Role |
 |------|------|
 | [FRAMEWORK.md](FRAMEWORK.md) | **Process.** The experiment template, status vocabulary, and stats discipline everything follows. Start here. |
-| [FINDINGS.md](FINDINGS.md) | **Conclusions.** Curated, presentation-ready insights (F1–F7) + method lessons (M1–M3). The "so what." |
+| [FINDINGS.md](FINDINGS.md) | **Conclusions.** Curated, presentation-ready insights (findings F#) + method lessons (M#). The "so what." |
 | [log/](log/) | **Records.** Append-only lab notebook of runs actually executed. Never rewritten. |
 | [backlog/](backlog/) | **Questions.** Planned/deferred experiments, one framework block each. |
 
 ### Files today
 
-- [log/ai-strategy.md](log/ai-strategy.md) — CPU-strategy runs A–I + engine note.
-- [backlog/ai-engine.md](backlog/ai-engine.md) — AI/engine experiments (AE1–AE9).
+- [log/ai-strategy.md](log/ai-strategy.md) — CPU-strategy + engine runs (append-only).
+- [backlog/ai-engine.md](backlog/ai-engine.md) — AI/engine experiments (AE#).
 - [backlog/advisor.md](backlog/advisor.md) — advisor **research questions** only:
   evaluator / win-prob / blunder-signal accuracy (AD2–AD4). The advisor's product
   side (logging, recap UI, overlay, tutorial) is in [product backlog](../product/BACKLOG.md).
