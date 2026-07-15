@@ -33,6 +33,14 @@ Ask: **can this state a pre-registered success criterion — a metric + a bar?**
   the accuracy question → research draft; the delivery → product draft, with
   `Depends on:` pointing at the research ID. The AD#/P# pairs are the precedent.
 
+**New-track check (M5):** if a research draft opens a new domain or claim-type (would
+start a new `backlog/*.md`, or a new kind of metric no existing harness reads), ask:
+*what external reference validates this track?* (Pentobi for strength; a
+human-judgement benchmark for the advisor.) If there's no answer, the anchor infra
+becomes the first drafted entry — not a footnote on this one. Strength lived
+self-relative for ~20 runs before the Pentobi bridge recalibrated everything; don't
+let a new track repeat that.
+
 ## Steps
 1. Restate the idea in one sentence; run the classification test out loud.
 2. Check for an existing entry (`grep -in "<keyword>" docs/research/backlog/*.md docs/product/BACKLOG.md`).

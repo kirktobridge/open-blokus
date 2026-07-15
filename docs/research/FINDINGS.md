@@ -261,3 +261,14 @@ an idea graduates idea → `proposed`, state the one assumption the technique ne
 and ask whether our domain honours it. Cheap to fail on paper; expensive to fail in
 the arena. (Assumption-free changes — bitboards, a learned eval — carry no such
 risk and skip this gate.)
+
+### M5 — Anchor a new track externally before self-relative runs accumulate
+Runs A–Q were all self-relative; only Run R (the Pentobi bridge, F14) revealed that
+everything we ship tops out around Pentobi L1–L2 — a sobering absolute number after
+a research history of self-relative wins, and one that immediately redirected effort
+(per-simulation quality, AE24) better than any incumbent-relative result had. The
+anchor was buildable from day one; we just didn't prioritize it. So: a new research
+track names its outside-world readout *first* — Pentobi for strength, a
+human-judgement benchmark for the advisor — and if no readout exists, building one
+is the track's first entry, not a footnote. Enforced at /triage (classification) and
+/research Phase P (entry gate).

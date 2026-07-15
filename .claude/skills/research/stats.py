@@ -9,8 +9,16 @@ docs/research/FINDINGS.md and docs/research/FRAMEWORK.md §"Stats discipline".
 Usage:
     python3 stats.py WINS GAMES [--null 0.5] [--conf 0.95]
     python3 stats.py --pool W1/G1 W2/G2 ...      # sum shards, then test the pool
+    python3 stats.py --power --bar 52 --effect 54   # -> n where an observed 54% clears 52%
+    python3 stats.py --power --bar 52 --n 600       # -> min observed share that clears at n
 
 WINS may be fractional (arena splits ties evenly across co-winners), e.g. 54.5.
+--bar/--effect accept percents (52) or shares (0.52).
+
+Power semantics: "required n" is where an *observed* share equal to --effect has its
+Wilson lower bound clear --bar. A run whose *true* rate is the effect lands under
+that observed share about half the time — pad n (~2x for ~80% power) or plan a
+pooled second batch. Run this at entry intake / start gate (backlog `Power:` line).
 
 Examples:
     python3 stats.py 655 1200                    # Run H it=80/d=8 -> 54.6%, CI, p
@@ -41,6 +49,44 @@ def z_test(wins: float, n: int, p0: float) -> tuple[float, float]:
     z = (phat - p0) / se
     p = 0.5 * math.erfc(z / math.sqrt(2))  # P(Z >= z), upper tail
     return z, p
+
+
+def _as_share(v: float) -> float:
+    """Accept 52 or 0.52 as 52%."""
+    return v / 100 if v > 1 else v
+
+
+def required_n(effect: float, bar: float, conf: float) -> int:
+    """Smallest n where an observed share of `effect` has Wilson lower bound > bar."""
+    lo_n, hi_n = 1, 2
+    while hi_n <= 50_000_000:
+        _, lo, _ = wilson(effect * hi_n, hi_n, conf)
+        if lo > bar:
+            break
+        lo_n, hi_n = hi_n, hi_n * 2
+    else:
+        return -1
+    while lo_n + 1 < hi_n:
+        mid = (lo_n + hi_n) // 2
+        _, lo, _ = wilson(effect * mid, mid, conf)
+        if lo > bar:
+            hi_n = mid
+        else:
+            lo_n = mid
+    return hi_n
+
+
+def min_detectable(n: int, bar: float, conf: float) -> float:
+    """Smallest observed share whose Wilson lower bound clears bar at this n."""
+    lo_p, hi_p = bar, 1.0
+    for _ in range(60):
+        mid = (lo_p + hi_p) / 2
+        _, lo, _ = wilson(mid * n, n, conf)
+        if lo > bar:
+            hi_p = mid
+        else:
+            lo_p = mid
+    return hi_p
 
 
 def _inv_norm_cdf(p: float) -> float:
@@ -77,7 +123,38 @@ def main() -> int:
                     help="sum shards given as WINS/GAMES pairs")
     ap.add_argument("--null", type=float, default=0.5, help="null rate (default 0.5)")
     ap.add_argument("--conf", type=float, default=0.95, help="CI confidence (default 0.95)")
+    ap.add_argument("--power", action="store_true",
+                    help="power planning: --bar + --effect -> required n; --bar + --n -> MDE")
+    ap.add_argument("--bar", type=float, help="success bar, e.g. 52 or 0.52")
+    ap.add_argument("--effect", type=float, help="hypothesized true share, e.g. 54")
+    ap.add_argument("--n", type=int, help="planned games")
     args = ap.parse_args()
+
+    if args.power:
+        if args.bar is None or (args.effect is None) == (args.n is None):
+            ap.error("--power needs --bar plus exactly one of --effect / --n")
+        bar = _as_share(args.bar)
+        conf_pct = round(args.conf * 100)
+        if args.effect is not None:
+            effect = _as_share(args.effect)
+            if effect <= bar:
+                ap.error("--effect must exceed --bar")
+            n = required_n(effect, bar, args.conf)
+            print(f"bar {bar*100:.1f}%   effect {effect*100:.1f}%   conf {conf_pct}%")
+            if n < 0:
+                print("required n   not reachable below 50M games — restate the bar")
+                return 1
+            print(f"required n   >= {n}   (where an observed share = effect clears the bar)")
+            print("NOTE: a run whose TRUE rate is the effect lands under that observed")
+            print("      share ~half the time — pad n (~2x for ~80% power) or plan a")
+            print("      pooled second batch (M2).")
+        else:
+            mde = min_detectable(args.n, bar, args.conf)
+            print(f"bar {bar*100:.1f}%   n {args.n}   conf {conf_pct}%")
+            print(f"min detectable observed share   {mde*100:.1f}%")
+            print(f"-> observed shares below that cannot clear the bar at n={args.n};")
+            print("   if the hypothesized effect is smaller, resize the run or restate the bar.")
+        return 0
 
     if args.pool:
         wins = sum(float(s.split("/")[0]) for s in args.pool)

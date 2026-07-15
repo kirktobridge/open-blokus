@@ -19,7 +19,10 @@ the current branch's section, never another session's.
 2. `grep -n "Status:" docs/research/backlog/*.md | grep -i active` — any `active`
    entry must have a matching run in `log/` (check via
    `grep "^### Run" docs/research/log/*.md | tail`). Dangling → tell the user the
-   loop is open; /research closes it, not this skill.
+   loop is open; /research closes it, not this skill. Also
+   `grep -n "Deploys as:" docs/research/backlog/*.md` — a `won` entry whose
+   `Deploys as:` points at a product item that doesn't exist yet (or one still
+   `proposed` with nothing queued) is a closed-but-undeployed win; surface it.
 3. `grep -n "Status:" docs/product/BACKLOG.md | grep -i in-progress` — an
    in-progress entry whose work is **already merged to main** is missing its /ship
    flip; run /ship now (on main). Work that's finished but still on its branch is

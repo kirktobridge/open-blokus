@@ -35,6 +35,8 @@ Each planned experiment is one block in a `backlog/*.md` file:
 - **Method:** harness, contestants/configs, N games, seeds, what's held fixed.
 - **Success criteria:** the metric + the bar to act (e.g. "adopt if game-share CI
   clears 52% over ≥600 games"). State this *before* running.
+- **Power:** planned n and the minimum detectable effect at the bar
+  (`stats.py --power`) — the bar must be reachable by the Method's n.
 - **Cost / risk:** rough compute + whether it's a code change or pure benchmark.
 - **Log:** — (link to the run record once executed)
 ```
@@ -49,6 +51,9 @@ Each completed run is one block appended to a `log/*.md` file:
 ```markdown
 ### Run <letter/id> — <title> (<seeds/games summary>)
 <one line: what question, from which backlog id>
+<tuning-type results (ratios, budgets, curves) add: **Measured under:** engine
+state — commit sha or shorthand like "post-AE9 bitboards" — so a later engine
+step-change can find what it stales>
 
 | config | games | metric | 95% CI | p |
 ...table...
@@ -74,7 +79,7 @@ terminal one.
 
 ## Stats discipline (non-negotiable, learned the hard way)
 
-See method lessons M1–M3 in [FINDINGS.md](FINDINGS.md) for the runs that taught us
+See method lessons M1–M5 in [FINDINGS.md](FINDINGS.md) for the runs that taught us
 these.
 
 1. **Seed-average.** Single-seed tables mislead. Use `runTournamentSeeds` (N seeds)
@@ -85,10 +90,17 @@ these.
    and *game-share* (`wins/games`).
 4. **Power the run, then use real tests.** Wilson 95% CI + one-sided z vs 50/50 —
    not eyeballed percentages. A result at n < ~200 is `directional` at best.
+   Size the run *before* starting: `stats.py --power` turns bar + hypothesized
+   effect into the required n (and planned n into the minimum detectable effect) —
+   a bar the planned n cannot clear is a mis-registered bar.
 5. **Pre-register the bar.** Decide the success threshold before seeing results.
 6. **Interrogate confounds.** Ask what the harness holds fixed (e.g. a
    heuristic-ordered beam). A suspiciously flat result may be the harness, not the
    world — rerun with the confound removed before concluding.
+7. **Anchor externally, early.** A new research track names its outside-world
+   readout *before* self-relative runs accumulate (M5); where a standing readout
+   exists (Pentobi bridge, `npm run arena:pentobi`), report wins against it, not
+   only against the incumbent.
 
 ## Confidence labels (used in FINDINGS)
 

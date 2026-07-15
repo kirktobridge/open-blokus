@@ -36,7 +36,9 @@ main was left in.
 4. Run **/ship** on main: terminal status flip, `## Next up` refresh, any
    BUILD_ORDER / ARCHITECTURE touch-up. For a research branch, check the `AE#`/`AD#`
    loop is closed (`Status` terminal + `Log:` linked) — that's /research's file;
-   bounce there if it isn't.
+   bounce there if it isn't. If the branch changes a shipped AI default (difficulty
+   tiers, mcts defaults), check the backing finding's confidence label — landing on
+   a `replication-pending` finding is allowed but must be named in the final report.
 5. Delete the branch (`git branch -d`). Its HANDOFF section is pruned by the next
    /checkpoint (sole writer of HANDOFF), not here.
 
