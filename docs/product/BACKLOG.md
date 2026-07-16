@@ -37,10 +37,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    second ad-hoc emoji toggle under the board is exactly the accretion it exists to stop,
    and it owns the Room → Corner Counter rename, so shipping it soon keeps the corner
    vocabulary from settling wrong. Pure UI relocation, no rules-core work.
-4. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
-   timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
-   free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
-   it's not the dependency-ready head.
+4. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
+   the game table on game over) is dependency-free — R0/R0.1 and P34 M1 shipped — so P2 now
+   has a buildable head even though R1+ still waits on research AD4 (blunder signal) + AD2
+   (evaluator). Its table/record decoupling is also the substrate P15 M2 would need.
 5. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
    makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
    (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
@@ -95,12 +95,32 @@ order runs foundation → offline surfaces → live surfaces.
   hierarchy (1st on top, descending) so standings read top-to-bottom. Playback removes
   manual stepping; vertical ranks parse faster than a reordered row. No evaluator — stays
   clear of AD4/AD2. Depends on: nothing (R0 shipped).
+  **R0.2 (proposed) — review-in-table:** the scrubber stops being a modal and becomes a
+  *mode of the game table itself*. When an offline game ends, P16's ceremony plays as it
+  does today and, on dismiss, the table underneath is already in review mode: (a) the
+  action bar is replaced in place by the scrubber's transport — step/play-pause/speed;
+  (b) the live board *is* the replay board, no second scaled-down copy; (c) the right
+  rail unmounts the standings + P34 M2 room meter, leaving the score + mobility timelines
+  stacked on top with the hand tray below them as reference; (d) the four player cards and
+  the hand tray re-render from the scrubbed ply, not the final position — inventories,
+  scores and the last-placed highlight all track the scrub. **Offline vs-AI only** — the
+  `GameRecord` is only ever built by the local AI table, so review mode never arms online.
+  Why: the recap reads as the game you just played rather than a separate screen, and
+  "when did I fall behind?" is answered on the board you were staring at, at the scale you
+  were staring at it. R0's modal proved the content; this is the shell. The real work is
+  decoupling the table to render from either the live client or a `buildRecap` frame at
+  ply N — the layout swap is cheap by comparison, and that decoupling is the same
+  substrate P15 M2's standalone shell would need. Depends on: nothing (R0/R0.1 shipped;
+  P34 M1's chart reused as-is).
 - **Depends on:** P1 (logs) for all milestones; R0 needs nothing else. R1+: research
   [AD4](../research/backlog/advisor.md) computes/validates the signal (MCTS
   best-move gap + eval-swing); research AD2 for the score. AD4 also feeds P14 M2
   (daily-puzzle move grading) — shared payoff. **R2 note (2026-07-13):** the
   replay-fork itself isn't blocked on AD4 if the player picks the turn manually —
   AD4 only automates the flagging. The standalone branching mode is P33.
+  **R0.2 note (2026-07-16):** R0.2 keeps the modal working, so P15 M2's planned reuse
+  isn't broken — but a shipped R0.2 leaves history replay on the old shell. P15 M2 owns
+  the call: standalone review shell (reusing R0.2's decoupled table) vs. keeping the modal.
 
 ### P3 — Mid-game advisor overlay
 - **Status:** partial — **R1 shipped**; R2+ deferred until the evaluator is trustworthy.
