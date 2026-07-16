@@ -2,7 +2,8 @@
  * Post-game replay timeline (product P2 R0). Turns a captured `GameRecord` (its
  * move list + mode/scoring) into a scrubbable sequence of frames — one per ply
  * plus an empty opening frame — each carrying the board snapshot at that point,
- * the move that produced it, and the running squares-placed tally per color.
+ * the move that produced it, the running squares-placed tally per color, and the
+ * per-color mobility (open corner attach-points) that P34 M1's chart plots.
  *
  * Pure rules-core module: no React, no boardgame.io, no I/O. The scrubber UI
  * (src/client/recap/) renders these frames; the same builder feeds P15 M2's
@@ -15,7 +16,9 @@ import { BOARD_SIZE } from '../shared/constants';
 import { createInitialState } from './modes';
 import { pieceSize, resolveCells } from './pieces';
 import { applyPlacement, isLegalPlacement } from './placement';
+import { attachPoints } from './ai/alphabeta';
 import type { GameRecord, LoggedMove } from './ai/selfplay';
+import type { GameState } from './types';
 
 export interface RecapFrame {
   /** 0 = empty board (before any move); k = the position after k moves. */
@@ -28,10 +31,24 @@ export interface RecapFrame {
   moveCells: number[];
   /** Cumulative squares placed per color at this ply (0..89-ish, monotonic). */
   placed: Record<Color, number>;
+  /**
+   * Open corner attach-points per color at this ply — the "room" / mobility read
+   * (P34 M1). Rises as a color spreads, falls as opponents wall it in; unlike
+   * `placed` it is *not* monotonic, which is exactly what makes the collapse
+   * visible. Shares P32's frontier computation (`attachPoints`). At ply 0 every
+   * color has its single starting corner (= 1).
+   */
+  mobility: Record<Color, number>;
 }
 
 const zeroPlaced = (): Record<Color, number> =>
   COLOR_ORDER.reduce((acc, c) => ((acc[c] = 0), acc), {} as Record<Color, number>);
+
+const mobilityOf = (G: GameState): Record<Color, number> =>
+  COLOR_ORDER.reduce(
+    (acc, c) => ((acc[c] = attachPoints(G, c)), acc),
+    {} as Record<Color, number>,
+  );
 
 /**
  * Replay `record.moves` and snapshot every intermediate position. Throws on an
@@ -42,7 +59,14 @@ export function buildRecap(record: GameRecord): RecapFrame[] {
   const G = createInitialState(record.mode, record.scoring);
   const placed = zeroPlaced();
   const frames: RecapFrame[] = [
-    { ply: 0, board: G.board.slice(), move: null, moveCells: [], placed: { ...placed } },
+    {
+      ply: 0,
+      board: G.board.slice(),
+      move: null,
+      moveCells: [],
+      placed: { ...placed },
+      mobility: mobilityOf(G),
+    },
   ];
 
   record.moves.forEach((m, i) => {
@@ -60,6 +84,7 @@ export function buildRecap(record: GameRecord): RecapFrame[] {
       move: m,
       moveCells: cells.map((c) => c.y * BOARD_SIZE + c.x),
       placed: { ...placed },
+      mobility: mobilityOf(G),
     });
   });
 
