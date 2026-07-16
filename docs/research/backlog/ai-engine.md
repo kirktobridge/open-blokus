@@ -16,15 +16,14 @@ The dependency-ready head, highest-payoff first — the authoritative "what to r
 Refreshed by /research at close (Phase 4) and intake (Phase P); product P22. The schema
 test (product P21) fails CI if any ID here is missing or terminal.
 
-1. **AE26** — rollout width (`rolloutSamples`): AE11's control arm hit 54.4% and the
-   knob already exists — cheapest live lead on the board (F16).
-2. **AE24** — trained softmax move priors: the main share of the ~17× per-simulation
-   quality gap vs Pentobi (F14). F16 sharpens it — priors must beat *width*, not the
-   old 6-sample baseline.
-3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
+1. **AE24** — trained softmax move priors: the main share of the ~17× per-simulation
+   quality gap vs Pentobi (F14). F17 sharpens it — priors must beat *width*, and width
+   is now known to be mostly the iterations shorter playouts buy (not per-move smarts),
+   so a prior has to add signal a cheap size-max sampler doesn't.
+2. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
-4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
-5. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
+3. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+4. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
    guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
    F8/AE10).
 
@@ -582,7 +581,16 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE26 — Rollout width: how many candidates should a playout move sample?
-- **Status:** proposed — spun out of AE11 (Run T / [F16](../FINDINGS.md)): the
+- **Status:** won — `rolloutSamples` 24 and 48 both clear the 52% game-share bar vs
+  the shipped 6 at matched wall-clock (62.6% / 64.9%, n=600, Run U / [F17](../FINDINGS.md)).
+  Strength is monotone-increasing in width over [6,48] with no interior optimum; the
+  win is mostly the iterations that shorter (bigger-piece) playouts buy — an
+  iteration-only control (6@57 vs 6@48) alone scores 58%, and the pure-width term is
+  −2.3 pts at 6→12 but +2.3 pts at 24→48 (past the ~24-sample speed plateau). Deploy
+  lever: raise `rolloutSamples` toward 24 (speed-plateau, captures the iteration gain
+  for free under the time-budget tiers) or 48 (best measured, higher late-game
+  rejection cost — `fallbackMove` exhaustion unmeasured, follow-up).
+- **Status (was):** spun out of AE11 (Run T / [F16](../FINDINGS.md)): the
   *control* arm moved, not the hypothesis. Doubling the rejection-sample pool
   (6→12) under the unchanged size-greedy rule scored 54.4% game-share (CI
   [50.4,58.3], p=0.016, n=600) at matched wall-clock. That's a distinct claim from
@@ -613,7 +621,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
   the extra iterations rather than the width, which this design cannot separate —
   an `rolloutSamples 6 @ 59 it` arm is the control that isolates it, and it's cheap
   to add. Interacts with AE24 (learned priors would replace the sampler outright).
-- **Log:** —
+- **Log:** [Run U](../log/ai-strategy.md) → [F17](../FINDINGS.md). Confound control
+  fired as designed: the width lever is iteration-dominated (the risk above was real).
+  Follow-ups: instrument `fallbackMove` rate at width 48; ship the knob (product-side).
 
 ### AE27 — Re-validate per-tier beam:iteration ratios and the budget ladder post-bitboard
 - **Status:** proposed — retroactive staleness sweep of F8/AE10 after AE9 (F12).

@@ -33,6 +33,8 @@ const BASE = { iterations: ITERS, rolloutDepth: 0, beam: 16, rankRewardWeight: 0
 const ARMS: Array<[string, Partial<MctsConfig>]> = [
   ['heuristic-6 (baseline)', { rolloutPolicy: 'heuristic', rolloutSamples: 6 }],
   ['heuristic-12', { rolloutPolicy: 'heuristic', rolloutSamples: 12 }],
+  ['heuristic-24', { rolloutPolicy: 'heuristic', rolloutSamples: 24 }],
+  ['heuristic-48', { rolloutPolicy: 'heuristic', rolloutSamples: 48 }],
   ['score-6', { rolloutPolicy: 'score', rolloutSamples: 6 }],
   ['softmax-6 T=8', { rolloutPolicy: 'softmax', rolloutSamples: 6, rolloutTemperature: 8 }],
   ['softmax-6 T=3', { rolloutPolicy: 'softmax', rolloutSamples: 6, rolloutTemperature: 3 }],

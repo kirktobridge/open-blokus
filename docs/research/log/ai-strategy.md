@@ -760,3 +760,72 @@ means here, and the two are not separable within this design.
 clears 50% but not the 52% bar and is left open as a follow-up (sweep 12/24, power
 to n≥2400 if the point estimate holds). Code kept: `rolloutSamples` /
 `score` / `softmax` are config-only, defaults byte-identical.
+
+### Run U — Rollout width: how many candidates should a playout move sample? (AE26)
+Sweep `rolloutSamples` ∈ {12, 24, 48} vs the shipped 6, each at its own
+matched-wall-clock iteration count, plus a same-samples iteration-only control to
+split width from the iterations that width's shorter playouts buy. (backlog AE26,
+spun out of Run T; bar pre-registered: some width > 6 has game-share Wilson CI
+clearing **52%** vs 6 at matched wall-clock, ≥600 games/arm.)
+
+**Setup.** Head-to-head 2v2, shipped engine context (`rolloutDepth 0`, `beam 16`,
+`rankRewardWeight 0.25`, `rolloutPolicy heuristic`), n=600 each (25 games × 24
+seeds, baseSeed 1..24), configs `scripts/experiments/ae26-{samples12,samples24,
+samples48,control-iters}.json`, sharded via `ae26-sweep.sh` (resumable: per-batch
+`.result`, skips completed batches — the run survived a host reboot mid-sweep and
+resumed). Wall 324 min (74 CPU-hours, 14-way).
+
+**Matched wall-clock via measured throughput** (`scripts/bench-rollout.ts`, extended
+to widths {6,12,24,48}; fixed mid-opening position, branching 541, `rolloutDepth 0`,
+best-of-3):
+
+| samples | iters/s | vs baseline | matched-clock iters |
+|---------|---------|-------------|---------------------|
+| heuristic-6 (baseline) | 46 | 1.00× | 48 |
+| heuristic-12 | 54 | 1.19× | 57 |
+| heuristic-24 | 62 | **1.35×** | 65 |
+| heuristic-48 | 62 | **1.35×** | 65 |
+
+The "bigger piece ⇒ shorter playout ⇒ more iters" speedup is real but **saturates**:
+48 samples is no faster than 24 (both 1.35×, 65 iters). Beyond ~24 candidates the
+extra rejection-sampling cost per move cancels the shorter-playout gain.
+
+**Results.** Game-share of the candidate vs its 6-sample opponent; placement lower =
+better, placed = 89 − remaining, higher = better. Stats via `stats.py`.
+
+| arm (candidate vs 6-sample opp) | game-share (Wilson, n=600) | one-sided p | place cand/base | placed cand/base |
+|---------------------------------|----------------------------|-------------|-----------------|------------------|
+| `s12` @57 it vs `s6` @48 it     | 55.7% [51.7, 59.6]         | 0.0026      | 2.368 / 2.632   | 73.25 / 71.51    |
+| **`s24` @65 it vs `s6` @48 it** | **62.6% [58.6, 66.3]**     | **3.9e-10** | **2.297 / 2.703** | **73.92 / 71.22** |
+| **`s48` @65 it vs `s6` @48 it** | **64.9% [61.0, 68.7]**     | **1.2e-13** | **2.255 / 2.745** | **74.25 / 70.78** |
+| control `s6` @57 it vs `s6` @48 it | 58.0% [54.0, 61.9]      | 4.2e-05     | 2.332 / 2.668   | 73.40 / 71.20    |
+
+**Read.** Two width arms clear the pre-registered 52% bar at matched wall-clock
+(`s24` LB 58.6%, `s48` LB 61.0%); `s12`'s LB 51.7% misses it (as Run T's 12-arm
+did). Strength is **monotone increasing in width** over [6,48] at matched clock —
+no interior optimum in range; the curve is still climbing at 48. Placement and
+placed-squares track game-share in every arm.
+
+The control decomposes *why*. The 48→57 iteration bump alone (same 6 samples) buys
+**+8.0 pts** (58.0%). Two same-iteration contrasts isolate width:
+- **6→12 at 57 it:** `s12` 55.7% − iter-only control 58.0% = **−2.3 pts.** Width at
+  12 is net-negative once iterations are held fixed; the 12-arm's entire
+  matched-clock win (and Run T's 54.4%) is the extra iterations, not the width.
+- **24→48 at 65 it** (same baseline, same iters): 64.9% − 62.6% = **+2.3 pts.** A
+  small but genuine width effect at the high end, where iters/s has saturated so it
+  can only be width.
+
+So the matched-wall-clock win of wider sampling is *mostly the iterations its
+shorter playouts buy* (dominant up to the ~24-sample speed plateau), plus a small
+real width bump beyond the plateau (24→48). `fallbackMove` rate at large widths
+(the entry's late-game rejection-exhaustion watch) was not instrumented in
+`--result` — unmeasured caveat carried to close.
+
+**Decision:** won on the pre-registered bar — `rolloutSamples` 24 and 48 both clear
+52% game-share vs 6 at matched wall-clock, n=600, CIs well clear (no power-up to
+n=2400 needed). Mechanism is iteration-dominated with a small high-end width term;
+under the shipped **time-budget** tiers, widening captures the iteration gain for
+free (shorter playouts ⇒ more sims at fixed time), and the `s48`-vs-`s24` contrast
+at fixed iters is the time-budget-relevant proxy (48 ≳ 24 by ~2 pts). Deploy lever:
+raise `rolloutSamples` toward 24 (speed-plateau, near-optimal) or 48 (best measured,
+higher late-game rejection cost). Config-only knob, defaults unchanged.

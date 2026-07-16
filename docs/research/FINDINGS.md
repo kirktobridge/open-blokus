@@ -124,6 +124,30 @@ positional terms appear to be noise the terminal reward washes out, while piece 
 compounds directly into the placed-leader signal. A rollout policy should be judged by
 what it does to the *reward's* variance, not by how well it plays.
 
+### F17 — Wider rollout sampling wins at matched wall-clock, but the win is mostly the *iterations* it buys, not the width
+Confidence: `significant` (matched-clock win) / `replicated` decomposition (three
+same-iteration contrasts agree). F16 left the width lever (`rolloutSamples`) open;
+AE26 swept {12,24,48} vs the shipped 6 at matched wall-clock, each arm at its benched
+iteration budget (12→57, 24→65, 48→65 vs base 48), n=600 each (Run U). Strength is
+**monotone increasing in width** over [6,48] — `s24` 62.6% (CI [58.6,66.3]) and `s48`
+64.9% (CI [61.0,68.7]) both clear the pre-registered 52% bar decisively; no interior
+optimum, still climbing at 48. Placement and placed-squares track game-share.
+
+The mechanism is the surprise. A same-samples iteration-only control (6@57 vs 6@48)
+scores **58.0%** — the +9-iter bump *alone* buys +8 pts. Holding iterations fixed to
+isolate width: **6→12 at 57 it is −2.3 pts** (the 12-arm underperforms the pure-iter
+control — so Run T's/F16's "54.4% from width" was really the iterations), while
+**24→48 at 65 it is +2.3 pts** (same baseline and iters, so a genuine but small width
+term at the high end). So width's value is almost entirely that bigger pieces shorten
+playouts and buy iterations — and that speedup **saturates at ~24 samples** (bench:
+24 and 48 are both 1.35× / 65 it), beyond which only a small direct width effect
+remains. Practically: under the shipped **time-budget** tiers, widening `rolloutSamples`
+toward 24 captures the iteration gain for free (more sims at fixed time); 48 is the
+best measured but adds only the ~2-pt width term at higher late-game rejection cost
+(the `fallbackMove`-exhaustion risk was not instrumented — an open caveat). Ties back
+to F6 (rollout *quality* is the lever) with a sharpened reading: here "quality" cashes
+out as playout *length* → simulation *count*, not per-move cleverage.
+
 ---
 
 ## Engine

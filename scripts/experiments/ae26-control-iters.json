@@ -1,0 +1,9 @@
+{
+  "title": "AE26 confound control: 6 samples @ 57 iters vs 6 samples @ 48 iters — does the 12-arm's extra iteration budget alone (not width) drive the win?",
+  "seats": [
+    { "name": "s6-57it", "strategy": "mcts", "options": { "iterations": 57, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "s6-48it", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "s6-57it", "strategy": "mcts", "options": { "iterations": 57, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "s6-48it", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } }
+  ]
+}

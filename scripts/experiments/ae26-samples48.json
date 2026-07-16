@@ -1,0 +1,9 @@
+{
+  "title": "AE26 width sweep: 48 samples (65 iters, matched clock) vs 6 samples (48 iters)",
+  "seats": [
+    { "name": "s48", "strategy": "mcts", "options": { "iterations": 65, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 48 } },
+    { "name": "s6", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } },
+    { "name": "s48", "strategy": "mcts", "options": { "iterations": 65, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 48 } },
+    { "name": "s6", "strategy": "mcts", "options": { "iterations": 48, "rolloutDepth": 0, "beam": 16, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutPolicy": "heuristic", "rolloutSamples": 6 } }
+  ]
+}
