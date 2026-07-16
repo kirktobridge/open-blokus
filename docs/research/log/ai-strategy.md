@@ -829,3 +829,46 @@ free (shorter playouts ⇒ more sims at fixed time), and the `s48`-vs-`s24` cont
 at fixed iters is the time-budget-relevant proxy (48 ≳ 24 by ~2 pts). Deploy lever:
 raise `rolloutSamples` toward 24 (speed-plateau, near-optimal) or 48 (best measured,
 higher late-game rejection cost). Config-only knob, defaults unchanged.
+
+### Run V — Rollout width at fixed iterations: does the extreme tier get the width win? (AE28)
+Run U measured width at matched *wall-clock*, where the win was mostly the extra
+iterations shorter playouts buy — a bonus the shipped `extreme` tier (fixed 500 iters,
+*no* time budget) cannot collect. This isolates the **pure-width** term: `s48` vs `s6`,
+both pinned at 500 iters, so iteration count is identical and only rollout quality
+differs. (backlog AE28; bar pre-registered: `s48` game-share Wilson CI clears **52%**
+vs `s6` at fixed 500 iters, ≥600 games.)
+
+**Setup.** Head-to-head 2v2, extreme's config (`iterations 500`, `beam 20`,
+`rolloutDepth 0`, `rankRewardWeight 0.25`, `rolloutPolicy heuristic`), n=600 (25 games
+× 24 seeds, baseSeed 1..24), config `scripts/experiments/ae28-extreme-width.json`,
+sharded via `ae28-sweep.sh` (resumable, in-repo). No iteration/clock matching — fixed
+iters *is* the test. Wall 732 min (150 CPU-hours, 14-way; ~500 iters/move is ~3× Run
+U's per-game cost).
+
+**Results.** Game-share of `s48` vs `s6`; placement lower = better, placed = 89 −
+remaining, higher = better. Stats via `stats.py`.
+
+| arm (both @ 500 it / beam 20) | game-share (Wilson, n=600) | one-sided p | place s48/s6 | placed s48/s6 |
+|-------------------------------|----------------------------|-------------|--------------|---------------|
+| **`s48` vs `s6`, fixed iters** | **61.3% [57.3, 65.1]**    | **1.5e-08** | 2.358 / 2.642 | 77.05 / 76.04 |
+
+**Read.** Width wins **on pure quality**, decisively: +11.3 pts with no iteration
+bonus (both arms ran 500), CI lower bound 57.3% well past the 52% bar. This is
+*larger* than the whole matched-clock effect at Run U's low budgets — and it directly
+contradicts Run U's decomposition, which found the pure-width term small and
+non-monotone (−2.3 pts at 6→12, +2.3 pts at 24→48) at ~55–65 iters. The reconciliation
+is the iteration budget: **the value of a wider (higher-quality) rollout scales with
+how many iterations there are to average it into.** At a starved ~55-iter budget the
+leaf estimates are dominated by variance/quantity, so rollout quality barely registers
+and width's only lever is the iterations its speedup buys (Run U). At a deep 500-iter
+budget the tree is well-developed and each rollout's lower-variance, bigger-piece
+signal sharpens the leaf values that now carry the search — reasserting rollout
+*quality* as the lever (F6's original regime). Placement and placed-squares track
+game-share.
+
+**Decision:** won — `rolloutSamples` 48 clears 52% vs 6 at fixed 500 iters, n=600, CI
+well clear (no power-up needed). The extreme tier gets a clean **strength** win from
+widening (independent of, and on top of, the ~1.35× move-speed gain). Deploy: raise
+`extreme`'s `rolloutSamples` from 6 toward 48. Time-budgeted tiers (medium/hard) were
+already covered by Run U. Config-only knob; the `fallbackMove`-exhaustion path is
+sample-with-replacement (`mcts.ts` — no crash, only wasted cycles in sparse endgames).

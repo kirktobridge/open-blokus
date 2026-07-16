@@ -146,7 +146,34 @@ toward 24 captures the iteration gain for free (more sims at fixed time); 48 is 
 best measured but adds only the ~2-pt width term at higher late-game rejection cost
 (the `fallbackMove`-exhaustion risk was not instrumented — an open caveat). Ties back
 to F6 (rollout *quality* is the lever) with a sharpened reading: here "quality" cashes
-out as playout *length* → simulation *count*, not per-move cleverage.
+out as playout *length* → simulation *count*, not per-move cleverage. **(Budget caveat:
+the "pure width is small" claim holds at these ~55–65-iter budgets only — at deep
+budgets it flips large; see F18.)**
+
+### F18 — The value of rollout *width* scales with the iteration budget: negligible when starved, large (+11 pts) when deep
+Confidence: `significant` (n=600, CI clear). F17 measured the pure-width term (width
+held apart from the iterations it buys) as small and non-monotone at ~55–65 iters:
+−2.3 pts at 6→12, +2.3 pts at 24→48. AE28 re-ran the cleanest contrast — `s48` vs `s6`,
+**both pinned at 500 iters** (the shipped `extreme` tier's fixed, no-time-budget config,
+`beam 20`) — and pure width wins **61.3% (CI [57.3, 65.1]), +11.3 pts, p=1.5e-8** (Run
+V), with better placement (2.36 vs 2.64) and placed squares (77.0 vs 76.0). No iteration
+bonus is in play — both arms ran 500 — so this is rollout *quality* alone, and it is an
+order of magnitude larger than the ±2-pt pure-width term at low budgets.
+
+The reconciling variable is the budget. A wider rollout is a *higher-quality, lower-
+variance* leaf estimate (sampling more candidates and taking the biggest piece pulls
+the playout toward realistic strong play). How much that quality is worth depends on
+how many rollouts the search averages into each node: at a starved ~55-iter budget the
+leaf values are dominated by sampling noise and quantity, so quality barely registers
+(F17) and width's only real lever is the iterations its speedup buys; at a deep 500-iter
+budget the tree is well-developed and each rollout's sharper signal carries the search,
+so quality reasserts as the lever — F6's original "rollout quality scales with compute"
+regime, now shown to govern rollout *width* specifically. Practical consequence: the
+right `rolloutSamples` is **budget-dependent** — a low-iteration bot gets width's value
+as free iterations (F17, cap ~24 at the speed plateau), a high-iteration bot gets it as
+strength (F18, keep widening — 48 clearly beats 6 at 500 iters). Deploy: raise the
+`extreme` tier's `rolloutSamples` from 6 toward 48 — a clean strength win on top of the
+~1.35× move-speed gain; time-budgeted tiers were covered by F17.
 
 ---
 

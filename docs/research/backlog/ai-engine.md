@@ -441,7 +441,11 @@ test (product P21) fails CI if any ID here is missing or terminal.
   the incumbent head-to-head can still be weak against off-distribution play
   (the kingmaker/multiplayer caveat: 4p has no single optimal strategy). Also the
   enabling infra for product P13 (ladder calibration — tiers defined as strength
-  bands vs a frozen anchor pool).
+  bands vs a frozen anchor pool). The pool also **designates a versioned *champion*** —
+  our best-known bot *unconstrained* by latency/UX (near-bottomless budget): the pool's
+  top anchor and the strength *ceiling* P13's shippable (latency-bounded) tiers are
+  measured against (each tier's "gap vs champion"). Complements AE6 (budget-to-saturation
+  = where the ceiling sits) and AE19 (external Pentobi anchor = absolute placement of it).
 - **Hypothesis:** ranking vs a diverse pool (random, greedy, heuristic variants,
   alphabeta, MCTS tiers, retired champions) differs measurably from head-to-head
   vs the incumbent alone, and is a better proxy for vs-human / vs-external
@@ -450,7 +454,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
   literature; verified locally if pool rank predicts Pentobi rank.
 - **Method:** arena extension — round-robin over a frozen pool, Elo (or
   game-share matrix) with CIs; report pool standing alongside head-to-head in
-  future AE runs. Pool composition versioned in `scripts/experiments/pool.json`.
+  future AE runs. Pool composition versioned in `scripts/experiments/pool.json` —
+  the champion config is its top entry, bumped whenever a won experiment raises the
+  ceiling (so P13's "gap vs champion" per tier is always read against the current best).
 - **Success criteria:** measurement infra — bar for *adopting as a standing
   readout*: the pool ranking reorders or separates at least one pair that
   head-to-head calls equal (i.e. it adds signal), or correlates better with the
@@ -650,3 +656,40 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** small — phase 1 is a profiling run, no engine change; phase 2 only
   fires if the ratio actually drifted. Guards shipped tiers cheaply.
 - **Log:** —
+
+### AE28 — Rollout width at fixed iterations (does the `extreme` tier get the width win?)
+- **Status:** won — at fixed 500 iters (extreme's config) `s48` beats `s6` **61.3%
+  [57.3, 65.1]**, +11.3 pts pure-quality, p=1.5e-8, n=600 (Run V / [F18](../FINDINGS.md)).
+  Clears the 52% bar decisively → yes, the extreme tier gets a clean strength win from
+  widening. Surprise vs AE26: the pure-width term is *budget-dependent* — a wash at
+  ~55 iters, large at 500 (F18). Deploy: raise `extreme`'s `rolloutSamples` from 6
+  toward 48 (strength win + ~1.35× move-speed). `fallbackMove` path is
+  sample-with-replacement — no crash, only wasted cycles in sparse endgames.
+- **Status (was):** active — spun out of AE26/[F17](../FINDINGS.md). AE26 showed wider
+  sampling wins at matched *wall-clock*, but the win is mostly the extra iterations
+  shorter playouts buy. The shipped `extreme` tier runs a **fixed 500 iterations with
+  no time budget** ([difficulty.ts](../../../src/client/ai/difficulty.ts)), so it
+  cannot collect those free iterations — only the *pure-width* term applies, which F17
+  measured as small and non-monotone (−2.3 pts at 6→12, +2.3 pts at 24→48). AE26 never
+  ran a clean 48-vs-6 at identical iterations, so whether width helps the best bot is
+  genuinely untested.
+- **Objective:** decide whether to raise `extreme`'s `rolloutSamples` from 6 for
+  *strength* (a separate speed-only case exists: width 48 is 1.35× faster/move, easing
+  extreme's ~12 s/move — but that's a UX call, not this bar).
+- **Hypothesis:** at 500 iters the tree is well-developed, so per-rollout quality
+  (bigger-piece playouts, lower reward variance — F17's mechanism) should matter more
+  than it did at ~55 iters; expect a small positive pure-width effect, possibly < the
+  52% detection bar at n=600.
+- **Method:** head-to-head 2v2, both arms `iterations 500`, `beam 20`, `rolloutDepth 0`,
+  `rankRewardWeight 0.25` (extreme's config), `rolloutSamples` 48 vs 6. Config
+  `scripts/experiments/ae28-extreme-width.json`, sharded via the ae26-sweep pattern.
+  No iteration-matching — fixed iters *is* the point.
+- **Success criteria:** `s48` game-share Wilson CI lower bound clears **52%** vs `s6`
+  at fixed 500 iters, ≥600 games (escalate toward n≈2400 if the point estimate sits in
+  ~[50,54]). Pass → ship 48 to extreme on strength. Fail → no fixed-iteration strength
+  gain; extreme adoption becomes a speed-only UX decision.
+- **Cost / risk:** compute-heavy — 500 iters/move is ~3× the AE26 per-game cost;
+  n=600 ran 732 min / 150 CPU-h at 14-way. Risk (underpowered for a small effect) did
+  not fire — the effect was large (+11 pts), CI cleared at n=600.
+- **Log:** [Run V](../log/ai-strategy.md) → [F18](../FINDINGS.md). Follow-up (product):
+  ship the `extreme` `rolloutSamples` bump; instrument `fallbackMove` rate at width 48.
