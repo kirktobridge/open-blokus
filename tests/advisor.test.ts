@@ -4,7 +4,9 @@ import { applyPlacement } from '../src/game/placement';
 import { resolveCells } from '../src/game/pieces';
 import { generateLegalMoves } from '../src/game/moves';
 import { idx } from '../src/game/board';
-import { legalTargetCells, legalMovesForPiece } from '../src/client/advisor/legalMoves';
+import { attachPoints } from '../src/game/ai/alphabeta';
+import { COLOR_ORDER } from '../src/game/types';
+import { legalTargetCells, legalMovesForPiece, roomReadout } from '../src/client/advisor/legalMoves';
 
 describe('legalTargetCells (P3 R1 advisor overlay)', () => {
   it("first move: an I2 can only cover its corner's L-shape", () => {
@@ -43,5 +45,34 @@ describe('legalTargetCells (P3 R1 advisor overlay)', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
     expect(legalTargetCells(G, 'blue', 'V3')).toEqual([]); // V3 is spent
+  });
+});
+
+describe('roomReadout (P34 M2 live room meter)', () => {
+  it('opening board: every color shows its single starting corner (room 1)', () => {
+    const readout = roomReadout(createInitialState(4));
+    expect(readout).toHaveLength(COLOR_ORDER.length);
+    expect(readout.every((e) => e.room === 1)).toBe(true);
+  });
+
+  it('reports the shared attachPoints signal for every color', () => {
+    const G = createInitialState(4);
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+    for (const { color, room } of roomReadout(G)) {
+      expect(room).toBe(attachPoints(G, color));
+    }
+  });
+
+  it('sorts roomiest-first — the color that just spread leads', () => {
+    const G = createInitialState(4);
+    // A V3 in blue's corner opens more attach-points than the other colors' lone
+    // starting corners, so blue must sort ahead of everyone still on 1.
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+    const readout = roomReadout(G);
+    expect(readout[0].color).toBe('blue');
+    expect(readout[0].room).toBeGreaterThan(1);
+    for (let i = 1; i < readout.length; i++) {
+      expect(readout[i - 1].room).toBeGreaterThanOrEqual(readout[i].room);
+    }
   });
 });

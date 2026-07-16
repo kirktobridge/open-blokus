@@ -2,6 +2,8 @@ import { BOARD_SIZE, idx, inBounds, diagNeighbors, orthoNeighbors } from '../../
 import { generateLegalMoves } from '../../game/moves';
 import { applyPlacement } from '../../game/placement';
 import { resolveCells } from '../../game/pieces';
+import { attachPoints } from '../../game/ai/alphabeta';
+import { COLOR_ORDER } from '../../game/types';
 import type { Color, GameState, PieceId, Placement } from '../../game/types';
 
 /**
@@ -81,4 +83,24 @@ export function anchorsAfter(G: GameState, color: Color, placement: Placement): 
   const next = structuredClone(G) as GameState;
   applyPlacement(next, color, placement.pieceId, resolveCells(placement));
   return expansionAnchors(next, color).length;
+}
+
+/** One color's live "room": its label and open-corner count. */
+export interface RoomEntry {
+  color: Color;
+  /** Open corner attach-points — how much room the color has left to grow. */
+  room: number;
+}
+
+/**
+ * Per-color "room" — open corner attach-points — sorted roomiest-first, for the
+ * opt-in live mobility meter (P34 M2). Reads the *same* frontier signal as M1's
+ * recap chart and P32's cut detectors (`attachPoints`, the shared computation),
+ * so the live meter can never disagree with the post-game timeline. Before a
+ * color's first move its lone starting corner counts as 1 (matching M1's ply-0).
+ */
+export function roomReadout(G: GameState): RoomEntry[] {
+  return COLOR_ORDER.map((color) => ({ color, room: attachPoints(G, color) })).sort(
+    (a, b) => b.room - a.room,
+  );
 }
