@@ -136,6 +136,27 @@ order runs foundation → offline surfaces → live surfaces.
 - **Depends on:** M1: P2 R0 (shipped). M2: nothing hard. Ground-truth signal — no
   AD2/AD3 evaluator dependency. Shares the frontier computation with P32's
   detectors — build it once, both consume it.
+- **Naming:** the user-facing "Room" wording (M1's chart, M2's toggle) is renamed by
+  **P38** — chart → "Open Corners", toggle → "Corner Counter". P38 owns that edit.
+
+### P39 — Dead-piece shading (red overlay on unplaceable inventory pieces)
+- **Status:** proposed
+- **Value:** a piece with no legal placement left is *already lost* — the player is
+  still counting it as an option and planning around it. Shading it answers "what can
+  I still actually play?" at a glance, and the Opponents half turns the same read
+  outward ("their big pieces are dead — I'm ahead on room"), which is the mobility
+  intuition P34 teaches, made concrete per piece.
+- **Scope:** an advisor overlay tinting each inventory piece red when it has zero legal
+  placements for its color on the current board. Two independent toggles under P38's
+  Advisor Features section — **Self** (own inventory) and **Opponents** (all other
+  inventories); both off by default. Ground truth from the rules core, so the read
+  can't drift. No hidden information: inventories and board are public, so the
+  Opponents read is derivable by any player at the table. **Open question:** whether an
+  already-eliminated color shades fully (every piece dead by definition) or is excluded
+  as noise.
+- **Depends on:** P38 (the settings home for the toggles). Shares the legal-move
+  enumeration with P3 R1 and P34's frontier work — one computation, several consumers;
+  the naive per-render sweep across pieces × colors × orientations is the cost to watch.
 
 ---
 
@@ -314,6 +335,25 @@ four classic colors as accents, shapes as the star.
   precedence an accident of the CSS cascade. Inventory display is a *preference*, not
   appearance, and stays in its own store. Why → [../ARCHITECTURE.md](../ARCHITECTURE.md)
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
+
+### P38 — Gameplay settings tab (advisor toggles move into Settings)
+- **Status:** proposed
+- **Value:** the board's surroundings are for play, not configuration. Two advisor
+  toggles (P3 R1, P34 M2) accreted as ad-hoc emoji buttons under the board, and every
+  further advisor feature would add another. P12 already established one Settings
+  surface as the home for preferences — gameplay preferences belong there too, so the
+  board view stays clean and the pattern scales as the advisor grows (P39, P3 R2+).
+- **Scope:** a **Gameplay** tab in the Settings panel with an **Advisor Features**
+  section; the two existing toggles move there as plain switches (the idiom P12's
+  inventory-display toggle already set), losing the emoji labels and the under-board
+  buttons. Renamed for what they do: "Legal moves" → **Move Options**, "Room" →
+  **Corner Counter**, and P34 M1's replay-scrubber chart "Room" → **Open Corners**, so
+  the corner vocabulary is one word everywhere (P34 points here for that rename). These
+  are *preferences*, not appearance — same split P12 drew, so they keep their own store;
+  off by default, unchanged.
+- **Depends on:** P12 (the panel + toggle idiom), P3 R1 and P34 M1/M2 (the toggles +
+  chart being moved). Pure UI relocation, no rules-core work; the e2e tests that drive
+  the toggles move with them.
 
 ### P7 — Sound design — SHIPPED
 - **Status:** shipped — a **procedural** cue palette (Web Audio synthesis, zero assets)
