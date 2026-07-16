@@ -6,7 +6,10 @@ import { test, expect } from '@playwright/test';
  */
 
 test('blitz clock counts down on the human turn and hides on the bot turn', async ({ page }) => {
-  await page.goto('/?botDelay=0&blitz=30');
+  // Bots are paced, not instant: this is the one blitz test that asserts a state
+  // which exists *only while* the bot seats are pending. With botDelay=0 all three
+  // can submit within a tick, closing the hidden window before the first poll.
+  await page.goto('/?botDelay=600&blitz=30');
   await page.getByTestId('quick-play').click();
 
   // Human (blue) is up first, so the clock is running.
