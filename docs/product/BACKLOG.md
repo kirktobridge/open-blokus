@@ -186,12 +186,21 @@ this epic owns the user-facing feature + its UX.
   - Define each tier as a **strength band + latency budget** measured against a
     frozen anchor pool (heuristic bot + snapshots of shipped tier configs);
     `MCTS_TIERS` in [difficulty.ts](../../src/client/ai/difficulty.ts) becomes an
-    implementation detail, retunable at will.
+    implementation detail, retunable at will. Shippable tiers are latency-bounded
+    bands; the ladder tops out toward the unbounded-budget **champion** — the strength
+    ceiling with no latency constraint, tracked as research AE21's versioned top
+    anchor and the reference each tier's strength gap is measured against.
   - **Decision rule per AE win:** efficiency wins (same strength, cheaper —
     AE2/AE9/AE17-type) retune existing tiers in place (snappier moves, same band);
     **ceiling wins** mint a new top tier only if they beat the current top by a
     measured margin (≥60 % game-share, per that AE entry's bar) *and* meet a
     latency budget — otherwise fold into `extreme`'s config.
+  - **Budget-regime axis (F17/F18):** a knob's optimal value is *tier-dependent*
+    because tiers differ in budget model — a win measured at matched-wall-clock
+    applies to the time-budgeted tiers (medium/hard), one measured at fixed
+    iterations applies to `extreme`. Evaluate each deploy against *that tier's*
+    budget, not globally. Worked example: `rolloutSamples` ≈ 24 for medium/hard
+    (width buys free iterations, F17) vs 48 for `extreme` (width buys strength, F18).
   - Recalibration workflow: after any engine change touching shipped tiers, re-run
     the ladder monotonicity arena check (Runs J–K precedent) plus anchor-pool
     matches; cap the ladder at ~5–6 named rungs (keeps the per-seat picker and
@@ -221,6 +230,30 @@ this epic owns the user-facing feature + its UX.
   - Re-run the ladder monotonicity check (P13 recalibration workflow) after the flip.
 - **Depends on:** research AE15 / F15 (won). No new engine work — config default flip
   plus the replication batch.
+
+### P37 — Deploy extreme rollout width (`rolloutSamples` 48)
+- **Status:** proposed.
+- **Value:** deploys research win AE28/[F18](../research/FINDINGS.md), which sits won
+  but unshipped. At `extreme`'s fixed 500-iter budget, `rolloutSamples` 48 beats the
+  shipped 6 by **+11.3 pts game-share** (Wilson CI [57.3, 65.1], pure rollout quality —
+  no wall-clock confound) *and* cuts move time ~1.35× (bigger-piece playouts terminate
+  sooner). The strongest tier gets stronger **and** snappier at zero code cost. Per
+  P13's decision rule this is a "fold into `extreme`'s config" retune (a within-tier
+  strength gain, not a new rung).
+- **Scope:**
+  - Raise `rolloutSamples` 6 → 48 for the `extreme` tier only in
+    [difficulty.ts](../../src/client/ai/difficulty.ts) (config-only). medium/hard are
+    unaffected — their width optimum is ~24 as free iterations (F17, per P13's
+    budget-regime axis); retuning them is a separate follow-up, left as-is here.
+  - Instrument the `fallbackMove` / sample-with-replacement waste rate at width 48 in
+    sparse endgames (currently unmeasured; a guard only — no correctness risk, just
+    wasted cycles when a position has < 48 legal moves).
+  - Re-run the ladder monotonicity check (P13 recalibration workflow) after the flip.
+  - **Replication:** F18 is one well-powered run (n=600, CI clear); per the
+    shipped-defaults rule, either a second pooled seed batch via /research or an
+    explicit `replication-pending` label at landing.
+- **Depends on:** research AE28 / F18 (won). No new engine work — config default flip
+  plus the instrumentation.
 
 ### P18 — Bot personas
 - **Status:** deferred — until the difficulty ladder matures (2026-07-13): best-bot
