@@ -331,10 +331,11 @@ Look, feel, and interaction. Curated from [../dev_notes/OPEN_IDEAS.md](../dev_no
 four classic colors as accents, shapes as the star.
 
 ### P5 — Skeuomorphic piece & board finish
-- **Status:** partial — placed cells now carry a **per-cell molded translucent-tile
-  finish** across all three built-in themes (PlacedLayer SVG overlay; supersedes the
-  earlier joined-piece gel — per-cell alpha window over the mat + bevel/glint/seam, no
-  gloss filter). Remaining: board plastic texture, tray.
+- **Status:** in-progress (2026-07-16, `feat/p5-board-plastic-tray`) — placed cells
+  already carry a **per-cell molded translucent-tile finish** across all three built-in
+  themes (PlacedLayer SVG overlay; supersedes the earlier joined-piece gel — per-cell
+  alpha window over the mat + bevel/glint/seam, no gloss filter). Claimed: the remaining
+  board plastic texture + tray.
 - **Value:** the tactile "real Blokus set" identity.
 - **Scope:** hyperrealistic board plastic; per-palette piece finishes; grain/bevel/shadow.
 
