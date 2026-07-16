@@ -123,7 +123,7 @@ order runs foundation → offline surfaces → live surfaces.
   highlight component — build once, share.
 
 ### P34 — Mobility surfaces (review chart + opt-in advisor meter)
-- **Status:** partial — M1 (review chart) shipped (`1e3efcc`); M2 (live opt-in meter) still proposed
+- **Status:** partial — M1 (review chart) shipped (`1e3efcc`); M2 (live opt-in meter) in-progress
 - **Value:** mobility (open corners / legal moves) is what actually diverges
   mid-game — score tracks closely until late. Surfacing it teaches the game's core
   heuristic; explicitly a *coaching* feature, so it lives in advisor/review surfaces
