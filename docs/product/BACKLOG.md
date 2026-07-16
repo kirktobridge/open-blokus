@@ -26,20 +26,17 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P34** (M1) — mobility-over-time chart in the replay scrubber: P2 R0 shipped, so the
-   review surface is ready; P32 shipped `attachCells` as the shared frontier metric, so the
-   signal is ground truth with no evaluator risk. Dependency-ready head.
-2. **P5** (rest) — board plastic texture + tray: the placed-piece molded-tile finish now
+1. **P5** (rest) — board plastic texture + tray: the placed-piece molded-tile finish now
    shipped, so the remaining sensory work is the mat/board plastic and the piece tray —
    still dependency-free, and the SVG-overlay approach is proven. Sensory layer has
-   momentum (P16 juice, P7 sound).
+   momentum (P16 juice, P7 sound). Dependency-ready head.
+2. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
+   dependencies (P29 surface, P15 data) shipped, and it's the front door — small effort,
+   every-session visibility.
 3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
    free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
    it's not the dependency-ready head.
-4. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
-   dependencies (P29 surface, P15 data) shipped, and it's the front door — small effort,
-   every-session visibility.
 
 ---
 
@@ -123,7 +120,7 @@ order runs foundation → offline surfaces → live surfaces.
   highlight component — build once, share.
 
 ### P34 — Mobility surfaces (review chart + opt-in advisor meter)
-- **Status:** proposed
+- **Status:** in-progress — M1 (review chart) claimed on `feat/p34-mobility-chart`; M2 still proposed
 - **Value:** mobility (open corners / legal moves) is what actually diverges
   mid-game — score tracks closely until late. Surfacing it teaches the game's core
   heuristic; explicitly a *coaching* feature, so it lives in advisor/review surfaces
