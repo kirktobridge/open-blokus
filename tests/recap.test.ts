@@ -5,6 +5,7 @@ import { mulberry32, heuristicStrategy, greedySizeStrategy } from '../src/game/a
 import type { Strategy } from '../src/game/ai/arena';
 import { playRecordedGame, replayGame, type GameRecord } from '../src/game/ai/selfplay';
 import { finalScores, remainingSquares } from '../src/game/scoring';
+import { attachPoints } from '../src/game/ai/alphabeta';
 import { buildRecap } from '../src/game/recap';
 
 function seededRecord(seed: number): GameRecord {
@@ -74,6 +75,33 @@ describe('buildRecap', () => {
     expect(frames[frames.length - 1].board).toEqual(finalG.board);
     // And the scores derived from that board are the record's scores.
     expect(finalScores(finalG).colors).toEqual(record.scores);
+  });
+
+  it('records per-color mobility that matches an independent replay (P34 M1)', () => {
+    const record = seededRecord(4);
+    const frames = buildRecap(record);
+
+    // Ply 0: every color sits on its single empty starting corner.
+    for (const c of COLOR_ORDER) expect(frames[0].mobility[c]).toBe(1);
+
+    // Each frame's mobility equals attachPoints on a fresh replay to that ply —
+    // the chart's y-values can never drift from the ground-truth frontier.
+    for (let k = 0; k < frames.length; k++) {
+      const G = replayGame(record.moves.slice(0, k), undefined, record.mode, record.scoring);
+      for (const c of COLOR_ORDER) {
+        expect(frames[k].mobility[c]).toBe(attachPoints(G, c));
+      }
+    }
+  });
+
+  it('mobility is non-monotonic in general — it rises then collapses', () => {
+    // Score only ever climbs (asserted above); mobility is the signal that falls,
+    // which is the whole point of the P34 chart. At least one color must dip.
+    const frames = buildRecap(seededRecord(13));
+    const dips = COLOR_ORDER.some((c) =>
+      frames.some((f, i) => i > 0 && f.mobility[c] < frames[i - 1].mobility[c]),
+    );
+    expect(dips).toBe(true);
   });
 
   it('throws on a corrupt (illegal) move rather than rendering a bogus frame', () => {

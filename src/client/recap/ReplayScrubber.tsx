@@ -6,6 +6,7 @@ import { buildRecap } from '../../game/recap';
 import { Board } from '../board/Board';
 import { TURNS_TO_BOTTOM_RIGHT, humanColor } from '../board/orientation';
 import { ScoreTimeline } from './ScoreTimeline';
+import { MobilityTimeline } from './MobilityTimeline';
 import { CELL_PX, FONT_MONO, FONT_UI, PIECE_VAR, SECONDARY_BTN } from '../theme';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
@@ -20,7 +21,8 @@ const BASE_STEP_MS = 1600;
 
 /**
  * Post-game replay scrubber (product P2 R0) — step through the game move by move
- * and watch the score-over-time timeline to see "when did I fall behind?". A
+ * and watch the over-time plots: score ("when did I fall behind?") and mobility
+ * ("when did my room collapse?", P34 M1). A
  * standalone modal over a finished `GameRecord`, so it serves both the game-over
  * "Review game" entry point here and P15 M2's history-list replay. No AI/eval —
  * every frame is a pure replay of the recorded moves (src/game/recap.ts).
@@ -172,9 +174,15 @@ export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClos
           {caption}
         </p>
 
-        {/* Score-over-time timeline (click/drag to seek). */}
+        {/* Two seekable over-time plots (click/drag either to seek): squares placed,
+            and mobility — "room" — which is what actually diverges mid-game (P34 M1). */}
         <div style={{ marginBottom: 6 }}>
+          <p style={chartLabel}>Score — squares placed</p>
           <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          <p style={chartLabel}>Room — open corners to play into</p>
+          <MobilityTimeline frames={frames} ply={ply} onSeek={seekTo} />
         </div>
 
         {/* Standings at this ply — squares placed, ranked vertically leader-first
@@ -253,4 +261,12 @@ const stepBtn = {
   fontSize: 13,
   padding: '5px 10px',
   minWidth: 34,
+} as const;
+
+const chartLabel = {
+  margin: '0 0 2px',
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: 0.2,
+  color: 'var(--mut)',
 } as const;

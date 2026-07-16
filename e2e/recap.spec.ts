@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-// Post-game replay scrubber (P2 R0). An all-AI watch game reaches game-over in a
-// couple of seconds with ?botDelay=0, and it's still captured as a record, so it's
-// the fast path to exercise the Review UI end-to-end without playing by hand.
+// Post-game replay scrubber (P2 R0 + P34 M1). An all-AI watch game reaches game-over
+// in a couple of seconds with ?botDelay=0, and it's still captured as a record, so
+// it's the fast path to exercise the Review UI end-to-end without playing by hand.
 test('review a finished game: scrub the board and the score timeline', async ({ page }) => {
   await page.goto('/?botDelay=0');
   await page.getByTestId('open-custom').click();
@@ -17,11 +17,21 @@ test('review a finished game: scrub the board and the score timeline', async ({ 
   const scrubber = page.getByTestId('replay-scrubber');
   await expect(scrubber).toBeVisible();
   await expect(page.getByTestId('score-timeline')).toBeVisible();
+  // Mobility ("room") timeline sits beside the score plot (P34 M1).
+  const mobility = page.getByTestId('mobility-timeline');
+  await expect(mobility).toBeVisible();
 
   const ply = page.getByTestId('scrubber-ply');
   const finalReadout = (await ply.textContent())!; // "N / N"
   const total = Number(finalReadout.split('/')[1].trim());
   expect(total).toBeGreaterThan(20); // a real, complete game
+
+  // The mobility chart is seekable too: clicking near its left edge jumps the
+  // scrubber back toward the opening (proves onSeek is wired, not just rendered).
+  const box = (await mobility.boundingBox())!;
+  await mobility.click({ position: { x: box.width * 0.12, y: box.height * 0.5 } });
+  const afterSeek = Number((await ply.textContent())!.split('/')[0].trim());
+  expect(afterSeek).toBeLessThan(total); // moved off the final ply
 
   // Jump to the start: empty board, ply 0.
   await page.getByTestId('scrubber-first').click();
