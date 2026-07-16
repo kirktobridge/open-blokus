@@ -33,7 +33,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 2. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
    dependencies (P29 surface, P15 data) shipped, and it's the front door — small effort,
    every-session visibility.
-3. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
+3. **P34** (M2) — live opt-in mobility meter: M1 (review chart) shipped, so the frontier
+   signal exists and is proven; M2 just surfaces it live behind an advisor toggle (sibling
+   to P3 R1's Legal-moves toggle), no research dependency — small, dependency-ready.
+4. **P2** (R1+) — recap annotations + retry-from-turn: R0 (replay scrubber + score
    timeline) shipped, and P32's detectors are replay-safe by construction (key moments come
    free); but the milestone still needs research AD4 (blunder signal) + AD2 (evaluator), so
    it's not the dependency-ready head.
@@ -120,7 +123,7 @@ order runs foundation → offline surfaces → live surfaces.
   highlight component — build once, share.
 
 ### P34 — Mobility surfaces (review chart + opt-in advisor meter)
-- **Status:** in-progress — M1 (review chart) claimed on `feat/p34-mobility-chart`; M2 still proposed
+- **Status:** partial — M1 (review chart) shipped (`1e3efcc`); M2 (live opt-in meter) still proposed
 - **Value:** mobility (open corners / legal moves) is what actually diverges
   mid-game — score tracks closely until late. Surfacing it teaches the game's core
   heuristic; explicitly a *coaching* feature, so it lives in advisor/review surfaces
