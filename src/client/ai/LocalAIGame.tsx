@@ -10,6 +10,7 @@ import { COLOR_ORDER } from '../../game/types';
 import { ownersFor } from '../../game/modes';
 import { remainingSquares } from '../../game/scoring';
 import { BlokusBoardView } from '../BlokusBoardView';
+import { ReviewTable } from '../recap/ReviewTable';
 import { useGameRecorder } from '../log/useGameRecorder';
 import type { RecorderClient } from '../log/recorder';
 import type { GameRecord } from '../../game/ai/selfplay';
@@ -166,6 +167,9 @@ export function LocalAIGame({
   // (P2 R0). Cleared when a new game starts (client.reset via Play Again) so a
   // stale record never shows against a fresh board.
   const [gameRecord, setGameRecord] = useState<GameRecord | null>(null);
+  // In-table review mode (P2 R0.2): dismissing the game-over ceremony drops the
+  // table into review, swapping the live board for the frame-driven ReviewTable.
+  const [reviewing, setReviewing] = useState(false);
   useGameRecorder(
     client as unknown as RecorderClient,
     useMemo(() => ({ seats, src: 'vs-ai' }), [seats]),
@@ -243,6 +247,7 @@ export function LocalAIGame({
       value={{
         onPlayAgain: () => {
           setGameRecord(null);
+          setReviewing(false);
           client.reset();
         },
         onLeave,
@@ -297,13 +302,18 @@ export function LocalAIGame({
             <LeaveIcon />
           </button>
         </div>
-        <BlokusBoardView
-          {...boardProps}
-          botDifficulties={botDifficulties}
-          blitzRemainingMs={remainingMs}
-          blitzLimitMs={blitzLimit != null ? blitzLimit * 1000 : null}
-          gameRecord={gameRecord}
-        />
+        {reviewing && gameRecord ? (
+          <ReviewTable record={gameRecord} onExitReview={() => setReviewing(false)} />
+        ) : (
+          <BlokusBoardView
+            {...boardProps}
+            botDifficulties={botDifficulties}
+            blitzRemainingMs={remainingMs}
+            blitzLimitMs={blitzLimit != null ? blitzLimit * 1000 : null}
+            gameRecord={gameRecord}
+            onReview={() => setReviewing(true)}
+          />
+        )}
       </div>
       <MilestoneToasts items={milestoneToasts} onDismiss={dismissMilestones} />
     </SessionActionsContext.Provider>

@@ -11,7 +11,7 @@
  * through the rules core, so a frame can never disagree with the real game.
  */
 import { COLOR_ORDER } from './types';
-import type { Color } from './types';
+import type { Color, ColorState } from './types';
 import { BOARD_SIZE } from '../shared/constants';
 import { createInitialState } from './modes';
 import { pieceSize, resolveCells } from './pieces';
@@ -29,6 +29,15 @@ export interface RecapFrame {
   move: LoggedMove | null;
   /** Board indices of `move`'s cells — for a last-move highlight. Empty at ply 0. */
   moveCells: number[];
+  /**
+   * Per-color state at this ply — remaining inventory, `lastPlaced`, `hasStarted`.
+   * A deep clone (the replay mutates one `G` in place), so a review UI can render
+   * the player cards + hand tray *at the scrubbed ply* rather than the final
+   * position (P2 R0.2). `stuck`/turn cursor aren't replayed here, so `stuck` stays
+   * false throughout — a review only needs inventory, score and last-placed, which
+   * this carries; whose-turn tags come from `move`.
+   */
+  colors: Record<Color, ColorState>;
   /** Cumulative squares placed per color at this ply (0..89-ish, monotonic). */
   placed: Record<Color, number>;
   /**
@@ -66,6 +75,7 @@ export function buildRecap(record: GameRecord): RecapFrame[] {
       moveCells: [],
       placed: { ...placed },
       mobility: mobilityOf(G),
+      colors: structuredClone(G.colors),
     },
   ];
 
@@ -85,6 +95,7 @@ export function buildRecap(record: GameRecord): RecapFrame[] {
       moveCells: cells.map((c) => c.y * BOARD_SIZE + c.x),
       placed: { ...placed },
       mobility: mobilityOf(G),
+      colors: structuredClone(G.colors),
     });
   });
 
