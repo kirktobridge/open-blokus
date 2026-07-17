@@ -26,22 +26,19 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P5** (rest) — board plastic texture + tray: the placed-piece molded-tile finish now
-   shipped, so the remaining sensory work is the mat/board plastic and the piece tray —
-   still dependency-free, and the SVG-overlay approach is proven. Sensory layer has
-   momentum (P16 juice, P7 sound). Dependency-ready head.
-2. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
+1. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
    dependencies (P29 surface, P15 data) shipped, and it's the front door — small effort,
    every-session visibility.
-3. **P38** — gameplay settings tab: unblocked by P34 M2 landing (its last dependency). The
+2. **P38** — gameplay settings tab: unblocked by P34 M2 landing (its last dependency). The
    second ad-hoc emoji toggle under the board is exactly the accretion it exists to stop,
    and it owns the Room → Corner Counter rename, so shipping it soon keeps the corner
-   vocabulary from settling wrong. Pure UI relocation, no rules-core work.
-4. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
+   vocabulary from settling wrong. Pure UI relocation, no rules-core work. Also unblocks
+   P39, the only proposed entry waiting on a dependency we could clear this cheaply.
+3. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
    the game table on game over) is dependency-free — R0/R0.1 and P34 M1 shipped — so P2 now
    has a buildable head even though R1+ still waits on research AD4 (blunder signal) + AD2
    (evaluator). Its table/record decoupling is also the substrate P15 M2 would need.
-5. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
+4. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
    makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
    (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
    /research, or an explicit `replication-pending` label at landing.
@@ -330,14 +327,18 @@ Look, feel, and interaction. Curated from [../dev_notes/OPEN_IDEAS.md](../dev_no
 §UI. Theming principle: playful skeuomorphism, translucent-plastic Blokus pieces, the
 four classic colors as accents, shapes as the star.
 
-### P5 — Skeuomorphic piece & board finish
-- **Status:** in-progress (2026-07-16, `feat/p5-board-plastic-tray`) — placed cells
-  already carry a **per-cell molded translucent-tile finish** across all three built-in
-  themes (PlacedLayer SVG overlay; supersedes the earlier joined-piece gel — per-cell
-  alpha window over the mat + bevel/glint/seam, no gloss filter). Claimed: the remaining
-  board plastic texture + tray.
+### P5 — Skeuomorphic piece & board finish — SHIPPED
+- **Status:** shipped (2026-07-16) — the whole surface now carries one molded finish:
+  the board is injection-molded plastic (MatLayer: lattice + per-cell wells + alignment
+  studs), placed cells are per-cell translucent tiles over it (PlacedLayer; supersedes
+  the earlier joined-piece gel), and the tray/thumbnails are molded to match. All lit
+  from one direction, retuned per built-in theme via tokens.
 - **Value:** the tactile "real Blokus set" identity.
 - **Scope:** hyperrealistic board plastic; per-palette piece finishes; grain/bevel/shadow.
+- **Notes:** no literal surface *grain* — deliberate. Molded plastic reads through lit
+  and shadowed flanks, not noise texture, so the scope's "grain" is met by the mold
+  rather than a grain layer. Depth that a flat top-down view can't give stays out of
+  scope here and lives in the deferred real-3D entry.
 
 ### P6 — Board layout & navigation — SHIPPED
 - **Status:** shipped — "study table" three-column layout (players · framed board +

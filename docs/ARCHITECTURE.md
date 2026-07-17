@@ -304,8 +304,9 @@ nothing to undo mid-turn, and disabling undo avoids multiplayer desync confusion
       └─ <BlokusBoardView> (BoardProps<GameState>)   // "study table": 3 centered columns
          ├─ <PlayerCard> × 4           // per-seat: state tag, count, micro-inventory
          ├─ <Board>                    // 20×20 CSS grid, framed in walnut + mat
-         │  ├─ <Cell> × 400            // also renders the hover/staged preview tint
-         │  └─ <PlacedLayer>           // SVG gel finish + last-move ring (see §8)
+         │  ├─ <MatLayer>              // SVG molded board: lattice, wells, studs (P5)
+         │  ├─ <Cell> × 400            // transparent; hit target + hover/staged tint
+         │  └─ <PlacedLayer>           // SVG molded pieces + last-move ring (see §8)
          ├─ <Controls>                 // action dock: in-hand · PLAY MOVE · ⟲ ⟳ ⇄ · Cancel
          ├─ <HandTray>/<PieceThumb>    // your hand, grouped by piece size
          ├─ <Standings>                // remaining-squares chips
