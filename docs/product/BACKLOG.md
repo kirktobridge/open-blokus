@@ -26,22 +26,23 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P35** — lobby menu hierarchy pass: the "later pass" P29 explicitly punted; both
-   dependencies (P29 surface, P15 data) shipped, and it's the front door — small effort,
-   every-session visibility.
-2. **P38** — gameplay settings tab: unblocked by P34 M2 landing (its last dependency). The
+1. **P38** — gameplay settings tab: unblocked by P34 M2 landing (its last dependency). The
    second ad-hoc emoji toggle under the board is exactly the accretion it exists to stop,
    and it owns the Room → Corner Counter rename, so shipping it soon keeps the corner
    vocabulary from settling wrong. Pure UI relocation, no rules-core work. Also unblocks
    P39, the only proposed entry waiting on a dependency we could clear this cheaply.
-3. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
+2. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
    the game table on game over) is dependency-free — R0/R0.1 and P34 M1 shipped — so P2 now
    has a buildable head even though R1+ still waits on research AD4 (blunder signal) + AD2
    (evaluator). Its table/record decoupling is also the substrate P15 M2 would need.
-4. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
+3. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
    makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
    (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
    /research, or an explicit `replication-pending` label at landing.
+4. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
+   the same mat-dependent-constant risk (P5) sits in `PlacedLayer` for the pieces
+   themselves. Dependency-free audit; keeps the tactile identity from vanishing on the
+   dark themes P35 leaned into.
 
 ---
 
@@ -659,7 +660,11 @@ four classic colors as accents, shapes as the star.
   research.
 
 ### P35 — Lobby menu hierarchy pass (one primary, adaptive rows)
-- **Status:** in-progress
+- **Status:** shipped — all four parts landed: (a) one brass-accented, molded primary
+  row with the rest uniform/neutral; (b) Your Stats → top-bar `ProfileChip` opening the
+  progression modal; (c) no brand-color row coding, one accent on the primary; (d) adaptive
+  rows — Tutorial de-emphasizes when done, Daily Puzzle carries the live P15 streak count.
+  ALL-CAPS labels + square icon slots. Dropped the blue accent for the molded brass finish.
 - **Value:** P29 shipped the board-left / menu-right front door with six deliberately
   co-equal rows — the punted "later pass" is this entry. The board already does tier-one
   work (ambient demonstration that sells the game); the menu's job is to convert that
