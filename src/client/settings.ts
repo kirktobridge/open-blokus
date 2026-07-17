@@ -17,9 +17,19 @@ interface Prefs {
   sound: boolean;
   /** Master volume for the cues, 0–1. */
   volume: number;
+  /** Advisor: highlight every legal spot for the selected piece (P3 R1). Opt-in. */
+  moveOptions: boolean;
+  /** Advisor: the per-color open-corner meter (P34 M2). Opt-in. */
+  cornerCounter: boolean;
 }
 
-const DEFAULTS: Prefs = { inventoryDisplay: 'silhouette', sound: true, volume: 0.6 };
+const DEFAULTS: Prefs = {
+  inventoryDisplay: 'silhouette',
+  sound: true,
+  volume: 0.6,
+  moveOptions: false,
+  cornerCounter: false,
+};
 
 const store: Pick<Storage, 'getItem' | 'setItem'> | null =
   typeof localStorage !== 'undefined' ? localStorage : null;
@@ -38,6 +48,12 @@ function load(): Prefs {
         sound: typeof parsed.sound === 'boolean' ? parsed.sound : DEFAULTS.sound,
         volume:
           typeof parsed.volume === 'number' ? clampVolume(parsed.volume) : DEFAULTS.volume,
+        moveOptions:
+          typeof parsed.moveOptions === 'boolean' ? parsed.moveOptions : DEFAULTS.moveOptions,
+        cornerCounter:
+          typeof parsed.cornerCounter === 'boolean'
+            ? parsed.cornerCounter
+            : DEFAULTS.cornerCounter,
       };
     }
   } catch {
@@ -77,6 +93,16 @@ export function setVolume(v: number): void {
   const volume = clampVolume(v);
   if (volume === state.volume) return;
   commit({ ...state, volume });
+}
+
+export function setMoveOptions(on: boolean): void {
+  if (on === state.moveOptions) return;
+  commit({ ...state, moveOptions: on });
+}
+
+export function setCornerCounter(on: boolean): void {
+  if (on === state.cornerCounter) return;
+  commit({ ...state, cornerCounter: on });
 }
 
 export function usePrefs(): Prefs {

@@ -28,7 +28,7 @@ export function RoomMeter({ G }: { G: GameState }) {
           margin: '0 0 8px',
         }}
       >
-        ROOM · OPEN CORNERS
+        OPEN CORNERS
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {entries.map(({ color, room }) => (

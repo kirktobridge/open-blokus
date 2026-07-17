@@ -1,6 +1,17 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-test('advisor toggle highlights the selected piece’s legal placements', async ({ page }) => {
+/** Toggle an Advisor Features switch in Settings → Gameplay (P38), then close the panel. */
+async function setAdvisorPref(page: Page, testid: string, on: boolean) {
+  await page.getByTestId('settings-toggle').click();
+  await page.getByRole('button', { name: 'Gameplay' }).click();
+  const box = page.getByTestId(testid);
+  if (on) await box.check();
+  else await box.uncheck();
+  await page.getByTestId('settings-toggle').click(); // close
+}
+
+test('Move Options highlights the selected piece’s legal placements', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('open-friends').click();
   await page.getByTestId('mode-select').selectOption('4');
@@ -11,17 +22,16 @@ test('advisor toggle highlights the selected piece’s legal placements', async 
   // Advisor is opt-in: off by default, so selecting a piece shows no hints.
   await page.getByTestId('piece-blue-I2').click();
   await expect(page.getByTestId('hint-legal')).toHaveCount(0);
-  await expect(page.getByTestId('advisor-toggle')).toHaveAttribute('aria-pressed', 'false');
 
-  // Turn it on → the I2's legal first-move squares light up: (0,0),(1,0),(0,1).
-  await page.getByTestId('advisor-toggle').click();
-  await expect(page.getByTestId('advisor-toggle')).toHaveAttribute('aria-pressed', 'true');
+  // Turn it on in Settings → the I2's legal first-move squares light up:
+  // (0,0),(1,0),(0,1).
+  await setAdvisorPref(page, 'pref-move-options', true);
   await expect(page.getByTestId('hint-legal')).toHaveCount(3);
 
   // Toggling off clears the overlay; back on restores it (still blue's turn).
-  await page.getByTestId('advisor-toggle').click();
+  await setAdvisorPref(page, 'pref-move-options', false);
   await expect(page.getByTestId('hint-legal')).toHaveCount(0);
-  await page.getByTestId('advisor-toggle').click();
+  await setAdvisorPref(page, 'pref-move-options', true);
   await expect(page.getByTestId('hint-legal')).toHaveCount(3);
 
   // The overlay is display-only — a highlighted cell still places the piece.

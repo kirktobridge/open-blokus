@@ -16,7 +16,15 @@ import {
   useAppearance,
   useActiveTheme,
 } from './appearance';
-import { setInventoryDisplay, setSound, setVolume, usePrefs, type InventoryDisplay } from './settings';
+import {
+  setCornerCounter,
+  setInventoryDisplay,
+  setMoveOptions,
+  setSound,
+  setVolume,
+  usePrefs,
+  type InventoryDisplay,
+} from './settings';
 import { PaletteControls } from './PalettePicker';
 import { configureSound, play } from './sound/engine';
 
@@ -61,6 +69,51 @@ function SegButton({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * A labeled on/off switch for a boolean preference — the plain-switch idiom the
+ * Gameplay tab's advisor toggles use (P38). The whole row is the click target; the
+ * hint sits under the label so the switch reads without a tooltip.
+ */
+function ToggleRow({
+  testid,
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  testid: string;
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 9,
+        marginBottom: 12,
+        cursor: 'pointer',
+      }}
+    >
+      <input
+        type="checkbox"
+        data-testid={testid}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ marginTop: 2, cursor: 'pointer' }}
+      />
+      <span>
+        <span style={{ display: 'block', fontSize: 12.5, color: 'var(--fg)' }}>{label}</span>
+        <span style={{ display: 'block', fontSize: 10.5, color: 'var(--fg-muted)', lineHeight: 1.4 }}>
+          {hint}
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -126,6 +179,7 @@ function TokenRow({ name, label, overridden }: { name: string; label: string; ov
  */
 export function SettingsPanel({ docked = false }: { docked?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<'appearance' | 'gameplay'>('appearance');
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const prefs = usePrefs();
   const { userThemes, activeId } = useAppearance();
@@ -172,6 +226,38 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
         >
           <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>Settings</h3>
 
+          {/* Tabs (P38): appearance vs gameplay preferences. Advisor toggles that
+              used to accrete as under-board buttons live under Gameplay now, so the
+              board stays for play and the pattern scales as the advisor grows. */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            <SegButton active={tab === 'appearance'} onClick={() => setTab('appearance')}>
+              Appearance
+            </SegButton>
+            <SegButton active={tab === 'gameplay'} onClick={() => setTab('gameplay')}>
+              Gameplay
+            </SegButton>
+          </div>
+
+          {tab === 'gameplay' ? (
+            <>
+              <div style={sectionLabel}>Advisor Features</div>
+              <ToggleRow
+                testid="pref-move-options"
+                label="Move Options"
+                hint="Highlight every legal spot for the selected piece."
+                checked={prefs.moveOptions}
+                onChange={setMoveOptions}
+              />
+              <ToggleRow
+                testid="pref-corner-counter"
+                label="Corner Counter"
+                hint="Show each color's open corners — the mid-game room the score hides."
+                checked={prefs.cornerCounter}
+                onChange={setCornerCounter}
+              />
+            </>
+          ) : (
+          <>
           {/* Inventory display */}
           <div style={sectionLabel}>Inventory</div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
@@ -393,6 +479,8 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
               </div>
             );
           })}
+          </>
+          )}
         </div>
       )}
     </div>
