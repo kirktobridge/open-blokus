@@ -367,7 +367,7 @@ four classic colors as accents, shapes as the star.
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P38 — Gameplay settings tab (advisor toggles move into Settings)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** the board's surroundings are for play, not configuration. Two advisor
   toggles (P3 R1, P34 M2) accreted as ad-hoc emoji buttons under the board, and every
   further advisor feature would add another. P12 already established one Settings
