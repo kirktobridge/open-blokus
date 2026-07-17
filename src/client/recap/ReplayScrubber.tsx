@@ -181,7 +181,7 @@ export function ReplayScrubber({ record, onClose }: { record: GameRecord; onClos
           <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
         </div>
         <div style={{ marginBottom: 6 }}>
-          <p style={chartLabel}>Room — open corners to play into</p>
+          <p style={chartLabel}>Open Corners — room to play into</p>
           <MobilityTimeline frames={frames} ply={ply} onSeek={seekTo} />
         </div>
 

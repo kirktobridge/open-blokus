@@ -28,7 +28,7 @@ import { isRealName } from './lobby/config';
 import { reactionMessage } from './lobby/reactions';
 import { BlitzBoardBar } from './blitz/BlitzBoardBar';
 import { BLITZ_URGENT_MS } from './blitz/blitz';
-import { useInventoryDisplay } from './settings';
+import { usePrefs } from './settings';
 import { FONT_MONO, FONT_UI, PIECE_VAR } from './theme';
 import type { Difficulty } from './ai/difficulty';
 import type { GameRecord } from '../game/ai/selfplay';
@@ -79,7 +79,8 @@ export function BlokusBoardView({
   const activeColor = COLOR_ORDER[G.activeColorIndex];
   // Single-player passes isActive=true for the current player; multiplayer gates it.
   const canPlay = isActive !== false && !ctx.gameover;
-  const inventoryDisplay = useInventoryDisplay();
+  const prefs = usePrefs();
+  const inventoryDisplay = prefs.inventoryDisplay;
   const reduce = useReducedMotion();
   const { beats } = useGameEvents(G);
 
@@ -168,10 +169,10 @@ export function BlokusBoardView({
   // could legally land on. The expensive part (generateLegalMoves) is memoized on
   // piece + board only, so hovering doesn't recompute it; the hovered footprint is
   // then excluded so the live preview stays crisp.
-  const [advisorOn, setAdvisorOn] = useState(false);
-  // Room meter (P34 M2): a sibling opt-in read of per-color mobility (open
-  // corners) — the mid-game lead the score hides. Off by default; coaching-only.
-  const [roomOn, setRoomOn] = useState(false);
+  // Both advisor overlays are opt-in *preferences* now (P38): set in Settings →
+  // Gameplay, not as under-board buttons. Off by default; coaching-only.
+  const advisorOn = prefs.moveOptions;
+  const roomOn = prefs.cornerCounter;
   const advisorTargets = useMemo(
     () =>
       advisorOn && canPlay && sel.pieceId ? legalTargetCells(G, activeColor, sel.pieceId) : [],
@@ -457,48 +458,9 @@ export function BlokusBoardView({
           </div>
         </div>
 
-        {/* Under-board controls: opt-in advisor toggles (left) · rotate board (right). */}
-        <div style={{ alignSelf: 'stretch', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              data-testid="advisor-toggle"
-              aria-pressed={advisorOn}
-              onClick={() => setAdvisorOn((v) => !v)}
-              title="Highlight every legal spot for the selected piece"
-              style={{
-                fontFamily: FONT_UI,
-                fontSize: 11.5,
-                border: `1px solid ${advisorOn ? '#16a34a' : 'var(--top-bd)'}`,
-                background: advisorOn ? 'rgba(34,197,94,.16)' : 'var(--top-bg)',
-                color: advisorOn ? '#16a34a' : 'var(--top-ink)',
-                borderRadius: 999,
-                padding: '4px 11px',
-                fontWeight: advisorOn ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              💡 Legal moves {advisorOn ? 'on' : 'off'}
-            </button>
-            <button
-              data-testid="room-toggle"
-              aria-pressed={roomOn}
-              onClick={() => setRoomOn((v) => !v)}
-              title="Show each color's open corners — the mid-game room the score hides"
-              style={{
-                fontFamily: FONT_UI,
-                fontSize: 11.5,
-                border: `1px solid ${roomOn ? '#3468cf' : 'var(--top-bd)'}`,
-                background: roomOn ? 'rgba(52,104,207,.16)' : 'var(--top-bg)',
-                color: roomOn ? '#3468cf' : 'var(--top-ink)',
-                borderRadius: 999,
-                padding: '4px 11px',
-                fontWeight: roomOn ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              📐 Room {roomOn ? 'on' : 'off'}
-            </button>
-          </div>
+        {/* Under-board controls: rotate board. The opt-in advisor overlays moved to
+            Settings → Gameplay (P38), so the board's surroundings stay for play. */}
+        <div style={{ alignSelf: 'stretch', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button
             data-testid="rotate-board"
             // Increment without wrapping so the CSS transform always animates
