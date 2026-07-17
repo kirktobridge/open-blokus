@@ -72,6 +72,15 @@
      lamplight ground, so dark needs its own. */
   --pnl-shadow: 0 10px 28px rgba(15, 9, 3, 0.18);
   --pnl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  /* Molded-tile finish for the front-door menu rows (P35): a top highlight + bottom
+     shade over the panel so every row reads as a raised, glossy tile — the same
+     lit-top / shadowed-base language as the pieces (P5); the primary row wears a
+     brass wash on top (--brass). Per-theme like --tile-* because a fixed black shade
+     vanishes on a dark card and a fixed white glint blows out on a light one. Linen
+     (light): bright glint, gentle warm shade. */
+  --card-hi: rgba(255, 255, 255, 0.85);
+  --card-lo: rgba(70, 50, 20, 0.1);
 }
 
 [data-theme='dark'] {
@@ -100,6 +109,10 @@
   --tile-hi: 0.3;
   --tile-lo: 0.38;
   --tile-glint: #ffe9c4;
+
+  /* Molded menu tile (P35) — dark card: a faint warm glint, a deeper shade. */
+  --card-hi: rgba(255, 240, 214, 0.09);
+  --card-lo: rgba(0, 0, 0, 0.34);
 
   /* Molded-board finish (P5) — a near-black mat can't show shadow, so the mold
      reads almost entirely off the lit flanks. */
@@ -157,6 +170,10 @@
   --tile-hi: 0.38;
   --tile-lo: 0.3;
   --tile-glint: #fff3dd;
+
+  /* Molded menu tile (P35) — pale card like Linen, glint faintly warm. */
+  --card-hi: rgba(255, 253, 245, 0.8);
+  --card-lo: rgba(60, 42, 20, 0.12);
 
   /* Molded-board finish (P5) — pale mat like Linen, a touch more shadow since the
      walnut frame throws the board warmer and darker. */
@@ -397,6 +414,20 @@ select {
 .ob-menu-row:hover .ob-menu-arrow {
   transform: translateX(3px);
   color: var(--ink);
+}
+/* The single primary row's accent (P35 (a)) — the border, left bar, and glow — lives
+   *inline* in ActionMenu, not here: PANEL sets border/box-shadow inline, and an
+   author rule can't override an inline style. The class stays as a hook (tests, and
+   the shared :hover transform above still applies), so primary lifts like its
+   neighbours, just wearing the accent. */
+/* Top-bar profile affordance (P35 (b)). The chip's border is inline, so hover uses a
+   box-shadow ring (nothing inline to override) rather than a border-color change. */
+.ob-profile-chip {
+  transition: box-shadow 0.14s ease;
+}
+.ob-profile-chip:hover,
+.ob-profile-chip:focus-visible {
+  box-shadow: 0 0 0 1px var(--top-ink);
 }
 .ob-menu-arrow {
   transition:

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { GameMode, ScoringVariant } from '../../game/types';
 import { dailyDateKey } from '../../game/puzzle/daily';
-import { loadPuzzleSeen, MAX_NICK_LEN, type MatchInfo } from './config';
+import { loadPuzzleSeen, loadPuzzleStreak, loadTutorialDone, MAX_NICK_LEN, type MatchInfo } from './config';
 import { loadSetup, persistSetup, setupSummary, type AiSetup } from './aiSetup';
 import { ActionMenu, type ActionRow } from './ActionMenu';
 import { CreateMatchForm } from './CreateMatchForm';
@@ -59,12 +59,19 @@ export function HomeScreen({
   // and re-reads, so the row always describes what it will actually start.
   const saved = useMemo(() => loadSetup(), []);
   const puzzleIsNew = useMemo(() => loadPuzzleSeen() !== dailyDateKey(), []);
+  const puzzleStreak = useMemo(() => loadPuzzleStreak(), []);
+  const tutorialDone = useMemo(() => loadTutorialDone(), []);
 
+  // P35 hierarchy pass: Quick Play is the single primary (the only precondition-free
+  // action, so it doubles as the fallback); Your Stats left the column for the top bar
+  // (P35 (b)). Rows stay put and adapt by badge, not order — the completed tutorial
+  // de-emphasizes, the daily puzzle carries its streak.
   const rows: ActionRow[] = [
     {
       testid: 'quick-play',
       label: 'Quick Play',
       hint: setupSummary(saved),
+      primary: true,
       onClick: () => onStartAI(persistSetup(saved)),
     },
     {
@@ -78,12 +85,15 @@ export function HomeScreen({
       label: 'Daily Puzzle',
       hint: 'Same board for everyone today',
       badge: puzzleIsNew ? 'New today' : undefined,
+      streak: puzzleStreak,
       onClick: onOpenPuzzle,
     },
     {
       testid: 'open-tutorial',
       label: 'Tutorial',
-      hint: 'New to Blokus? Learn how to play',
+      hint: tutorialDone ? "You've finished this" : 'New to Blokus? Learn how to play',
+      badge: tutorialDone ? 'Done' : undefined,
+      dim: tutorialDone,
       onClick: onOpenTutorial,
     },
     {
@@ -91,12 +101,6 @@ export function HomeScreen({
       label: 'Play with Friends',
       hint: 'Create a table or join one',
       onClick: () => setGlance('friends'),
-    },
-    {
-      testid: 'open-stats',
-      label: 'Your Stats',
-      hint: 'Lifetime record vs the computer',
-      onClick: () => setGlance('stats'),
     },
   ];
 
@@ -196,7 +200,7 @@ export function HomeScreen({
         fontFamily: FONT_UI,
       }}
     >
-      <LobbyTopBar chip="Lobby" />
+      <LobbyTopBar chip="Lobby" onOpenStats={() => setGlance('stats')} />
 
       <div
         style={{
