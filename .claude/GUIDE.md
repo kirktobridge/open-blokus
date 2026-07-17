@@ -1,9 +1,11 @@
 # Skill framework — quick guide
 
-Six skills, one loop: **triage** an idea in → **implement** (product) or
-**research** (experiment) it on a branch → **land** the branch on main →
-**ship** the docs → **checkpoint** the session. Each tracking file has exactly
-one skill that writes it, so nothing goes stale or gets double-edited.
+Seven skills, one loop with two tracks. **triage** sorts an idea in: product
+features — the usual case — go to **implement**, then **verify** in the running
+app; AI/engine experiments go to **research** and are proven in the arena
+instead. Both tracks end the same way: **land** the branch on main → **ship**
+the docs → **checkpoint** the session. Each tracking file has exactly one skill
+that writes it, so nothing goes stale or gets double-edited.
 
 ## The skills
 
@@ -42,6 +44,18 @@ parallel sessions see the claim; writes code + tests only, never the docs.
 ```
 /implement P4
 pick up P3 R1
+```
+
+### /verify — "does it actually work?"
+Drives the affected flow in the *running app* (real servers, headless
+Playwright, screenshots) and reports what was observed — the step after tests
+pass and before /land. Also the launch recipe when you just want the app run or
+screenshotted. Forked, writes nothing in-repo (throwaway scripts live in the
+scratchpad; a flow worth keeping becomes a real `e2e/` spec via /implement).
+
+```
+/verify                        ← observe the working-tree change end-to-end
+run the app and screenshot the lobby
 ```
 
 ### /land — "merge it into main"
@@ -95,9 +109,25 @@ wrap up
 /triage <idea>  →  /implement P#  →  /land  →  /checkpoint
 ```
 
-**Parallel sessions:** one branch per session (use `git worktree` for truly
-simultaneous work); each /checkpoint touches only its own HANDOFF section;
-/land integrates one branch at a time, on main.
+**Parallel sessions** (2–3 at once, e.g. via remote control):
+
+- **One session = one branch = one worktree.** The main checkout belongs to
+  whichever session is integrating (/land, /ship, /checkpoint on main); branch
+  sessions never edit it.
+- **Claims are read from main**, not your checkout — a worktree's BACKLOG.md
+  copy predates claims made since you branched. /implement's claim gate does
+  this (`git show main:…`).
+- **e2e and /verify are serialized — one session at a time.** Playwright reuses
+  whatever server holds :5173/:8000, so a parallel run silently tests the
+  *other* worktree's code and passes anyway. Branch sessions run targeted tests
+  only; the full suite runs once, at /land (forked, so its output stays out of
+  your context).
+- **Start narrow, end early** (token budget): open with "continue P38 per
+  HANDOFF" rather than "what's next?" so the session reads its HANDOFF section
+  instead of re-exploring the repo, and /checkpoint + close as soon as its
+  milestone is done — an idle open session just accretes context.
+- **One /checkpoint at a time**: HANDOFF is a single file; simultaneous writers
+  clobber each other (last one wins).
 
 **Starting a fresh session:**
 ```
@@ -111,4 +141,5 @@ read .claude/HANDOFF.md   (or just: "what's next?")
 | `docs/research/` (backlog, log, FINDINGS) | /research | branch or main |
 | `docs/product/BACKLOG.md`, `BUILD_ORDER.md`, `ARCHITECTURE.md` | /ship | **main only** |
 | `.claude/HANDOFF.md` | /checkpoint (own branch's section only) | local, gitignored |
+| *(nothing — scratchpad scripts only)* | /verify | — |
 | `GAME_SPEC.md`, `CLAUDE.md`, `docs/dev_notes/` | **you** (human-only) | — |

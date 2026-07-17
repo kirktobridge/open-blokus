@@ -6,8 +6,8 @@ context: fork
 
 # Verify — observe the change working in the real app
 
-`npm test` proves the assertions we already wrote; this skill proves the *change*
-does what it was for, by driving the affected flow in the running app and
+`npm test` proves the assertions we already wrote; this skill proves the change
+actually behaves as intended, by driving the affected flow in the running app and
 observing the result (DOM state, screenshots, console, server log). Runs
 **forked** — derive what changed from `git diff`/`git log` (don't rely on
 conversation state) and end with a compact report: what flow you drove, what you

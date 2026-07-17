@@ -21,8 +21,10 @@ are human-owned.
   dependency-ready head — propose its first entry (P22).
 - Find the entry: `grep -n -A12 "^### <ID>" docs/product/BACKLOG.md`. Not there →
   it's an untriaged idea; bounce to **/triage**, don't invent an entry.
-- **CLAIM GATE:** `grep -n "in-progress" docs/product/BACKLOG.md` first. Target
-  entry already `in-progress` → stop; it's claimed by another session/branch
+- **CLAIM GATE:** `git show main:docs/product/BACKLOG.md | grep -n "in-progress"`
+  first — **main's version, never the checked-out copy**: in a worktree the local
+  file reflects when you branched, so it can miss a claim another session made
+  since. Target entry already `in-progress` → stop; it's claimed by another session/branch
   (stale claims are cleared via /checkpoint, not overridden here). Another entry
   in-progress whose flagged shared assets overlap this one's Scope → stop too;
   the first claimant builds the shared piece.
