@@ -26,15 +26,14 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P38** — gameplay settings tab: unblocked by P34 M2 landing (its last dependency). The
-   second ad-hoc emoji toggle under the board is exactly the accretion it exists to stop,
-   and it owns the Room → Corner Counter rename, so shipping it soon keeps the corner
-   vocabulary from settling wrong. Pure UI relocation, no rules-core work. Also unblocks
-   P39, the only proposed entry waiting on a dependency we could clear this cheaply.
-2. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
+1. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
    the game table on game over) is dependency-free — R0/R0.1 and P34 M1 shipped — so P2 now
    has a buildable head even though R1+ still waits on research AD4 (blunder signal) + AD2
    (evaluator). Its table/record decoupling is also the substrate P15 M2 would need.
+2. **P39** — dead-piece shading: newly unblocked by P38 landing (its Gameplay tab is the
+   home for the Self/Opponents toggles). Reuses the P3 R1 / P34 legal-move enumeration —
+   one computation, several consumers — so it's a cheap advisor win; watch the naive
+   per-render sweep across pieces × colors × orientations.
 3. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
    makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
    (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
@@ -367,7 +366,10 @@ four classic colors as accents, shapes as the star.
   §6. Top-bar triggers are emoji-free monochrome SVG icons.
 
 ### P38 — Gameplay settings tab (advisor toggles move into Settings)
-- **Status:** in-progress
+- **Status:** shipped — advisor toggles now live in a **Gameplay** tab in the Settings
+  panel as plain switches; the under-board emoji buttons are gone (rotate-board stays).
+  Corner vocabulary unified: "Legal moves" → Move Options, "Room" → Corner Counter /
+  Open Corners.
 - **Value:** the board's surroundings are for play, not configuration. Two advisor
   toggles (P3 R1, P34 M2) accreted as ad-hoc emoji buttons under the board, and every
   further advisor feature would add another. P12 already established one Settings
