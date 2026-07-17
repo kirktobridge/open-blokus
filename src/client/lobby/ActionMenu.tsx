@@ -16,15 +16,28 @@ export interface ActionRow {
   onClick: () => void;
 }
 
+// Molded-tile finish (P35): every row is a raised, glossy tile — lit top, shaded
+// base — the same finish language as the pieces (P5). All of it lands *inline* so it
+// wins over PANEL's inline background/shadow; a CSS class can't override an inline
+// style, which is why the finish silently vanished when it first lived in theme.css.
+const GLINT = 'inset 0 1.5px 0 color-mix(in srgb, var(--tile-glint) 60%, transparent)';
+const MOLDED_BG = 'linear-gradient(180deg, var(--card-hi), transparent 42%, var(--card-lo)), var(--pnl)';
+const MOLDED_SHADOW = `var(--pnl-shadow), ${GLINT}, inset 0 -14px 20px -12px var(--card-lo)`;
+// The primary row (Quick Play) wears a brass wash + brass left bar and lift over the
+// same molded tile — warm, per-theme (--brass), and never a player color.
+const PRIMARY_BG =
+  'linear-gradient(180deg, var(--card-hi), transparent 42%, var(--card-lo)), color-mix(in srgb, var(--brass) 12%, var(--pnl))';
+const PRIMARY_SHADOW = `var(--pnl-shadow), ${GLINT}, inset 0 -14px 20px -12px var(--card-lo), inset 3px 0 0 var(--brass), 0 10px 26px color-mix(in srgb, var(--brass) 32%, transparent)`;
+
 /**
  * The front door's single vertical menu (P29 surface, P35 hierarchy pass). Each row
- * is its own button-card so the menu reads as a column of things you can press. The
- * hierarchy (P35): exactly **one** primary row carries the page's single accent and
- * elevation (`--primary` class); every other row stays uniform and neutral, so the
- * accent means "start here" and nothing competes with it. A `dim` row is a completed
- * destination (e.g. the tutorial once finished) — de-emphasized, never reordered, so
- * the menu stays learnable. No brand-color coding: the four logo colors mean
- * seats/pieces, so a row never wears one.
+ * is its own button-card so the menu reads as a column of things you can press —
+ * every row a molded, glossy tile. The hierarchy (P35): exactly **one** primary row
+ * (Quick Play) additionally wears a brass wash + edge + lift, so it reads as "start
+ * here" without a loud color fill. A `dim` row is a completed destination (e.g. the
+ * tutorial once finished) — de-emphasized, never reordered, so the menu stays
+ * learnable. No brand-color coding: the four logo colors mean seats/pieces, so a row
+ * never wears one; the primary's accent is brass, the game's furniture color.
  *
  * The rows share the column's height evenly (`flex: 1`), so the menu stands as tall
  * as the board beside it instead of huddling at the top of the page.
@@ -55,21 +68,10 @@ export function ActionMenu({ rows }: { rows: ActionRow[] }) {
             cursor: 'pointer',
             fontFamily: FONT_UI,
             opacity: row.dim ? 0.62 : 1,
-            // The accent + molded finish land *inline* so they win over PANEL's inline
-            // border/background/shadow — a CSS class can't override an inline style,
-            // which is why the accent silently vanished when it first lived only in
-            // theme.css (P35). Molded tile (P35 (a)): a lit top + shaded base over the
-            // panel makes Quick Play read like a raised glossy piece (the P5 finish
-            // language); the accent stays on the edge, left bar, and arrow only.
-            ...(row.primary
-              ? {
-                  border: '1.5px solid var(--accent)',
-                  background:
-                    'linear-gradient(180deg, var(--primary-hi), transparent 42%, var(--primary-lo)), var(--pnl)',
-                  boxShadow:
-                    'var(--pnl-shadow), inset 0 1.5px 0 color-mix(in srgb, var(--tile-glint) 60%, transparent), inset 0 -14px 20px -12px var(--primary-lo), inset 3px 0 0 var(--accent), 0 10px 26px var(--accent-glow)',
-                }
-              : {}),
+            // Molded tile on every row; the primary adds a brass wash, edge, and lift.
+            background: row.primary ? PRIMARY_BG : MOLDED_BG,
+            boxShadow: row.primary ? PRIMARY_SHADOW : MOLDED_SHADOW,
+            ...(row.primary ? { border: '1.5px solid var(--brass)' } : {}),
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
@@ -150,7 +152,7 @@ export function ActionMenu({ rows }: { rows: ActionRow[] }) {
           <span
             aria-hidden="true"
             className="ob-menu-arrow"
-            style={{ flex: '0 0 auto', color: row.primary ? 'var(--accent)' : 'var(--mut)', fontSize: 18 }}
+            style={{ flex: '0 0 auto', color: row.primary ? 'var(--brass)' : 'var(--mut)', fontSize: 24 }}
           >
             →
           </span>

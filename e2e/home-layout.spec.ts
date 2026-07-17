@@ -95,25 +95,42 @@ test('friends and stats are glances that overlay the front door', async ({ page 
   await expect(page.getByTestId('stats-modal')).toHaveCount(0);
 });
 
-test('one primary row carries the accent; the rest stay neutral (P35 (a))', async ({ page }) => {
+test('primary row wears the brass accent; the rest stay neutral (P35 (a))', async ({ page }) => {
   await page.goto('/');
 
   // The accent must actually *render*, not merely be classed — the first cut lived
-  // in CSS and was silently overridden by PANEL's inline border/shadow (P35 fix).
-  const ACCENT = 'rgb(52, 104, 207)'; // --accent #3468cf
+  // in CSS and was silently overridden by PANEL's inline border/shadow (P35 fix). The
+  // primary's accent is --brass, which is per-theme, so read it live rather than
+  // hardcoding a hex; its rgb triplet must also appear in the box-shadow (left bar).
   const borderColor = (id: string) =>
     page.getByTestId(id).evaluate((el) => getComputedStyle(el).borderTopColor);
   const boxShadow = (id: string) =>
     page.getByTestId(id).evaluate((el) => getComputedStyle(el).boxShadow);
+  const brass = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--brass)';
+    document.body.appendChild(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c; // rgb(...)
+  });
+  const brassTriplet = brass
+    .replace(/rgba?\(|\)/g, '')
+    .split(',')
+    .map((s) => s.trim())
+    .slice(0, 3)
+    .join(', ');
 
   await expect(page.getByTestId('quick-play')).toHaveClass(/ob-menu-row--primary/);
-  expect(await borderColor('quick-play')).toBe(ACCENT);
-  // The left accent bar (inset shadow) carries the accent color too.
-  expect(await boxShadow('quick-play')).toContain('52, 104, 207');
+  expect(await borderColor('quick-play')).toBe(brass);
+  expect(await boxShadow('quick-play')).toContain(brassTriplet);
 
+  // Neutral rows keep the panel border (not brass) — but still carry the molded
+  // finish, so their box-shadow is non-empty.
   for (const row of ['open-custom', 'open-puzzle', 'open-tutorial', 'open-friends']) {
     await expect(page.getByTestId(row)).not.toHaveClass(/ob-menu-row--primary/);
-    expect(await borderColor(row)).not.toBe(ACCENT);
+    expect(await borderColor(row)).not.toBe(brass);
+    expect(await boxShadow(row)).not.toBe('none');
   }
 });
 
