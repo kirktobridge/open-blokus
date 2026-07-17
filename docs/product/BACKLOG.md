@@ -26,19 +26,15 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P2** (R0.2) — review-in-table: the newly drafted R0.2 (dissolve the scrubber modal into
-   the game table on game over) is dependency-free — R0/R0.1 and P34 M1 shipped — so P2 now
-   has a buildable head even though R1+ still waits on research AD4 (blunder signal) + AD2
-   (evaluator). Its table/record decoupling is also the substrate P15 M2 would need.
-2. **P39** — dead-piece shading: newly unblocked by P38 landing (its Gameplay tab is the
+1. **P39** — dead-piece shading: newly unblocked by P38 landing (its Gameplay tab is the
    home for the Self/Opponents toggles). Reuses the P3 R1 / P34 legal-move enumeration —
    one computation, several consumers — so it's a cheap advisor win; watch the naive
    per-render sweep across pieces × colors × orientations.
-3. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
+2. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
    makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
    (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
    /research, or an explicit `replication-pending` label at landing.
-4. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
+3. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
    the same mat-dependent-constant risk (P5) sits in `PlacedLayer` for the pieces
    themselves. Dependency-free audit; keeps the tactile identity from vanishing on the
    dark themes P35 leaned into.
@@ -71,11 +67,13 @@ order runs foundation → offline surfaces → live surfaces.
   are already cheat-resistant canonical tuples, replay is exact.
 
 ### P2 — Post-game recap (play-by-play, blunders, key moments)
-- **Status:** partial — **R0 + R0.1 shipped**: post-game replay scrubber (step through
-  every ply, board + last-move highlight, keyboard nav, timed auto-play, perspective-
-  oriented board) + score-over-time timeline with a vertical ranked standings list, no AI.
-  The scrubber modal `src/client/recap/ReplayScrubber` is shared for P15 M2 (history
-  replay) to reuse. R1+ still blocked on research AD4 signal, AD2 evaluator.
+- **Status:** partial — **R0 + R0.1 + R0.2 shipped**: post-game review is now an in-table
+  mode of the offline vs-AI table — frame-driven rendering, so the full-size board, the
+  four player cards + hand tray, and the score/mobility timelines all track the scrubbed
+  ply; the transport replaces the action bar. This succeeds the R0/R0.1 scrubber *modal*
+  (`ReplayScrubber`, now removed) with `recap/ReviewTable` + the `useReplay` transport
+  hook over an extracted `board/BoardFrame`. No AI. R1+ still blocked on research AD4
+  signal, AD2 evaluator.
 - **Value:** turn-level annotations after a game — "good plays," blunders, swings, with
   plain-English messages ("Turn 6: you closed your own corridor"). Special interest:
   games where humans beat the AI. A local LLM could later narrate the structured signal.
@@ -92,7 +90,7 @@ order runs foundation → offline surfaces → live surfaces.
   hierarchy (1st on top, descending) so standings read top-to-bottom. Playback removes
   manual stepping; vertical ranks parse faster than a reordered row. No evaluator — stays
   clear of AD4/AD2. Depends on: nothing (R0 shipped).
-  **R0.2 (in-progress) — review-in-table:** the scrubber stops being a modal and becomes a
+  **R0.2 (shipped) — review-in-table:** the scrubber stops being a modal and becomes a
   *mode of the game table itself*. When an offline game ends, P16's ceremony plays as it
   does today and, on dismiss, the table underneath is already in review mode: (a) the
   action bar is replaced in place by the scrubber's transport — step/play-pause/speed;
@@ -115,9 +113,10 @@ order runs foundation → offline surfaces → live surfaces.
   (daily-puzzle move grading) — shared payoff. **R2 note (2026-07-13):** the
   replay-fork itself isn't blocked on AD4 if the player picks the turn manually —
   AD4 only automates the flagging. The standalone branching mode is P33.
-  **R0.2 note (2026-07-16):** R0.2 keeps the modal working, so P15 M2's planned reuse
-  isn't broken — but a shipped R0.2 leaves history replay on the old shell. P15 M2 owns
-  the call: standalone review shell (reusing R0.2's decoupled table) vs. keeping the modal.
+  **R0.2 note (2026-07-17):** R0.2 **removed** the `ReplayScrubber` modal, so P15 M2's
+  planned reuse of it is gone. P15 M2 now builds its history-replay shell on R0.2's
+  decoupled substrate instead — `recap/ReviewTable` + `useReplay` render from a
+  `GameRecord` with no live client, which is exactly what a standalone shell needs.
 
 ### P3 — Mid-game advisor overlay
 - **Status:** partial — **R1 shipped**; R2+ deferred until the evaluator is trustworthy.
