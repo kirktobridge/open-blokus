@@ -31,6 +31,32 @@ describe('Board', () => {
   });
 });
 
+describe('MatLayer', () => {
+  it('owns the empty board, so resting cells stay transparent', () => {
+    const G = createInitialState(4);
+    const html = renderToStaticMarkup(<Board board={G.board} activeColor="blue" />);
+
+    // One molded board per Board, drawn beneath the cell grid (P5).
+    expect(occurrences(html, 'data-testid="mat-layer"')).toBe(1);
+    // The mat is the sole painter of the empty board: the well face is the only
+    // --empty-cell in the markup. A resting Cell that painted it again would sit
+    // on top and hide the mold — which is what the transparent branch prevents.
+    expect(occurrences(html, 'var(--empty-cell)')).toBe(1);
+    expect(occurrences(html, 'background:transparent')).toBe(400);
+  });
+
+  it('sizes every stud from --mat-stud, so a theme can retune or disable them', () => {
+    const G = createInitialState(4);
+    const html = renderToStaticMarkup(<Board board={G.board} activeColor="blue" />);
+
+    // One stud per tile corner, each circle's radius taken from the token — never
+    // a baked-in number, or Settings → Board's "Stud size" would be a dead control
+    // (and `--mat-stud: 0` would no longer turn the studs off).
+    expect(occurrences(html, 'r:var(--mat-stud)')).toBe(12); // 4 corners × 3 circles
+    expect(html).not.toMatch(/<circle[^>]*\sr="/);
+  });
+});
+
 describe('PieceThumb', () => {
   it('shows the color when available and dims when placed', () => {
     const avail = renderToStaticMarkup(<PieceThumb pieceId="I5" color="green" placed={false} />);

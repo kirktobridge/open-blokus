@@ -14,10 +14,23 @@ const GROUPS: { label: string; ids: PieceId[] }[] = [
   { label: 'TRIOMINOES · DOMINO · MONO', ids: PIECE_IDS.filter((id) => pieceSize(id) <= 3) },
 ];
 
+/** Molded rim for the tray shell — a lit top edge and a thick shadowed bottom,
+ *  so the card reads as a piece of tray plastic rather than a paper panel (P5). */
+const TRAY_RIM = [
+  '0 14px 28px rgba(15,9,3,.32)',
+  'inset 0 1.5px 0 rgba(255,255,255,.5)',
+  'inset 0 -2.5px 0 rgba(0,0,0,.14)',
+].join(', ');
+/** A size group's recessed compartment — the pieces sit down inside it. */
+const TRAY_WELL = 'inset 0 2px 6px rgba(0,0,0,.2), inset 0 -1px 0 rgba(255,255,255,.4)';
+
 /**
  * The local player's hand, grouped by piece size. Placed pieces show as dashed
  * ghosts, the selected piece as a recessed well+ring. Interactive only on the
  * active color's turn (mirrors the old PieceTray for that color).
+ *
+ * The shell is the set's molded piece tray (P5): a rimmed slab with one sunken
+ * compartment per size group, matching the board's board-plastic finish.
  */
 export function HandTray({
   color,
@@ -44,7 +57,7 @@ export function HandTray({
         padding: '15px 16px',
         fontFamily: FONT_UI,
         color: 'var(--ink)',
-        boxShadow: '0 14px 28px rgba(15,9,3,.32)',
+        boxShadow: TRAY_RIM,
       }}
     >
       {/* Header */}
@@ -80,7 +93,18 @@ export function HandTray({
           >
             {group.label}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'flex-start' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 7,
+              alignItems: 'flex-start',
+              background: 'var(--well)',
+              borderRadius: 9,
+              padding: '8px 9px',
+              boxShadow: TRAY_WELL,
+            }}
+          >
             {group.ids.map((id) => {
               const placed = !remaining.has(id);
               return (

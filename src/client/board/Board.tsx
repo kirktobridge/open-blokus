@@ -3,6 +3,7 @@ import type { Cell as CellCoord, Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 import { Cell } from './Cell';
+import { MatLayer } from './MatLayer';
 import { PlacedLayer } from './PlacedLayer';
 import { LegalMoveHints, type Hint } from '../advisor/LegalMoveHints';
 import { CutMarks, type CutMark } from './CutMarks';
@@ -94,12 +95,16 @@ export function Board({
       }
       style={{
         position: 'relative',
+        // Own the stacking context so MatLayer's negative z-index sits under the
+        // cells but can't escape below the board frame behind us.
+        isolation: 'isolate',
         display: 'grid',
         gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
         gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
         width: BOARD_SIZE * CELL_PX,
       }}
     >
+      <MatLayer />
       {board.map((value, i) => {
         const x = i % BOARD_SIZE;
         const y = Math.floor(i / BOARD_SIZE);
