@@ -1,5 +1,5 @@
 import type { Color } from '../../game/types';
-import { EMPTY_CELL, GRID_LINE, CELL_PX, PIECE_VAR } from '../theme';
+import { CELL_PX, PIECE_VAR } from '../theme';
 
 export type PreviewState = 'none' | 'legal' | 'illegal';
 
@@ -27,10 +27,11 @@ export function Cell({
   onEnter?: () => void;
   onClick?: () => void;
 }) {
-  // Occupied cells paint the empty mat, not the piece color — the translucent
-  // PlacedLayer finish supplies the color, so the grid studs ghost through the
-  // recessed windows (board-through-plastic). Preview/hint branches still color.
-  let background = EMPTY_CELL;
+  // A resting cell paints nothing at all: MatLayer draws the molded board
+  // (well + lattice + studs) underneath, and the translucent PlacedLayer finish
+  // supplies the piece color on top, so the mold ghosts through the recessed
+  // windows (board-through-plastic). Preview/hint branches still color.
+  let background = 'transparent';
   let opacity = 1;
   if (preview === 'legal') {
     background = PIECE_VAR[previewColor];
@@ -58,7 +59,9 @@ export function Cell({
         height: CELL_PX,
         background: showHint ? PIECE_VAR[previewColor] : background,
         opacity: showHint ? 0.3 : opacity,
-        border: `1px solid ${GRID_LINE}`,
+        // Transparent, not absent: the mat's lattice shows through here, and
+        // keeping the border keeps every cell's box geometry exactly as it was.
+        border: '1px solid transparent',
         boxShadow: staged
           ? 'inset 0 0 0 2px var(--outline-strong)'
           : showHint

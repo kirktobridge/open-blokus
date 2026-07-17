@@ -5,9 +5,25 @@ import { PIECE_VAR, THUMB_PX } from '../theme';
 
 /** Dashed outline used for a placed (spent) piece, per the study-table design. */
 const PLACED_DASH = '#c8b997';
-/** Beveled-plastic finish for an available hand piece cell. */
-const CELL_BEVEL =
-  'inset 0 1px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.28), 0 1px 1px rgba(0,0,0,.3)';
+
+/**
+ * Molded-tile finish for an available hand piece cell — the tray-scale echo of
+ * PlacedLayer's board finish (frame bevel light top-left / dark bottom-right, a
+ * recessed window rim, a contact shadow). Done in box-shadow rather than SVG:
+ * these are 13px cells and there are 21 thumbs per hand, so the board's
+ * per-cell pattern machinery would be a poor trade at this size.
+ */
+const CELL_MOLD = [
+  'inset 0 1.5px 0 rgba(255,255,255,.46)',
+  'inset 1.5px 0 0 rgba(255,255,255,.2)',
+  'inset 0 -1.5px 0 rgba(0,0,0,.3)',
+  'inset -1.5px 0 0 rgba(0,0,0,.2)',
+  'inset 0 0 0 2.5px rgba(255,255,255,.09)',
+  '0 1px 1.5px rgba(0,0,0,.34)',
+].join(', ');
+/** The window's glint, matching the board tile's top-left lamp. */
+const CELL_GLINT =
+  'radial-gradient(circle at 36% 28%, rgba(255,255,255,.36), rgba(255,255,255,0) 62%)';
 
 /**
  * A small static rendering of a piece's base shape.
@@ -69,8 +85,9 @@ export function PieceThumb({
           cellStyle = {
             ...cellStyle,
             background: PIECE_VAR[color],
-            borderRadius: 2,
-            boxShadow: CELL_BEVEL,
+            backgroundImage: CELL_GLINT,
+            borderRadius: 2.5,
+            boxShadow: CELL_MOLD,
           };
         }
       } else {
@@ -98,8 +115,11 @@ export function PieceThumb({
         cursor: onClick ? 'pointer' : 'default',
         padding: micro ? 0 : 3,
         borderRadius: 6,
-        background: selected ? 'var(--well)' : 'transparent',
-        boxShadow: selected ? 'inset 0 1px 3px rgba(0,0,0,.25), 0 0 0 2px #3468cf' : 'none',
+        // Selecting lifts the piece out of its tray compartment: a panel-toned
+        // backing that reads above the `--well` floor, plus a cast shadow. (An
+        // inset well here would now vanish — the compartment is `--well` too.)
+        background: selected ? 'var(--pnl)' : 'transparent',
+        boxShadow: selected ? '0 2px 6px rgba(0,0,0,.3), 0 0 0 2px #3468cf' : 'none',
       }}
     >
       {squares}
