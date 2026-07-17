@@ -79,6 +79,14 @@
      inherited by every theme; PLAY MOVE already uses the flat value on all grounds. */
   --accent: #3468cf;
   --accent-glow: rgba(52, 104, 207, 0.28);
+
+  /* Molded-tile finish for the primary menu row (P35): a top highlight + bottom
+     shade over the panel so Quick Play reads as a raised, glossy tile — the same
+     lit-top / shadowed-base language as the pieces (P5). Per-theme like --tile-*
+     because a fixed black shade vanishes on a dark card and a fixed white glint
+     blows out on a light one. Linen (light): bright glint, gentle warm shade. */
+  --primary-hi: rgba(255, 255, 255, 0.85);
+  --primary-lo: rgba(70, 50, 20, 0.1);
 }
 
 [data-theme='dark'] {
@@ -107,6 +115,10 @@
   --tile-hi: 0.3;
   --tile-lo: 0.38;
   --tile-glint: #ffe9c4;
+
+  /* Primary molded tile (P35) — dark card: a faint warm glint, a deeper shade. */
+  --primary-hi: rgba(255, 240, 214, 0.09);
+  --primary-lo: rgba(0, 0, 0, 0.34);
 
   /* Molded-board finish (P5) — a near-black mat can't show shadow, so the mold
      reads almost entirely off the lit flanks. */
@@ -164,6 +176,10 @@
   --tile-hi: 0.38;
   --tile-lo: 0.3;
   --tile-glint: #fff3dd;
+
+  /* Primary molded tile (P35) — pale card like Linen, glint faintly warm. */
+  --primary-hi: rgba(255, 253, 245, 0.8);
+  --primary-lo: rgba(60, 42, 20, 0.12);
 
   /* Molded-board finish (P5) — pale mat like Linen, a touch more shadow since the
      walnut frame throws the board warmer and darker. */

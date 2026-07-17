@@ -117,6 +117,20 @@ test('one primary row carries the accent; the rest stay neutral (P35 (a))', asyn
   }
 });
 
+test('every row leads with a square icon slot (P35)', async ({ page }) => {
+  await page.goto('/');
+  for (const row of ['quick-play', 'open-custom', 'open-puzzle', 'open-tutorial', 'open-friends']) {
+    const icon = page.getByTestId(`${row}-icon`);
+    await expect(icon).toBeVisible();
+    const { w, h } = await icon.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    expect(w).toBe(h); // square
+    expect(h).toBeLessThanOrEqual(44); // no taller than the label+hint block
+  }
+});
+
 test('completed tutorial de-emphasizes with a Done badge (P35 (d))', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('obk:tutorial-done', '1'));
   await page.goto('/');

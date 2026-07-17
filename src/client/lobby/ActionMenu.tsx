@@ -55,25 +55,59 @@ export function ActionMenu({ rows }: { rows: ActionRow[] }) {
             cursor: 'pointer',
             fontFamily: FONT_UI,
             opacity: row.dim ? 0.62 : 1,
-            // The accent lands *inline* so it wins over PANEL's inline border/shadow
-            // — a CSS class can't override an inline style, which is why the accent
-            // silently vanished the first time it lived only in theme.css (P35).
+            // The accent + molded finish land *inline* so they win over PANEL's inline
+            // border/background/shadow — a CSS class can't override an inline style,
+            // which is why the accent silently vanished when it first lived only in
+            // theme.css (P35). Molded tile (P35 (a)): a lit top + shaded base over the
+            // panel makes Quick Play read like a raised glossy piece (the P5 finish
+            // language); the accent stays on the edge, left bar, and arrow only.
             ...(row.primary
               ? {
                   border: '1.5px solid var(--accent)',
+                  background:
+                    'linear-gradient(180deg, var(--primary-hi), transparent 42%, var(--primary-lo)), var(--pnl)',
                   boxShadow:
-                    'var(--pnl-shadow), var(--pnl-inset), inset 3px 0 0 var(--accent), 0 8px 24px var(--accent-glow)',
+                    'var(--pnl-shadow), inset 0 1.5px 0 color-mix(in srgb, var(--tile-glint) 60%, transparent), inset 0 -14px 20px -12px var(--primary-lo), inset 3px 0 0 var(--accent), 0 10px 26px var(--accent-glow)',
                 }
               : {}),
           }}
         >
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', fontSize: 19, fontWeight: 800 }}>{row.label}</span>
-            {row.hint && (
-              <span style={{ display: 'block', marginTop: 3, fontSize: 14, color: 'var(--mut)' }}>
-                {row.hint}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
+            {/* Placeholder icon slot — a square sized to the text block (stretches to
+                the label+hint height, never taller), reserved for the per-row glyph
+                a later pass will drop in. Empty for now. */}
+            <span
+              data-testid={`${row.testid}-icon`}
+              aria-hidden="true"
+              style={{
+                flex: '0 0 auto',
+                // Square, matched to the label+hint block height (never taller).
+                boxSizing: 'border-box',
+                width: 40,
+                height: 40,
+                background: 'var(--well)',
+                border: '1px solid var(--pnl-bd)',
+                borderRadius: 10,
+              }}
+            />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 18,
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.04em',
+                }}
+              >
+                {row.label}
               </span>
-            )}
+              {row.hint && (
+                <span style={{ display: 'block', marginTop: 3, fontSize: 14, color: 'var(--mut)' }}>
+                  {row.hint}
+                </span>
+              )}
+            </span>
           </span>
           {row.streak != null && row.streak > 0 && (
             <span
