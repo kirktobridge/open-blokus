@@ -659,7 +659,7 @@ four classic colors as accents, shapes as the star.
   research.
 
 ### P35 — Lobby menu hierarchy pass (one primary, adaptive rows)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** P29 shipped the board-left / menu-right front door with six deliberately
   co-equal rows — the punted "later pass" is this entry. The board already does tier-one
   work (ambient demonstration that sells the game); the menu's job is to convert that
