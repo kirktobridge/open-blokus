@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import type { Color } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';
 import type { GameRecord } from '../../game/ai/selfplay';
@@ -80,71 +81,132 @@ export function ReviewTable({
       data-testid="review-table"
       style={{
         display: 'flex',
-        gap: 22,
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 16,
         padding: '8px 26px 24px',
         fontFamily: FONT_UI,
         color: 'var(--ink)',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
         background: 'var(--table-bg)',
         boxSizing: 'border-box',
       }}
     >
-      {/* Left column — player cards, re-rendered from the scrubbed ply. The color
-          that just moved lifts (active keyline); winners keep their WINNER pill. */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250 }}>
-        {COLOR_ORDER.map((c) => {
-          const { nameSuffix, tag } = seatMeta(c);
-          return (
-            <PlayerCard
-              key={c}
-              color={c}
-              state={frame.colors[c]}
-              nameSuffix={nameSuffix}
-              tag={tag}
-              active={c === frame.move?.color}
-              inventoryDisplay={inventoryDisplay}
-            />
-          );
-        })}
-      </div>
+      {/* Board + rails, laid out like the play table so the graphs sit the same
+          distance from the board as the in-game right panel (gap 22). */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 22,
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          width: '100%',
+        }}
+      >
+        {/* Left column — player cards, re-rendered from the scrubbed ply. The color
+            that just moved lifts (active keyline); winners keep their WINNER pill. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250, flexShrink: 0 }}>
+          {COLOR_ORDER.map((c) => {
+            const { nameSuffix, tag } = seatMeta(c);
+            return (
+              <PlayerCard
+                key={c}
+                color={c}
+                state={frame.colors[c]}
+                nameSuffix={nameSuffix}
+                tag={tag}
+                active={c === frame.move?.color}
+                inventoryDisplay={inventoryDisplay}
+              />
+            );
+          })}
+        </div>
 
-      {/* Center column — full-size board in the play frame + caption + transport. */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
-        <BoardFrame>
+        {/* Center column — full-size board in the play frame + caption. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', flexShrink: 0 }}>
+          <BoardFrame>
+            <div
+              style={{
+                transform: `rotate(${boardTurns * 90}deg)`,
+                transformOrigin: 'center',
+                transition: 'transform 0.2s ease',
+                display: 'inline-block',
+                verticalAlign: 'top',
+              }}
+            >
+              <Board
+                board={frame.board}
+                activeColor={frame.move?.color ?? 'blue'}
+                lastMove={frame.moveCells}
+              />
+            </div>
+          </BoardFrame>
+
+          <p
+            data-testid="scrubber-caption"
+            role="status"
+            style={{ margin: 0, fontSize: 13, color: 'var(--top-mut)', textAlign: 'center' }}
+          >
+            {caption}
+          </p>
+        </div>
+
+        {/* Right column — the two enlarged timelines hug the board like the play
+            right panel; it grows into the horizontal space beside the board. Hand
+            tray below as reference (R0.2 c). */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+            flex: '1 1 360px',
+            minWidth: 300,
+            maxWidth: 520,
+          }}
+        >
           <div
             style={{
-              transform: `rotate(${boardTurns * 90}deg)`,
-              transformOrigin: 'center',
-              transition: 'transform 0.2s ease',
-              display: 'inline-block',
-              verticalAlign: 'top',
+              background: 'var(--pnl)',
+              border: '1px solid var(--pnl-bd)',
+              borderRadius: 14,
+              padding: '16px 18px',
+              boxShadow: '0 14px 28px rgba(15,9,3,.32)',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
             }}
           >
-            <Board
-              board={frame.board}
-              activeColor={frame.move?.color ?? 'blue'}
-              lastMove={frame.moveCells}
-            />
+            <div>
+              <p style={chartLabel}>Score — squares placed</p>
+              <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
+            </div>
+            <div>
+              <p style={chartLabel}>Open Corners — room to play into</p>
+              <MobilityTimeline frames={frames} ply={ply} onSeek={seekTo} />
+            </div>
           </div>
-        </BoardFrame>
+          {home && (
+            <HandTray color={home} state={frame.colors[home]} interactive={false} selectedId={null} />
+          )}
+        </div>
+      </div>
 
-        <p
-          data-testid="scrubber-caption"
-          role="status"
-          style={{ margin: 0, fontSize: 13, color: 'var(--top-mut)', textAlign: 'center' }}
-        >
-          {caption}
-        </p>
-
-        {/* Transport (replaces the play action bar): play/pause + speed. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* One full-width transport bar below the table (mirrors the play dock's role):
+          session exits bookend the scrubber, and play/pause + speed sit inline with
+          it — one row, so review costs no extra vertical stacking. */}
+      <div style={actionBar}>
+          {onExitReview && (
+            <button data-testid="review-results" onClick={onExitReview} style={{ ...SECONDARY_BTN, fontSize: 13, whiteSpace: 'nowrap' }}>
+              ‹ Results
+            </button>
+          )}
+          <div style={divider} />
           <button
             data-testid="scrubber-play"
             onClick={togglePlay}
             aria-label={playing ? 'Pause' : 'Play'}
-            style={{ ...stepBtn, minWidth: 82, fontWeight: 800 }}
+            style={{ ...stepBtn, minWidth: 80, fontWeight: 800, whiteSpace: 'nowrap' }}
           >
             {playing ? '❚❚ Pause' : '▶ Play'}
           </button>
@@ -153,14 +215,11 @@ export function ReviewTable({
             onClick={cycleSpeed}
             aria-label={`Playback speed ${speed}×, tap to change`}
             title="Playback speed"
-            style={{ ...stepBtn, minWidth: 44, fontFamily: FONT_MONO, fontWeight: 800 }}
+            style={{ ...stepBtn, minWidth: 42, fontFamily: FONT_MONO, fontWeight: 800 }}
           >
             {speed}×
           </button>
-        </div>
-
-        {/* Transport: first / prev / slider / next / last + ply readout. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: 'min(560px, 90vw)' }}>
+          <div style={divider} />
           <button data-testid="scrubber-first" onClick={() => seekTo(0)} disabled={ply === 0} aria-label="First move" style={stepBtn}>
             ⏮
           </button>
@@ -175,7 +234,9 @@ export function ReviewTable({
             value={ply}
             onChange={(e) => seekTo(Number(e.target.value))}
             aria-label="Move"
-            style={{ flex: 1 }}
+            // Grows to fill the bar; a small floor keeps it from collapsing on a
+            // narrow viewport (the fixed items still stay on one line).
+            style={{ flex: 1, minWidth: 40 }}
           />
           <button data-testid="scrubber-next" onClick={() => step(1)} disabled={ply === lastPly} aria-label="Next move" style={stepBtn}>
             ▶
@@ -183,77 +244,61 @@ export function ReviewTable({
           <button data-testid="scrubber-last" onClick={() => seekTo(lastPly)} disabled={ply === lastPly} aria-label="Last move" style={stepBtn}>
             ⏭
           </button>
-          <span data-testid="scrubber-ply" style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--mut)', width: 54, textAlign: 'right' }}>
+          <span data-testid="scrubber-ply" style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--mut)', width: 52, textAlign: 'right', flexShrink: 0 }}>
             {ply} / {lastPly}
           </span>
-        </div>
-
-        {/* Session exits (the ceremony's Play again / Leave are dismissed with it). */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
-          {onExitReview && (
-            <button data-testid="review-results" onClick={onExitReview} style={{ ...SECONDARY_BTN, fontSize: 13 }}>
-              Back to results
-            </button>
-          )}
           {actions && (
-            <button
-              data-testid="review-play-again"
-              onClick={actions.onPlayAgain}
-              style={{
-                border: 'none',
-                borderRadius: 10,
-                padding: '9px 16px',
-                fontFamily: FONT_UI,
-                fontWeight: 600,
-                background: '#3468cf',
-                color: '#fff',
-                cursor: 'pointer',
-              }}
-            >
-              Play again
-            </button>
+            <>
+              <div style={divider} />
+              <button
+                data-testid="review-play-again"
+                onClick={actions.onPlayAgain}
+                style={{
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '9px 15px',
+                  fontFamily: FONT_UI,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
+                  background: '#3468cf',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Play again
+              </button>
+            </>
           )}
         </div>
-      </div>
-
-      {/* Right column — timelines stacked, hand tray below as reference (R0.2 c). */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div
-          style={{
-            width: 300,
-            background: 'var(--pnl)',
-            border: '1px solid var(--pnl-bd)',
-            borderRadius: 14,
-            padding: '14px 16px',
-            boxShadow: '0 14px 28px rgba(15,9,3,.32)',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-          }}
-        >
-          <div>
-            <p style={chartLabel}>Score — squares placed</p>
-            <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
-          </div>
-          <div>
-            <p style={chartLabel}>Open Corners — room to play into</p>
-            <MobilityTimeline frames={frames} ply={ply} onSeek={seekTo} />
-          </div>
-        </div>
-        {home && (
-          <HandTray color={home} state={frame.colors[home]} interactive={false} selectedId={null} />
-        )}
-      </div>
     </div>
   );
 }
+
+const actionBar: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  // Full-width transport under the table (own row, so it no longer stretches the
+  // board column — that's what kept the graphs hugging the board). Wide, so the
+  // scrubber slider has a generous length; only used in review, never in play.
+  width: 'min(1040px, 94vw)',
+  background: 'var(--pnl)',
+  border: '1px solid var(--pnl-bd)',
+  borderRadius: 16,
+  padding: '10px 14px',
+  boxSizing: 'border-box',
+  boxShadow: '0 16px 32px rgba(15,9,3,.38)',
+};
+
+const divider: CSSProperties = { width: 1, height: 28, background: 'var(--pnl-bd)', flexShrink: 0 };
 
 const stepBtn = {
   ...SECONDARY_BTN,
   fontSize: 13,
   padding: '5px 10px',
   minWidth: 34,
+  flexShrink: 0,
 } as const;
 
 const chartLabel = {
