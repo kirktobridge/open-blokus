@@ -37,9 +37,11 @@ test('interactive tutorial teaches the four rules and returns home', async ({ pa
   await page.getByTestId('hint-open').first().click();
   await expect(page.getByTestId('tutorial-next')).toHaveText(/Finish/);
 
-  // Finishing returns to the home screen.
+  // Finishing returns to the home screen — and marks the tutorial done, so its row
+  // now carries the completed badge (P35 (d)).
   await page.getByTestId('tutorial-next').click();
   await expect(page.getByTestId('open-tutorial')).toBeVisible();
+  await expect(page.getByTestId('open-tutorial-badge')).toHaveText('Done');
 });
 
 test('tutorial can be skipped back to home at any time', async ({ page }) => {

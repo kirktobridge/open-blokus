@@ -20,7 +20,7 @@ type FeedbackTone = 'good' | 'bad' | 'warn';
  * rules core for every judgement and the shared LegalMoveHints overlay for the
  * clickable spots.
  */
-export function Tutorial({ onExit }: { onExit: () => void }) {
+export function Tutorial({ onExit, onComplete }: { onExit: () => void; onComplete?: () => void }) {
   const steps = useMemo(() => buildTutorial(), []);
   const [stepIndex, setStepIndex] = useState(0);
   const step = steps[stepIndex];
@@ -74,7 +74,13 @@ export function Tutorial({ onExit }: { onExit: () => void }) {
   const hints: Hint[] = phase === 'done' ? [] : step.hints.map((h) => ({ id: h.id, cells: h.cells, tone: h.tone }));
 
   const isLast = stepIndex === steps.length - 1;
-  const next = () => (isLast ? onExit() : resetTo(stepIndex + 1));
+  // Finishing the last step is a real completion (P35 (d)); the top-bar "Skip
+  // tutorial" exit is not, so only this path marks the tutorial done.
+  const next = () => {
+    if (!isLast) return resetTo(stepIndex + 1);
+    onComplete?.();
+    onExit();
+  };
 
   const fbColor =
     feedback?.tone === 'good' ? '#16a34a' : feedback?.tone === 'bad' ? '#dc2626' : '#b45309';

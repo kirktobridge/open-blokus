@@ -4,6 +4,8 @@ import { test, expect } from '@playwright/test';
 // menu beside it holding every destination. Asserts the geometry (not pixels) and
 // that each menu row lands where it says it does — Custom Game takes the view,
 // friends and stats overlay it.
+// P35 hierarchy pass: Your Stats left the column for the top-bar profile chip, so the
+// menu is five rows; the stats glance now opens from the profile affordance.
 
 async function box(page: import('@playwright/test').Page, testId: string) {
   const b = await page.getByTestId(testId).boundingBox();
@@ -11,7 +13,7 @@ async function box(page: import('@playwright/test').Page, testId: string) {
   return b;
 }
 
-const ROWS = ['quick-play', 'open-custom', 'open-puzzle', 'open-tutorial', 'open-friends', 'open-stats'];
+const ROWS = ['quick-play', 'open-custom', 'open-puzzle', 'open-tutorial', 'open-friends'];
 
 test('wide viewport: board left, action menu right', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -83,13 +85,61 @@ test('friends and stats are glances that overlay the front door', async ({ page 
   await page.getByTestId('friends-modal-close').click();
   await expect(friends).toHaveCount(0);
 
-  await page.getByTestId('open-stats').click();
+  // Stats opens from the top-bar profile chip (P35 (b)), not a menu row.
+  await page.getByTestId('profile-chip').click();
   await expect(page.getByTestId('stats-modal')).toBeVisible();
   await expect(page.getByTestId('progression-panel')).toBeVisible();
 
   // Escape closes a glance.
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('stats-modal')).toHaveCount(0);
+});
+
+test('one primary row carries the accent; the rest stay neutral (P35 (a))', async ({ page }) => {
+  await page.goto('/');
+
+  // The accent must actually *render*, not merely be classed — the first cut lived
+  // in CSS and was silently overridden by PANEL's inline border/shadow (P35 fix).
+  const ACCENT = 'rgb(52, 104, 207)'; // --accent #3468cf
+  const borderColor = (id: string) =>
+    page.getByTestId(id).evaluate((el) => getComputedStyle(el).borderTopColor);
+  const boxShadow = (id: string) =>
+    page.getByTestId(id).evaluate((el) => getComputedStyle(el).boxShadow);
+
+  await expect(page.getByTestId('quick-play')).toHaveClass(/ob-menu-row--primary/);
+  expect(await borderColor('quick-play')).toBe(ACCENT);
+  // The left accent bar (inset shadow) carries the accent color too.
+  expect(await boxShadow('quick-play')).toContain('52, 104, 207');
+
+  for (const row of ['open-custom', 'open-puzzle', 'open-tutorial', 'open-friends']) {
+    await expect(page.getByTestId(row)).not.toHaveClass(/ob-menu-row--primary/);
+    expect(await borderColor(row)).not.toBe(ACCENT);
+  }
+});
+
+test('completed tutorial de-emphasizes with a Done badge (P35 (d))', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('obk:tutorial-done', '1'));
+  await page.goto('/');
+
+  const row = page.getByTestId('open-tutorial');
+  await expect(page.getByTestId('open-tutorial-badge')).toHaveText('Done');
+  // Dimmed but still a live destination.
+  await expect(row).toHaveCSS('opacity', '0.62');
+  await expect(row).toBeEnabled();
+});
+
+test('daily puzzle carries the live streak count (P35 (d))', async ({ page }) => {
+  // Seed a streak whose last completion is today, so it reads as still alive.
+  await page.addInitScript(() => {
+    const d = new Date();
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate(),
+    ).padStart(2, '0')}`;
+    localStorage.setItem('obk:puzzle-streak', JSON.stringify({ last: key, count: 4 }));
+  });
+  await page.goto('/');
+
+  await expect(page.getByTestId('open-puzzle-streak')).toContainText('4');
 });
 
 // P29 M2 — the board plays itself by replaying precomputed games.

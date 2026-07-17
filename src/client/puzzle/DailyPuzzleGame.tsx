@@ -32,6 +32,7 @@ import {
   SECONDARY_BTN,
 } from '../theme';
 import { LeaveIcon } from '../icons';
+import { recordPuzzleComplete } from '../lobby/config';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
@@ -100,6 +101,17 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
 
   const stuck = useMemo(() => !hasAnyMove(board, color), [board, color]);
   const finished = done || stuck;
+
+  // Fold today's completion into the streak once, when the puzzle finishes
+  // (P35 (d)). Idempotent per day in the store, and guarded so StrictMode's
+  // double-run doesn't matter; the front-door badge reads it via loadPuzzleStreak.
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (finished && !recorded.current) {
+      recorded.current = true;
+      recordPuzzleComplete(dateKey);
+    }
+  }, [finished, dateKey]);
   // Locked while the opponents are mid-reply.
   const canPlay = !finished && replying.length === 0;
 

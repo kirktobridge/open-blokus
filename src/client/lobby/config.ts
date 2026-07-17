@@ -1,6 +1,8 @@
 import type { GameMode } from '../../game/types';
 import type { Difficulty } from '../ai/difficulty';
 import type { BlitzSeconds } from '../blitz/blitz';
+import { dailyDateKey } from '../../game/puzzle/daily';
+import { emptyStreak, foldCompletion, liveStreak, type PuzzleStreak } from './streak';
 
 export const SERVER_URL = import.meta.env.VITE_SERVER ?? 'http://localhost:8000';
 
@@ -8,6 +10,8 @@ export const SESSION_KEY = 'obk:session';
 export const QUICKPLAY_KEY = 'obk:quickplay';
 export const NICK_KEY = 'obk:nick';
 export const PUZZLE_SEEN_KEY = 'obk:puzzle-seen';
+export const PUZZLE_STREAK_KEY = 'obk:puzzle-streak';
+export const TUTORIAL_DONE_KEY = 'obk:tutorial-done';
 
 /** Trimmed cap on a nickname — long enough for a name, short enough for a card. */
 export const MAX_NICK_LEN = 16;
@@ -112,6 +116,57 @@ export function savePuzzleSeen(dateKey: string): void {
     localStorage.setItem(PUZZLE_SEEN_KEY, dateKey);
   } catch {
     // storage unavailable; the badge just keeps showing
+  }
+}
+
+/** The stored daily-puzzle streak (P35 (d)); empty when never played. */
+function loadPuzzleStreakState(): PuzzleStreak {
+  try {
+    const raw = localStorage.getItem(PUZZLE_STREAK_KEY);
+    if (!raw) return emptyStreak();
+    const p = JSON.parse(raw) as Partial<PuzzleStreak>;
+    return {
+      last: typeof p.last === 'string' ? p.last : null,
+      count: typeof p.count === 'number' && Number.isFinite(p.count) ? p.count : 0,
+    };
+  } catch {
+    return emptyStreak();
+  }
+}
+
+/**
+ * Fold a puzzle completion on `dateKey` into the stored streak (idempotent per
+ * day). Called when the daily puzzle finishes; the front-door badge reads the
+ * result via `loadPuzzleStreak`.
+ */
+export function recordPuzzleComplete(dateKey: string): void {
+  try {
+    const next = foldCompletion(loadPuzzleStreakState(), dateKey);
+    localStorage.setItem(PUZZLE_STREAK_KEY, JSON.stringify(next));
+  } catch {
+    // storage unavailable; the streak just doesn't accrue
+  }
+}
+
+/** The daily-puzzle streak still alive as of today (0 if lapsed or never played). */
+export function loadPuzzleStreak(today: string = dailyDateKey()): number {
+  return liveStreak(loadPuzzleStreakState(), today);
+}
+
+/** Whether the player has finished the tutorial at least once (P35 (d)). */
+export function loadTutorialDone(): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_DONE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function saveTutorialDone(): void {
+  try {
+    localStorage.setItem(TUTORIAL_DONE_KEY, '1');
+  } catch {
+    // storage unavailable; the row just never de-emphasizes
   }
 }
 

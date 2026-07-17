@@ -8,6 +8,7 @@ import {
   saveNick,
   savePuzzleSeen,
   saveSession,
+  saveTutorialDone,
   type MatchInfo,
   type Session,
 } from './lobby/config';
@@ -125,7 +126,7 @@ export function App() {
 
   let screen;
   if (showTutorial) {
-    screen = <Tutorial onExit={() => setShowTutorial(false)} />;
+    screen = <Tutorial onExit={() => setShowTutorial(false)} onComplete={saveTutorialDone} />;
   } else if (showPuzzle) {
     screen = <DailyPuzzleGame onLeave={() => setShowPuzzle(false)} />;
   } else if (aiConfig) {
