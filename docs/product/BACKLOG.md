@@ -683,6 +683,23 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P29 (shipped — the surface), P15 (shipped — streak/completion data).
   Cross-ref P30: the freed sixth row is where the leaderboard lands when unblocked.
 
+### P40 — Theme-proof the piece finish (audit PlacedLayer's constants)
+- **Status:** proposed
+- **Value:** the molded finish is the game's tactile identity (P5), but much of it is only
+  guaranteed on a pale mat — detail that disappears on Lamplight loses the identity exactly
+  where the lamplight look is meant to sell it.
+- **Scope:** audit `PlacedLayer`'s literal alphas (window rim 0.22 / 0.15, AO seam 0.12,
+  dye border's 30% mix, contact shadow 0.35, grain 0.04) and the `pl-vol` stops. Keep the
+  ones genuinely mat-independent; move the rest onto `--tile-*` tokens (adding vocabulary
+  where it's missing) and retune per built-in. Same shape as the two fixes P5 already made:
+  `--mat-lo` for the stud ring, `--mat-stud` for its radius. No new UI — the Settings token
+  editor surfaces any token for free.
+- **Depends on:** nothing (P5 shipped).
+- **Notes:** trigger was a real miss — P5's studs shipped invisible on Lamplight behind a
+  green suite, caught only by eyeballing the dark theme. Verification is per-theme
+  screenshots, not assertions; that absence of a metric is why this is product and not
+  research.
+
 ---
 
 ## Epic: Engagement & retention
