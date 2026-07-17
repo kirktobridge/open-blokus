@@ -104,6 +104,43 @@ describe('buildRecap', () => {
     expect(dips).toBe(true);
   });
 
+  it('snapshots per-color inventory at each ply — the review table renders from it (R0.2)', () => {
+    const record = seededRecord(6);
+    const frames = buildRecap(record);
+
+    // Ply 0: no color has started; full 21-piece inventory, no last-placed.
+    for (const c of COLOR_ORDER) {
+      expect(frames[0].colors[c].hasStarted).toBe(false);
+      expect(frames[0].colors[c].lastPlaced).toBeNull();
+      expect(frames[0].colors[c].remaining).toHaveLength(21);
+    }
+
+    // A frame's snapshot is an independent clone — the replay mutates one G in
+    // place, so an early frame must not see a later ply's smaller inventory.
+    expect(frames[0].colors).not.toBe(frames[frames.length - 1].colors);
+
+    // Each move shrinks exactly the mover's inventory by one and records the piece
+    // it just played as `lastPlaced`; every other color is unchanged that ply.
+    for (let i = 1; i < frames.length; i++) {
+      const m = frames[i].move!;
+      expect(frames[i].colors[m.color].lastPlaced).toBe(m.pieceId);
+      expect(frames[i].colors[m.color].remaining).not.toContain(m.pieceId);
+      expect(frames[i].colors[m.color].remaining).toHaveLength(
+        frames[i - 1].colors[m.color].remaining.length - 1,
+      );
+      for (const c of COLOR_ORDER) {
+        if (c === m.color) continue;
+        expect(frames[i].colors[c].remaining).toEqual(frames[i - 1].colors[c].remaining);
+      }
+    }
+
+    // Final inventory matches a full independent replay (never drifts from truth).
+    const finalG = replayGame(record.moves, undefined, record.mode, record.scoring);
+    for (const c of COLOR_ORDER) {
+      expect(frames[frames.length - 1].colors[c].remaining).toEqual(finalG.colors[c].remaining);
+    }
+  });
+
   it('throws on a corrupt (illegal) move rather than rendering a bogus frame', () => {
     const record = seededRecord(9);
     const corrupt: GameRecord = {

@@ -8,6 +8,7 @@ import { resolveCells } from '../game/pieces';
 import { isLegalPlacement } from '../game/placement';
 import { CORNERS } from '../game/modes';
 import { Board } from './board/Board';
+import { BoardFrame } from './board/BoardFrame';
 import { legalTargetCells } from './advisor/legalMoves';
 import { RoomMeter } from './advisor/RoomMeter';
 import type { Hint } from './advisor/LegalMoveHints';
@@ -63,6 +64,7 @@ export function BlokusBoardView({
   blitzRemainingMs,
   blitzLimitMs,
   gameRecord,
+  onReview,
   matchData,
   chatMessages,
   sendChatMessage,
@@ -72,8 +74,10 @@ export function BlokusBoardView({
   /** Live blitz countdown for the board-side bar (P24); null/absent = no clock. */
   blitzRemainingMs?: number | null;
   blitzLimitMs?: number | null;
-  /** Finished-game record for the game-over "Review game" scrubber (P2 R0). */
+  /** Finished-game record enabling the game-over "Review game" entry (P2 R0). */
   gameRecord?: GameRecord | null;
+  /** Dismiss the ceremony into in-table review mode (P2 R0.2); offline only. */
+  onReview?: () => void;
 }) {
   const sel = useSelection();
   const activeColor = COLOR_ORDER[G.activeColorIndex];
@@ -406,57 +410,37 @@ export function BlokusBoardView({
         />
 
         {/* Walnut frame + recessed mat around the (unchanged) board grid. */}
-        <div
-          ref={frameRef}
-          style={{
-            background: 'linear-gradient(160deg, var(--frame-a), var(--frame-b))',
-            borderRadius: 16,
-            padding: 19,
-            boxShadow: blitzUrgent
-              ? 'inset 0 1px 0 var(--frame-hi), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 48px rgba(15,9,3,.42), 0 0 0 3px rgba(220,38,38,.85), 0 0 26px 4px rgba(220,38,38,.5)'
-              : 'inset 0 1px 0 var(--frame-hi), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 48px rgba(15,9,3,.42)',
-            transition: 'box-shadow 0.2s ease',
-          }}
-        >
+        <BoardFrame outerRef={frameRef} urgent={blitzUrgent}>
           <div
+            data-testid="board-rotator"
             style={{
-              background: 'var(--mat)',
-              borderRadius: 7,
-              padding: 13,
-              boxShadow: 'inset 0 2px 9px rgba(0,0,0,.26)',
+              display: 'inline-block',
+              transform: `rotate(${boardTurns * 90}deg)`,
+              transformOrigin: 'center',
+              transition: 'transform 0.2s ease',
+              verticalAlign: 'top',
             }}
           >
-            <div
-              data-testid="board-rotator"
-              style={{
-                display: 'inline-block',
-                transform: `rotate(${boardTurns * 90}deg)`,
-                transformOrigin: 'center',
-                transition: 'transform 0.2s ease',
-                verticalAlign: 'top',
+            <Board
+              board={G.board}
+              activeColor={activeColor}
+              preview={preview}
+              lastMove={G.lastMove}
+              startHint={startHint}
+              onCellEnter={
+                interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
+              }
+              onCellClick={interactive ? sel.stageAt : undefined}
+              onLeave={() => {
+                if (!sel.staged) sel.setHover(null);
               }}
-            >
-              <Board
-                board={G.board}
-                activeColor={activeColor}
-                preview={preview}
-                lastMove={G.lastMove}
-                startHint={startHint}
-                onCellEnter={
-                  interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
-                }
-                onCellClick={interactive ? sel.stageAt : undefined}
-                onLeave={() => {
-                  if (!sel.staged) sel.setHover(null);
-                }}
-                onRotate={interactive ? sel.rotate : undefined}
-                onFlip={interactive ? sel.flip : undefined}
-                hints={advisorHints}
-                cutMarks={cutMarks}
-              />
-            </div>
+              onRotate={interactive ? sel.rotate : undefined}
+              onFlip={interactive ? sel.flip : undefined}
+              hints={advisorHints}
+              cutMarks={cutMarks}
+            />
           </div>
-        </div>
+        </BoardFrame>
 
         {/* Under-board controls: rotate board. The opt-in advisor overlays moved to
             Settings → Gameplay (P38), so the board's surroundings stay for play. */}
@@ -559,6 +543,7 @@ export function BlokusBoardView({
             return owner !== 'shared' && winners.includes(owner);
           })}
           gameRecord={gameRecord}
+          onReview={onReview}
         />
       )}
     </div>

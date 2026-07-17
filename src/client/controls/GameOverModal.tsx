@@ -8,7 +8,6 @@ import { Board } from '../board/Board';
 import { CountUp } from './CountUp';
 import { revealRows, resultSummary } from '../drama';
 import type { GameRecord } from '../../game/ai/selfplay';
-import { ReplayScrubber } from '../recap/ReplayScrubber';
 
 export interface GameOverPayload {
   colors: Record<Color, number>;
@@ -33,17 +32,19 @@ export function GameOverModal({
   gameover,
   winnerColors = [],
   gameRecord,
+  onReview,
 }: {
   G: GameState;
   gameover: GameOverPayload;
   /** Colors owned by a winning player — glow in the mosaic + get the WINNER tag. */
   winnerColors?: Color[];
-  /** The finished game's record; when present, enables "Review game" (P2 R0). */
+  /** The finished game's record; when present (with `onReview`), enables "Review game". */
   gameRecord?: GameRecord | null;
+  /** Dismiss the ceremony into in-table review mode (P2 R0.2); offline only. */
+  onReview?: () => void;
 }) {
   const actions = useSessionActions();
   const reduce = useReducedMotion();
-  const [reviewing, setReviewing] = useState(false);
 
   const rows = revealRows(G, gameover);
   const maxPlaced = Math.max(1, ...rows.map((r) => r.placed));
@@ -262,10 +263,10 @@ export function GameOverModal({
           >
             {copied ? 'Copied ✓' : 'Copy result'}
           </button>
-          {gameRecord && (
+          {gameRecord && onReview && (
             <button
               data-testid="review-game"
-              onClick={() => setReviewing(true)}
+              onClick={onReview}
               style={{ ...SECONDARY_BTN, fontSize: 13 }}
             >
               Review game
@@ -309,10 +310,6 @@ export function GameOverModal({
           )}
         </div>
       </div>
-
-      {reviewing && gameRecord && (
-        <ReplayScrubber record={gameRecord} onClose={() => setReviewing(false)} />
-      )}
     </div>
   );
 }
