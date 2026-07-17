@@ -705,6 +705,85 @@ four classic colors as accents, shapes as the star.
   screenshots, not assertions; that absence of a metric is why this is product and not
   research.
 
+### P41 — Rotate-view button: icon-only, hover-reveal, corner-anchored
+- **Status:** proposed
+- **Value:** P6's labelled rotate button reads as chrome bolted under the board; an arrow
+  glyph is self-evident and the label is noise. Anchoring it off the board's **bottom-right
+  corner** (where the player's own corner sits) ties the control to the thing it acts on and
+  reclaims the vertical space under the board.
+- **Scope:** drop the text; render the rotate affordance as an **arrow-only** control
+  positioned outside the board's bottom-right corner, revealed on **hover/focus** of the
+  board frame — keep a persistent focus target so keyboard/touch users aren't stranded
+  (hover-only would hide it from them). No change to the rotate behaviour itself.
+- **Depends on:** P6 (shipped — the button + board auto-orient).
+
+### P42 — Placed pieces read as proud, not sunken (fix inverted depth)
+- **Status:** proposed
+- **Value:** the tactile board (P5) is the game's identity, but a placed piece currently
+  reads as *pressed into* the mat instead of resting on it — the depth cue points the wrong
+  way, undercutting the whole skeuomorphic finish.
+- **Scope:** audit `PlacedLayer`'s shadow/AO stack (contact shadow, AO seam, window-rim
+  insets) for the cue that reads as an inset *well* rather than a cast shadow — a piece on a
+  surface throws an **outer** shadow onto the mat and catches a top light; a recess throws an
+  **inner** shadow. The contact/AO geometry likely needs to sit outside the piece silhouette.
+  Verify across all three built-in themes (the finish is theme-driven — a fix tuned on Linen
+  can invert again on Walnut).
+- **Depends on:** nothing. Same component as P40/P31; if P40 is taken first, fold this in —
+  both retune the same alpha stack.
+
+### P43 — Event feed panel (persistent game log / marquee)
+- **Status:** proposed
+- **Value:** P32's beats are transient pills — a player who looks away misses the drama and
+  has no history of it. A persistent feed makes the game's narrative reviewable during play;
+  a horizontal marquee gives the same content at a fraction of the footprint.
+- **Scope:** a new **consumer** of the `useGameEvents` stream (add a row to
+  [EVENTS.md](../EVENTS.md)'s Consumers table) rendering the beat history as either (a) a
+  scrollable vertical log or (b) a horizontal scrolling marquee — pick one in build (marquee
+  favoured for footprint on the P6 study-table layout). Toggle in Settings, **default ON**
+  (note: advisor toggles default *off*; this is ambient narration, not an advisor aid).
+  Inherits P32 anti-spam — no new detection.
+- **Depends on:** P32 (shipped — the events), P38 (the Gameplay/Settings toggle home) or P12
+  (the settings surface) for the switch.
+
+### P44 — Incursion advisor: highlight opponent diagonal cut-through corners
+- **Status:** proposed
+- **Value:** cuts (P32 `cut`) are named *after* they happen. This warns *before*: it marks
+  the corners where an opponent could thread a diagonal past your wall into the space behind
+  it — the defensive read strong players make and beginners miss.
+- **Scope:** (1) **define** the predicate in the rules core (`drama.ts` pattern) — "your
+  line," "the space behind it," and "a legal opponent diagonal that reaches it" made precise;
+  deterministic + one feel-tuned threshold, like `cut`/`cramped` (threshold tuning is feel,
+  not research — the P32 precedent, so this stays **product-only**). (2) **register** it in
+  [EVENTS.md](../EVENTS.md) as a new event id (the doc↔detector test enforces both ways).
+  (3) an advisor **overlay** highlighting the at-risk corners, riding the existing
+  cut-highlight seam. (4) **toggle** in the P38 Gameplay tab, **default OFF** (advisor aids
+  default off, per P38).
+- **Depends on:** P32 (the event registry + detector pattern), P38 (the toggle home).
+
+### P45 — Lobby menu: subtitles into hover tooltips
+- **Status:** proposed (exploratory — mockup reviewed)
+- **Value:** a cleaner, calmer menu column — the P35 hierarchy reads faster without a
+  subtitle under every row.
+- **Tension (why it stays exploratory):** the subtitles currently *teach* what each row does
+  at a glance and give touch users the "what" with no hover to fall back on; tooltips trade
+  that scannability/discoverability for tidiness, which can work against the menu's
+  one-obvious-click job (P35). A side-by-side mockup was built to make the call.
+- **Scope:** if pursued — subtitle text → `title`/tooltip on hover/focus of each
+  `ActionMenu` row; keep the primary (Quick Play) row's subtitle **persistent** so the hero
+  action never depends on hover; needs a touch/tap-to-reveal story.
+- **Depends on:** P35 (shipped — the rows + subtitles).
+
+### P46 — Quick Play configurable default
+- **Status:** proposed (to flesh out)
+- **Value:** "last custom config" makes Quick Play unpredictable — one odd experiment poisons
+  the one-click path. A stable, *settable* default keeps Quick Play the reliable fallback P35
+  leans on as the always-valid primary action.
+- **Scope (rough):** define a built-in default vs-AI setup; Quick Play launches it unless the
+  player has set their own default. Surface a "set as my Quick Play default" affordance (from
+  the custom-game setup, or in Settings). Preserve P17's blitz/extreme-resolve guard. Exact
+  UX TBD.
+- **Depends on:** P17 (shipped — Quick Play + persisted setup).
+
 ---
 
 ## Epic: Engagement & retention
