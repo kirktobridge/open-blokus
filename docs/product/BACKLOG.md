@@ -92,7 +92,7 @@ order runs foundation → offline surfaces → live surfaces.
   hierarchy (1st on top, descending) so standings read top-to-bottom. Playback removes
   manual stepping; vertical ranks parse faster than a reordered row. No evaluator — stays
   clear of AD4/AD2. Depends on: nothing (R0 shipped).
-  **R0.2 (proposed) — review-in-table:** the scrubber stops being a modal and becomes a
+  **R0.2 (in-progress) — review-in-table:** the scrubber stops being a modal and becomes a
   *mode of the game table itself*. When an offline game ends, P16's ceremony plays as it
   does today and, on dismiss, the table underneath is already in review mode: (a) the
   action bar is replaced in place by the scrubber's transport — step/play-pause/speed;
