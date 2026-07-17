@@ -4,6 +4,11 @@ import { CELL_PX } from '../theme';
 const C = CELL_PX;
 const SIZE = BOARD_SIZE * C;
 
+/** Stud radius, from the theme. `r` is a real CSS property on SVG geometry, so
+ *  this stays a token like every other part of the finish — retunable in
+ *  Settings → Board (`0` = no studs) with no re-render. */
+const STUD_R = 'var(--mat-stud)';
+
 /** The four tile corners — quarter-studs that tile into one whole stud per grid
  *  intersection (pattern content is clipped to its tile, so drawing all four
  *  corners reconstructs the studs across the seams). */
@@ -65,10 +70,15 @@ export function MatLayer() {
             strokeWidth={2}
             style={{ opacity: 'var(--mat-hi)' }}
           />
-          {/* Alignment studs, proud of the lattice at each intersection. */}
+          {/* Alignment studs, proud of the lattice at each intersection. Every
+              circle takes its radius straight from `--mat-stud`, so the whole
+              stud scales from one token — including `--mat-stud: 0`, which turns
+              them off. The lit face is a bounding-box gradient rather than an
+              offset dab precisely so it rescales for free at any radius. */}
           {STUD_CORNERS.map(([cx, cy]) => (
             <g key={`${cx},${cy}`}>
-              <circle cx={cx} cy={cy} r={2.4} fill="var(--grid-line)" />
+              <circle cx={cx} cy={cy} style={{ r: STUD_R }} fill="var(--grid-line)" />
+              <circle cx={cx} cy={cy} style={{ r: STUD_R }} fill="url(#mat-stud-face)" />
               {/* A stud is the same plastic as the lattice under it, so its only
                   contrast is this seating ring — hence the theme's own shadow
                   amplitude, not a constant. A fixed low alpha reads on the pale
@@ -76,22 +86,23 @@ export function MatLayer() {
               <circle
                 cx={cx}
                 cy={cy}
-                r={2.4}
                 fill="none"
                 stroke="#000000"
-                strokeWidth={0.9}
-                style={{ strokeOpacity: 'var(--mat-lo)' }}
-              />
-              <circle
-                cx={cx - 0.45}
-                cy={cy - 0.45}
-                r={1.2}
-                fill="#ffffff"
-                style={{ opacity: 'var(--mat-hi)' }}
+                style={{
+                  r: STUD_R,
+                  strokeWidth: `calc(${STUD_R} * 0.5)`,
+                  strokeOpacity: 'var(--mat-lo)',
+                }}
               />
             </g>
           ))}
         </pattern>
+        {/* A stud's lit face. Bounding-box units (the default), so it tracks
+            whatever radius `--mat-stud` is set to. */}
+        <radialGradient id="mat-stud-face" cx="0.35" cy="0.35" r="0.7">
+          <stop offset="0" stopColor="#ffffff" style={{ stopOpacity: 'var(--mat-hi)' }} />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
         {/* Macro volume — same geometry and light as PlacedLayer's `pl-vol`, so
             the board and the pieces sitting on it share one lamp. */}
         <radialGradient

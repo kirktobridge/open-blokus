@@ -44,9 +44,11 @@
 
   /* Molded-board finish (P5) — how hard the board's lattice/wells/studs are lit
      (MatLayer). Separate from --tile-* because the board is matte plastic under
-     polished tiles, and a dark mat needs its own amplitudes. */
+     polished tiles, and a dark mat needs its own amplitudes. --mat-stud is the
+     radius of the alignment stud at each grid intersection; 0 turns them off. */
   --mat-hi: 0.5;
   --mat-lo: 0.18;
+  --mat-stud: 1px;
 
   /* Study Table — Linen (light) */
   --frame-a: #b38e63;
@@ -103,6 +105,7 @@
      reads almost entirely off the lit flanks. */
   --mat-hi: 0.26;
   --mat-lo: 0.4;
+  --mat-stud: 1px;
 
   /* Study Table — Lamplight (dark). Elevation retuned (P28): panel stepped a
      clear notch above the table, wells a notch below the panel, border light
@@ -159,6 +162,7 @@
      walnut frame throws the board warmer and darker. */
   --mat-hi: 0.46;
   --mat-lo: 0.22;
+  --mat-stud: 1px;
 
   /* Study Table — Walnut (hero) */
   --frame-a: #6d5138;

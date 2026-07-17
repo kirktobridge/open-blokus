@@ -74,6 +74,7 @@ export const TOKEN_GROUPS: { group: string; tokens: TokenDef[] }[] = [
       { name: '--grid', label: 'Board grid' },
       { name: '--empty-cell', label: 'Empty cell' },
       { name: '--grid-line', label: 'Grid line' },
+      { name: '--mat-stud', label: 'Stud size' },
       { name: '--placed-piece', label: 'Placed (neutral)' },
       { name: '--frame-a', label: 'Frame top' },
       { name: '--frame-b', label: 'Frame bottom' },
