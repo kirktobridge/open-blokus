@@ -403,6 +403,18 @@ four classic colors as accents, shapes as the star.
 - **Depended on:** P32 (event vocabulary — the cues' trigger source). Synergy with P16
   (juice) noted there: same event hooks.
 
+### P47 — Auto-mute when watching a fully-bot game
+- **Status:** proposed
+- **Value:** an all-AI watch game (0 human seats) fires placement/pickup cues with no
+  one acting, so the audio is a soundtrack the spectator never asked for. Defaulting a
+  watch game to silence respects that no human triggered any of it.
+- **Scope:** when `humanCount === 0`, suppress game sound by default as a **contextual
+  override** — do *not* mutate the saved mute/volume pref. A real game restores the
+  user's sound automatically; the user can still manually un-mute the watch game. The
+  watch signal already exists (`LocalAIGame`); sound rides `useGameSound` in the board
+  view, so this is a gate on that path, not new plumbing.
+- **Depends on:** nothing (P7 shipped).
+
 ### P8 — 3D presentation
 - **Status:** deferred — investigated 2026-07-02; 2D gel chosen for the resting board (P5).
 - **Value:** depth/tactility a fixed top-down 2D view can't give, and the pieces' real
