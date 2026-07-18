@@ -21,10 +21,10 @@ interface Prefs {
   moveOptions: boolean;
   /** Advisor: the per-color open-corner meter (P34 M2). Opt-in. */
   cornerCounter: boolean;
-  /** Advisor: shade your own pieces that have no legal move left (P39). Opt-in. */
-  deadPieceSelf: boolean;
-  /** Advisor: shade opponents' pieces that have no legal move left (P39). Opt-in. */
-  deadPieceOpponents: boolean;
+  /** Advisor: shade your own pieces with no legal move this turn (P39). Opt-in. */
+  unplayableSelf: boolean;
+  /** Advisor: shade opponents' pieces with no legal move this turn (P39). Opt-in. */
+  unplayableOpponents: boolean;
 }
 
 const DEFAULTS: Prefs = {
@@ -33,8 +33,8 @@ const DEFAULTS: Prefs = {
   volume: 0.6,
   moveOptions: false,
   cornerCounter: false,
-  deadPieceSelf: false,
-  deadPieceOpponents: false,
+  unplayableSelf: false,
+  unplayableOpponents: false,
 };
 
 const store: Pick<Storage, 'getItem' | 'setItem'> | null =
@@ -60,14 +60,14 @@ function load(): Prefs {
           typeof parsed.cornerCounter === 'boolean'
             ? parsed.cornerCounter
             : DEFAULTS.cornerCounter,
-        deadPieceSelf:
-          typeof parsed.deadPieceSelf === 'boolean'
-            ? parsed.deadPieceSelf
-            : DEFAULTS.deadPieceSelf,
-        deadPieceOpponents:
-          typeof parsed.deadPieceOpponents === 'boolean'
-            ? parsed.deadPieceOpponents
-            : DEFAULTS.deadPieceOpponents,
+        unplayableSelf:
+          typeof parsed.unplayableSelf === 'boolean'
+            ? parsed.unplayableSelf
+            : DEFAULTS.unplayableSelf,
+        unplayableOpponents:
+          typeof parsed.unplayableOpponents === 'boolean'
+            ? parsed.unplayableOpponents
+            : DEFAULTS.unplayableOpponents,
       };
     }
   } catch {
@@ -119,14 +119,14 @@ export function setCornerCounter(on: boolean): void {
   commit({ ...state, cornerCounter: on });
 }
 
-export function setDeadPieceSelf(on: boolean): void {
-  if (on === state.deadPieceSelf) return;
-  commit({ ...state, deadPieceSelf: on });
+export function setUnplayableSelf(on: boolean): void {
+  if (on === state.unplayableSelf) return;
+  commit({ ...state, unplayableSelf: on });
 }
 
-export function setDeadPieceOpponents(on: boolean): void {
-  if (on === state.deadPieceOpponents) return;
-  commit({ ...state, deadPieceOpponents: on });
+export function setUnplayableOpponents(on: boolean): void {
+  if (on === state.unplayableOpponents) return;
+  commit({ ...state, unplayableOpponents: on });
 }
 
 export function usePrefs(): Prefs {

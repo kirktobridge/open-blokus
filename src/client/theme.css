@@ -35,10 +35,10 @@
   --pill-idle: #9ca3af;
   --cell-outline: rgba(0, 0, 0, 0.15);
   --last-move-ring: rgba(255, 255, 255, 0.85);
-  /* Dead-piece shading (P39) — the red wash over an inventory piece that has no
-     legal move left. Per-theme like the other semantics: a mid-red reads on the
-     pale Linen panel, but the dark panels need a brighter red to carry. */
-  --dead: #d13c3c;
+  /* Unplayable-piece shading (P39) — the red wash over an inventory piece with no
+     legal move this turn. Per-theme like the other semantics: a mid-red reads on
+     the pale Linen panel, but the dark panels need a brighter red to carry. */
+  --unplayable: #d13c3c;
 
   /* Molded-tile finish (P5) — per-cell bevel highlight/shadow opacity + glint
      tint for the translucent-plastic look. Forked automatically by user themes. */
@@ -107,7 +107,7 @@
   --pill-idle: #4b5563;
   --cell-outline: rgba(0, 0, 0, 0.4);
   --last-move-ring: rgba(255, 255, 255, 0.9);
-  --dead: #f06a6a;
+  --unplayable: #f06a6a;
 
   /* Molded-tile finish (P5) — dark mat, so bevels lean on the shadow side and the
      glint warms toward the lamp. */
@@ -170,7 +170,7 @@
   --pill-idle: #6d5e49;
   --cell-outline: rgba(0, 0, 0, 0.2);
   --last-move-ring: rgba(255, 255, 255, 0.9);
-  --dead: #ea5c5c;
+  --unplayable: #ea5c5c;
 
   /* Molded-tile finish (P5) — pale mat like Linen, glint faintly warm. */
   --tile-hi: 0.38;

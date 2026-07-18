@@ -18,8 +18,8 @@ import {
 } from './appearance';
 import {
   setCornerCounter,
-  setDeadPieceOpponents,
-  setDeadPieceSelf,
+  setUnplayableOpponents,
+  setUnplayableSelf,
   setInventoryDisplay,
   setMoveOptions,
   setSound,
@@ -258,18 +258,18 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                 onChange={setCornerCounter}
               />
               <ToggleRow
-                testid="pref-dead-self"
-                label="Dead Pieces (mine)"
-                hint="Shade your own pieces red once they have no legal move left."
-                checked={prefs.deadPieceSelf}
-                onChange={setDeadPieceSelf}
+                testid="pref-unplayable-self"
+                label="Unplayable Pieces (mine)"
+                hint="Shade your own pieces red when they have no legal move this turn."
+                checked={prefs.unplayableSelf}
+                onChange={setUnplayableSelf}
               />
               <ToggleRow
-                testid="pref-dead-opponents"
-                label="Dead Pieces (opponents)"
-                hint="Shade opponents' pieces red once they're out of moves — public info."
-                checked={prefs.deadPieceOpponents}
-                onChange={setDeadPieceOpponents}
+                testid="pref-unplayable-opponents"
+                label="Unplayable Pieces (opponents)"
+                hint="Shade opponents' pieces red when they have no move this turn — public info."
+                checked={prefs.unplayableOpponents}
+                onChange={setUnplayableOpponents}
               />
             </>
           ) : (

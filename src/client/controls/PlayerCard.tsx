@@ -60,7 +60,7 @@ export function PlayerCard({
   active,
   inventoryDisplay = 'silhouette',
   reaction,
-  dead,
+  unplayable,
 }: {
   color: Color;
   state: ColorState;
@@ -72,8 +72,8 @@ export function PlayerCard({
   inventoryDisplay?: InventoryDisplay;
   /** Live reaction bubble for this seat (P19); absent when the seat is quiet. */
   reaction?: ActiveReaction;
-  /** Advisor (P39): still-held pieces with no legal move left — shaded red. */
-  dead?: Set<PieceId>;
+  /** Advisor (P39): still-held pieces with no legal move this turn — shaded red. */
+  unplayable?: Set<PieceId>;
 }) {
   const remaining = new Set(state.remaining);
   const squares = remainingSquares(state);
@@ -167,17 +167,17 @@ export function PlayerCard({
         {inventoryDisplay === 'dots'
           ? PIECE_IDS.map((id) => {
               const placed = !remaining.has(id);
-              const isDead = !placed && (dead?.has(id) ?? false);
+              const isUnplayable = !placed && (unplayable?.has(id) ?? false);
               return (
                 <span
                   key={id}
-                  title={isDead ? `${id} — no legal move` : id}
-                  data-dead={isDead || undefined}
+                  title={isUnplayable ? `${id} — no legal move this turn` : id}
+                  data-unplayable={isUnplayable || undefined}
                   style={{
                     width: 6,
                     height: 6,
                     borderRadius: 3,
-                    background: isDead ? 'var(--dead)' : PIECE_VAR[color],
+                    background: isUnplayable ? 'var(--unplayable)' : PIECE_VAR[color],
                     opacity: placed ? 0.18 : 0.95,
                   }}
                 />
@@ -189,7 +189,7 @@ export function PlayerCard({
                 pieceId={id}
                 color={color}
                 placed={!remaining.has(id)}
-                dead={dead?.has(id) ?? false}
+                unplayable={unplayable?.has(id) ?? false}
                 cellPx={5}
                 micro
               />

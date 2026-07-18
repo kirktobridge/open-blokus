@@ -9,7 +9,7 @@ import { isLegalPlacement } from '../game/placement';
 import { CORNERS } from '../game/modes';
 import { Board } from './board/Board';
 import { BoardFrame } from './board/BoardFrame';
-import { deadPieces, legalTargetCells } from './advisor/legalMoves';
+import { unplayablePieces, legalTargetCells } from './advisor/legalMoves';
 import { RoomMeter } from './advisor/RoomMeter';
 import type { Hint } from './advisor/LegalMoveHints';
 import { HandTray } from './tray/HandTray';
@@ -192,23 +192,23 @@ export function BlokusBoardView({
       : [];
   }, [advisorTargets, oriented, activeColor]);
 
-  // Dead-piece shading (P39): per-color sets of still-held pieces with no legal
-  // move left, gated by the two opt-in toggles. Self = the seat(s) this client
-  // owns (mirrors the `isYou` test below); Opponents = everyone else. Computed
-  // once per G change (and only for colors a toggle will actually shade), so the
-  // per-color `generateLegalMoves` sweep — the cost the scope flags — never runs
-  // for a color whose overlay is off.
-  const deadSelfOn = prefs.deadPieceSelf;
-  const deadOppOn = prefs.deadPieceOpponents;
-  const deadByColor = useMemo(() => {
+  // Unplayable-piece shading (P39): per-color sets of still-held pieces with no
+  // legal move *this turn*, gated by the two opt-in toggles. Self = the seat(s)
+  // this client owns (mirrors the `isYou` test below); Opponents = everyone else.
+  // Computed once per G change (and only for colors a toggle will actually shade),
+  // so the per-color `generateLegalMoves` sweep — the cost the scope flags — never
+  // runs for a color whose overlay is off.
+  const unplayableSelfOn = prefs.unplayableSelf;
+  const unplayableOppOn = prefs.unplayableOpponents;
+  const unplayableByColor = useMemo(() => {
     const out = {} as Record<Color, Set<PieceId>>;
     for (const c of COLOR_ORDER) {
       const self = playerID != null && G.config.owners[c] === playerID;
-      const show = self ? deadSelfOn : deadOppOn;
-      out[c] = show ? new Set(deadPieces(G, c)) : new Set();
+      const show = self ? unplayableSelfOn : unplayableOppOn;
+      out[c] = show ? new Set(unplayablePieces(G, c)) : new Set();
     }
     return out;
-  }, [deadSelfOn, deadOppOn, G, playerID]);
+  }, [unplayableSelfOn, unplayableOppOn, G, playerID]);
 
   const canSubmit = sel.staged && legal;
 
@@ -413,7 +413,7 @@ export function BlokusBoardView({
               active={c === activeColor && !ctx.gameover}
               inventoryDisplay={inventoryDisplay}
               reaction={owner !== 'shared' ? reactions[owner] : undefined}
-              dead={deadByColor[c]}
+              unplayable={unplayableByColor[c]}
             />
           );
         })}

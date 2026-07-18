@@ -11,11 +11,13 @@ async function setAdvisorPref(page: Page, testid: string, on: boolean) {
   await page.getByTestId('settings-toggle').click(); // close
 }
 
-// Dead-piece shading (P39): a still-held piece with no legal placement is washed
-// red in the inventory. At the opening every color has exactly one dead piece —
-// the X pentomino, which has no corner cell and so can never cover a start corner.
-// That makes move-zero a clean, deterministic fixture: one dead thumb per color.
-test('Dead-piece shading marks the unplayable X pentomino, split by Self/Opponents', async ({
+// Unplayable-piece shading (P39): a still-held piece with no legal placement this
+// turn is washed red in the inventory. At the opening every color has exactly one
+// unplayable piece — the X pentomino, which has no corner cell and so can never
+// cover a start corner. That makes move-zero a clean, deterministic fixture: one
+// shaded thumb per color. (It's "unplayable now," not permanent — a later move
+// opens corners for it.)
+test('Unplayable-piece shading marks the X pentomino, split by Self/Opponents', async ({
   page,
 }) => {
   await page.goto('/');
@@ -25,24 +27,24 @@ test('Dead-piece shading marks the unplayable X pentomino, split by Self/Opponen
   await expect(page.getByTestId('match-id')).toBeVisible();
   await expect(page.getByText(/active blue/)).toBeVisible();
 
-  const dead = page.locator('[data-dead="true"]');
+  const shaded = page.locator('[data-unplayable="true"]');
 
   // Both overlays are opt-in — off by default, so nothing is shaded.
-  await expect(dead).toHaveCount(0);
+  await expect(shaded).toHaveCount(0);
 
-  // "Mine" shades only the local seat's inventory (blue owns X5 → 1 dead thumb).
-  await setAdvisorPref(page, 'pref-dead-self', true);
-  await expect(dead).toHaveCount(1);
+  // "Mine" shades only the local seat's inventory (blue owns X5 → 1 shaded thumb).
+  await setAdvisorPref(page, 'pref-unplayable-self', true);
+  await expect(shaded).toHaveCount(1);
 
   // "Opponents" adds the other three colors' X5 (public info) → 4 total.
-  await setAdvisorPref(page, 'pref-dead-opponents', true);
-  await expect(dead).toHaveCount(4);
+  await setAdvisorPref(page, 'pref-unplayable-opponents', true);
+  await expect(shaded).toHaveCount(4);
 
   // Dropping "Mine" leaves just the three opponents shaded.
-  await setAdvisorPref(page, 'pref-dead-self', false);
-  await expect(dead).toHaveCount(3);
+  await setAdvisorPref(page, 'pref-unplayable-self', false);
+  await expect(shaded).toHaveCount(3);
 
   // Both off clears the overlay entirely.
-  await setAdvisorPref(page, 'pref-dead-opponents', false);
-  await expect(dead).toHaveCount(0);
+  await setAdvisorPref(page, 'pref-unplayable-opponents', false);
+  await expect(shaded).toHaveCount(0);
 });
