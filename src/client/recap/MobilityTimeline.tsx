@@ -13,7 +13,7 @@ import { FONT_MONO, PIECE_VAR } from '../theme';
  * falls, so a last-frame max would flatten the interesting part.
  */
 const W = 460;
-const H = 176;
+const H = 200;
 const PAD = { top: 12, right: 12, bottom: 20, left: 26 };
 const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;

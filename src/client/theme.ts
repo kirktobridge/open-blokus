@@ -31,6 +31,17 @@ export const CELL_PX = 30;
 /** Piece-thumbnail square size in pixels. */
 export const THUMB_PX = 12;
 
+/**
+ * Width of the center "board dock" column. In play the action bar (`Controls`) is
+ * wider than the board, so the column is wider than the frame and the flanking
+ * columns (player cards, right rail) sit out to clear it. The review table pins
+ * its board column to the same value so those side columns — and the board — land
+ * in the exact same place in play and review (the board is centered within it in
+ * both). Widest under-board element must fit here; it overhangs symmetrically if
+ * not, so a small mismatch never shifts the side columns.
+ */
+export const DOCK_COLUMN_W = 736;
+
 /** Study-table typography. Resolved from CSS vars (theme.css) so the Settings
  *  panel can retune them live via a token override with no re-render. */
 export const FONT_UI = 'var(--font-ui)';

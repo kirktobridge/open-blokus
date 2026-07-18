@@ -13,7 +13,7 @@ import { MobilityTimeline } from './MobilityTimeline';
 import { useReplay } from './useReplay';
 import { usePrefs } from '../settings';
 import { useSessionActions } from '../lobby/sessionContext';
-import { FONT_MONO, FONT_UI, SECONDARY_BTN } from '../theme';
+import { DOCK_COLUMN_W, FONT_MONO, FONT_UI, SECONDARY_BTN } from '../theme';
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
@@ -104,8 +104,9 @@ export function ReviewTable({
         }}
       >
         {/* Left column — player cards, re-rendered from the scrubbed ply. The color
-            that just moved lifts (active keyline); winners keep their WINNER pill. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250, flexShrink: 0 }}>
+            that just moved lifts (active keyline); winners keep their WINNER pill.
+            Same width/gap as the play table so cards don't shift between views. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250 }}>
           {COLOR_ORDER.map((c) => {
             const { nameSuffix, tag } = seatMeta(c);
             return (
@@ -122,8 +123,10 @@ export function ReviewTable({
           })}
         </div>
 
-        {/* Center column — full-size board in the play frame + caption. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', flexShrink: 0 }}>
+        {/* Center column — full-size board in the play frame + caption. Same width,
+            gap and centering as the play table's board column (DOCK_COLUMN_W), so
+            the board and the flanking columns don't shift between play and review. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', width: DOCK_COLUMN_W }}>
           <BoardFrame>
             <div
               style={{
@@ -151,30 +154,23 @@ export function ReviewTable({
           </p>
         </div>
 
-        {/* Right column — the two enlarged timelines hug the board like the play
-            right panel; it grows into the horizontal space beside the board. Hand
-            tray below as reference (R0.2 c). */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-            flex: '1 1 360px',
-            minWidth: 300,
-            maxWidth: 520,
-          }}
-        >
+        {/* Right column — identical footprint to the play table's right rail (a
+            300-wide panel + tray) so nothing shifts between views. It swaps the
+            live standings for the score + mobility timelines (taller than the old
+            modal's, for readability), hand tray below as reference (R0.2 c). */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div
             style={{
+              width: 300,
               background: 'var(--pnl)',
               border: '1px solid var(--pnl-bd)',
               borderRadius: 14,
-              padding: '16px 18px',
+              padding: '14px 16px',
               boxShadow: '0 14px 28px rgba(15,9,3,.32)',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
-              gap: 16,
+              gap: 12,
             }}
           >
             <div>
