@@ -532,6 +532,7 @@ export function BlokusBoardView({
             interactive={canPlay && homeColor === activeColor}
             selectedId={homeColor === activeColor ? sel.pieceId : null}
             onSelect={sel.selectPiece}
+            unplayable={unplayableByColor[homeColor]}
           />
         )}
         <div

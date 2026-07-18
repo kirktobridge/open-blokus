@@ -27,24 +27,33 @@ test('Unplayable-piece shading marks the X pentomino, split by Self/Opponents', 
   await expect(page.getByTestId('match-id')).toBeVisible();
   await expect(page.getByText(/active blue/)).toBeVisible();
 
-  const shaded = page.locator('[data-unplayable="true"]');
+  // Two surfaces carry the shading: the interactive hand (where you pick pieces,
+  // identified by testid) and the passive per-color cards (micro thumbs, no
+  // testid). "Mine" governs the hand + your own card; "Opponents" the other cards.
+  const handX5 = page.getByTestId('piece-blue-X5');
+  const cardShaded = page.locator('[data-unplayable="true"]:not([data-testid])');
 
-  // Both overlays are opt-in — off by default, so nothing is shaded.
-  await expect(shaded).toHaveCount(0);
+  // Both overlays are opt-in — off by default, so nothing is shaded anywhere.
+  await expect(handX5).not.toHaveAttribute('data-unplayable', 'true');
+  await expect(cardShaded).toHaveCount(0);
 
-  // "Mine" shades only the local seat's inventory (blue owns X5 → 1 shaded thumb).
+  // "Mine" shades the local seat (blue): X5 in the hand you pick from *and* in
+  // blue's card. This is the fix — the unplayable read reaches the hand tray.
   await setAdvisorPref(page, 'pref-unplayable-self', true);
-  await expect(shaded).toHaveCount(1);
+  await expect(handX5).toHaveAttribute('data-unplayable', 'true');
+  await expect(cardShaded).toHaveCount(1); // blue's card
 
-  // "Opponents" adds the other three colors' X5 (public info) → 4 total.
+  // "Opponents" adds the other three colors' cards (public info) → 4 cards shaded.
   await setAdvisorPref(page, 'pref-unplayable-opponents', true);
-  await expect(shaded).toHaveCount(4);
+  await expect(cardShaded).toHaveCount(4);
+  await expect(handX5).toHaveAttribute('data-unplayable', 'true');
 
-  // Dropping "Mine" leaves just the three opponents shaded.
+  // Dropping "Mine" clears the hand and blue's card — three opponent cards remain.
   await setAdvisorPref(page, 'pref-unplayable-self', false);
-  await expect(shaded).toHaveCount(3);
+  await expect(handX5).not.toHaveAttribute('data-unplayable', 'true');
+  await expect(cardShaded).toHaveCount(3);
 
   // Both off clears the overlay entirely.
   await setAdvisorPref(page, 'pref-unplayable-opponents', false);
-  await expect(shaded).toHaveCount(0);
+  await expect(cardShaded).toHaveCount(0);
 });
