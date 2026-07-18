@@ -20,6 +20,8 @@ test('review a finished game in the table: scrub the board + timelines', async (
   const table = page.getByTestId('review-table');
   await expect(table).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Game over' })).toBeHidden();
+  // The timelines sit under an "Analysis" panel header.
+  await expect(page.getByTestId('analysis-header')).toHaveText('Analysis');
   await expect(page.getByTestId('score-timeline')).toBeVisible();
   await expect(page.getByTestId('mobility-timeline')).toBeVisible();
 

@@ -173,6 +173,9 @@ export function ReviewTable({
               gap: 12,
             }}
           >
+            <div data-testid="analysis-header" style={{ fontWeight: 600, fontSize: 15 }}>
+              Analysis
+            </div>
             <div>
               <p style={chartLabel}>Score — squares placed</p>
               <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
