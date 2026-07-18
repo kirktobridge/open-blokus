@@ -49,6 +49,24 @@ export function legalTargetCells(G: GameState, color: Color, pieceId: PieceId): 
 }
 
 /**
+ * The color's still-held pieces that have *zero* legal placements on the current
+ * board — pieces it can't play *this turn* (P39). Placeability is per-turn, not
+ * permanent: opening a new corner (its own next move, sometimes an opponent's)
+ * can unlock a piece that had nowhere to go, so this is "unplayable now," never
+ * "dead forever." Derived from `generateLegalMoves`, the same enumeration the
+ * P3 R1 / P34 advisor uses, so the read is exactly the engine's legal reach. An
+ * eliminated color (no legal move for any piece) returns *all* its remaining
+ * pieces — every one is unplayable — so the whole inventory shades.
+ */
+export function unplayablePieces(G: GameState, color: Color): PieceId[] {
+  const remaining = G.colors[color].remaining;
+  if (remaining.length === 0) return [];
+  const alive = new Set<PieceId>();
+  for (const p of generateLegalMoves(G, color)) alive.add(p.pieceId);
+  return remaining.filter((id) => !alive.has(id));
+}
+
+/**
  * A color's open "corners": empty cells diagonally adjacent to one of its pieces
  * but not orthogonally adjacent to any (an orthogonally-adjacent cell can never be
  * covered — that's the edge-touch rule). These are exactly the cells a next piece

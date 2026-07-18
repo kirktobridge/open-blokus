@@ -42,6 +42,7 @@ export function PieceThumb({
   onClick,
   cellPx = THUMB_PX,
   micro = false,
+  unplayable = false,
 }: {
   pieceId: PieceId;
   color: Color;
@@ -52,6 +53,8 @@ export function PieceThumb({
   cellPx?: number;
   /** Tiny decorative variant (opponent inventory): no test id, thinner styling. */
   micro?: boolean;
+  /** Advisor: this still-held piece has no legal move *this turn* — wash it red (P39). */
+  unplayable?: boolean;
 }) {
   const cells = PIECES[pieceId];
   const w = Math.max(...cells.map((c) => c.x)) + 1;
@@ -74,6 +77,15 @@ export function PieceThumb({
             background: 'transparent',
             border: `${micro ? 1 : 1.5}px dashed ${PLACED_DASH}`,
             borderRadius: 2,
+          };
+        } else if (unplayable) {
+          // A still-held piece with no legal move this turn: a flat red wash, no
+          // glint/mold, so it reads as "can't play now" over any owner color (P39).
+          cellStyle = {
+            ...cellStyle,
+            background: 'var(--unplayable)',
+            border: micro ? '1px solid rgba(0,0,0,.3)' : undefined,
+            borderRadius: micro ? 0 : 2.5,
           };
         } else if (micro) {
           cellStyle = {
@@ -102,16 +114,19 @@ export function PieceThumb({
       title={micro ? undefined : pieceId}
       data-testid={micro ? undefined : `piece-${color}-${pieceId}`}
       data-placed={placed}
+      data-unplayable={unplayable || undefined}
       role={onClick ? 'button' : undefined}
       aria-label={
-        micro ? undefined : `${color} piece ${pieceId}${placed ? ' (placed)' : ''}${selected ? ' (selected)' : ''}`
+        micro
+          ? undefined
+          : `${color} piece ${pieceId}${placed ? ' (placed)' : ''}${unplayable ? ' (no legal move this turn)' : ''}${selected ? ' (selected)' : ''}`
       }
       onClick={onClick}
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${w}, ${cellPx}px)`,
         gap: micro ? 0 : 1,
-        opacity: placed ? (micro ? 0.75 : 0.8) : 1,
+        opacity: placed ? (micro ? 0.75 : 0.8) : unplayable ? 0.9 : 1,
         cursor: onClick ? 'pointer' : 'default',
         padding: micro ? 0 : 3,
         borderRadius: 6,

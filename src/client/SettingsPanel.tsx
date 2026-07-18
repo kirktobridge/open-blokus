@@ -18,6 +18,8 @@ import {
 } from './appearance';
 import {
   setCornerCounter,
+  setUnplayableOpponents,
+  setUnplayableSelf,
   setInventoryDisplay,
   setMoveOptions,
   setSound,
@@ -254,6 +256,20 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                 hint="Show each color's open corners — the mid-game room the score hides."
                 checked={prefs.cornerCounter}
                 onChange={setCornerCounter}
+              />
+              <ToggleRow
+                testid="pref-unplayable-self"
+                label="Unplayable Pieces (mine)"
+                hint="Shade your own pieces red when they have no legal move this turn."
+                checked={prefs.unplayableSelf}
+                onChange={setUnplayableSelf}
+              />
+              <ToggleRow
+                testid="pref-unplayable-opponents"
+                label="Unplayable Pieces (opponents)"
+                hint="Shade opponents' pieces red when they have no move this turn — public info."
+                checked={prefs.unplayableOpponents}
+                onChange={setUnplayableOpponents}
               />
             </>
           ) : (

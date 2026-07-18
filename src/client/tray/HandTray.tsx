@@ -38,12 +38,16 @@ export function HandTray({
   interactive = false,
   selectedId = null,
   onSelect,
+  unplayable,
 }: {
   color: Color;
   state: ColorState;
   interactive?: boolean;
   selectedId?: PieceId | null;
   onSelect?: (id: PieceId) => void;
+  /** Advisor (P39): held pieces with no legal move this turn — washed red so a
+   *  piece you can't play reads at the point you'd pick it, not just in the card. */
+  unplayable?: Set<PieceId>;
 }) {
   const remaining = new Set(state.remaining);
 
@@ -113,6 +117,7 @@ export function HandTray({
                   pieceId={id}
                   color={color}
                   placed={placed}
+                  unplayable={unplayable?.has(id) ?? false}
                   selected={interactive && selectedId === id}
                   onClick={interactive && !placed ? () => onSelect?.(id) : undefined}
                   cellPx={13}
