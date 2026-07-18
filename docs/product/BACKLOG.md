@@ -163,7 +163,7 @@ order runs foundation → offline surfaces → live surfaces.
   **P38** — chart → "Open Corners", toggle → "Corner Counter". P38 owns that edit.
 
 ### P39 — Dead-piece shading (red overlay on unplaceable inventory pieces)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** a piece with no legal placement left is *already lost* — the player is
   still counting it as an option and planning around it. Shading it answers "what can
   I still actually play?" at a glance, and the Opponents half turns the same read
