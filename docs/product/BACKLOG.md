@@ -801,6 +801,29 @@ four classic colors as accents, shapes as the star.
   UX TBD.
 - **Depends on:** P17 (shipped — Quick Play + persisted setup).
 
+### P48 — Right-rail & piece-tray layout: widen horizontally + collapsible panels (all modes)
+- **Status:** proposed
+- **Value:** The right rail stacks the Your-Hand tray with a side panel (live Standings in
+  play, the Analysis score+mobility timelines in review). In review the Analysis panel is
+  taller than the Standings it replaces, so the stack overflows: the transport/scrubber bar
+  (below the table) is pushed below the fold and requires scrolling, and the column looks
+  lopsided against the much shorter left player-card column. Underneath is a more fundamental
+  layout choice — the piece tray spends its bulk vertically while there is ample unused
+  horizontal width.
+- **Scope:** revises the shared right-rail/tray layout across **all** modes (play table's
+  right column, review table's right column), not review-only. Two moves: (1) widen the rail
+  and let the Your-Hand tray expand its bulk horizontally rather than vertically into the
+  unused width, applied consistently in play and review so the tray reads the same everywhere;
+  (2) make the rail panels collapsible in all modes (hand tray, standings, analysis), so a
+  viewer can reclaim vertical space and keep the primary controls — action dock in play,
+  transport bar in review — in view without scrolling. Pure layout/visual: no change to
+  timelines, scrubber behavior, standings content, or move logic. The "nothing shifts between
+  play and review" parity note in `ReviewTable.tsx` already breaks vertically; this supersedes
+  it with a wider shared layout. Update the affected layout tests (`review-table`,
+  board-view/right-rail).
+- **Depends on:** nothing. Revises P6 (study-table three-column layout) and P2 + P34's shipped
+  review layout. Surfaces: `BlokusBoardView.tsx`, `ReviewTable.tsx`, `HandTray.tsx`.
+
 ---
 
 ## Epic: Engagement & retention
