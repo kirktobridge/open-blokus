@@ -1,4 +1,4 @@
-import type { Color, ColorState } from '../../game/types';
+import type { Color, ColorState, PieceId } from '../../game/types';
 import { PIECE_IDS } from '../../game/types';
 import { remainingSquares } from '../../game/scoring';
 import { FONT_MONO, FONT_UI, PIECE_VAR } from '../theme';
@@ -60,6 +60,7 @@ export function PlayerCard({
   active,
   inventoryDisplay = 'silhouette',
   reaction,
+  dead,
 }: {
   color: Color;
   state: ColorState;
@@ -71,6 +72,8 @@ export function PlayerCard({
   inventoryDisplay?: InventoryDisplay;
   /** Live reaction bubble for this seat (P19); absent when the seat is quiet. */
   reaction?: ActiveReaction;
+  /** Advisor (P39): still-held pieces with no legal move left — shaded red. */
+  dead?: Set<PieceId>;
 }) {
   const remaining = new Set(state.remaining);
   const squares = remainingSquares(state);
@@ -164,15 +167,17 @@ export function PlayerCard({
         {inventoryDisplay === 'dots'
           ? PIECE_IDS.map((id) => {
               const placed = !remaining.has(id);
+              const isDead = !placed && (dead?.has(id) ?? false);
               return (
                 <span
                   key={id}
-                  title={id}
+                  title={isDead ? `${id} — no legal move` : id}
+                  data-dead={isDead || undefined}
                   style={{
                     width: 6,
                     height: 6,
                     borderRadius: 3,
-                    background: PIECE_VAR[color],
+                    background: isDead ? 'var(--dead)' : PIECE_VAR[color],
                     opacity: placed ? 0.18 : 0.95,
                   }}
                 />
@@ -184,6 +189,7 @@ export function PlayerCard({
                 pieceId={id}
                 color={color}
                 placed={!remaining.has(id)}
+                dead={dead?.has(id) ?? false}
                 cellPx={5}
                 micro
               />

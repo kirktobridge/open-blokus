@@ -18,6 +18,8 @@ import {
 } from './appearance';
 import {
   setCornerCounter,
+  setDeadPieceOpponents,
+  setDeadPieceSelf,
   setInventoryDisplay,
   setMoveOptions,
   setSound,
@@ -254,6 +256,20 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                 hint="Show each color's open corners — the mid-game room the score hides."
                 checked={prefs.cornerCounter}
                 onChange={setCornerCounter}
+              />
+              <ToggleRow
+                testid="pref-dead-self"
+                label="Dead Pieces (mine)"
+                hint="Shade your own pieces red once they have no legal move left."
+                checked={prefs.deadPieceSelf}
+                onChange={setDeadPieceSelf}
+              />
+              <ToggleRow
+                testid="pref-dead-opponents"
+                label="Dead Pieces (opponents)"
+                hint="Shade opponents' pieces red once they're out of moves — public info."
+                checked={prefs.deadPieceOpponents}
+                onChange={setDeadPieceOpponents}
               />
             </>
           ) : (

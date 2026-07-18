@@ -21,6 +21,10 @@ interface Prefs {
   moveOptions: boolean;
   /** Advisor: the per-color open-corner meter (P34 M2). Opt-in. */
   cornerCounter: boolean;
+  /** Advisor: shade your own pieces that have no legal move left (P39). Opt-in. */
+  deadPieceSelf: boolean;
+  /** Advisor: shade opponents' pieces that have no legal move left (P39). Opt-in. */
+  deadPieceOpponents: boolean;
 }
 
 const DEFAULTS: Prefs = {
@@ -29,6 +33,8 @@ const DEFAULTS: Prefs = {
   volume: 0.6,
   moveOptions: false,
   cornerCounter: false,
+  deadPieceSelf: false,
+  deadPieceOpponents: false,
 };
 
 const store: Pick<Storage, 'getItem' | 'setItem'> | null =
@@ -54,6 +60,14 @@ function load(): Prefs {
           typeof parsed.cornerCounter === 'boolean'
             ? parsed.cornerCounter
             : DEFAULTS.cornerCounter,
+        deadPieceSelf:
+          typeof parsed.deadPieceSelf === 'boolean'
+            ? parsed.deadPieceSelf
+            : DEFAULTS.deadPieceSelf,
+        deadPieceOpponents:
+          typeof parsed.deadPieceOpponents === 'boolean'
+            ? parsed.deadPieceOpponents
+            : DEFAULTS.deadPieceOpponents,
       };
     }
   } catch {
@@ -103,6 +117,16 @@ export function setMoveOptions(on: boolean): void {
 export function setCornerCounter(on: boolean): void {
   if (on === state.cornerCounter) return;
   commit({ ...state, cornerCounter: on });
+}
+
+export function setDeadPieceSelf(on: boolean): void {
+  if (on === state.deadPieceSelf) return;
+  commit({ ...state, deadPieceSelf: on });
+}
+
+export function setDeadPieceOpponents(on: boolean): void {
+  if (on === state.deadPieceOpponents) return;
+  commit({ ...state, deadPieceOpponents: on });
 }
 
 export function usePrefs(): Prefs {

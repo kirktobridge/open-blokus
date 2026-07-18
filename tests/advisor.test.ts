@@ -6,7 +6,13 @@ import { generateLegalMoves } from '../src/game/moves';
 import { idx } from '../src/game/board';
 import { attachPoints } from '../src/game/ai/alphabeta';
 import { COLOR_ORDER } from '../src/game/types';
-import { legalTargetCells, legalMovesForPiece, roomReadout } from '../src/client/advisor/legalMoves';
+import { PIECE_IDS } from '../src/game/types';
+import {
+  deadPieces,
+  legalTargetCells,
+  legalMovesForPiece,
+  roomReadout,
+} from '../src/client/advisor/legalMoves';
 
 describe('legalTargetCells (P3 R1 advisor overlay)', () => {
   it("first move: an I2 can only cover its corner's L-shape", () => {
@@ -45,6 +51,42 @@ describe('legalTargetCells (P3 R1 advisor overlay)', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
     expect(legalTargetCells(G, 'blue', 'V3')).toEqual([]); // V3 is spent
+  });
+});
+
+describe('deadPieces (P39 dead-piece shading)', () => {
+  it('opening board: only X5 is dead — the plus can never reach a corner', () => {
+    // The X pentomino has no cell at a bounding-box corner, so no orientation can
+    // cover a start corner: it's genuinely unplayable as a first move, and the
+    // shading tells the truth about it from move zero. Every other piece can start.
+    const G = createInitialState(4);
+    for (const color of COLOR_ORDER) {
+      expect(new Set(deadPieces(G, color))).toEqual(new Set(['X5']));
+    }
+  });
+
+  it('equals remaining pieces the engine can no longer place (matches generateLegalMoves)', () => {
+    const G = createInitialState(4);
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+    const alive = new Set(generateLegalMoves(G, 'blue').map((p) => p.pieceId));
+    const expected = G.colors.blue.remaining.filter((id) => !alive.has(id));
+    expect(new Set(deadPieces(G, 'blue'))).toEqual(new Set(expected));
+  });
+
+  it('never reports a spent piece — dead is a property of still-held pieces', () => {
+    const G = createInitialState(4);
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+    expect(deadPieces(G, 'blue')).not.toContain('V3'); // V3 is spent, not "dead"
+  });
+
+  it('a color that can never move (start corner taken) is dead across its whole inventory', () => {
+    const G = createInitialState(4);
+    // Occupy blue's start corner (0,0) with another color: blue hasn't started, so
+    // its only legal first move must cover (0,0) — now impossible. Every held piece
+    // is dead by definition.
+    applyPlacement(G, 'red', 'I1', [{ x: 0, y: 0 }]);
+    expect(generateLegalMoves(G, 'blue')).toEqual([]);
+    expect(new Set(deadPieces(G, 'blue'))).toEqual(new Set(PIECE_IDS));
   });
 });
 

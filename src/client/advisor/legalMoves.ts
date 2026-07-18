@@ -49,6 +49,23 @@ export function legalTargetCells(G: GameState, color: Color, pieceId: PieceId): 
 }
 
 /**
+ * The color's still-held pieces that have *zero* legal placements on the current
+ * board — pieces it can never play again, so they're already lost squares (P39).
+ * Derived from `generateLegalMoves`, the same enumeration the P3 R1 / P34 advisor
+ * uses, so the "dead" read is exactly the engine's legal reach: a piece is dead
+ * iff no legal placement of it exists. An eliminated color (no legal move for any
+ * piece) returns *all* its remaining pieces — every one is dead by definition, and
+ * shading the whole inventory is the truthful read of "out of the game."
+ */
+export function deadPieces(G: GameState, color: Color): PieceId[] {
+  const remaining = G.colors[color].remaining;
+  if (remaining.length === 0) return [];
+  const alive = new Set<PieceId>();
+  for (const p of generateLegalMoves(G, color)) alive.add(p.pieceId);
+  return remaining.filter((id) => !alive.has(id));
+}
+
+/**
  * A color's open "corners": empty cells diagonally adjacent to one of its pieces
  * but not orthogonally adjacent to any (an orthogonally-adjacent cell can never be
  * covered — that's the edge-touch rule). These are exactly the cells a next piece
