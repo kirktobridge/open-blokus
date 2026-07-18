@@ -30,7 +30,7 @@ import { reactionMessage } from './lobby/reactions';
 import { BlitzBoardBar } from './blitz/BlitzBoardBar';
 import { BLITZ_URGENT_MS } from './blitz/blitz';
 import { usePrefs } from './settings';
-import { FONT_MONO, FONT_UI, PIECE_VAR } from './theme';
+import { DOCK_COLUMN_W, FONT_MONO, FONT_UI, PIECE_VAR } from './theme';
 import type { Difficulty } from './ai/difficulty';
 import type { GameRecord } from '../game/ai/selfplay';
 import { TURNS_TO_BOTTOM_RIGHT } from './board/orientation';
@@ -400,8 +400,10 @@ export function BlokusBoardView({
         })}
       </div>
 
-      {/* Center column — framed board · rotate · status · dock */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+      {/* Center column — framed board · rotate · status · dock. Pinned width so the
+          side columns clear the wider-than-board action dock and the review table
+          can mirror it exactly (DOCK_COLUMN_W). */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', width: DOCK_COLUMN_W }}>
         {/* Blitz countdown, in the field of view (P24). Inert unless a clock runs. */}
         <BlitzBoardBar
           remainingMs={blitzRemainingMs ?? null}
