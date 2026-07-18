@@ -26,18 +26,18 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P39** — dead-piece shading: newly unblocked by P38 landing (its Gameplay tab is the
-   home for the Self/Opponents toggles). Reuses the P3 R1 / P34 legal-move enumeration —
-   one computation, several consumers — so it's a cheap advisor win; watch the naive
-   per-render sweep across pieces × colors × orientations.
-2. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
+1. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
    makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
    (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
    /research, or an explicit `replication-pending` label at landing.
-3. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
+2. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
    the same mat-dependent-constant risk (P5) sits in `PlacedLayer` for the pieces
    themselves. Dependency-free audit; keeps the tactile identity from vanishing on the
    dark themes P35 leaned into.
+3. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to P37 that
+   buys better lost-position play (+1.3 placed squares, CI-clear, no win-rate cost) and
+   hands the advisor a non-degenerate value signal in lost positions. Same
+   replication-batch / `replication-pending` caveat as P37.
 
 ---
 
@@ -163,7 +163,11 @@ order runs foundation → offline surfaces → live surfaces.
   **P38** — chart → "Open Corners", toggle → "Corner Counter". P38 owns that edit.
 
 ### P39 — Dead-piece shading (red overlay on unplaceable inventory pieces)
-- **Status:** in-progress
+- **Status:** shipped — full scope: independent **Self** and **Opponents** toggles under
+  P38's Advisor Features (both opt-in, off by default), tinting each inventory piece with
+  zero legal placements this turn. Ground truth from the rules-core legal-move enumeration
+  (shared with P3 R1 / P34), so the read can't drift; shading is per-turn ("unplayable",
+  not permanently "dead"). Covered by `e2e/unplayable-pieces.spec.ts` + `tests/advisor.test.ts`.
 - **Value:** a piece with no legal placement left is *already lost* — the player is
   still counting it as an option and planning around it. Shading it answers "what can
   I still actually play?" at a glance, and the Opponents half turns the same read
