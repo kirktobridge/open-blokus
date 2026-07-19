@@ -26,17 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
-   the same mat-dependent-constant risk (P5) sits in `PlacedLayer` for the pieces
-   themselves. Dependency-free audit; keeps the tactile identity from vanishing on the
-   dark themes P35 leaned into.
-2. **P42** — fix inverted placed-piece depth: a placed piece reads as *pressed into* the
+1. **P42** — fix inverted placed-piece depth: a placed piece reads as *pressed into* the
    mat instead of resting on it, undercutting the P5 finish. Dependency-free and shares
-   `PlacedLayer`'s alpha stack with P40 — natural to fold into that same audit.
-3. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
+   `PlacedLayer`'s alpha stack with the in-progress P40 — fold in once that audit lands.
+2. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
    just-landed P37 that buys better lost-position play (+1.3 placed squares, CI-clear, no
    win-rate cost) and hands the advisor a non-degenerate value signal in lost positions.
    Same replication-batch / `replication-pending` caveat P37 landed under.
+3. **P41** — rotate-view button: icon-only, hover-reveal, corner-anchored. Dependency-free
+   (P6 shipped); drops the labelled rotate control's chrome for an arrow glyph anchored off
+   the board's bottom-right corner, reclaiming the space under the board.
 
 ---
 
@@ -709,7 +708,7 @@ four classic colors as accents, shapes as the star.
   Cross-ref P30: the freed sixth row is where the leaderboard lands when unblocked.
 
 ### P40 — Theme-proof the piece finish (audit PlacedLayer's constants)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** the molded finish is the game's tactile identity (P5), but much of it is only
   guaranteed on a pale mat — detail that disappears on Lamplight loses the identity exactly
   where the lamplight look is meant to sell it.
