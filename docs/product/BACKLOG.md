@@ -265,10 +265,13 @@ this epic owns the user-facing feature + its UX.
   0 → 0.25 in [mcts.ts](../../src/game/ai/mcts.ts) so bare/advisor MCTS callers get
   F15's rank-normalized reward shaping (tiers already overrode it), plus a guard test
   locking the shipped default and its 2nd-vs-4th gradient. Backed by AE15/[F15](../research/FINDINGS.md)
-  (`significant`); no second seed batch was run — the shipped-defaults replication and
-  the ladder-monotonicity re-run are still owed, routed to /research.
+  (`significant`); no second seed batch was run — the shipped-defaults replication is
+  still owed, tracked in AE15 (research `## Next up`). The scope's ladder-monotonicity
+  re-run was **dropped as void**: P36 changed no tier config (the tiers already carried
+  an explicit 0.25 since c7172bc), so the ladder is byte-identical before/after.
 - **Value:** deploys research win AE15/F15 (rank-normalized reward shaping at
-  w=0.25), which sits won but undeployed behind a shipped default of 0. Buys better
+  w=0.25) to the base `DEFAULTS` — the tiers already carried it explicitly (c7172bc);
+  this closes the gap for bare/advisor MCTS callers. Buys better
   lost-position play (bots fight for placement/score when the win is gone, +1.3
   placed squares / −0.24 placement, both CI-clear at no win-rate cost) and hands the
   advisor (AD2/AD3) a **non-degenerate value signal** in lost positions instead of a

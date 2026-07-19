@@ -35,6 +35,16 @@ are human-owned.
 - **MILESTONE GATE:** if Scope lists milestones (R0/R1/…), build **one per
   invocation**. If the user didn't name one, propose the first unshipped one and
   confirm — don't silently build the whole epic.
+- **PREMISE GATE:** the entry text is a snapshot from drafting time; the code may
+  have moved since. Grep the code symbols the entry names and check every factual
+  claim its Status/Scope makes about the code ("default is 0", "X is undeployed",
+  "tiers lack Y") against `src/` **before claiming**. A stale premise is a
+  scope-renegotiation trigger *now*, not a footnote to build through: surface the
+  mismatch to the user and get the entry rescoped via /ship first. Follow-up
+  obligations listed in Scope (re-runs, recalibrations, replications) **inherit its
+  premises** — a dead premise silently voids or reshapes them, and if carried
+  verbatim they propagate into the commit message and /land's doc flip as
+  obligations nobody owes (P36's ladder re-run was exactly this).
 
 ### 2. Set up
 - **CLEAN-TREE GATE:** `git status` must be clean before branching. Dirty tree =
@@ -67,6 +77,10 @@ are human-owned.
 - Commit on the feature branch. Then **/land** merges it into main, re-runs the
   suite on the merged result, and runs /ship's terminal flip there (`shipped`, or
   `partial` + which milestone) — doc flips never happen on the branch.
+- Re-derive any "still owed" follow-ups from the **actual diff**, not the entry's
+  Scope text (premise gate, step 1): name in the hand-off to /land only obligations
+  the change as-built really incurs, and say explicitly which scope-listed ones
+  turned out void and why — /ship writes what it's handed.
 - If the work surfaced a *measurable* follow-up question, route it through
   **/triage** — don't tack an experiment onto the feature branch.
 

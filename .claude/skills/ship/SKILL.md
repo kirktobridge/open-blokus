@@ -45,7 +45,10 @@ directly.
 3. **Cross-link** if the shipped item had a research question or dependency
    (e.g. AE1 → FINDINGS F6; a backlog feature → its research `AD#`).
 4. **Verify:** relative links resolve; no stale `proposed`/`deferred`/`partial` left on
-   an entry that's now fully shipped.
+   an entry that's now fully shipped. Before writing an "X is still owed" clause into
+   a terminal flip, check the obligation against the **diff that actually landed** —
+   scope-listed follow-ups whose premise the build voided (e.g. a re-run of something
+   the change didn't touch) get dropped with a one-line why, not copied forward.
 5. **Refresh `## Next up`** (product P22): on any product status flip or intake, update
    the `## Next up` block at the top of BACKLOG.md — drop a now-terminal ID, promote the
    next dependency-ready entry (payoff-ranked, ≤5, one-line why). The P21 schema test
