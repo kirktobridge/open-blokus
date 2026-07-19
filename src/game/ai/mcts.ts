@@ -98,13 +98,16 @@ export interface MctsConfig {
    * winner-take-all reward so a losing color still fights for 2nd vs 4th. The
    * per-color reward becomes `(1−w)·winner + w·rankNorm`, where `rankNorm` is
    * Pentobi's ties-averaged rank result `(beaten + (tied−1)/2)/(n−1)` over placed
-   * squares (best→1, worst→0). `0` = pure winner-take-all (default, byte-identical
-   * to the pre-AE15 reward); `1` = pure rank-normalized margin.
+   * squares (best→1, worst→0). Default `0.25` is F15's shipped weight (P36 — buys
+   * lost-position placement at no win-rate cost, and a non-degenerate advisor value
+   * signal). `0` = pure winner-take-all (byte-identical to the pre-AE15 reward);
+   * `1` = pure rank-normalized margin.
    */
   rankRewardWeight: number;
 }
 
-const DEFAULTS: MctsConfig = {
+/** Base config every `mctsSearch`/`mctsStrategy` call is layered over. */
+export const DEFAULTS: MctsConfig = {
   iterations: 150,
   minIterations: 8,
   explorationC: Math.SQRT2,
@@ -115,7 +118,7 @@ const DEFAULTS: MctsConfig = {
   beam: 16,
   rave: false,
   raveK: 1000,
-  rankRewardWeight: 0,
+  rankRewardWeight: 0.25,
 };
 
 interface Node {
@@ -200,7 +203,7 @@ function untriedMoves(node: Node, cfg: MctsConfig): Placement[] {
  * is Pentobi's ties-averaged rank `(beaten + (tied−1)/2)/(n−1)` (best→1, worst→0).
  * At w=0 this is byte-identical to the pre-AE15 winner-take-all vector.
  */
-function rewardVector(G: GameState, cfg: MctsConfig): Float64Array {
+export function rewardVector(G: GameState, cfg: MctsConfig): Float64Array {
   const placed = COLOR_ORDER.map((c) => TOTAL_SQUARES - remainingSquares(G.colors[c]));
   const max = Math.max(...placed);
   const leaders = placed.filter((p) => p === max).length;
