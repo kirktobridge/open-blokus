@@ -283,7 +283,7 @@ this epic owns the user-facing feature + its UX.
   plus the replication batch.
 
 ### P37 — Deploy extreme rollout width (`rolloutSamples` 48)
-- **Status:** proposed.
+- **Status:** in-progress (feat/p37-extreme-rollout-width).
 - **Value:** deploys research win AE28/[F18](../research/FINDINGS.md), which sits won
   but unshipped. At `extreme`'s fixed 500-iter budget, `rolloutSamples` 48 beats the
   shipped 6 by **+11.3 pts game-share** (Wilson CI [57.3, 65.1], pure rollout quality —
