@@ -26,9 +26,10 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P42** — fix inverted placed-piece depth: a placed piece reads as *pressed into* the
-   mat instead of resting on it, undercutting the P5 finish. Dependency-free and shares
-   `PlacedLayer`'s alpha stack with the just-shipped P40, whose token audit now landed.
+1. **P42** *(in-progress)* — fix inverted placed-piece depth: a placed piece reads as
+   *pressed into* the mat instead of resting on it, undercutting the P5 finish.
+   Dependency-free and shares `PlacedLayer`'s alpha stack with the just-shipped P40,
+   whose token audit now landed.
 2. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
    just-landed P37 that buys better lost-position play (+1.3 placed squares, CI-clear, no
    win-rate cost) and hands the advisor a non-degenerate value signal in lost positions.
@@ -738,7 +739,7 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P6 (shipped — the button + board auto-orient).
 
 ### P42 — Placed pieces read as proud, not sunken (fix inverted depth)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** the tactile board (P5) is the game's identity, but a placed piece currently
   reads as *pressed into* the mat instead of resting on it — the depth cue points the wrong
   way, undercutting the whole skeuomorphic finish.
