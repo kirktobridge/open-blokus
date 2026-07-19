@@ -17,4 +17,10 @@ export default tseslint.config(
     files: ['scripts/**'],
     rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
+  // Plain-node .mjs tooling (e.g. the doc-debt hook script) — the TS files get
+  // their globals via the TS parser; bare ESM needs node's declared explicitly.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { process: 'readonly', console: 'readonly' } },
+  },
 );
