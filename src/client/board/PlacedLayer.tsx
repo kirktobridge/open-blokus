@@ -223,6 +223,11 @@ export function PlacedLayer({
             style={{ floodOpacity: 'var(--tile-shadow)' }}
           />
         </filter>
+        {/* Soft blur for the contact shadow, so it reads as cast onto the mat
+            (a feathered falloff) rather than a crisp keyline hugging the edge. */}
+        <filter id="pl-ao-blur" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="1.1" />
+        </filter>
         {/* Very light desaturated grain. */}
         <filter id="pl-grain" x="0" y="0" width="100%" height="100%">
           <feTurbulence
@@ -242,6 +247,15 @@ export function PlacedLayer({
         <clipPath id="pl-all">
           <path d={allFillsD} />
         </clipPath>
+        {/* Inverse of pl-all: the bare mat only (every footprint masked out). The
+            contact shadow is stroked on the silhouette and cut to this, so only its
+            outer half — the part on the mat — survives. Masking to *all* footprints
+            (not just one) also stops a piece's contact from darkening a neighbor that
+            shares an edge. */}
+        <mask id="pl-outside" maskUnits="userSpaceOnUse" x={0} y={0} width={SIZE} height={SIZE}>
+          <rect x={0} y={0} width={SIZE} height={SIZE} fill="#ffffff" />
+          <path d={allFillsD} fill="#000000" />
+        </mask>
         {/* Per-piece clips so bevel strokes stay inside their own silhouette
             (different colors may share an edge, so a global clip won't do). */}
         {regions.map((r, i) => (
@@ -269,6 +283,27 @@ export function PlacedLayer({
         </g>
       )}
 
+      {/* Contact shadow — the occlusion where a piece meets the mat, cast *outside*
+          each footprint (P42). A proud piece throws its shadow onto the surface, so
+          this sits on the mat and hugs the silhouette from without; the earlier
+          inset seam read the wrong way (a dark rim *inside* the piece = a recessed
+          well). Drawn below the fills so the piece rests on top of it. Depth is the
+          theme's (--tile-ao) — a dark scene needs a deeper seat. */}
+      <g mask="url(#pl-outside)">
+        <g filter="url(#pl-ao-blur)">
+          {regions.map((r, i) => (
+            <path
+              key={i}
+              d={`${r.highlightD}${r.shadowD}`}
+              fill="none"
+              stroke="#000000"
+              style={{ strokeOpacity: 'var(--tile-ao)' }}
+              strokeWidth={4}
+            />
+          ))}
+        </g>
+      </g>
+
       {/* Translucent fills: one contact shadow (outer <g>) wraps the alpha mask
           (inner <g>) — nesting order matters, or the mask waffle-textures the
           drop-shadow. The window's lower alpha lets the board mat show through. */}
@@ -279,21 +314,6 @@ export function PlacedLayer({
           ))}
         </g>
       </g>
-
-      {/* Ambient-occlusion seam: a soft dark inset at each piece silhouette (the
-          contact groove around every footprint), clipped to 2px inside. Its depth
-          is the theme's (--tile-ao) — a dark scene needs a deeper groove to seat. */}
-      {regions.map((r, i) => (
-        <g key={i} clipPath={`url(#pl-r${i})`}>
-          <path
-            d={`${r.highlightD}${r.shadowD}`}
-            fill="none"
-            stroke="#000000"
-            style={{ strokeOpacity: 'var(--tile-ao)' }}
-            strokeWidth={4}
-          />
-        </g>
-      ))}
 
       {/* Macro lamp-pool volume, confined to the pieces. */}
       <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#pl-vol)" clipPath="url(#pl-all)" />

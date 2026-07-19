@@ -56,8 +56,10 @@
      dark side and the look leans on the light return. */
   --tile-rim-lo: 0.22;
   --tile-rim-hi: 0.15;
-  /* Ambient-occlusion groove at each piece silhouette — a dark inset seam; a fixed
-     low alpha seats the piece on a pale mat but a dark scene needs it deeper. */
+  /* Contact shadow at each piece silhouette — the occlusion cast onto the mat just
+     *outside* the footprint (P42), so a piece reads as resting proud, not sunk into
+     an inset well. Mat-cast like --tile-shadow: a fixed low alpha seats the piece on
+     a pale mat but a dark scene needs it deeper. */
   --tile-ao: 0.12;
   /* Dye border — how far the piece color mixes toward black for its edge line (a
      percentage). The window shows the mat just inside this border, so a heavy black
@@ -136,8 +138,8 @@
   --tile-hi: 0.3;
   --tile-lo: 0.38;
   --tile-glint: #ffe9c4;
-  /* Finish on the dark mat (P40): recess leans on its light return, the AO groove
-     deepens to seat pieces on the dark scene, the dye edge lightens so it doesn't
+  /* Finish on the dark mat (P40): recess leans on its light return, the contact
+     shadow deepens to seat pieces on the dark scene, the dye edge lightens so it doesn't
      crush into the mat, and the contact shadow deepens to still read as lift. */
   --tile-rim-lo: 0.15;
   --tile-rim-hi: 0.24;
