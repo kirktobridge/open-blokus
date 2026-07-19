@@ -129,7 +129,9 @@ export function PlacedLayer({
       <defs>
         {/* Macro volume = the warm lamp pool (same geometry as --table-bg): a
             radial highlight top-of-center falling to a dark rim. Low amplitude —
-            per-cell molding now carries the depth. */}
+            per-cell molding now carries the depth. Stops stay literal (P40 audit):
+            a specular pool over the same-colored pieces in every theme, so it's
+            mat-independent — unlike the strokes that sit on/through the mat. */}
         <radialGradient
           id="pl-vol"
           cx={SIZE * 0.5}
@@ -173,20 +175,22 @@ export function PlacedLayer({
             strokeWidth={1.5}
             style={{ opacity: 'var(--tile-lo)' }}
           />
-          {/* Window recess rim, inverted: dark top+left, light bottom+right. */}
+          {/* Window recess rim, inverted: dark top+left, light bottom+right. At the
+              translucent window boundary, so the amplitudes are the theme's
+              (--tile-rim-lo/-hi) — a dark mat swallows the dark side. */}
           <path
             d="M5.5 24.5 L5.5 5.5 L24.5 5.5"
             fill="none"
             stroke="#000000"
             strokeWidth={1}
-            strokeOpacity={0.22}
+            style={{ strokeOpacity: 'var(--tile-rim-lo)' }}
           />
           <path
             d="M5.5 24.5 L24.5 24.5 L24.5 5.5"
             fill="none"
             stroke="#ffffff"
             strokeWidth={1}
-            strokeOpacity={0.15}
+            style={{ strokeOpacity: 'var(--tile-rim-hi)' }}
           />
           {/* Top-edge glint. */}
           <rect
@@ -207,9 +211,17 @@ export function PlacedLayer({
             strokeOpacity={0.14}
           />
         </pattern>
-        {/* One soft contact shadow for the whole placed layer. */}
+        {/* One soft contact shadow for the whole placed layer — cast onto the mat,
+            so its opacity is the theme's (--tile-shadow): black vanishes on a dark
+            table, and the pieces would stop reading as resting on the surface. */}
         <filter id="pl-shadow" x="-5%" y="-5%" width="110%" height="110%">
-          <feDropShadow dx="0" dy="0.8" stdDeviation="1" floodColor="#000000" floodOpacity="0.35" />
+          <feDropShadow
+            dx="0"
+            dy="0.8"
+            stdDeviation="1"
+            floodColor="#000000"
+            style={{ floodOpacity: 'var(--tile-shadow)' }}
+          />
         </filter>
         {/* Very light desaturated grain. */}
         <filter id="pl-grain" x="0" y="0" width="100%" height="100%">
@@ -269,14 +281,15 @@ export function PlacedLayer({
       </g>
 
       {/* Ambient-occlusion seam: a soft dark inset at each piece silhouette (the
-          contact groove around every footprint), clipped to 2px inside. */}
+          contact groove around every footprint), clipped to 2px inside. Its depth
+          is the theme's (--tile-ao) — a dark scene needs a deeper groove to seat. */}
       {regions.map((r, i) => (
         <g key={i} clipPath={`url(#pl-r${i})`}>
           <path
             d={`${r.highlightD}${r.shadowD}`}
             fill="none"
             stroke="#000000"
-            strokeOpacity={0.12}
+            style={{ strokeOpacity: 'var(--tile-ao)' }}
             strokeWidth={4}
           />
         </g>
@@ -296,19 +309,22 @@ export function PlacedLayer({
       />
 
       {/* Thin darker dye border around each piece footprint (the photo's edge),
-          clipped to 1.5px inside so it can't bleed onto a neighbor sharing an edge. */}
+          clipped to 1.5px inside so it can't bleed onto a neighbor sharing an edge.
+          The black-mix depth is the theme's (--tile-dye): the window shows the mat
+          just inside this line, so a heavy mix crushes the edge into a dark mat. */}
       {regions.map((r, i) => (
         <g key={i} clipPath={`url(#pl-r${i})`}>
           <path
             d={`${r.highlightD}${r.shadowD}`}
             fill="none"
-            stroke={`color-mix(in srgb, ${PIECE_VAR[r.color]}, black 30%)`}
+            stroke={`color-mix(in srgb, ${PIECE_VAR[r.color]}, black var(--tile-dye))`}
             strokeWidth={3}
           />
         </g>
       ))}
 
-      {/* Faint grain over the pieces. */}
+      {/* Faint grain over the pieces. Opacity stays literal (P40 audit): desaturated
+          symmetric noise reads the same on any mat, like MatLayer's own grain. */}
       <rect
         x={0}
         y={0}
