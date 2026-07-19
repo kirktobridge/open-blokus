@@ -8,9 +8,13 @@ import {
   mctsSearch,
   enableRolloutStats,
   getRolloutStats,
+  rewardVector,
+  DEFAULTS,
   type MctsNode,
 } from '../src/game/ai/mcts';
 import { chooseMove } from '../src/game/ai/heuristic';
+import { remainingSquares } from '../src/game/scoring';
+import { COLOR_ORDER } from '../src/game/types';
 
 // MCTS is expensive; keep the unit config tiny. Strength (vs heuristic/random)
 // is validated in the benchmark / Run H, not here.
@@ -162,6 +166,47 @@ describe('rollout-sampling instrumentation (P37)', () => {
       distinct: 0,
       fallbacks: 0,
     });
+  });
+});
+
+// P36: deploy F15's rank-normalized reward shaping as the base default so bare/advisor
+// MCTS callers (not just the tiers, which already override it) fight for placement in a
+// lost position and hand the advisor a non-degenerate value signal.
+describe('reward-shaping default (P36/F15)', () => {
+  it('ships rankRewardWeight 0.25 as the base MctsConfig default', () => {
+    expect(DEFAULTS.rankRewardWeight).toBe(0.25);
+  });
+
+  it('gives losing colors a placement gradient winner-take-all leaves flat', () => {
+    // Force a strictly-ordered final standing: drop nested supersets of pieces so each
+    // successive color has strictly more placed squares (blue fewest → green most).
+    const G = createInitialState(4);
+    COLOR_ORDER.forEach((c, i) => {
+      const rem = G.colors[c].remaining;
+      G.colors[c].remaining = rem.slice(0, rem.length - i * 3);
+    });
+    const remaining = COLOR_ORDER.map((c) => remainingSquares(G.colors[c]));
+    // Sanity: construction really did produce a strict placed ordering (green leads).
+    expect(remaining[0]).toBeGreaterThan(remaining[1]);
+    expect(remaining[1]).toBeGreaterThan(remaining[2]);
+    expect(remaining[2]).toBeGreaterThan(remaining[3]);
+
+    const shaped = rewardVector(G, DEFAULTS); // the shipped default
+    const wta = rewardVector(G, { ...DEFAULTS, rankRewardWeight: 0 });
+
+    // Winner-take-all: every non-leader is a flat 0 — no gradient between 2nd and 4th.
+    expect(wta[3]).toBe(1); // green, the sole leader
+    expect(wta[0]).toBe(0);
+    expect(wta[1]).toBe(0);
+    expect(wta[2]).toBe(0);
+
+    // Shaped default: the standing is now a strict gradient the losers can climb.
+    expect(shaped[3]).toBeGreaterThan(shaped[2]);
+    expect(shaped[2]).toBeGreaterThan(shaped[1]);
+    expect(shaped[1]).toBeGreaterThan(shaped[0]);
+    // The middle losers, flat under winner-take-all, are now separated.
+    expect(shaped[2]).toBeGreaterThan(0);
+    expect(shaped[1]).toBeGreaterThan(0);
   });
 });
 
