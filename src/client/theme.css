@@ -45,6 +45,28 @@
   --tile-hi: 0.42;
   --tile-lo: 0.26;
   --tile-glint: #ffffff;
+  /* Rest of the molded finish, theme-proofed (P40). These sit on — or cast onto —
+     the mat, so a constant tuned on the pale Linen mat fades on a dark one; each
+     is retuned per built-in, the same fix P5 made for the stud ring. The grain
+     and macro lamp-pool stay literal in PlacedLayer: both are symmetric effects
+     over constant-colored content (neutral noise; specular pool over the pieces),
+     genuinely mat-independent. --- Recess rim around the translucent window,
+     inverted-lit (dark top-left / light bottom-right, mirror of --tile-hi/-lo);
+     it sits where the window lets more mat through, so a dark mat swallows the
+     dark side and the look leans on the light return. */
+  --tile-rim-lo: 0.22;
+  --tile-rim-hi: 0.15;
+  /* Ambient-occlusion groove at each piece silhouette — a dark inset seam; a fixed
+     low alpha seats the piece on a pale mat but a dark scene needs it deeper. */
+  --tile-ao: 0.12;
+  /* Dye border — how far the piece color mixes toward black for its edge line (a
+     percentage). The window shows the mat just inside this border, so a heavy black
+     mix crushes the edge into a dark mat; dark leans lighter. */
+  --tile-dye: 30%;
+  /* Contact drop-shadow opacity — the piece's lift cast onto the mat. The one
+     genuinely mat-cast constant: black is invisible on a dark table, so dark
+     carries a deeper value or the pieces stop reading as resting on the surface. */
+  --tile-shadow: 0.35;
 
   /* Molded-board finish (P5) — how hard the board's lattice/wells/studs are lit
      (MatLayer). Separate from --tile-* because the board is matte plastic under
@@ -114,6 +136,14 @@
   --tile-hi: 0.3;
   --tile-lo: 0.38;
   --tile-glint: #ffe9c4;
+  /* Finish on the dark mat (P40): recess leans on its light return, the AO groove
+     deepens to seat pieces on the dark scene, the dye edge lightens so it doesn't
+     crush into the mat, and the contact shadow deepens to still read as lift. */
+  --tile-rim-lo: 0.15;
+  --tile-rim-hi: 0.24;
+  --tile-ao: 0.18;
+  --tile-dye: 22%;
+  --tile-shadow: 0.5;
 
   /* Molded menu tile (P35) — dark card: a faint warm glint, a deeper shade. */
   --card-hi: rgba(255, 240, 214, 0.09);
@@ -176,6 +206,13 @@
   --tile-hi: 0.38;
   --tile-lo: 0.3;
   --tile-glint: #fff3dd;
+  /* Finish (P40) — pale mat like Linen, so close to the Linen values; the warm,
+     darker walnut frame throws the board a touch deeper, hence a hair more shadow. */
+  --tile-rim-lo: 0.2;
+  --tile-rim-hi: 0.15;
+  --tile-ao: 0.13;
+  --tile-dye: 30%;
+  --tile-shadow: 0.38;
 
   /* Molded menu tile (P35) — pale card like Linen, glint faintly warm. */
   --card-hi: rgba(255, 253, 245, 0.8);
