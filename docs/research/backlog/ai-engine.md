@@ -29,7 +29,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
 5. **AE15 replication** — second independent seed pool confirming F15's w=0.25
    game-share guard (≥48% lower bound), owed because w=0.25 now backs a shipped default
    (tiers + P36 base default). On agreement, upgrades F15 to `replicated` and clears
-   P36/P37's `replication-pending`. Cheap: one re-run of Run S's config on fresh seeds.
+   **P36's** `replication-pending` only — P37's is a distinct debt (F18/AE28,
+   `rolloutSamples` 48 vs 6, a Run V re-batch). Cheap: one re-run of Run S's config on
+   fresh seeds.
+6. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
+   fixed 500 iters); clears **P37's** `replication-pending`, upgrades F18 to
+   `replicated`. Compute-heavy (~150 CPU-h at n=600) — schedule deliberately.
 
 ---
 
@@ -292,8 +297,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
   batch (n=648, game-share CI [49.4,57.1] — lower bound near 50), and w=0.25 now backs
   a shipped default. Run a second independent seed pool, w=0.25 vs w=0, same method
   (2v2, `beam 16`, `rolloutDepth 0`, ≥600 games). Success: game-share Wilson lower
-  bound ≥ 48%. On agreement → upgrade F15 `significant → replicated` and clear P36's
-  and P37's `replication-pending`. Parked in `## Next up` below.
+  bound ≥ 48%. On agreement → upgrade F15 `significant → replicated` and clear **P36's**
+  `replication-pending` (P37's is separate — it needs an F18/AE28 re-batch, Run V's
+  config, not this one). Parked in `## Next up` below.
 - **Objective:** make bots fight for placement/score when the win is out of reach.
 - **Hypothesis:** the winner-take-all reward leaves a losing bot indifferent
   between 2nd and 4th; blending a placed-squares-margin term into the reward
@@ -677,6 +683,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
   ~55 iters, large at 500 (F18). Deploy: raise `extreme`'s `rolloutSamples` from 6
   toward 48 (strength win + ~1.35× move-speed). `fallbackMove` path is
   sample-with-replacement — no crash, only wasted cycles in sparse endgames.
+- **Replication owed (`significant`, replication-pending):** Run V is a single batch
+  and 48 now backs the shipped `extreme` tier (P37). Run a second independent seed
+  pool on Run V's config (`ae28-extreme-width.json`, 48 vs 6 at fixed 500 iters,
+  ≥600 games); success = game-share Wilson lower bound clears 52%. On agreement →
+  upgrade F18 to `replicated` and clear P37's `replication-pending`. Parked in
+  `## Next up`.
 - **Status (was):** active — spun out of AE26/[F17](../FINDINGS.md). AE26 showed wider
   sampling wins at matched *wall-clock*, but the win is mostly the extra iterations
   shorter playouts buy. The shipped `extreme` tier runs a **fixed 500 iterations with
