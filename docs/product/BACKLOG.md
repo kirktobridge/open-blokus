@@ -26,18 +26,17 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P37** — deploy extreme's `rolloutSamples` 48 (AE28/F18, won): a config-only flip that
-   makes the strongest tier both stronger (+11.3 pts) and ~1.35× snappier. Sibling **P36**
-   (deploy F15's `rankRewardWeight`) is the same shape. Both need a replication batch via
-   /research, or an explicit `replication-pending` label at landing.
-2. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
+1. **P40** — theme-proof the piece finish: with P35's molded brass finish now on the menu,
    the same mat-dependent-constant risk (P5) sits in `PlacedLayer` for the pieces
    themselves. Dependency-free audit; keeps the tactile identity from vanishing on the
    dark themes P35 leaned into.
-3. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to P37 that
-   buys better lost-position play (+1.3 placed squares, CI-clear, no win-rate cost) and
-   hands the advisor a non-degenerate value signal in lost positions. Same
-   replication-batch / `replication-pending` caveat as P37.
+2. **P42** — fix inverted placed-piece depth: a placed piece reads as *pressed into* the
+   mat instead of resting on it, undercutting the P5 finish. Dependency-free and shares
+   `PlacedLayer`'s alpha stack with P40 — natural to fold into that same audit.
+3. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
+   just-landed P37 that buys better lost-position play (+1.3 placed squares, CI-clear, no
+   win-rate cost) and hands the advisor a non-degenerate value signal in lost positions.
+   Same replication-batch / `replication-pending` caveat P37 landed under.
 
 ---
 
@@ -283,7 +282,11 @@ this epic owns the user-facing feature + its UX.
   plus the replication batch.
 
 ### P37 — Deploy extreme rollout width (`rolloutSamples` 48)
-- **Status:** in-progress (feat/p37-extreme-rollout-width).
+- **Status:** shipped — `replication-pending` — extreme's `rolloutSamples` flipped
+  6 → 48 in [difficulty.ts](../../src/client/ai/difficulty.ts), plus opt-in
+  rollout-sampling instrumentation in the MCTS core (surfaced via `arena --rollout-stats`).
+  Backed by AE28/[F18](../research/FINDINGS.md), a single well-powered run (n=600, CI
+  clear); no second seed batch was run — the shipped-defaults replication is still owed.
 - **Value:** deploys research win AE28/[F18](../research/FINDINGS.md), which sits won
   but unshipped. At `extreme`'s fixed 500-iter budget, `rolloutSamples` 48 beats the
   shipped 6 by **+11.3 pts game-share** (Wilson CI [57.3, 65.1], pure rollout quality —
