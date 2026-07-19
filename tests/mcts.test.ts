@@ -1,9 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { createInitialState } from '../src/game/modes';
 import { isLegalPlacement } from '../src/game/placement';
 import { resolveCells } from '../src/game/pieces';
 import { generateLegalMoves } from '../src/game/moves';
-import { mctsStrategy, mctsSearch, type MctsNode } from '../src/game/ai/mcts';
+import {
+  mctsStrategy,
+  mctsSearch,
+  enableRolloutStats,
+  getRolloutStats,
+  type MctsNode,
+} from '../src/game/ai/mcts';
 import { chooseMove } from '../src/game/ai/heuristic';
 
 // MCTS is expensive; keep the unit config tiny. Strength (vs heuristic/random)
@@ -99,6 +105,63 @@ describe('mctsSearch tree reuse', () => {
     const second = mctsSearch(other, 'blue', seededRng(), { iterations: 20, beam: 6 }, first.root);
     expect(second.root).not.toBe(first.root);
     expect(second.move).not.toBeNull();
+  });
+});
+
+// P37: opt-in rollout-sampling instrumentation. Verifies the counters are wired and
+// zero-cost when off, and that width-48 rollouts to terminal do surface the
+// sample-with-replacement waste the readout is meant to quantify.
+describe('rollout-sampling instrumentation (P37)', () => {
+  afterEach(() => enableRolloutStats(false)); // never leak global state to other tests
+
+  it('reports null while disabled (the default hot path stays uninstrumented)', () => {
+    expect(getRolloutStats()).toBeNull();
+    const G = createInitialState(4);
+    mctsStrategy({ ...fast, rolloutSamples: 48 })(G, 'blue', seededRng());
+    expect(getRolloutStats()).toBeNull(); // a search did not turn it on
+  });
+
+  it('accumulates rollout-move and draw counts once enabled', () => {
+    const G = createInitialState(4);
+    enableRolloutStats(true);
+    mctsStrategy({ ...fast, rolloutSamples: 48 })(G, 'blue', seededRng());
+    const st = getRolloutStats()!;
+    expect(st.moves).toBeGreaterThan(0);
+    // Each non-null policy move draws rolloutSamples candidates.
+    expect(st.samples).toBeGreaterThanOrEqual(st.moves);
+    // Distinct + null can never exceed the draws taken (a consistency invariant).
+    expect(st.distinct + st.nullSamples).toBeLessThanOrEqual(st.samples);
+  });
+
+  it('captures sample-with-replacement waste when width exceeds the legal-move count', () => {
+    // Full rollouts (rolloutDepth 0) reach sparse endgame plies where far fewer than
+    // 48 legal moves exist, so the 48-draw pool must repeat moves — the exact waste
+    // the extreme-tier flip trades cycles for. Deterministic under the fixed seed.
+    const G = createInitialState(4);
+    enableRolloutStats(true);
+    mctsStrategy({ iterations: 40, rolloutDepth: 0, beam: 6, rolloutSamples: 48 })(
+      G,
+      'blue',
+      seededRng(),
+    );
+    const st = getRolloutStats()!;
+    const duplicates = st.samples - st.nullSamples - st.distinct;
+    expect(duplicates).toBeGreaterThan(0);
+  });
+
+  it('re-enabling resets the counters to zero', () => {
+    const G = createInitialState(4);
+    enableRolloutStats(true);
+    mctsStrategy({ ...fast, rolloutSamples: 48 })(G, 'blue', seededRng());
+    expect(getRolloutStats()!.samples).toBeGreaterThan(0);
+    enableRolloutStats(true);
+    expect(getRolloutStats()).toEqual({
+      moves: 0,
+      samples: 0,
+      nullSamples: 0,
+      distinct: 0,
+      fallbacks: 0,
+    });
   });
 });
 

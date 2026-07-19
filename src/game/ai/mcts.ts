@@ -277,6 +277,43 @@ interface SampledMove {
 const ROLLOUT_ATTEMPTS = 24;
 
 /**
+ * Opt-in rollout-sampling instrumentation (P37). A non-`random` rollout policy draws
+ * `rolloutSamples` legal moves per rollout move and picks among them (`rolloutMove`).
+ * At width 48 (extreme, AE28/F18) that pool routinely exceeds the legal-move count in
+ * sparse endgames, so most draws are duplicates (sample-with-replacement waste) and
+ * some miss entirely, falling through to the full-enumeration `fallbackMove`. It's
+ * pure wasted cycles — no correctness risk — and was previously unmeasured. These
+ * counters quantify it; `--rollout-stats` in arena.cli reads them.
+ *
+ * Disabled by default: `rolloutStats` is null, so the hot path pays one null-check per
+ * sample and never allocates. Enabling trades that for a per-call key set.
+ */
+export interface RolloutStats {
+  /** Rollout moves resolved under a non-`random` policy (the denominator). */
+  moves: number;
+  /** Individual `sampleLegalMove` draws across those moves (≈ moves × rolloutSamples). */
+  samples: number;
+  /** Draws that returned null (rejection sampling found no legal move in its budget). */
+  nullSamples: number;
+  /** Distinct legal moves seen (by cell-key), summed per rollout move. */
+  distinct: number;
+  /** Rollout moves that fell through to the full-enumeration `fallbackMove`. */
+  fallbacks: number;
+}
+
+let rolloutStats: RolloutStats | null = null;
+
+/** Turn rollout instrumentation on (fresh zeroed counters) or off (`false`). */
+export function enableRolloutStats(on = true): void {
+  rolloutStats = on ? { moves: 0, samples: 0, nullSamples: 0, distinct: 0, fallbacks: 0 } : null;
+}
+
+/** Current counters, or null when instrumentation is off. */
+export function getRolloutStats(): Readonly<RolloutStats> | null {
+  return rolloutStats;
+}
+
+/**
  * Rejection-sample one legal move for `color`: pick a random remaining piece,
  * orientation, and position; test legality. Rollouts only need *a* legal move,
  * not all of them, so this avoids the (expensive) full move enumeration. Returns
@@ -319,6 +356,22 @@ function fallbackMove(G: GameState, color: Color, rng: () => number): SampledMov
   return { pieceId: m.pieceId, cells: resolveCells(m) };
 }
 
+/** Record one rollout draw (P37 instrumentation; a no-op when stats are off). */
+function statSample(s: SampledMove | null, keys: Set<string> | null): void {
+  if (!rolloutStats) return;
+  rolloutStats.samples++;
+  if (s) keys!.add(moveKey(s.cells));
+  else rolloutStats.nullSamples++;
+}
+
+/** Close out one rollout move's counters (P37 instrumentation; a no-op when off). */
+function statMove(keys: Set<string> | null, fellBack: boolean): void {
+  if (!rolloutStats) return;
+  rolloutStats.moves++;
+  if (keys) rolloutStats.distinct += keys.size;
+  if (fellBack) rolloutStats.fallbacks++;
+}
+
 /** One rollout move under the policy, or null if `color` has no legal move. */
 function rolloutMove(
   G: GameState,
@@ -335,29 +388,38 @@ function rolloutMove(
   if (cfg.rolloutPolicy === 'heuristic') {
     // Sample a few legal moves, keep the largest piece (size is the dominant
     // heuristic term — see research/log/ai-strategy.md). Cheap vs full enumeration.
+    const keys = rolloutStats ? new Set<string>() : null;
     let best: SampledMove | null = null;
     for (let k = 0; k < n; k++) {
       const s = sampleLegalMove(G, color, rng, bb);
+      statSample(s, keys);
       if (s && (!best || s.cells.length > best.cells.length)) best = s;
     }
+    statMove(keys, best === null);
     return best ?? fallbackMove(G, color, rng);
   }
 
   // score / softmax: rank the same samples by the *full* heuristic score, so a
   // rollout move also weighs frontier gain, centrality and corner denial — the
   // AE11 hypothesis that a better-playing rollout is a more predictive one.
+  const keys = rolloutStats ? new Set<string>() : null;
   const cands: SampledMove[] = [];
   const scores: number[] = [];
   let bestScore = -Infinity;
   for (let k = 0; k < n; k++) {
     const s = sampleLegalMove(G, color, rng, bb);
+    statSample(s, keys);
     if (!s) continue;
     const v = scoreCells(G, color, s.cells, WEIGHTS);
     cands.push(s);
     scores.push(v);
     if (v > bestScore) bestScore = v;
   }
-  if (cands.length === 0) return fallbackMove(G, color, rng);
+  if (cands.length === 0) {
+    statMove(keys, true);
+    return fallbackMove(G, color, rng);
+  }
+  statMove(keys, false);
 
   if (cfg.rolloutPolicy === 'score') {
     for (let i = 0; i < cands.length; i++) if (scores[i] === bestScore) return cands[i];

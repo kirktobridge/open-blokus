@@ -14,7 +14,7 @@ import {
   type Contestant,
 } from './arena';
 import { alphaBetaStrategy } from './alphabeta';
-import { mctsStrategy, type MctsConfig } from './mcts';
+import { mctsStrategy, enableRolloutStats, getRolloutStats, type MctsConfig } from './mcts';
 import { WEIGHTS, type Weights } from './heuristic';
 import { valueNetProbs, type ValueNetWeights } from './valuenet';
 import { COLOR_ORDER } from '../types';
@@ -206,4 +206,38 @@ if (flags.has('--rave')) {
     rGames,
     rSeeds,
   );
+}
+
+// 8. Rollout-sampling waste readout (P37) — opt-in (`--rollout-stats`). Quantifies
+// the sample-with-replacement / fallback waste at extreme's width 48: in sparse
+// endgames the 48-draw pool exceeds the legal-move count, so most draws duplicate and
+// some miss entirely, falling through to full-enumeration `fallbackMove`. Pure wasted
+// cycles, no correctness risk (F18). The waste rate is width-driven and independent of
+// the iteration budget, so a reduced count measures it far faster than the live 500.
+// Self-play, one short game — enough rollout moves for the rates to settle.
+if (flags.has('--rollout-stats')) {
+  const cfg: Partial<MctsConfig> = {
+    iterations: 10,
+    beam: 20,
+    rolloutDepth: 0,
+    minIterations: 8,
+    rankRewardWeight: 0.25,
+    rolloutSamples: 48, // mirrors the extreme tier (difficulty.ts)
+  };
+  const seats: Contestant[] = COLOR_ORDER.map((_, i) => ({
+    name: `extreme#${i}`,
+    strategy: mctsStrategy(cfg),
+  }));
+  enableRolloutStats(true);
+  runTournamentSeeds(seats, { games: 1, seeds: 1, baseSeed });
+  const st = getRolloutStats()!;
+  enableRolloutStats(false);
+  const pct = (x: number) => (x * 100).toFixed(1).padStart(5) + '%';
+  const duplicates = st.samples - st.nullSamples - st.distinct;
+  console.log(
+    `\nRollout sampling waste  (width ${cfg.rolloutSamples}, ${st.moves} rollout moves, ${st.samples} draws)`,
+  );
+  console.log(`  duplicate draws (sample-with-replacement)  ${pct(duplicates / st.samples)}`);
+  console.log(`  null draws (rejection-sample miss)         ${pct(st.nullSamples / st.samples)}`);
+  console.log(`  fallback moves (full enumeration)          ${pct(st.fallbacks / st.moves)}`);
 }
