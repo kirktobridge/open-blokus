@@ -35,6 +35,16 @@ describe('difficulty MCTS config', () => {
     // Enough rollouts per child to stay reliable at its beam (≥ ~5, per F8).
     expect(x.iterations! / x.beam!).toBeGreaterThanOrEqual(5);
   });
+
+  it('extreme widens the rollout sample pool to 48 (AE28/F18); medium/hard keep the default', () => {
+    // At extreme's fixed 500-iter budget, width 48 beats the default 6 on pure
+    // rollout quality (+11.3 pts game-share, no wall-clock confound). medium/hard
+    // trade width against *free iterations* (F17) — a separate regime, left unset so
+    // they inherit the MctsConfig default (6).
+    expect(mctsConfigFor('extreme').rolloutSamples).toBe(48);
+    expect(mctsConfigFor('medium').rolloutSamples).toBeUndefined();
+    expect(mctsConfigFor('hard').rolloutSamples).toBeUndefined();
+  });
 });
 
 describe('blitz bot pacing (P25)', () => {

@@ -28,11 +28,18 @@ type MctsTier = Exclude<Difficulty, 'easy'>;
  * (AE15 / F15): a losing bot fights for 2nd-vs-4th (better final placement/score)
  * at no measured cost to wins. Validated at truncated rollouts; here rollouts run
  * to terminal, where the rank term is the *true* final ranking — a stronger signal.
+ *
+ * `extreme`'s `rolloutSamples: 48` (AE28 / F18) widens the rejection-sample pool
+ * each rollout move chooses from: at extreme's fixed 500-iter budget, width 48 beats
+ * the default 6 by +11.3 pts game-share (pure rollout quality, no wall-clock confound)
+ * *and* runs ~1.35× faster (bigger-piece playouts terminate sooner). medium/hard keep
+ * the default 6 — their width optimum trades against *free iterations* (F17), a
+ * separate budget regime left as-is here.
  */
 const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
   medium: { timeBudgetMs: 500, beam: 6, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
   hard: { timeBudgetMs: 2000, beam: 16, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
-  extreme: { iterations: 500, beam: 20, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
+  extreme: { iterations: 500, beam: 20, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25, rolloutSamples: 48 },
 };
 
 export function mctsConfigFor(difficulty: MctsTier): Partial<MctsConfig> {
