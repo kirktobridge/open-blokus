@@ -26,17 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
-   just-landed P37 that buys better lost-position play (+1.3 placed squares, CI-clear, no
-   win-rate cost) and hands the advisor a non-degenerate value signal in lost positions.
-   Same replication-batch / `replication-pending` caveat P37 landed under.
-2. **P41** — rotate-view button: icon-only, hover-reveal, corner-anchored. Dependency-free
+1. **P41** — rotate-view button: icon-only, hover-reveal, corner-anchored. Dependency-free
    (P6 shipped); drops the labelled rotate control's chrome for an arrow glyph anchored off
    the board's bottom-right corner, reclaiming the space under the board.
-3. **P43** — event feed panel: a persistent consumer of the `useGameEvents` stream (P32's
+2. **P43** — event feed panel: a persistent consumer of the `useGameEvents` stream (P32's
    beats are transient pills that a player who looks away misses). Dependency-ready — P32,
    P38, and P12 all shipped; render the beat history as a scrollable log or footprint-friendly
    marquee, toggle in Settings.
+3. **P44** — incursion advisor: highlight the corners where an opponent could thread a
+   diagonal past your wall *before* the cut lands (P32 names cuts only after). Dependency-ready
+   — P32's event registry + P38's toggle home both shipped; product-only threshold tuning.
 
 ---
 
@@ -262,7 +261,12 @@ this epic owns the user-facing feature + its UX.
   current top tier for any actual new rung.
 
 ### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
-- **Status:** in-progress.
+- **Status:** shipped — `replication-pending` — `DEFAULTS.rankRewardWeight` flipped
+  0 → 0.25 in [mcts.ts](../../src/game/ai/mcts.ts) so bare/advisor MCTS callers get
+  F15's rank-normalized reward shaping (tiers already overrode it), plus a guard test
+  locking the shipped default and its 2nd-vs-4th gradient. Backed by AE15/[F15](../research/FINDINGS.md)
+  (`significant`); no second seed batch was run — the shipped-defaults replication and
+  the ladder-monotonicity re-run are still owed, routed to /research.
 - **Value:** deploys research win AE15/F15 (rank-normalized reward shaping at
   w=0.25), which sits won but undeployed behind a shipped default of 0. Buys better
   lost-position play (bots fight for placement/score when the win is gone, +1.3
