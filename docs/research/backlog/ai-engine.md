@@ -26,6 +26,10 @@ test (product P21) fails CI if any ID here is missing or terminal.
 4. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
    guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
    F8/AE10).
+5. **AE15 replication** — second independent seed pool confirming F15's w=0.25
+   game-share guard (≥48% lower bound), owed because w=0.25 now backs a shipped default
+   (tiers + P36 base default). On agreement, upgrades F15 to `replicated` and clears
+   P36/P37's `replication-pending`. Cheap: one re-run of Run S's config on fresh seeds.
 
 ---
 
@@ -279,9 +283,17 @@ test (product P21) fails CI if any ID here is missing or terminal.
   shaping `(1−w)·winner + w·rankNorm` at w=0.25 improves placement (−0.24, CI clear)
   and placed squares (+1.3, CI clear) with game-share 53.2% (CI [49.4,57.1], clears
   the 48% guard); w=0.5 over-trades (game-share CI 45.4% < floor, the M4 conflict).
-  Config knob `rankRewardWeight` in [mcts.ts](../../../src/game/ai/mcts.ts) (default
-  0 = byte-identical). Ship as a retune-in-place per P13 (lost-position lever, not a
-  new rung) → hand to /ship; also feeds AD2/AD3 a non-degenerate lost-position value.
+  Config knob `rankRewardWeight` in [mcts.ts](../../../src/game/ai/mcts.ts) — default
+  `0.25` since P36 (`w=0` remains byte-identical to the pre-shaping winner-take-all
+  reward). Shipped as a retune-in-place per P13 (lost-position lever, not a new rung):
+  the tiers (commit c7172bc) and now the base default (P36); also feeds AD2/AD3 a
+  non-degenerate lost-position value.
+- **Replication owed (`significant`, replication-pending):** Run S is a single pooled
+  batch (n=648, game-share CI [49.4,57.1] — lower bound near 50), and w=0.25 now backs
+  a shipped default. Run a second independent seed pool, w=0.25 vs w=0, same method
+  (2v2, `beam 16`, `rolloutDepth 0`, ≥600 games). Success: game-share Wilson lower
+  bound ≥ 48%. On agreement → upgrade F15 `significant → replicated` and clear P36's
+  and P37's `replication-pending`. Parked in `## Next up` below.
 - **Objective:** make bots fight for placement/score when the win is out of reach.
 - **Hypothesis:** the winner-take-all reward leaves a losing bot indifferent
   between 2nd and 4th; blending a placed-squares-margin term into the reward

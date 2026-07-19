@@ -94,8 +94,11 @@ right weight** (Run S, AE15, n=600 head-to-head + n=648 pooled game-share). At
 game-share 53.2% (CI [49.4,57.1] — clears the 48% guard, leans >50%). At **w=0.5** the
 placement gain persists but game-share CI sinks to 45.4%, under the floor — score-greed
 starts fighting win-seeking, the exact M4 conflict AE15 pre-registered. Shipping value
-is **w=0.25**; default `rankRewardWeight` stays 0 (byte-identical, F13/AE18 golden
-intact). Twofold payoff: better lost-position behaviour for players, and a
+is **w=0.25**, now the shipped `rankRewardWeight` default (P36; the tiers already
+carried it since c7172bc). The `w=0` reward stays byte-identical to the pre-shaping
+winner-take-all vector, and the F13/AE18 golden is unaffected either way (its
+strategies are non-MCTS). Twofold payoff: better lost-position behaviour for players,
+and a
 non-degenerate value signal for the advisor (AD2/AD3) where winner-take-all reads a
 flat 0. Per P13 this is a lost-position lever (not a ceiling lever) → retune tiers
 in place, not a new rung.
