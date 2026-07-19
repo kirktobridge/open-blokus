@@ -262,7 +262,7 @@ this epic owns the user-facing feature + its UX.
   current top tier for any actual new rung.
 
 ### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
-- **Status:** proposed.
+- **Status:** in-progress.
 - **Value:** deploys research win AE15/F15 (rank-normalized reward shaping at
   w=0.25), which sits won but undeployed behind a shipped default of 0. Buys better
   lost-position play (bots fight for placement/score when the win is gone, +1.3
