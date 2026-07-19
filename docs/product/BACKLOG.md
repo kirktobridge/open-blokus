@@ -26,17 +26,17 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P42** *(in-progress)* — fix inverted placed-piece depth: a placed piece reads as
-   *pressed into* the mat instead of resting on it, undercutting the P5 finish.
-   Dependency-free and shares `PlacedLayer`'s alpha stack with the just-shipped P40,
-   whose token audit now landed.
-2. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
+1. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
    just-landed P37 that buys better lost-position play (+1.3 placed squares, CI-clear, no
    win-rate cost) and hands the advisor a non-degenerate value signal in lost positions.
    Same replication-batch / `replication-pending` caveat P37 landed under.
-3. **P41** — rotate-view button: icon-only, hover-reveal, corner-anchored. Dependency-free
+2. **P41** — rotate-view button: icon-only, hover-reveal, corner-anchored. Dependency-free
    (P6 shipped); drops the labelled rotate control's chrome for an arrow glyph anchored off
    the board's bottom-right corner, reclaiming the space under the board.
+3. **P43** — event feed panel: a persistent consumer of the `useGameEvents` stream (P32's
+   beats are transient pills that a player who looks away misses). Dependency-ready — P32,
+   P38, and P12 all shipped; render the beat history as a scrollable log or footprint-friendly
+   marquee, toggle in Settings.
 
 ---
 
@@ -739,7 +739,11 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P6 (shipped — the button + board auto-orient).
 
 ### P42 — Placed pieces read as proud, not sunken (fix inverted depth)
-- **Status:** in-progress
+- **Status:** shipped — the AO seam that was stroked *inside* each piece silhouette (reading
+  as a recessed well, inverting the P5 finish) is now cast **outside** the footprint via an
+  inverse mask, blurred into a feathered contact shadow on the mat so the piece reads proud.
+  Masked to all footprints so one piece's shadow doesn't fall on an edge-sharing neighbour;
+  depth still driven by `--tile-ao` per theme. `PlacedLayer.tsx` + `theme.css`.
 - **Value:** the tactile board (P5) is the game's identity, but a placed piece currently
   reads as *pressed into* the mat instead of resting on it — the depth cue points the wrong
   way, undercutting the whole skeuomorphic finish.
