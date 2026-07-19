@@ -28,7 +28,7 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 
 1. **P42** — fix inverted placed-piece depth: a placed piece reads as *pressed into* the
    mat instead of resting on it, undercutting the P5 finish. Dependency-free and shares
-   `PlacedLayer`'s alpha stack with the in-progress P40 — fold in once that audit lands.
+   `PlacedLayer`'s alpha stack with the just-shipped P40, whose token audit now landed.
 2. **P36** — deploy F15's `rankRewardWeight` 0.25 (AE15, won): sibling flip to the
    just-landed P37 that buys better lost-position play (+1.3 placed squares, CI-clear, no
    win-rate cost) and hands the advisor a non-degenerate value signal in lost positions.
@@ -708,7 +708,8 @@ four classic colors as accents, shapes as the star.
   Cross-ref P30: the freed sixth row is where the leaderboard lands when unblocked.
 
 ### P40 — Theme-proof the piece finish (audit PlacedLayer's constants)
-- **Status:** in-progress
+- **Status:** shipped — `PlacedLayer`'s literal alphas/`pl-vol` stops moved onto `--tile-*`
+  tokens in `theme.css`, retuned per built-in so the molded finish holds on dark mats.
 - **Value:** the molded finish is the game's tactile identity (P5), but much of it is only
   guaranteed on a pale mat — detail that disappears on Lamplight loses the identity exactly
   where the lamplight look is meant to sell it.
