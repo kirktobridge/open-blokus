@@ -26,11 +26,7 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P43** — event feed panel: a persistent consumer of the `useGameEvents` stream (P32's
-   beats are transient pills that a player who looks away misses). Dependency-ready — P32,
-   P38, and P12 all shipped; render the beat history as a scrollable log or footprint-friendly
-   marquee, toggle in Settings.
-2. **P44** — incursion advisor: highlight the corners where an opponent could thread a
+1. **P44** — incursion advisor: highlight the corners where an opponent could thread a
    diagonal past your wall *before* the cut lands (P32 names cuts only after). Dependency-ready
    — P32's event registry + P38's toggle home both shipped; product-only threshold tuning.
 
@@ -765,7 +761,13 @@ four classic colors as accents, shapes as the star.
   both retune the same alpha stack.
 
 ### P43 — Event feed panel (persistent game log / marquee)
-- **Status:** in-progress
+- **Status:** shipped — `EventFeed` is a new consumer of the `useGameEvents` stream (the
+  hook now exposes an append-only `log` alongside the transient `beats`; one detection seam,
+  no new detection, inherits P32 anti-spam). Rendered as a scrollable vertical **"Game log"**
+  panel in the right rail; the marquee was the explicit either/or alternative and the vertical
+  log was chosen (reads better as reviewable history, fits the panel column). Toggle in
+  Settings → Gameplay under a new **"Narration"** section, **default ON**. EVENTS.md Consumers
+  row added.
 - **Value:** P32's beats are transient pills — a player who looks away misses the drama and
   has no history of it. A persistent feed makes the game's narrative reviewable during play;
   a horizontal marquee gives the same content at a fraction of the footprint.
