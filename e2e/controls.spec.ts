@@ -96,3 +96,26 @@ test('rotate-board button turns the board view 90°', async ({ page }) => {
   await page.getByTestId('rotate-board').click();
   await expect(rotator).toHaveCSS('transform', 'matrix(0, -1, 1, 0, 0, 0)');
 });
+
+test('rotate-view control (P41) is faint at rest, revealed on hover and focus', async ({
+  page,
+}) => {
+  await createMatchAsBlue(page);
+  const rotate = page.getByTestId('rotate-board');
+
+  // Icon-only: no "Rotate board" label, and an accessible name for screen readers.
+  await expect(rotate).toHaveText('⟲');
+  await expect(rotate).toHaveAttribute('aria-label', /rotate the board view/i);
+
+  // Persistent target, but faint at rest so it recedes until wanted.
+  await expect(rotate).toHaveCSS('opacity', '0.4');
+
+  // Hovering the board frame reveals it to full opacity...
+  await page.getByTestId('board-rotator').hover();
+  await expect(rotate).toHaveCSS('opacity', '1');
+
+  // ...and keyboard focus reveals it even with the mouse away (never stranded).
+  await page.mouse.move(0, 0);
+  await rotate.focus();
+  await expect(rotate).toHaveCSS('opacity', '1');
+});

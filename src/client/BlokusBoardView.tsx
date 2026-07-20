@@ -146,6 +146,12 @@ export function BlokusBoardView({
   const [boardTurns, setBoardTurns] = useState(
     homeColor ? TURNS_TO_BOTTOM_RIGHT[homeColor] : 0,
   );
+  // Rotate-view control (P41): faint at rest, revealed when the board frame is
+  // hovered or the button itself is focused. Tracked separately so a keyboard
+  // focus survives the mouse leaving the frame.
+  const [rotHover, setRotHover] = useState(false);
+  const [rotFocus, setRotFocus] = useState(false);
+  const rotateShown = rotHover || rotFocus;
 
   const oriented = useMemo(
     () =>
@@ -430,60 +436,85 @@ export function BlokusBoardView({
           reduce={reduce}
         />
 
-        {/* Walnut frame + recessed mat around the (unchanged) board grid. */}
-        <BoardFrame outerRef={frameRef} urgent={blitzUrgent}>
-          <div
-            data-testid="board-rotator"
-            style={{
-              display: 'inline-block',
-              transform: `rotate(${boardTurns * 90}deg)`,
-              transformOrigin: 'center',
-              transition: 'transform 0.2s ease',
-              verticalAlign: 'top',
-            }}
-          >
-            <Board
-              board={G.board}
-              activeColor={activeColor}
-              preview={preview}
-              lastMove={G.lastMove}
-              startHint={startHint}
-              onCellEnter={
-                interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
-              }
-              onCellClick={interactive ? sel.stageAt : undefined}
-              onLeave={() => {
-                if (!sel.staged) sel.setHover(null);
+        {/* Walnut frame + recessed mat around the (unchanged) board grid. The
+            rotate-view control (P41) is anchored off the board's bottom-right
+            corner — where the local seat's own corner sits — instead of a
+            labelled row beneath the board. Wrapper shrink-wraps the frame so the
+            absolute button hangs off the frame's corner (not the wide column's),
+            and carries the hover that reveals the control. */}
+        <div
+          style={{ position: 'relative' }}
+          onMouseEnter={() => setRotHover(true)}
+          onMouseLeave={() => setRotHover(false)}
+        >
+          <BoardFrame outerRef={frameRef} urgent={blitzUrgent}>
+            <div
+              data-testid="board-rotator"
+              style={{
+                display: 'inline-block',
+                transform: `rotate(${boardTurns * 90}deg)`,
+                transformOrigin: 'center',
+                transition: 'transform 0.2s ease',
+                verticalAlign: 'top',
               }}
-              onRotate={interactive ? sel.rotate : undefined}
-              onFlip={interactive ? sel.flip : undefined}
-              hints={advisorHints}
-              cutMarks={cutMarks}
-            />
-          </div>
-        </BoardFrame>
+            >
+              <Board
+                board={G.board}
+                activeColor={activeColor}
+                preview={preview}
+                lastMove={G.lastMove}
+                startHint={startHint}
+                onCellEnter={
+                  interactive && !sel.staged ? (x, y) => sel.setHover({ x, y }) : undefined
+                }
+                onCellClick={interactive ? sel.stageAt : undefined}
+                onLeave={() => {
+                  if (!sel.staged) sel.setHover(null);
+                }}
+                onRotate={interactive ? sel.rotate : undefined}
+                onFlip={interactive ? sel.flip : undefined}
+                hints={advisorHints}
+                cutMarks={cutMarks}
+              />
+            </div>
+          </BoardFrame>
 
-        {/* Under-board controls: rotate board. The opt-in advisor overlays moved to
-            Settings → Gameplay (P38), so the board's surroundings stay for play. */}
-        <div style={{ alignSelf: 'stretch', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          {/* Icon-only rotate-view control. Persistent in the tab order and
+              faintly visible at rest so keyboard and touch users are never
+              stranded (hover-only would hide it from them); revealed to full
+              opacity when the frame is hovered or the button is focused. */}
           <button
             data-testid="rotate-board"
+            aria-label="Rotate the board view 90°"
+            title="Rotate the board view 90°"
             // Increment without wrapping so the CSS transform always animates
             // forward (270°→360° instead of 270°→0°, which spins backwards).
             onClick={() => setBoardTurns((t) => t + 1)}
-            title="Rotate the board view 90°"
+            onFocus={() => setRotFocus(true)}
+            onBlur={() => setRotFocus(false)}
             style={{
-              fontFamily: FONT_UI,
-              fontSize: 11.5,
+              position: 'absolute',
+              right: -15,
+              bottom: -15,
+              width: 38,
+              height: 38,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 19,
+              lineHeight: 1,
               border: '1px solid var(--top-bd)',
               background: 'var(--top-bg)',
               color: 'var(--top-ink)',
               borderRadius: 999,
-              padding: '4px 11px',
               cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(15,9,3,.3)',
+              opacity: rotateShown ? 1 : 0.4,
+              transform: rotateShown ? 'scale(1)' : 'scale(0.9)',
+              transition: reduce ? undefined : 'opacity 0.18s ease, transform 0.18s ease',
             }}
           >
-            Rotate board ⟲
+            ⟲
           </button>
         </div>
 
