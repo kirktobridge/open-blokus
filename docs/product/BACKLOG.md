@@ -765,7 +765,7 @@ four classic colors as accents, shapes as the star.
   both retune the same alpha stack.
 
 ### P43 — Event feed panel (persistent game log / marquee)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** P32's beats are transient pills — a player who looks away misses the drama and
   has no history of it. A persistent feed makes the game's narrative reviewable during play;
   a horizontal marquee gives the same content at a fraction of the footprint.
