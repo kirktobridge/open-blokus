@@ -734,7 +734,7 @@ four classic colors as accents, shapes as the star.
   research.
 
 ### P41 — Rotate-view button: icon-only, hover-reveal, corner-anchored
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** P6's labelled rotate button reads as chrome bolted under the board; an arrow
   glyph is self-evident and the label is noise. Anchoring it off the board's **bottom-right
   corner** (where the player's own corner sits) ties the control to the thing it acts on and
