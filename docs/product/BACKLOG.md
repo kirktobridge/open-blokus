@@ -781,18 +781,25 @@ four classic colors as accents, shapes as the star.
   (the settings surface) for the switch.
 
 ### P44 — Incursion advisor: highlight opponent diagonal cut-through corners
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** cuts (P32 `cut`) are named *after* they happen. This warns *before*: it marks
   the corners where an opponent could thread a diagonal past your wall into the space behind
   it — the defensive read strong players make and beginners miss.
-- **Scope:** (1) **define** the predicate in the rules core (`drama.ts` pattern) — "your
-  line," "the space behind it," and "a legal opponent diagonal that reaches it" made precise;
-  deterministic + one feel-tuned threshold, like `cut`/`cramped` (threshold tuning is feel,
-  not research — the P32 precedent, so this stays **product-only**). (2) **register** it in
-  [EVENTS.md](../EVENTS.md) as a new event id (the doc↔detector test enforces both ways).
-  (3) an advisor **overlay** highlighting the at-risk corners, riding the existing
-  cut-highlight seam. (4) **toggle** in the P38 Gameplay tab, **default OFF** (advisor aids
-  default off, per P38).
+- **Scope:** (1) **define** the predicate (`drama.ts` pattern — a pure, deterministic helper)
+  as a sibling of the advisor predicates in `src/client/advisor/` — "your line," "the space
+  behind it," and "a legal opponent diagonal that reaches it" made precise; deterministic +
+  one feel-tuned threshold, like `cut`/`cramped` (threshold tuning is feel, not research —
+  the P32 precedent, so this stays **product-only**). (2) ~~register it in EVENTS.md as a
+  new event id~~ — **dropped (rescoped 2026-07-20 during /implement).** An EVENTS.md event
+  is a `(prev,cur)` crossing that fires once on a ply and carries a banner + TTL + a
+  *mandatory* sound cue (tests/sound-cues.test.ts fails CI otherwise); the incursion advisor
+  is a **standing predicate over the current position**, silent and recomputed each turn — it
+  does not meet the project's working definition of an event. So no `EVENT_IDS` entry, no
+  EVENTS.md row, no sound cue, no doc↔detector alignment test; the feel-tuned threshold stays
+  a plain named constant with a direct unit test instead. (3) an advisor **overlay**
+  highlighting the at-risk corners, riding the `LegalMoveHints` seam (standing overlay), not
+  the transient cut-highlight/`CutMarks` seam. (4) **toggle** in the P38 Gameplay tab,
+  **default OFF** (advisor aids default off, per P38).
 - **Depends on:** P32 (the event registry + detector pattern), P38 (the toggle home).
 
 ### P45 — Lobby menu: subtitles into hover tooltips
