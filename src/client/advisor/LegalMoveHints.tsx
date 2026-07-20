@@ -2,7 +2,7 @@ import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 
 /** Visual tone of a placement hint. */
-export type HintTone = 'legal' | 'illegal' | 'suboptimal' | 'anchor';
+export type HintTone = 'legal' | 'illegal' | 'suboptimal' | 'anchor' | 'threat';
 
 export interface Hint {
   id: string;
@@ -20,6 +20,9 @@ const TONE: Record<HintTone, { fill: string; ring: string }> = {
   illegal: { fill: 'rgba(239, 68, 68, 0.30)', ring: '#ef4444' },
   suboptimal: { fill: 'rgba(234, 179, 8, 0.28)', ring: '#d4a017' },
   anchor: { fill: 'rgba(52, 104, 207, 0.22)', ring: '#3468cf' },
+  // Incursion advisor (P44): a warning orange, distinct from `illegal`'s red — an
+  // at-risk corner is a threat to weigh, not a rejected move.
+  threat: { fill: 'rgba(249, 115, 22, 0.26)', ring: '#f97316' },
 };
 
 /** Fill + ring for a hint: the color override when given (the color at ~23% for

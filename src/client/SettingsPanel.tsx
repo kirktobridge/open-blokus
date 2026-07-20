@@ -19,6 +19,7 @@ import {
 import {
   setCornerCounter,
   setEventFeed,
+  setIncursionAdvisor,
   setUnplayableOpponents,
   setUnplayableSelf,
   setInventoryDisplay,
@@ -271,6 +272,13 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                 hint="Shade opponents' pieces red when they have no move this turn — public info."
                 checked={prefs.unplayableOpponents}
                 onChange={setUnplayableOpponents}
+              />
+              <ToggleRow
+                testid="pref-incursion-advisor"
+                label="Incursion Warnings"
+                hint="Mark your open corners an opponent could thread a piece onto next turn."
+                checked={prefs.incursionAdvisor}
+                onChange={setIncursionAdvisor}
               />
 
               {/* Narration is not an advisor aid (it reveals nothing hidden), so it

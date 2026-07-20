@@ -10,6 +10,7 @@ import { CORNERS } from '../game/modes';
 import { Board } from './board/Board';
 import { BoardFrame } from './board/BoardFrame';
 import { unplayablePieces, legalTargetCells } from './advisor/legalMoves';
+import { incursionCorners } from './advisor/incursions';
 import { RoomMeter } from './advisor/RoomMeter';
 import type { Hint } from './advisor/LegalMoveHints';
 import { HandTray } from './tray/HandTray';
@@ -198,6 +199,22 @@ export function BlokusBoardView({
       ? [{ id: 'legal', cells, tone: 'legal', color: PIECE_VAR[activeColor] }]
       : [];
   }, [advisorTargets, oriented, activeColor]);
+
+  // Incursion advisor (P44): an opt-in, standing warning overlay marking the active
+  // color's open corners that an opponent could seize next turn — the "before" to
+  // P32's after-the-fact `cut`. Only meaningful when it's your move to defend them,
+  // so it's gated on `canPlay`; computed once per G change (and only when on).
+  const incursionOn = prefs.incursionAdvisor;
+  const incursionHints = useMemo<Hint[]>(() => {
+    if (!incursionOn || !canPlay) return [];
+    const cells = incursionCorners(G, activeColor);
+    return cells.length > 0 ? [{ id: 'incursion', cells, tone: 'threat' }] : [];
+  }, [incursionOn, canPlay, G, activeColor]);
+
+  const boardHints = useMemo<Hint[]>(
+    () => [...advisorHints, ...incursionHints],
+    [advisorHints, incursionHints],
+  );
 
   // Unplayable-piece shading (P39): per-color sets of still-held pieces with no
   // legal move *this turn*, gated by the two opt-in toggles. Self = the seat(s)
@@ -474,7 +491,7 @@ export function BlokusBoardView({
                 }}
                 onRotate={interactive ? sel.rotate : undefined}
                 onFlip={interactive ? sel.flip : undefined}
-                hints={advisorHints}
+                hints={boardHints}
                 cutMarks={cutMarks}
               />
             </div>
