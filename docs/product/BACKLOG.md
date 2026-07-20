@@ -26,14 +26,11 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P41** — rotate-view button: icon-only, hover-reveal, corner-anchored. Dependency-free
-   (P6 shipped); drops the labelled rotate control's chrome for an arrow glyph anchored off
-   the board's bottom-right corner, reclaiming the space under the board.
-2. **P43** — event feed panel: a persistent consumer of the `useGameEvents` stream (P32's
+1. **P43** — event feed panel: a persistent consumer of the `useGameEvents` stream (P32's
    beats are transient pills that a player who looks away misses). Dependency-ready — P32,
    P38, and P12 all shipped; render the beat history as a scrollable log or footprint-friendly
    marquee, toggle in Settings.
-3. **P44** — incursion advisor: highlight the corners where an opponent could thread a
+2. **P44** — incursion advisor: highlight the corners where an opponent could thread a
    diagonal past your wall *before* the cut lands (P32 names cuts only after). Dependency-ready
    — P32's event registry + P38's toggle home both shipped; product-only threshold tuning.
 
@@ -734,7 +731,11 @@ four classic colors as accents, shapes as the star.
   research.
 
 ### P41 — Rotate-view button: icon-only, hover-reveal, corner-anchored
-- **Status:** in-progress
+- **Status:** shipped — P6's labelled `Rotate board ⟲` row is replaced by an arrow-only
+  (⟲) control anchored off the board frame's bottom-right corner; faint at rest (opacity
+  0.4), revealed to full opacity on board-frame hover or button focus, and kept in the tab
+  order with an aria-label so keyboard/touch users aren't stranded. Reclaims the vertical
+  space the labelled row occupied; rotate behaviour unchanged. `BlokusBoardView.tsx`.
 - **Value:** P6's labelled rotate button reads as chrome bolted under the board; an arrow
   glyph is self-evident and the label is noise. Anchoring it off the board's **bottom-right
   corner** (where the player's own corner sits) ties the control to the thing it acts on and
