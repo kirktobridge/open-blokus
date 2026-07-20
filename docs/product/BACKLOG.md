@@ -840,6 +840,47 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing. Revises P6 (study-table three-column layout) and P2 + P34's shipped
   review layout. Surfaces: `BlokusBoardView.tsx`, `ReviewTable.tsx`, `HandTray.tsx`.
 
+### P49 — Rotate-view: rotate the frame, settle to a fixed grid
+- **Status:** proposed
+- **Value:** the rotate control spins the grid *inside* a static frame — `.board-rotator`
+  carries the `rotate(boardTurns*90deg)` transform, `BoardFrame` doesn't — so the frame
+  visibly detaches from its contents mid-animation. And because a 20×20 grid is rotationally
+  symmetric, spinning the whole grid to its 90° end state is wasted motion: the only thing
+  that *needs* to end up reoriented is the pieces, so the local seat's corner sits at the
+  bottom. The current model animates the wrong invariant.
+- **Scope:** two facets, one code path (`BlokusBoardView.tsx` board-rotator transform).
+  (1) **Frame joins the animation** — the rotation reads as one rigid object turning:
+  `BoardFrame` rotates together with the grid during the 0.2s spin instead of staying put.
+  (2) **Settle to a fixed grid** — at rest the grid (and any coord/frame chrome) returns to
+  standard orientation; only the *placed pieces* end up rotated about the board centre. The
+  spin is a transient visual; the committed state re-renders pieces at their rotated board
+  positions over an unrotated grid. Grid-riding overlays (`LegalMoveHints`, `CutMarks`,
+  previews) must resolve to the settled orientation, not the transient one. **Open question
+  for the builder** — spike first: does "pieces rotate around centre" mean a real coordinate
+  re-index (changes what hit-testing/hover see) or a CSS layer that stays rotated over an
+  unrotated underlay (cheaper, but leaves a rotated pointer space)? That choice is the crux;
+  settle it before building.
+- **Depends on:** nothing. Refines P6 + P41 (both shipped).
+
+### P50 — Move Options: mark the anchor points, not just the footprint
+- **Status:** proposed
+- **Value:** Move Options shades every cell any legal placement of the held piece could cover
+  (one `tone: 'legal'` hint, active-color tint, in `BlokusBoardView.tsx`). That shows *reach*
+  but hides *why*: the player can't see the diagonal corner-contacts — the anchors — that make
+  those placements legal. Anchors are the strategic unit of Blokus; the footprint is just their
+  consequence.
+- **Scope:** distinguish anchor cells from footprint cells in the overlay, quietly.
+  `LegalMoveHints.tsx` already defines an unused `anchor` tone (blue ring `#3468cf`) — this is
+  the wiring it was scaffolded for. Compute the anchor set alongside `legalTargetCells` (the
+  open corners the held piece can touch) and emit a second, sparser hint layer. Design intent:
+  *indicate anchors without polluting the board or fighting the skeuomorphic theming* — favour
+  a restrained mark (small corner dot/notch at the contact point, or a ring only on anchor
+  cells) over another full fill. Exact treatment is a builder call; the bar is "reads as
+  guidance, not chrome."
+- **Depends on:** nothing — anchors are deterministic from the placement rules (no advisor
+  signal, no research). Sibling to P44 (which marks *opponent* cut corners); shares the
+  corner-marking vocabulary with `CutMarks`, worth reusing for visual consistency.
+
 ---
 
 ## Epic: Engagement & retention
