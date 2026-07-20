@@ -26,9 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P44** — incursion advisor: highlight the corners where an opponent could thread a
-   diagonal past your wall *before* the cut lands (P32 names cuts only after). Dependency-ready
-   — P32's event registry + P38's toggle home both shipped; product-only threshold tuning.
+1. **P50** — Move Options: mark the *anchor* corners, not just the footprint. Sibling to the
+   just-shipped P44 overlay; reuses the `CutMarks` corner vocabulary, deterministic (no research).
+2. **P48** — right-rail & tray layout: widen horizontally + collapsible panels. Fixes a real
+   overflow (review scrubber pushed below the fold); pure layout, no blocking deps.
+3. **P47** — auto-mute a fully-bot watch game: silence cues no human triggered. Small, dependency-ready
+   (gates the existing `useGameSound` path on `humanCount === 0`).
+4. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
+   frame-detach bug; spike the coord-reindex vs CSS-layer question first.
+5. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
+   can't poison the one-click path P35 leans on.
 
 ---
 
@@ -781,7 +788,13 @@ four classic colors as accents, shapes as the star.
   (the settings surface) for the switch.
 
 ### P44 — Incursion advisor: highlight opponent diagonal cut-through corners
-- **Status:** in-progress
+- **Status:** shipped (2026-07-20, `a587459`) — pure predicate `incursionCorners(G, forColor)`
+  in [src/client/advisor/incursions.ts](../../src/client/advisor/incursions.ts) with one
+  feel-tuned constant `INCURSION_MIN_PIECE=3` pinned by
+  [tests/incursions.test.ts](../../tests/incursions.test.ts); overlay rides the
+  `LegalMoveHints` seam with a new `threat` tone; opt-in "Incursion Warnings" toggle in
+  Settings → Gameplay (`pref-incursion-advisor`, default OFF). Scope item (2) EVENTS.md
+  registration dropped (see below) — no event id/sound cue owed.
 - **Value:** cuts (P32 `cut`) are named *after* they happen. This warns *before*: it marks
   the corners where an opponent could thread a diagonal past your wall into the space behind
   it — the defensive read strong players make and beginners miss.
