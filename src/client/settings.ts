@@ -25,6 +25,9 @@ interface Prefs {
   unplayableSelf: boolean;
   /** Advisor: shade opponents' pieces with no legal move this turn (P39). Opt-in. */
   unplayableOpponents: boolean;
+  /** Persistent event-feed panel — the game's beat history (P43). Ambient narration,
+   * not an advisor aid, so it's on by default (advisor toggles are opt-in). */
+  eventFeed: boolean;
 }
 
 const DEFAULTS: Prefs = {
@@ -35,6 +38,7 @@ const DEFAULTS: Prefs = {
   cornerCounter: false,
   unplayableSelf: false,
   unplayableOpponents: false,
+  eventFeed: true,
 };
 
 const store: Pick<Storage, 'getItem' | 'setItem'> | null =
@@ -68,6 +72,8 @@ function load(): Prefs {
           typeof parsed.unplayableOpponents === 'boolean'
             ? parsed.unplayableOpponents
             : DEFAULTS.unplayableOpponents,
+        eventFeed:
+          typeof parsed.eventFeed === 'boolean' ? parsed.eventFeed : DEFAULTS.eventFeed,
       };
     }
   } catch {
@@ -127,6 +133,11 @@ export function setUnplayableSelf(on: boolean): void {
 export function setUnplayableOpponents(on: boolean): void {
   if (on === state.unplayableOpponents) return;
   commit({ ...state, unplayableOpponents: on });
+}
+
+export function setEventFeed(on: boolean): void {
+  if (on === state.eventFeed) return;
+  commit({ ...state, eventFeed: on });
 }
 
 export function usePrefs(): Prefs {

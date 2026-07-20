@@ -51,6 +51,7 @@ evaluates with, so "room" means the same thing to the bots and to the drama laye
 | consumer | how it reads events |
 |----------|---------------------|
 | beats (shipped) | [`useGameEvents`](../src/client/hooks/useGameEvents.ts) diffs `prev → cur` and gives each event a TTL; [`EventBeats`](../src/client/controls/EventBeats.tsx) renders it as a pill banner with `data-kind` = the id. |
+| event feed (shipped, P43) | the same `useGameEvents` seam also exposes an append-only `log` (no TTL); [`EventFeed`](../src/client/controls/EventFeed.tsx) renders it as a persistent, scrollable game-log panel beside the board. Toggle in Settings → Gameplay, default on. |
 | cut highlight (shipped) | the `cut` event carries `lostCells` — the victim's destroyed attach-points — which the board briefly marks. |
 | sound (shipped) | one synthesised cue per event id — [`CUES`](../src/client/sound/cues.ts) — fired off the same beat stream by [`useGameSound`](../src/client/sound/useGameSound.ts), so a cue and its banner are one moment and P32's anti-spam is inherited for free. [tests/sound-cues.test.ts](../tests/sound-cues.test.ts) fails CI if an event has no cue, so sound coverage can't silently lag the vocabulary. |
 | P2 R1 recap | replays detectors over a logged game to pick out key moments. Not built yet. |

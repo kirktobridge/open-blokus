@@ -19,6 +19,7 @@ import { Controls } from './controls/Controls';
 import { ReactionBar } from './controls/ReactionBar';
 import { GameOverModal, type GameOverPayload } from './controls/GameOverModal';
 import { EventBeats } from './controls/EventBeats';
+import { EventFeed } from './controls/EventFeed';
 import { matchAction, type PlacementAction } from './controls/keymap';
 import { useSelection } from './hooks/useSelection';
 import { useGameEvents } from './hooks/useGameEvents';
@@ -86,7 +87,7 @@ export function BlokusBoardView({
   const prefs = usePrefs();
   const inventoryDisplay = prefs.inventoryDisplay;
   const reduce = useReducedMotion();
-  const { beats } = useGameEvents(G);
+  const { beats, log } = useGameEvents(G);
 
   // Sound (P7) rides the same beat stream the banners do, so a cue and its banner are
   // the same moment; placement/pickup/blitz-tick cues come from the state below.
@@ -583,6 +584,9 @@ export function BlokusBoardView({
           {roomOn && <RoomMeter G={G} />}
           <Standings G={G} />
         </div>
+        {/* Persistent event feed (P43) — ambient narration, on by default. Its own
+            panel below Standings so it toggles independently. */}
+        {prefs.eventFeed && <EventFeed log={log} />}
       </div>
 
       <EventBeats beats={beats} />

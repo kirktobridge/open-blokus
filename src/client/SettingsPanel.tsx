@@ -18,6 +18,7 @@ import {
 } from './appearance';
 import {
   setCornerCounter,
+  setEventFeed,
   setUnplayableOpponents,
   setUnplayableSelf,
   setInventoryDisplay,
@@ -270,6 +271,17 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                 hint="Shade opponents' pieces red when they have no move this turn — public info."
                 checked={prefs.unplayableOpponents}
                 onChange={setUnplayableOpponents}
+              />
+
+              {/* Narration is not an advisor aid (it reveals nothing hidden), so it
+                  sits in its own section and ships on by default. */}
+              <div style={{ ...sectionLabel, marginTop: 6 }}>Narration</div>
+              <ToggleRow
+                testid="pref-event-feed"
+                label="Event Feed"
+                hint="Keep a scrollable log of cuts, cramped corners and endgame beats beside the board."
+                checked={prefs.eventFeed}
+                onChange={setEventFeed}
               />
             </>
           ) : (
