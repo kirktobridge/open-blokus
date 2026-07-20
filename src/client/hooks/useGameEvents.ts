@@ -24,11 +24,16 @@ const BEAT_TTL = 2800;
  * its cues on. Beats self-expire; timers are cleared only on unmount so a fresh
  * placement within the TTL window never strands an earlier beat.
  */
-export function useGameEvents(G: GameState): { beats: Beat[] } {
+export function useGameEvents(G: GameState): { beats: Beat[]; log: Beat[] } {
   const prevRef = useRef<GameState>(G);
   const idRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [beats, setBeats] = useState<Beat[]>([]);
+  // Append-only history for the persistent event feed (P43): the same detected
+  // events as `beats`, but they never expire, so a player who looked away can scroll
+  // back through the game's narrative. One detection seam feeds both — the feed
+  // inherits P32's anti-spam for free and re-runs no detectors.
+  const [log, setLog] = useState<Beat[]>([]);
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -50,6 +55,7 @@ export function useGameEvents(G: GameState): { beats: Beat[] } {
       lostCells: e.lostCells,
     }));
     setBeats((b) => [...b, ...added]);
+    setLog((l) => [...l, ...added]);
 
     const ids = new Set(added.map((a) => a.id));
     const timer = setTimeout(() => {
@@ -58,5 +64,5 @@ export function useGameEvents(G: GameState): { beats: Beat[] } {
     timersRef.current.push(timer);
   }, [G]);
 
-  return { beats };
+  return { beats, log };
 }
