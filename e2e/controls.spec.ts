@@ -14,18 +14,29 @@ const press = async (page: Page, key: string, times: number) => {
   for (let i = 0; i < times; i++) await page.keyboard.press(key);
 };
 
+/** Where a board cell actually sits on screen — the only honest read of the view
+ *  orientation now that it lives in the data rather than in a CSS transform (P49). */
+async function cellAt(page: Page, x: number, y: number) {
+  const box = await page.getByTestId(`cell-${x}-${y}`).boundingBox();
+  if (!box) throw new Error(`cell ${x},${y} has no box`);
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** The screen corner a board cell is drawn in, relative to the board's centre. */
+async function cornerOf(page: Page, x: number, y: number) {
+  const [c, mid] = [await cellAt(page, x, y), await cellAt(page, 10, 10)];
+  return `${c.y < mid.y ? 'top' : 'bottom'}-${c.x < mid.x ? 'left' : 'right'}`;
+}
+
 test('keyboard-only: arrows position, WASD rotate, Space lock, Enter submit', async ({
   page,
 }) => {
   await createMatchAsBlue(page);
 
   // Blue (seat 0) is oriented with its corner bottom-right, so the board view is
-  // rotated 180°. Arrow keys are screen-relative, so screen right/down drive the
+  // turned 180°. Arrow keys are screen-relative, so screen right/down drive the
   // ghost toward blue's true corner (0,0).
-  await expect(page.getByTestId('board-rotator')).toHaveCSS(
-    'transform',
-    'matrix(-1, 0, 0, -1, 0, 0)',
-  );
+  expect(await cornerOf(page, 0, 0)).toBe('bottom-right');
 
   // Select the domino from the tray (a non-focusable div, so Space/Enter below
   // reach the window handler rather than re-toggling the piece).
@@ -85,16 +96,49 @@ test('controls reference lists keyboard + mouse bindings (read-only)', async ({ 
   await expect(help.locator('input')).toHaveCount(0);
 });
 
-test('rotate-board button turns the board view 90°', async ({ page }) => {
+test('rotate-board button turns the board view 90°, and settles upright (P49)', async ({
+  page,
+}) => {
   await createMatchAsBlue(page);
   const rotator = page.getByTestId('board-rotator');
 
-  // Blue is oriented bottom-right = 180°.
-  await expect(rotator).toHaveCSS('transform', 'matrix(-1, 0, 0, -1, 0, 0)');
+  // The frame turns *with* the grid — it's inside the rotator, not around it — so
+  // the spin reads as one rigid object rather than contents spinning loose.
+  await expect(rotator.getByTestId('board-frame')).toBeVisible();
 
-  // Each click adds a 90° clockwise turn (180° -> 270°).
+  // Blue is oriented bottom-right, and at rest that orientation is a fact about the
+  // contents: nothing is left rotated by CSS.
+  expect(await cornerOf(page, 0, 0)).toBe('bottom-right');
+  await expect(rotator).toHaveCSS('transform', 'none');
+
+  // Each click adds a clockwise quarter-turn — blue's corner walks bottom-right ->
+  // bottom-left — and the grid settles upright again.
   await page.getByTestId('rotate-board').click();
-  await expect(rotator).toHaveCSS('transform', 'matrix(0, -1, 1, 0, 0, 0)');
+  await expect.poll(() => cornerOf(page, 0, 0)).toBe('bottom-left');
+  await expect(rotator).toHaveCSS('transform', 'none');
+
+  // The re-index leaves one pointer space: the cell that looks like blue's corner
+  // is the cell that plays as it.
+  await page.getByTestId('piece-blue-I2').click();
+  await page.getByTestId('cell-0-0').click();
+  await page.getByTestId('submit-move').click();
+  await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue');
+  expect(await cornerOf(page, 0, 0)).toBe('bottom-left');
+
+  // The landing flash belongs to the *placement*, not to the view. Turning the
+  // board re-indexes where that flash would be drawn, which is enough to remount
+  // it and make a long-settled piece bloom white as though it had just been
+  // played — caught by driving the real app, invisible to the rest of the suite.
+  const settle = page.locator('.ob-settle');
+  await expect(settle).toHaveCount(1);
+  await page.waitForTimeout(900); // the one-shot flash decays in ~600ms
+  await page.getByTestId('rotate-board').click();
+  let peak = 0;
+  for (let i = 0; i < 14; i++) {
+    peak = Math.max(peak, Number(await settle.evaluate((el) => getComputedStyle(el).opacity)));
+    await page.waitForTimeout(60);
+  }
+  expect(peak).toBeLessThan(0.05);
 });
 
 test('rotate-view control (P41) is faint at rest, revealed on hover and focus', async ({

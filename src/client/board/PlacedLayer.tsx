@@ -96,6 +96,7 @@ export function PlacedLayer({
   previewCells,
   lastMove,
   glowColors,
+  settleId,
 }: {
   board: (Color | null)[];
   /** Board indices currently under a placement preview (excluded from finish). */
@@ -104,6 +105,14 @@ export function PlacedLayer({
   lastMove?: number[];
   /** Colors whose pieces get a glowing halo (game-over winner reveal, P16). */
   glowColors?: Color[];
+  /**
+   * Identity of the placement the settle flash belongs to. Defaults to the cells
+   * themselves, but callers that draw through a view rotation (P49) pass the
+   * *board-space* identity: turning the view re-indexes where the flash would be
+   * drawn, and without this the remount key changes and a long-settled piece
+   * flashes again as though it had just been played.
+   */
+  settleId?: string;
 }) {
   const reduce = useReducedMotion();
   const exclude = previewCells ?? EMPTY_SET;
@@ -111,7 +120,8 @@ export function PlacedLayer({
   const allFillsD = useMemo(() => regions.map((r) => r.fillD).join(''), [regions]);
   const glowSet = glowColors && glowColors.length > 0 ? new Set(glowColors) : undefined;
   // Remount key so the settle flash replays exactly once per placement.
-  const settleKey = lastMove && lastMove.length > 0 ? lastMove.join(',') : '';
+  const settleKey =
+    lastMove && lastMove.length > 0 ? (settleId ?? lastMove.join(',')) : '';
   // The last move's own silhouette + fill (the fill is only ever a clip for the ring).
   const ring = useMemo(
     () => (lastMove && lastMove.length > 0 ? cellOutline(lastMove) : null),
