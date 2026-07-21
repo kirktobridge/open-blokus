@@ -32,6 +32,16 @@ interface Prefs {
   eventFeed: boolean;
 }
 
+/**
+ * What the app actually reads. `sound` here is the *effective* answer: the stored pref
+ * narrowed by the contextual override (P47), never the override written into storage.
+ */
+interface EffectivePrefs extends Prefs {
+  /** Quiet only because of the context (a fully-bot watch game), not the user's pref —
+   * so the settings panel can say *why*, and an un-mute knows what to clear. */
+  soundContextMuted: boolean;
+}
+
 const DEFAULTS: Prefs = {
   inventoryDisplay: 'silhouette',
   sound: true,
@@ -91,19 +101,48 @@ function load(): Prefs {
 
 let state: Prefs = load();
 
+/**
+ * Contextual mute (P47): a fully-bot watch game fires cues no human triggered, so it
+ * starts silent. Deliberately *not* persisted and not written into `state` — it's a
+ * property of the situation, not a choice, so leaving the watch game restores the
+ * user's own sound with nothing to undo. An explicit un-mute clears it.
+ */
+let contextMute = false;
+
+let snapshot: EffectivePrefs = derive();
+
+function derive(): EffectivePrefs {
+  return { ...state, sound: state.sound && !contextMute, soundContextMuted: contextMute };
+}
+
 const listeners = new Set<() => void>();
 function subscribe(cb: () => void) {
   listeners.add(cb);
   return () => listeners.delete(cb);
 }
-function getSnapshot(): Prefs {
-  return state;
+function getSnapshot(): EffectivePrefs {
+  return snapshot;
+}
+
+function publish() {
+  snapshot = derive();
+  listeners.forEach((cb) => cb());
 }
 
 function commit(next: Prefs) {
   state = next;
   store?.setItem(STORAGE_KEY, JSON.stringify(state));
-  listeners.forEach((cb) => cb());
+  publish();
+}
+
+/**
+ * Silence (or release) the current context without touching the saved pref. Idempotent,
+ * so the caller can just declare the situation on every render pass.
+ */
+export function setSoundContextMute(muted: boolean): void {
+  if (muted === contextMute) return;
+  contextMute = muted;
+  publish();
 }
 
 export function setInventoryDisplay(mode: InventoryDisplay): void {
@@ -112,8 +151,12 @@ export function setInventoryDisplay(mode: InventoryDisplay): void {
 }
 
 export function setSound(on: boolean): void {
-  if (on === state.sound) return;
-  commit({ ...state, sound: on });
+  // An explicit choice outranks the contextual override (P47): un-muting a watch game
+  // releases it, even though the stored pref was on the whole time.
+  const released = on && contextMute;
+  if (released) contextMute = false;
+  if (on !== state.sound) commit({ ...state, sound: on });
+  else if (released) publish();
 }
 
 export function setVolume(v: number): void {
@@ -152,8 +195,19 @@ export function setEventFeed(on: boolean): void {
   commit({ ...state, eventFeed: on });
 }
 
-export function usePrefs(): Prefs {
+export function usePrefs(): EffectivePrefs {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/** The same snapshot, for callers outside React (and for tests of the store itself). */
+export function getPrefs(): EffectivePrefs {
+  return snapshot;
+}
+
+/** Watch the snapshot; returns an unsubscribe. */
+export function subscribePrefs(cb: () => void): () => void {
+  listeners.add(cb);
+  return () => void listeners.delete(cb);
 }
 
 export function useInventoryDisplay(): InventoryDisplay {

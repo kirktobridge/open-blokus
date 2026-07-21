@@ -179,16 +179,26 @@ test('a bigger piece lands at a lower pitch', async ({ page, browser }) => {
   for (let i = 0; i < small.length; i++) expect(big[i]).toBeLessThan(small[i]);
 });
 
-test('the event vocabulary is audible: a finished game sounds its beats', async ({ page }) => {
-  // An all-AI watch game runs to completion in seconds and must cross P32's events —
-  // every color ends stuck, and `endgame` fires once. Each event cue has a signature tone
-  // no other cue can produce (the placement cue's pitch scaling only spans 151–633Hz), so
-  // the scheduled frequencies tell us which beats actually sounded.
+/** Start a 4-bot, 0-human watch game (P47's context) with bots playing instantly. */
+async function startWatchGame(page: Page) {
   await page.goto('/?botDelay=0');
   await page.getByTestId('open-custom').click();
   await page.getByTestId('ai-mode-select').selectOption('4');
   await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
   await page.getByTestId('start-ai').click();
+}
+
+test('the event vocabulary is audible: a finished game sounds its beats', async ({ page }) => {
+  // An all-AI watch game runs to completion in seconds and must cross P32's events —
+  // every color ends stuck, and `endgame` fires once. Each event cue has a signature tone
+  // no other cue can produce (the placement cue's pitch scaling only spans 151–633Hz), so
+  // the scheduled frequencies tell us which beats actually sounded.
+  // A watch game is silent by default now (P47), so this un-mutes it by hand first —
+  // which is also the only way to hear the whole vocabulary in one sitting.
+  await startWatchGame(page);
+  await page.getByTestId('settings-toggle').click();
+  await page.getByTestId('sound-toggle').check();
+  await page.getByTestId('settings-toggle').click(); // close the panel
 
   await expect(page.getByRole('heading', { name: 'Game over' })).toBeVisible({
     timeout: 30_000,
@@ -198,6 +208,56 @@ test('the event vocabulary is audible: a finished game sounds its beats', async 
   expect(freqs).toContain(330); // `out-of-moves` — its closing note
   expect(freqs).toContain(784); // `endgame` — its top note
   expect(peak).toBeGreaterThan(0);
+});
+
+test('a fully-bot watch game plays silently, and gives the sound back after (P47)', async ({
+  page,
+}) => {
+  await startWatchGame(page);
+  // Mid-game, not at game over: the leave button below has to be reachable, and the
+  // ceremony overlay covers it. Blue's opening move must cover its corner, so a blue
+  // (0,0) is the first proof bots have been placing pieces — noisily, in a real game.
+  await expect(page.getByTestId('cell-0-0')).toHaveAttribute('data-value', 'blue');
+
+  // Bot moves and their beats, with nobody to hear them: not one voice, and — as with
+  // a real mute — not even an AudioContext built.
+  const watched = await audio(page);
+  expect(watched.freqs).toEqual([]);
+  expect(watched.peak).toBe(0);
+  expect(watched.contexts).toBe(0);
+
+  // The panel says *why* it's quiet, and the stored pref was never touched…
+  await page.getByTestId('settings-toggle').click();
+  await expect(page.getByTestId('sound-toggle')).not.toBeChecked();
+  await expect(page.getByText('Muted — watch game')).toBeVisible();
+
+  // …so leaving for a game with a human in it restores sound with nothing to undo.
+  await page.getByTestId('settings-toggle').click();
+  await page.getByTestId('leave-ai').click();
+  await page.getByTestId('settings-toggle').click();
+  await expect(page.getByTestId('sound-toggle')).toBeChecked();
+});
+
+test('the watch game can still be un-muted by hand, without it sticking (P47)', async ({
+  page,
+  browser,
+}) => {
+  await startWatchGame(page);
+  await page.getByTestId('settings-toggle').click();
+  await page.getByTestId('sound-toggle').check(); // overrule the context
+
+  const { freqs, peak } = await audio(page); // the toggle previews a cue immediately
+  expect(freqs.length).toBeGreaterThan(0);
+  expect(peak).toBeGreaterThan(0);
+
+  // The un-mute was about this game, not a stored preference — a fresh visit to another
+  // watch game starts quiet again.
+  const next = await freshPage(browser);
+  await startWatchGame(next);
+  await expect(next.getByRole('heading', { name: 'Game over' })).toBeVisible({
+    timeout: 30_000,
+  });
+  expect((await audio(next)).contexts).toBe(0);
 });
 
 test('muting silences the game, and the setting survives a reload', async ({ page }) => {
