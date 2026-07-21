@@ -885,7 +885,7 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing. Refines P6 + P41 (both shipped).
 
 ### P50 — Move Options: mark the anchor points, not just the footprint
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** Move Options shades every cell any legal placement of the held piece could cover
   (one `tone: 'legal'` hint, active-color tint, in `BlokusBoardView.tsx`). That shows *reach*
   but hides *why*: the player can't see the diagonal corner-contacts — the anchors — that make
