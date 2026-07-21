@@ -416,7 +416,7 @@ four classic colors as accents, shapes as the star.
   (juice) noted there: same event hooks.
 
 ### P47 — Auto-mute when watching a fully-bot game
-- **Status:** proposed
+- **Status:** in-progress — `feat/p47-watch-mute`
 - **Value:** an all-AI watch game (0 human seats) fires placement/pickup cues with no
   one acting, so the audio is a soundtrack the spectator never asked for. Defaulting a
   watch game to silence respects that no human triggered any of it.
