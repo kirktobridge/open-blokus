@@ -23,17 +23,21 @@ const GROUPS: { key: string; label: string; ids: PieceId[]; basis: number }[] = 
     // and the two small groups pair off on the next one.
     basis: 999,
   },
+  // Equal basis for the pair, so the longest label ("TRIOMINOES · DOMINO · MONO")
+  // gets the same room as its neighbour rather than being the squeezed one. Sized
+  // so the two either both fit on a line or both wrap to full width — never a
+  // middle zone where one is too narrow for its own label.
   {
     key: 'tetro',
     label: 'TETROMINOES — 4 SQ',
     ids: PIECE_IDS.filter((id) => pieceSize(id) === 4),
-    basis: 150,
+    basis: 170,
   },
   {
     key: 'small',
     label: 'TRIOMINOES · DOMINO · MONO',
     ids: PIECE_IDS.filter((id) => pieceSize(id) <= 3),
-    basis: 120,
+    basis: 170,
   },
 ];
 
@@ -119,13 +123,15 @@ export function HandTray({
                 fontFamily: FONT_MONO,
                 fontSize: 9.5,
                 fontWeight: 900,
-                letterSpacing: '.15em',
+                // Tighter tracking than the tray's other mono caps, with slack to
+                // spare (~20px at the rail's full width): side by side, the longest
+                // label has to clear its well on one line — a wrapped "MONO" reads
+                // as a stray word and shunts the two compartments out of alignment.
+                // The margin matters because Settings can swap the mono face live.
+                letterSpacing: '.06em',
+                whiteSpace: 'nowrap',
                 color: '#685F4F',
                 marginBottom: 7,
-                // Reserve two lines for every group label. Side by side, the long
-                // "TRIOMINOES · DOMINO · MONO" wraps while "TETROMINOES" doesn't;
-                // a common label band keeps both wells starting on the same line.
-                minHeight: 24,
               }}
             >
               {group.label}
