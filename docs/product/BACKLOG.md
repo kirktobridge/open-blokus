@@ -933,7 +933,7 @@ four classic colors as accents, shapes as the star.
   corner-marking vocabulary with `CutMarks`, worth reusing for visual consistency.
 
 ### P52 — Pin the review transport: the action bar never moves
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** In review the transport bar sits in normal flow below the table, so its
   y-position is a function of the tallest column. With the rail carrying both Analysis and
   the Your Hand tray it lands below the fold — the primary control for the mode is off-screen
