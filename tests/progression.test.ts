@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyResult,
+  bestScoreTile,
   emptyProgression,
   hardestTier,
+  sanitize,
   winRate,
   type GameResult,
 } from '../src/client/progression/progression';
@@ -12,6 +14,7 @@ const win = (over: Partial<GameResult> = {}): GameResult => ({
   score: 50,
   hardestTier: 'easy',
   perfectClear: false,
+  scoring: 'basic',
   ...over,
 });
 const loss = (over: Partial<GameResult> = {}): GameResult => win({ won: false, ...over });
@@ -23,7 +26,7 @@ describe('applyResult — counters', () => {
     expect(state.wins).toBe(1);
     expect(state.currentStreak).toBe(1);
     expect(state.bestStreak).toBe(1);
-    expect(state.bestScore).toBe(42);
+    expect(state.bestScores.basic).toBe(42);
     expect(state.perTier.easy).toEqual({ played: 1, won: 1 });
     expect(state.firstWinTiers).toEqual(['easy']);
     expect(unlocked.map((m) => m.id)).toEqual(['first-win-easy']);
@@ -40,13 +43,53 @@ describe('applyResult — counters', () => {
     expect(state.bestStreak).toBe(2);
   });
 
-  it('best score takes the max and seeds from null (including negative scores)', () => {
-    let s = applyResult(emptyProgression(), loss({ score: -3 })).state;
-    expect(s.bestScore).toBe(-3);
-    s = applyResult(s, win({ score: 10 })).state;
-    expect(s.bestScore).toBe(10);
-    s = applyResult(s, win({ score: 7 })).state;
-    expect(s.bestScore).toBe(10);
+  // P51: "best" runs in the variant's direction. Basic scores squares still in
+  // your tray, so the best game is the *smallest* number — taking the max there
+  // reported your worst game.
+  it('best score under basic takes the min and seeds from null', () => {
+    let s = applyResult(emptyProgression(), loss({ score: 43, scoring: 'basic' })).state;
+    expect(s.bestScores.basic).toBe(43);
+    s = applyResult(s, win({ score: 32, scoring: 'basic' })).state;
+    expect(s.bestScores.basic).toBe(32);
+    s = applyResult(s, win({ score: 37, scoring: 'basic' })).state;
+    expect(s.bestScores.basic).toBe(32);
+  });
+
+  it('best score under advanced takes the max and seeds from null (negatives included)', () => {
+    let s = applyResult(emptyProgression(), loss({ score: -3, scoring: 'advanced' })).state;
+    expect(s.bestScores.advanced).toBe(-3);
+    s = applyResult(s, win({ score: 10, scoring: 'advanced' })).state;
+    expect(s.bestScores.advanced).toBe(10);
+    s = applyResult(s, win({ score: 7, scoring: 'advanced' })).state;
+    expect(s.bestScores.advanced).toBe(10);
+  });
+
+  it('the two variants are tracked apart — points never beat squares-left', () => {
+    let s = applyResult(emptyProgression(), win({ score: 5, scoring: 'basic' })).state;
+    s = applyResult(s, win({ score: 20, scoring: 'advanced' })).state;
+    expect(s.bestScores).toEqual({ basic: 5, advanced: 20 });
+  });
+});
+
+describe('bestScoreTile', () => {
+  it('is null until a game is recorded, then carries the variant unit', () => {
+    expect(bestScoreTile(emptyProgression())).toBeNull();
+
+    const basic = applyResult(emptyProgression(), win({ score: 32, scoring: 'basic' })).state;
+    expect(bestScoreTile(basic)?.value).toBe('32 left');
+    expect(bestScoreTile(basic)?.title).toContain('lower is better');
+
+    const advanced = applyResult(emptyProgression(), win({ score: 20, scoring: 'advanced' })).state;
+    expect(bestScoreTile(advanced)?.value).toBe('20 pts');
+    expect(bestScoreTile(advanced)?.title).toContain('higher is better');
+  });
+
+  it('prefers basic (the default variant) and mentions the advanced best alongside', () => {
+    let s = applyResult(emptyProgression(), win({ score: 32, scoring: 'basic' })).state;
+    s = applyResult(s, win({ score: 20, scoring: 'advanced' })).state;
+    const tile = bestScoreTile(s);
+    expect(tile?.value).toBe('32 left');
+    expect(tile?.title).toContain('20 pts');
   });
 });
 
@@ -93,6 +136,37 @@ describe('applyResult — no-AI games', () => {
     for (const d of ['easy', 'medium', 'hard', 'extreme'] as const) {
       expect(state.perTier[d]).toEqual({ played: 0, won: 0 });
     }
+  });
+});
+
+describe('sanitize — stored blobs', () => {
+  it('drops a pre-P51 bestScore (unrepairable) but keeps every other counter', () => {
+    const legacy = {
+      gamesPlayed: 10,
+      wins: 4,
+      currentStreak: 1,
+      bestStreak: 3,
+      bestScore: 43, // max-fold under basic: actually the worst of the ten games
+      perTier: { easy: { played: 10, won: 4 } },
+      firstWinTiers: ['easy'],
+      perfectClears: 0,
+    } as unknown as Partial<ReturnType<typeof emptyProgression>>;
+
+    const s = sanitize(legacy);
+    expect(s.bestScores).toEqual({ basic: null, advanced: null });
+    expect(bestScoreTile(s)).toBeNull();
+    expect(s.gamesPlayed).toBe(10);
+    expect(s.wins).toBe(4);
+    expect(s.bestStreak).toBe(3);
+    expect(s.perTier.easy).toEqual({ played: 10, won: 4 });
+    expect(s.firstWinTiers).toEqual(['easy']);
+  });
+
+  it('round-trips per-variant bests and rejects junk', () => {
+    const s = sanitize({
+      bestScores: { basic: 32, advanced: 'nope' },
+    } as unknown as Partial<ReturnType<typeof emptyProgression>>);
+    expect(s.bestScores).toEqual({ basic: 32, advanced: null });
   });
 });
 

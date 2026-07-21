@@ -1,6 +1,6 @@
 import { DIFFICULTIES } from '../ai/difficulty';
 import { FONT_MONO, PANEL, WELL_ROW } from '../theme';
-import { useProgression, winRate } from './progression';
+import { bestScoreTile, useProgression, winRate } from './progression';
 import { useState } from 'react';
 import { GameHistory } from './GameHistory';
 import { loadHistory, type HistoryGame } from '../log/history';
@@ -15,9 +15,19 @@ import { loadHistory, type HistoryGame } from '../log/history';
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const pct = (r: number | null) => (r == null ? '—' : `${Math.round(r * 100)}%`);
 
-function Stat({ label, value, testid }: { label: string; value: string; testid: string }) {
+function Stat({
+  label,
+  value,
+  testid,
+  title,
+}: {
+  label: string;
+  value: string;
+  testid: string;
+  title?: string;
+}) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 72 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 72 }} title={title}>
       <span data-testid={testid} style={{ fontFamily: FONT_MONO, fontSize: 20, fontWeight: 700 }}>
         {value}
       </span>
@@ -42,6 +52,7 @@ export function ProgressionPanel({
   onReviewGame?: (game: HistoryGame) => void;
 } = {}) {
   const p = useProgression();
+  const best = bestScoreTile(p);
   // Read once on mount: the stats modal remounts each time it opens, and nothing
   // can finish a game while you're looking at it.
   const [games] = useState<HistoryGame[]>(() => loadHistory());
@@ -69,7 +80,12 @@ export function ProgressionPanel({
           <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginBottom: 10 }}>
             <Stat label="Games" value={String(p.gamesPlayed)} testid="stat-games" />
             <Stat label="Win rate" value={pct(winRate(p.gamesPlayed, p.wins))} testid="stat-winrate" />
-            <Stat label="Best score" value={p.bestScore == null ? '—' : String(p.bestScore)} testid="stat-best-score" />
+            <Stat
+              label="Best score"
+              value={best?.value ?? '—'}
+              title={best?.title}
+              testid="stat-best-score"
+            />
           </div>
           <p style={{ margin: '0 0 14px', color: 'var(--mut)', fontSize: 13 }}>
             Streak:{' '}

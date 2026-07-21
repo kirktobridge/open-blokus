@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { ScoringVariant } from '../../game/types';
 import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
 
 /**
@@ -18,6 +19,13 @@ export interface GameResult {
   won: boolean;
   /** Your final score (per-player total; variant-aware, so it can be negative). */
   score: number;
+  /**
+   * The variant that number was scored under — which also fixes which direction
+   * is "best": `basic` counts squares left (lower wins), `advanced` counts points
+   * (higher wins), GAME_SPEC §6. Without it the fold can only guess, and guessing
+   * `max` is what made the tile report your worst game (P51).
+   */
+  scoring: ScoringVariant;
   /** Hardest AI opponent tier faced, or null if the game had no AI opponent. */
   hardestTier: Difficulty | null;
   /** You placed all 21 of your pieces. */
@@ -34,8 +42,12 @@ export interface ProgressionState {
   wins: number;
   currentStreak: number;
   bestStreak: number;
-  /** Best "your score" across games; null until the first recorded game. */
-  bestScore: number | null;
+  /**
+   * Best "your score" per scoring variant; null until a game is recorded under
+   * that variant. Kept apart because the two aren't the same quantity — 32 squares
+   * left and 32 points share no scale, so one slot could only ever mix units.
+   */
+  bestScores: Record<ScoringVariant, number | null>;
   perTier: Record<Difficulty, TierStat>;
   /** Tiers a first-win milestone already fired for (so the toast fires once). */
   firstWinTiers: Difficulty[];
@@ -57,7 +69,7 @@ export function emptyProgression(): ProgressionState {
     wins: 0,
     currentStreak: 0,
     bestStreak: 0,
-    bestScore: null,
+    bestScores: { basic: null, advanced: null },
     perTier,
     firstWinTiers: [],
     perfectClears: 0,
@@ -76,6 +88,35 @@ export function hardestTier(tiers: Difficulty[]): Difficulty | null {
     }
   }
   return best;
+}
+
+/** The better of a stored best and a new result, in that variant's direction. */
+const bestOf = (prev: number | null, r: GameResult): number =>
+  prev == null ? r.score : r.scoring === 'basic' ? Math.min(prev, r.score) : Math.max(prev, r.score);
+
+/** What the unit is called next to the number (mirrors the history rows, P15 M2). */
+const UNIT: Record<ScoringVariant, string> = { basic: 'left', advanced: 'pts' };
+
+/**
+ * The single "Best score" tile from the per-variant bests. One slot, two possible
+ * quantities: show `basic` (the default variant) when you've played it, else
+ * `advanced`. The unit travels with the number — a bare "32" reads as points
+ * earned, which is the opposite of what basic counts (P51).
+ */
+export function bestScoreTile(p: ProgressionState): { value: string; title: string } | null {
+  const variant: ScoringVariant | null =
+    p.bestScores.basic != null ? 'basic' : p.bestScores.advanced != null ? 'advanced' : null;
+  if (!variant) return null;
+  const score = p.bestScores[variant] as number;
+  const other = variant === 'basic' ? p.bestScores.advanced : null;
+  return {
+    value: `${score} ${UNIT[variant]}`,
+    title:
+      (variant === 'basic'
+        ? `${score} squares left — lower is better`
+        : `${score} points — higher is better`) +
+      (other != null ? ` · best under advanced scoring: ${other} pts` : ''),
+  };
 }
 
 /**
@@ -114,7 +155,7 @@ export function applyResult(
     wins: prev.wins + (r.won ? 1 : 0),
     currentStreak,
     bestStreak: Math.max(prev.bestStreak, currentStreak),
-    bestScore: prev.bestScore == null ? r.score : Math.max(prev.bestScore, r.score),
+    bestScores: { ...prev.bestScores, [r.scoring]: bestOf(prev.bestScores[r.scoring], r) },
     perTier,
     firstWinTiers,
     perfectClears: prev.perfectClears + (r.perfectClear ? 1 : 0),
@@ -135,8 +176,14 @@ const STORAGE_KEY = 'openblokus-progression';
 const store: Pick<Storage, 'getItem' | 'setItem'> | null =
   typeof localStorage !== 'undefined' ? localStorage : null;
 
+function sanitizeBests(parsed: unknown): Record<ScoringVariant, number | null> {
+  const p = (parsed ?? {}) as Partial<Record<ScoringVariant, unknown>>;
+  const one = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  return { basic: one(p.basic), advanced: one(p.advanced) };
+}
+
 /** Overlay a parsed blob onto a fresh state, keeping only well-typed fields. */
-function sanitize(parsed: Partial<ProgressionState>): ProgressionState {
+export function sanitize(parsed: Partial<ProgressionState>): ProgressionState {
   const base = emptyProgression();
   const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
   if (parsed.perTier && typeof parsed.perTier === 'object') {
@@ -152,7 +199,12 @@ function sanitize(parsed: Partial<ProgressionState>): ProgressionState {
     wins: num(parsed.wins, 0),
     currentStreak: num(parsed.currentStreak, 0),
     bestStreak: num(parsed.bestStreak, 0),
-    bestScore: typeof parsed.bestScore === 'number' ? parsed.bestScore : null,
+    // A pre-P51 blob carries a single `bestScore` that is a max-fold across
+    // variants: under `basic` that's the *worst* game, and nothing stored says
+    // which variant it came from, so it can't be repaired — only dropped. The
+    // tile reads "—" until your next game, then it's right. Everything else in
+    // the blob (games, wins, streaks, tiers) was never wrong and survives.
+    bestScores: sanitizeBests(parsed.bestScores),
     perTier: base.perTier,
     firstWinTiers: Array.isArray(parsed.firstWinTiers)
       ? parsed.firstWinTiers.filter((t): t is Difficulty => DIFFICULTIES.includes(t as Difficulty))
