@@ -1,6 +1,9 @@
 import { DIFFICULTIES } from '../ai/difficulty';
 import { FONT_MONO, PANEL, WELL_ROW } from '../theme';
 import { useProgression, winRate } from './progression';
+import { useState } from 'react';
+import { GameHistory } from './GameHistory';
+import { loadHistory, type HistoryGame } from '../log/history';
 
 /**
  * Home-screen "Your progress" card (P15 M1). Lifetime residue of local vs-AI
@@ -30,8 +33,18 @@ function Stat({ label, value, testid }: { label: string; value: string; testid: 
  * host that already supplies them — the front door's Your Stats modal (P29) — so the
  * panel doesn't render a card inside a card.
  */
-export function ProgressionPanel({ flush = false }: { flush?: boolean } = {}) {
+export function ProgressionPanel({
+  flush = false,
+  onReviewGame,
+}: {
+  flush?: boolean;
+  /** Given, each past game offers a Review that opens it in the review table (M2). */
+  onReviewGame?: (game: HistoryGame) => void;
+} = {}) {
   const p = useProgression();
+  // Read once on mount: the stats modal remounts each time it opens, and nothing
+  // can finish a game while you're looking at it.
+  const [games] = useState<HistoryGame[]>(() => loadHistory());
 
   return (
     <section
@@ -42,7 +55,12 @@ export function ProgressionPanel({ flush = false }: { flush?: boolean } = {}) {
 
       {p.gamesPlayed === 0 ? (
         <p data-testid="progression-empty" style={{ margin: 0, color: 'var(--mut)', fontSize: 13.5 }}>
-          No games yet — finish a game vs the computer to start tracking wins, streaks and best scores.
+          {games.length > 0
+            ? // Watch games are recorded but have no local player, so they leave a
+              // history without touching these counters. Saying "no games yet" over
+              // a list of games would just look broken.
+              'Nothing tracked yet — these count games you played, not ones you watched.'
+            : 'No games yet — finish a game vs the computer to start tracking wins, streaks and best scores.'}
         </p>
       ) : (
         <>
@@ -106,6 +124,11 @@ export function ProgressionPanel({ flush = false }: { flush?: boolean } = {}) {
           )}
         </>
       )}
+
+      {/* Outside the empty-state branch on purpose: a watch game records history
+          but no progression (it has no local player), so a viewer with only
+          watched games still has games to look back at. */}
+      <GameHistory games={games} onReview={onReviewGame} />
     </section>
   );
 }

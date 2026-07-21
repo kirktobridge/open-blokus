@@ -10,6 +10,7 @@ import { LobbyTopBar } from './LobbyTopBar';
 import { MatchList } from './MatchList';
 import { Modal } from './Modal';
 import { ProgressionPanel } from '../progression/ProgressionPanel';
+import type { HistoryGame } from '../log/history';
 import { useWideLayout } from '../hooks/useWideLayout';
 import { useViewport } from '../hooks/useViewport';
 import { FIELD, FONT_UI, GHOST_BTN, SECONDARY_BTN, WELL_ROW } from '../theme';
@@ -34,6 +35,7 @@ export function HomeScreen({
   onOpenCustom,
   onOpenTutorial,
   onOpenPuzzle,
+  onReviewGame,
   joinError,
   onDismissError,
 }: {
@@ -47,6 +49,8 @@ export function HomeScreen({
   onOpenCustom: () => void;
   onOpenTutorial: () => void;
   onOpenPuzzle: () => void;
+  /** Open a past game in the review table (P15 M2) — the screen swap lives in App. */
+  onReviewGame?: (game: HistoryGame) => void;
   joinError?: string | null;
   onDismissError?: () => void;
 }) {
@@ -248,7 +252,7 @@ export function HomeScreen({
       )}
       {glance === 'stats' && (
         <Modal title="Your stats" testid="stats-modal" onClose={() => setGlance(null)}>
-          <ProgressionPanel flush />
+          <ProgressionPanel flush onReviewGame={onReviewGame} />
         </Modal>
       )}
     </div>

@@ -15,6 +15,7 @@ import type { Color, GameMode, GameState, Placement, ScoringVariant } from '../.
 import { finalScores, determineWinners } from '../../game/scoring';
 import { replayGame, type GameRecord, type LoggedMove } from '../../game/ai/selfplay';
 import { saveRecord } from './sink';
+import { saveToHistory } from './history';
 
 /** Header the app supplies; mode/scoring are read from the live game state. */
 export interface RecorderHeader {
@@ -78,7 +79,16 @@ export function buildAppRecord(
 export function attachRecorder(
   client: RecorderClient,
   header: RecorderHeader,
-  sink: (record: GameRecord) => void = (record) => void saveRecord(record),
+  /**
+   * Where a finished game goes. The default persists it both ways: the dev disk
+   * log (async, best-effort) and the player's own browsable history (P15 M2) —
+   * the history write is synchronous and unconditional, so a game survives even
+   * when the dev endpoint isn't there, which on a built app is always.
+   */
+  sink: (record: GameRecord) => void = (record) => {
+    saveToHistory(record);
+    void saveRecord(record);
+  },
   /**
    * Called with the finished, replay-validated record the moment a game ends —
    * the same record handed to `sink`. Lets the UI review the game just played
