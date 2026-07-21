@@ -537,6 +537,12 @@ client. Networked rooms stay human-only.
   JSONL on disk** (`.data/games/vs-ai.jsonl`, via a Vite dev-server endpoint) because that's the
   form research + tooling browse and replay (`scripts/games.ts`); localStorage is only a fallback
   when the endpoint is unreachable. Online-match capture is deferred.
+  That endpoint **only exists under the Vite dev server**, so it can't be what a real player's
+  history rests on. Product P15 M2 therefore adds a *second, independent* sink from the same
+  recorder: a capped localStorage list of records for the player-facing game history
+  ([src/client/log/history.ts](../src/client/log/history.ts)), written synchronously and never
+  gated on the POST. Same `GameRecord` shape, two audiences — research reads the disk JSONL, the
+  player reads their own browser. A record that won't parse is skipped, not fatal to the list.
 
 **Recorded decisions (do not silently change — see [GAME_SPEC §10](GAME_SPEC.md)):**
 - Bots are **client-side / offline only**. Networked bot-fill (bots in SocketIO rooms via a

@@ -26,9 +26,9 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P15 M2** — game history list + replay: the residue of past games (in-progress). The replay
-   surface exists (`recap/ReviewTable` + `useReplay`), but browsable history is M2's own work —
-   P1's log is dev-only, so nothing persists games for a real player yet.
+1. **P51** — "Best score" reports your worst game: the `basic` fold takes `Math.max` on a
+   lower-is-better score. A wrong headline number on a shipped surface, now sitting directly
+   above P15 M2's history rows that show the true spread. No dependencies; small.
 2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
 3. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
@@ -955,17 +955,18 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   [AD4](../research/backlog/advisor.md) (move-grading signal must be trustworthy
   before it grades *you*). M3: server work.
 
-### P15 — Local progression, stats & history
-- **Status:** partial — **M1 shipped**: a "Your progress" home-screen card backed by
-  a localStorage store (games, per-tier win rate, best score, current/best streak,
-  perfect clears) with one-time milestone toasts (first win vs each tier, perfect
-  clear). **M2 in-progress** — `feat/p15-m2-game-history`.
-  Two premises corrected before claiming: (a) the `ReplayScrubber` this entry planned to
-  reuse was removed by P2 R0.2 — M2 builds on `recap/ReviewTable` + `useReplay` instead,
-  which render from a `GameRecord` with no live client (see P2's R0.2 note); (b) P1's
-  records are **not** readable in the browser — they go to a dev-only disk endpoint, with
-  localStorage holding only a transient failure queue. So M2 owns a player-facing history
-  store; "M2 depends on P1" was only ever true for the record *format*, not for retrieval.
+### P15 — Local progression, stats & history — SHIPPED
+- **Status:** shipped (2026-07-21) — both milestones. **M1**: a "Your progress"
+  home-screen card backed by a localStorage store (games, per-tier win rate, best score,
+  current/best streak, perfect clears) with one-time milestone toasts. **M2**: finished
+  games persist to a capped localStorage list under M1's counters, and any row opens in
+  `recap/ReviewTable`. Two premises the entry carried were wrong and are worth keeping
+  as the *why*: (a) the `ReplayScrubber` it planned to reuse was removed by P2 R0.2, so
+  M2 replays through `ReviewTable` + `useReplay`, which already render from a
+  `GameRecord` with no live client; (b) P1's records go to a **dev-only** disk endpoint,
+  so on a built app nothing was retaining games at all — M2 therefore owns a
+  player-facing store of its own, written independently of that POST. "M2 depends on P1"
+  was only ever true for the record *format*, not for retrieval.
 - **Value:** games leave a residue — beating `extreme` the first time should look
   different from losing your first game. Makes P13's named tiers *feel* like a ladder.
 - **Scope / milestones:** M1 localStorage counters — games played, win rate per tier,
