@@ -840,7 +840,7 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P17 (shipped — Quick Play + persisted setup).
 
 ### P48 — Right-rail & piece-tray layout: widen horizontally + collapsible panels (all modes)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** The right rail stacks the Your-Hand tray with a side panel (live Standings in
   play, the Analysis score+mobility timelines in review). In review the Analysis panel is
   taller than the Standings it replaces, so the stack overflows: the transport/scrubber bar
