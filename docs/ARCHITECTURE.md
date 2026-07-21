@@ -308,8 +308,9 @@ nothing to undo mid-turn, and disabling undo avoids multiplayer desync confusion
          │  ├─ <Cell> × 400            // transparent; hit target + hover/staged tint
          │  └─ <PlacedLayer>           // SVG molded pieces + last-move ring (see §8)
          ├─ <Controls>                 // action dock: in-hand · PLAY MOVE · ⟲ ⟳ ⇄ · Cancel
-         ├─ <HandTray>/<PieceThumb>    // your hand, grouped by piece size
-         ├─ <Standings>                // remaining-squares chips
+         ├─ <RailPanel> × n            // wraps each rail section: header + fold (P48)
+         │  ├─ <HandTray>/<PieceThumb> // your hand, grouped by size, spending width sideways
+         │  └─ <Standings>             // remaining-squares chips
          └─ <GameOverModal>            // shown when ctx.gameover set
 ```
 

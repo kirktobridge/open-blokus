@@ -26,15 +26,13 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P48** — right-rail & tray layout: widen horizontally + collapsible panels. Fixes a real
-   overflow (review scrubber pushed below the fold); pure layout, no blocking deps.
-2. **P47** — auto-mute a fully-bot watch game: silence cues no human triggered. Small, dependency-ready
+1. **P47** — auto-mute a fully-bot watch game: silence cues no human triggered. Small, dependency-ready
    (gates the existing `useGameSound` path on `humanCount === 0`).
-3. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
+2. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
    frame-detach bug; spike the coord-reindex vs CSS-layer question first.
-4. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
+3. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
    can't poison the one-click path P35 leans on.
-5. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+4. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
 
 ---
@@ -840,7 +838,7 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P17 (shipped — Quick Play + persisted setup).
 
 ### P48 — Right-rail & piece-tray layout: widen horizontally + collapsible panels (all modes)
-- **Status:** in-progress
+- **Status:** shipped
 - **Value:** The right rail stacks the Your-Hand tray with a side panel (live Standings in
   play, the Analysis score+mobility timelines in review). In review the Analysis panel is
   taller than the Standings it replaces, so the stack overflows: the transport/scrubber bar
@@ -857,8 +855,13 @@ four classic colors as accents, shapes as the star.
   transport bar in review — in view without scrolling. Pure layout/visual: no change to
   timelines, scrubber behavior, standings content, or move logic. The "nothing shifts between
   play and review" parity note in `ReviewTable.tsx` already breaks vertically; this supersedes
-  it with a wider shared layout. Update the affected layout tests (`review-table`,
-  board-view/right-rail).
+  it with a wider shared layout. ~~Update the affected layout tests (`review-table`,
+  board-view/right-rail).~~ — void, no such tests existed; `e2e/rail-layout.spec.ts`
+  covers the rail instead.
+- **Shipped:** both moves, via `RailPanel.tsx` (the fold seam) + a horizontally-spending
+  `HandTray`. Measured pre-change, the overflow premise above was narrower than stated:
+  in the all-AI watch case the transport bar was already in view (no human seat ⇒ no tray
+  in the rail), so the overflow only bites when the rail carries **tray + Analysis**.
 - **Depends on:** nothing. Revises P6 (study-table three-column layout) and P2 + P34's shipped
   review layout. Surfaces: `BlokusBoardView.tsx`, `ReviewTable.tsx`, `HandTray.tsx`.
 
