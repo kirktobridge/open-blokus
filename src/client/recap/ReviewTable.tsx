@@ -31,10 +31,17 @@ const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 export function ReviewTable({
   record,
   onExitReview,
+  exitLabel = 'Results',
 }: {
   record: GameRecord;
-  /** Re-show the game-over ceremony ("Back to results"). */
+  /** Leave review: back to the game-over ceremony, or out of a standalone replay. */
   onExitReview?: () => void;
+  /**
+   * What leaving goes back to. Defaults to the ceremony this review dropped out of;
+   * a game opened from the history list (P15 M2) has no ceremony behind it, so it
+   * names its own way back instead of promising results that aren't there.
+   */
+  exitLabel?: string;
 }) {
   const { frame, frames, ply, lastPly, playing, speed, seekTo, step, togglePlay, cycleSpeed } =
     useReplay(record);
@@ -184,7 +191,7 @@ export function ReviewTable({
       <div style={actionBar}>
           {onExitReview && (
             <button data-testid="review-results" onClick={onExitReview} style={{ ...SECONDARY_BTN, fontSize: 13, whiteSpace: 'nowrap' }}>
-              ‹ Results
+              ‹ {exitLabel}
             </button>
           )}
           <div style={divider} />

@@ -19,6 +19,8 @@ import { LocalAIGame } from './ai/LocalAIGame';
 import { DailyPuzzleGame } from './puzzle/DailyPuzzleGame';
 import { Tutorial } from './tutorial/Tutorial';
 import type { AiSetup } from './lobby/aiSetup';
+import { ReviewTable } from './recap/ReviewTable';
+import type { HistoryGame } from './log/history';
 import { SettingsPanel } from './SettingsPanel';
 import { ControlsHelp } from './ControlsHelp';
 
@@ -32,6 +34,10 @@ export function App() {
   const [showPuzzle, setShowPuzzle] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [aiConfig, setAiConfig] = useState<AiSetup | null>(null);
+  // A past game opened from the history list (P15 M2). It's a full-viewport
+  // destination like any other table, so it lives here as a screen rather than
+  // inside the stats modal that launched it.
+  const [reviewGame, setReviewGame] = useState<HistoryGame | null>(null);
 
   // Starting a game leaves the Custom Game screen behind, so backing out of the game
   // lands on the front door rather than the form you launched from.
@@ -141,6 +147,16 @@ export function App() {
     );
   } else if (session) {
     screen = <MatchScreen session={session} onLeave={onLeave} onPlayAgain={onPlayAgain} />;
+  } else if (reviewGame) {
+    // Standalone review: no live client behind it, so ReviewTable renders from the
+    // record alone and its Play Again (a session action) simply isn't offered.
+    screen = (
+      <ReviewTable
+        record={reviewGame.record}
+        onExitReview={() => setReviewGame(null)}
+        exitLabel="Back"
+      />
+    );
   } else if (showCustom) {
     screen = <CustomGameScreen onStart={startAI} onBack={() => setShowCustom(false)} />;
   } else {
@@ -156,6 +172,7 @@ export function App() {
         onOpenCustom={() => setShowCustom(true)}
         onOpenTutorial={() => setShowTutorial(true)}
         onOpenPuzzle={openPuzzle}
+        onReviewGame={setReviewGame}
         joinError={joinError}
         onDismissError={() => setJoinError(null)}
       />
