@@ -1,5 +1,5 @@
 import { BOARD_SIZE, idx, inBounds, diagNeighbors, orthoNeighbors } from '../../game/board';
-import { generateLegalMoves } from '../../game/moves';
+import { anchorCells, generateLegalMoves } from '../../game/moves';
 import { applyPlacement } from '../../game/placement';
 import { resolveCells } from '../../game/pieces';
 import { attachPoints } from '../../game/ai/alphabeta';
@@ -41,11 +41,44 @@ export function legalMovesForPiece(
  * `generateLegalMoves`, so it's exactly the engine's legal reach for that piece.
  */
 export function legalTargetCells(G: GameState, color: Color, pieceId: PieceId): number[] {
-  const cells = new Set<number>();
+  return moveOptionCells(G, color, pieceId).targets;
+}
+
+/** The two layers the Move Options overlay draws: reach, and the corners it hooks. */
+export interface MoveOptionCells {
+  /** Every cell some legal placement of the piece would cover — its reach. */
+  targets: number[];
+  /** The subset of `targets` that are anchors — the diagonal contacts (or, on the
+   *  first move, the start corner) that *make* those placements legal. Never empty
+   *  when `targets` isn't: the engine only enumerates anchor-hooked placements. */
+  anchors: number[];
+}
+
+/**
+ * Move Options in one sweep (P50): the piece's reach *and* the anchors underneath
+ * it. Anchors are the strategic unit — the footprint is only their consequence —
+ * so the overlay marks them separately, but a second `generateLegalMoves` pass
+ * would double the advisor's per-hover cost. Both fall out of one enumeration,
+ * intersected with the rules core's own `anchorCells` (not the client's
+ * `expansionAnchors` room metric) so the marks can't disagree with what the
+ * engine actually hooks onto — including the pre-start case, where the single
+ * anchor is the color's start corner.
+ */
+export function moveOptionCells(
+  G: GameState,
+  color: Color,
+  pieceId: PieceId,
+): MoveOptionCells {
+  const open = new Set(anchorCells(G, color));
+  const targets = new Set<number>();
+  const anchors = new Set<number>();
   for (const opt of legalMovesForPiece(G, color, pieceId)) {
-    for (const c of opt.cells) cells.add(c);
+    for (const c of opt.cells) {
+      targets.add(c);
+      if (open.has(c)) anchors.add(c);
+    }
   }
-  return [...cells];
+  return { targets: [...targets], anchors: [...anchors] };
 }
 
 /**

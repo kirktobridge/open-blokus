@@ -9,7 +9,7 @@ import { isLegalPlacement } from '../game/placement';
 import { CORNERS } from '../game/modes';
 import { Board } from './board/Board';
 import { BoardFrame } from './board/BoardFrame';
-import { unplayablePieces, legalTargetCells } from './advisor/legalMoves';
+import { unplayablePieces, moveOptionCells, type MoveOptionCells } from './advisor/legalMoves';
 import { incursionCorners } from './advisor/incursions';
 import { RoomMeter } from './advisor/RoomMeter';
 import type { Hint } from './advisor/LegalMoveHints';
@@ -47,6 +47,9 @@ function toBoardDelta(dx: number, dy: number, turns: number): [number, number] {
 }
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
+
+/** Stable empty Move Options result, so the advisor memo doesn't churn when off. */
+const EMPTY_OPTIONS: MoveOptionCells = { targets: [], anchors: [] };
 
 /**
  * Interactive game view — "the study table". Two-step placement: position +
@@ -187,17 +190,28 @@ export function BlokusBoardView({
   const roomOn = prefs.cornerCounter;
   const advisorTargets = useMemo(
     () =>
-      advisorOn && canPlay && sel.pieceId ? legalTargetCells(G, activeColor, sel.pieceId) : [],
+      advisorOn && canPlay && sel.pieceId
+        ? moveOptionCells(G, activeColor, sel.pieceId)
+        : EMPTY_OPTIONS,
     [advisorOn, canPlay, sel.pieceId, G, activeColor],
   );
+  // Two layers: the footprint wash (reach), and a sparser pip on each anchor — the
+  // open corner that makes those placements legal (P50). The footprint is only the
+  // anchors' consequence, so the pips ride *over* the wash rather than replacing it.
   const advisorHints = useMemo<Hint[]>(() => {
-    if (advisorTargets.length === 0) return [];
+    if (advisorTargets.targets.length === 0) return [];
     const hovered = new Set(oriented.map((c) => c.y * BOARD_SIZE + c.x));
-    const cells = advisorTargets.filter((c) => !hovered.has(c));
+    const cells = advisorTargets.targets.filter((c) => !hovered.has(c));
+    const anchors = advisorTargets.anchors.filter((c) => !hovered.has(c));
+    const out: Hint[] = [];
     // Tint the hints in the active color so they read as "where your piece fits".
-    return cells.length > 0
-      ? [{ id: 'legal', cells, tone: 'legal', color: PIECE_VAR[activeColor] }]
-      : [];
+    if (cells.length > 0) {
+      out.push({ id: 'legal', cells, tone: 'legal', color: PIECE_VAR[activeColor] });
+    }
+    if (anchors.length > 0) {
+      out.push({ id: 'anchor', cells: anchors, tone: 'anchor', mark: 'pip' });
+    }
+    return out;
   }, [advisorTargets, oriented, activeColor]);
 
   // Incursion advisor (P44): an opt-in, standing warning overlay marking the active

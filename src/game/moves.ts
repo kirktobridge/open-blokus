@@ -50,7 +50,7 @@ function transformsFor(pieceId: PieceId): Transform[] {
  * anchor — a small set — rather than over the whole board. Returned as flat
  * board indices.
  */
-function anchorCells(G: GameState, color: Color): number[] {
+export function anchorCells(G: GameState, color: Color): number[] {
   if (!G.colors[color].hasStarted) {
     const corner = CORNERS[color];
     const ci = idx(corner.x, corner.y);

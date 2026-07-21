@@ -11,6 +11,7 @@ import {
   unplayablePieces,
   legalTargetCells,
   legalMovesForPiece,
+  moveOptionCells,
   roomReadout,
 } from '../src/client/advisor/legalMoves';
 
@@ -51,6 +52,59 @@ describe('legalTargetCells (P3 R1 advisor overlay)', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
     expect(legalTargetCells(G, 'blue', 'V3')).toEqual([]); // V3 is spent
+  });
+});
+
+describe('moveOptionCells anchors (P50 anchor marks)', () => {
+  it('first move: the only anchor is the start corner', () => {
+    const G = createInitialState(4);
+    const { targets, anchors } = moveOptionCells(G, 'blue', 'I2');
+    expect(anchors).toEqual([idx(0, 0)]);
+    // The corner is one of three reachable cells — anchors are strictly sparser.
+    expect(new Set(targets)).toEqual(new Set([idx(0, 0), idx(1, 0), idx(0, 1)]));
+  });
+
+  it('anchors are the open corners the piece can hook, and a subset of its reach', () => {
+    const G = createInitialState(4);
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+
+    const { targets, anchors } = moveOptionCells(G, 'blue', 'L5');
+    const reach = new Set(targets);
+    expect(anchors.length).toBeGreaterThan(0);
+    for (const a of anchors) {
+      expect(reach.has(a), `anchor ${a} should be within reach`).toBe(true);
+      // Diagonally adjacent to a blue cell, and never orthogonally adjacent to one.
+      const x = a % 20;
+      const y = (a / 20) | 0;
+      const diag = [[-1, -1], [1, -1], [-1, 1], [1, 1]].some(
+        ([dx, dy]) =>
+          x + dx >= 0 && x + dx < 20 && y + dy >= 0 && y + dy < 20 &&
+          G.board[idx(x + dx, y + dy)] === 'blue',
+      );
+      const ortho = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(
+        ([dx, dy]) =>
+          x + dx >= 0 && x + dx < 20 && y + dy >= 0 && y + dy < 20 &&
+          G.board[idx(x + dx, y + dy)] === 'blue',
+      );
+      expect(diag, `anchor ${a} should touch blue diagonally`).toBe(true);
+      expect(ortho, `anchor ${a} should not touch blue orthogonally`).toBe(false);
+    }
+  });
+
+  it('every legal placement of the piece covers at least one marked anchor', () => {
+    const G = createInitialState(4);
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+
+    const anchors = new Set(moveOptionCells(G, 'blue', 'L5').anchors);
+    for (const opt of legalMovesForPiece(G, 'blue', 'L5')) {
+      expect(opt.cells.some((c) => anchors.has(c))).toBe(true);
+    }
+  });
+
+  it('no legal placement means no marks at all', () => {
+    const G = createInitialState(4);
+    applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
+    expect(moveOptionCells(G, 'blue', 'V3')).toEqual({ targets: [], anchors: [] });
   });
 });
 
