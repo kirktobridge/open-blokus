@@ -31,8 +31,9 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    Small, and now dependency-clear — P52 (shipped) made its one exit reliably visible.
 2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-3. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
-   work is generalizing board size out of the rules core (touches GAME_SPEC + ARCHITECTURE).
+3. **P20** M2a — Blokus Duo, first milestone: lift board size + start cells out of the rules
+   core into `GameConfig`. Newly unblocked (rules now specified in GAME_SPEC_DUO.md), and the
+   safest branch on this list — Classic stays the only variant, so it's a pure refactor.
 
 ---
 
@@ -1085,19 +1086,45 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ### P20 — Variety: Blokus Duo & blitz
 - **Status:** partial — **M1 (blitz) shipped**: per-move countdown for human seats in the
-  offline vs-AI table. **M2 (Duo) not started**, still blocked on rules-core board-size
-  generalization.
+  offline vs-AI table. **M2 rescoped into M2a / M2b / M2c**, none started; the spec
+  dependency that blocked it is now cleared.
 - **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
   move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
   entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
-- **Value:** classic 20×20 is the only way to play. Duo (14×14, center-adjacent
+- **Rescope (2026-07-21):** the old M2 premise — "board size + start-cell rule become
+  mode config" — was incomplete, and the omitted half is the larger one. Duo is a
+  **two-colour** game (black + white), not the Classic four on a smaller board; four
+  colours × 89 squares cannot fit 196 cells, so "generalize board size" alone yields
+  something that isn't Duo and isn't playable. Rules are now specified in
+  [../GAME_SPEC_DUO.md](../GAME_SPEC_DUO.md) — a delta doc sourced to the official
+  Mattel sheet (FWG43, ©2017): 14×14, interior start cells `(4,4)`/`(9,9)`, advanced
+  scoring only, black moves first.
+- **Value:** classic 20×20 is the only way to play. Duo (14×14, interior diagonal
   starts) is *the* canonical 2-player experience; blitz (per-move timer) makes the
   same engine feel like a different game.
-- **Scope / milestones:** M1 blitz — per-move countdown, auto-skip or auto-random on
-  expiry (UI + turn glue only). M2 Duo — board size + start-cell rule become mode
-  config (touches rules core → GAME_SPEC + ARCHITECTURE updates required).
-- **Depends on:** M1: nothing. M2: rules-core generalization (board size is
-  currently a constant).
+- **Scope / milestones:**
+  - **M1 blitz** — shipped (see Status/Note).
+  - **M2a rules-core generalization** — board size + start cells move into `GameConfig`;
+    drop the hardcoded `SIZE`/`MASK20` in `src/game/bitboard.ts`. Classic stays the only
+    shipped variant, so this is a **no-behaviour-change refactor** the existing suite
+    fully guards — that's what makes it a safe first branch.
+  - **M2b Duo rules** — `config.playColors`; add `black` + `white` to the `Color` union
+    (today `blue|yellow|red|green`, ~171 refs / 36 files / 58 `Record<Color,…>` sites);
+    14×14 preset, start cells, forced advanced scoring, lobby + turn glue. Ships playable
+    on a provisional flat skin.
+  - **M2c achromatic tile finish** — per-theme `--piece-black` / `--piece-white` plus
+    finish handling so bevel, AO and shadow survive at both ends of the value range.
+    Split out because `MatLayer`/`PlacedLayer` shade tiles with *relative* modulations
+    (`--tile-hi` 0.42, `--tile-lo` 0.26, `--tile-ao`, `--tile-shadow` 0.35, `--tile-dye`
+    30%) tuned against saturated mid-tones; black and white are the degenerate case and
+    clip at **both** ends. Per CLAUDE.md this failure is invisible to vitest/typecheck/
+    lint — the only detector is looking at each theme, so it needs its own eyes-on pass.
+- **Depends on:** M1: nothing (shipped). M2a: nothing — the spec now exists. M2b: M2a.
+  M2c: M2b.
+- **Human-owned follow-ups (outstanding):** [../GAME_SPEC.md](../GAME_SPEC.md) needs a
+  pointer to `GAME_SPEC_DUO.md` (edit-guard blocks it); and `GAME_SPEC_DUO.md` should be
+  added to `.claude/edit-blocklist` once its §7 open questions (first-player choice)
+  settle.
 
 ### P24 — Blitz clock legibility (put the countdown where the eyes are) — SHIPPED
 - **Status:** shipped — a board-side countdown bar (mono readout + depleting fill,
