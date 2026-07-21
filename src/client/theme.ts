@@ -42,6 +42,17 @@ export const THUMB_PX = 12;
  */
 export const DOCK_COLUMN_W = 736;
 
+/**
+ * Right-rail width band (P48). The rail is elastic rather than pinned: it takes
+ * any horizontal room the viewport has left over after the fixed board column, up
+ * to `RAIL_MAX_W`, and falls back to the historical 300 when it doesn't — so a
+ * wide desktop spends the unused width on a shorter tray instead of scrolling,
+ * while a 1280 viewport lays out exactly as before. Panels inside the rail size
+ * to 100% of the column, never to a literal.
+ */
+export const RAIL_MIN_W = 300;
+export const RAIL_MAX_W = 430;
+
 /** Study-table typography. Resolved from CSS vars (theme.css) so the Settings
  *  panel can retune them live via a token override with no re-render. */
 export const FONT_UI = 'var(--font-ui)';

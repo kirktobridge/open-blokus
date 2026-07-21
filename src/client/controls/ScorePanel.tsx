@@ -8,7 +8,16 @@ import { CountUp } from './CountUp';
  * Compact standings strip: one chip per color, sorted ascending by remaining
  * squares (fewest = leading). The leader is ringed in brass.
  */
-export function Standings({ G, showLeader = true }: { G: GameState; showLeader?: boolean }) {
+export function Standings({
+  G,
+  showLeader = true,
+  divider = true,
+}: {
+  G: GameState;
+  showLeader?: boolean;
+  /** Rule above the header — off when nothing sits above it in the panel (P48). */
+  divider?: boolean;
+}) {
   const ranked = [...COLOR_ORDER].sort(
     (a, b) => remainingSquares(G.colors[a]) - remainingSquares(G.colors[b]),
   );
@@ -24,8 +33,8 @@ export function Standings({ G, showLeader = true }: { G: GameState; showLeader?:
           letterSpacing: '.15em',
           color: 'var(--mut)',
           margin: '0 0 8px',
-          borderTop: '1px solid var(--pnl-bd)',
-          paddingTop: 10,
+          borderTop: divider ? '1px solid var(--pnl-bd)' : undefined,
+          paddingTop: divider ? 10 : 0,
         }}
       >
         REMAINING SQUARES

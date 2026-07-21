@@ -19,7 +19,11 @@ export function BoardFrame({
   urgent?: boolean;
 }) {
   return (
-    <div ref={outerRef} style={{ ...frameStyle, boxShadow: urgent ? URGENT_SHADOW : FRAME_SHADOW }}>
+    <div
+      ref={outerRef}
+      data-testid="board-frame"
+      style={{ ...frameStyle, boxShadow: urgent ? URGENT_SHADOW : FRAME_SHADOW }}
+    >
       <div style={matStyle}>{children}</div>
     </div>
   );
