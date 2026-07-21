@@ -26,8 +26,9 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P15 M2** — game history list + replay scrubber: the residue of past games, and the scrubber
-   it needs already exists (`ReplayScrubber`, shipped with P2 R0) — mostly assembly.
+1. **P15 M2** — game history list + replay: the residue of past games (in-progress). The replay
+   surface exists (`recap/ReviewTable` + `useReplay`), but browsable history is M2's own work —
+   P1's log is dev-only, so nothing persists games for a real player yet.
 2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
 3. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
@@ -958,15 +959,24 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Status:** partial — **M1 shipped**: a "Your progress" home-screen card backed by
   a localStorage store (games, per-tier win rate, best score, current/best streak,
   perfect clears) with one-time milestone toasts (first win vs each tier, perfect
-  clear). M2 (game history list + replay scrubber) pending — the scrubber is now
-  built and ready to reuse: `src/client/recap/ReplayScrubber` (shipped with P2 R0).
+  clear). **M2 in-progress** — `feat/p15-m2-game-history`.
+  Two premises corrected before claiming: (a) the `ReplayScrubber` this entry planned to
+  reuse was removed by P2 R0.2 — M2 builds on `recap/ReviewTable` + `useReplay` instead,
+  which render from a `GameRecord` with no live client (see P2's R0.2 note); (b) P1's
+  records are **not** readable in the browser — they go to a dev-only disk endpoint, with
+  localStorage holding only a transient failure queue. So M2 owns a player-facing history
+  store; "M2 depends on P1" was only ever true for the record *format*, not for retrieval.
 - **Value:** games leave a residue — beating `extreme` the first time should look
   different from losing your first game. Makes P13's named tiers *feel* like a ladder.
 - **Scope / milestones:** M1 localStorage counters — games played, win rate per tier,
   best score, streaks, milestone toasts (first win vs each tier, perfect clear).
-  M2 game history list + replay scrubber.
-- **Depends on:** M1: nothing. M2: P1 (game logging); replay assets shared with
-  P2 (recap).
+  **M2** (settled with the human, 2026-07-21) game history: finished games persist to a
+  capped localStorage list alongside the existing dev sink; the list lives under M1's
+  counters in the "Your stats" modal — the residue surface already exists, and a home-row
+  destination would sit empty until you've played (P35 keeps that menu precondition-free);
+  picking a game opens it in `ReviewTable`.
+- **Depends on:** M1: nothing. M2: P1 for the record *format* only (see Status);
+  replay assets shared with P2 (recap).
 
 ---
 
