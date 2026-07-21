@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { GameMode, ScoringVariant } from '../../game/types';
 import { dailyDateKey } from '../../game/puzzle/daily';
 import { loadPuzzleSeen, loadPuzzleStreak, loadTutorialDone, MAX_NICK_LEN, type MatchInfo } from './config';
-import { loadSetup, persistSetup, setupSummary, type AiSetup } from './aiSetup';
+import { launchSetup, loadSetup, setupSummary, type AiSetup } from './aiSetup';
 import { ActionMenu, type ActionRow } from './ActionMenu';
 import { CreateMatchForm } from './CreateMatchForm';
 import { AmbientBoard } from './AmbientBoard';
@@ -54,9 +54,9 @@ export function HomeScreen({
   const [glance, setGlance] = useState<Glance>(null);
   const [id, setId] = useState('');
 
-  // The saved setup, read once on mount — Quick Play launches exactly this, and its
-  // subtitle says so. Custom Game owns editing it; returning here remounts the screen
-  // and re-reads, so the row always describes what it will actually start.
+  // The pinned setup (or the built-in one), read once on mount — Quick Play launches
+  // exactly this, and its subtitle says so. Custom Game owns pinning it; returning here
+  // remounts the screen and re-reads, so the row always describes what it will start.
   const saved = useMemo(() => loadSetup(), []);
   const puzzleIsNew = useMemo(() => loadPuzzleSeen() !== dailyDateKey(), []);
   const puzzleStreak = useMemo(() => loadPuzzleStreak(), []);
@@ -72,7 +72,7 @@ export function HomeScreen({
       label: 'Quick Play',
       hint: setupSummary(saved),
       primary: true,
-      onClick: () => onStartAI(persistSetup(saved)),
+      onClick: () => onStartAI(launchSetup(saved)),
     },
     {
       testid: 'open-custom',
