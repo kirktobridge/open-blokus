@@ -26,16 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P50** — Move Options: mark the *anchor* corners, not just the footprint. Sibling to the
-   just-shipped P44 overlay; reuses the `CutMarks` corner vocabulary, deterministic (no research).
-2. **P48** — right-rail & tray layout: widen horizontally + collapsible panels. Fixes a real
+1. **P48** — right-rail & tray layout: widen horizontally + collapsible panels. Fixes a real
    overflow (review scrubber pushed below the fold); pure layout, no blocking deps.
-3. **P47** — auto-mute a fully-bot watch game: silence cues no human triggered. Small, dependency-ready
+2. **P47** — auto-mute a fully-bot watch game: silence cues no human triggered. Small, dependency-ready
    (gates the existing `useGameSound` path on `humanCount === 0`).
-4. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
+3. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
    frame-detach bug; spike the coord-reindex vs CSS-layer question first.
-5. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
+4. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
    can't poison the one-click path P35 leans on.
+5. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+   open work is the call itself (tidiness vs. touch discoverability), not more code.
 
 ---
 
@@ -885,7 +885,12 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing. Refines P6 + P41 (both shipped).
 
 ### P50 — Move Options: mark the anchor points, not just the footprint
-- **Status:** in-progress
+- **Status:** shipped — a second, sparser layer marks the anchors under the reach fill. The
+  anchor set is derived from the rules core's own corner-contact cells (now exported) rather
+  than the client's `expansionAnchors` room metric, so the marks can't disagree with what the
+  engine actually hooks onto — including the pre-start case, where the lone anchor is the
+  color's start corner. Drawn as a small square pip, not the scaffolded blue ring: square
+  matches every other mark on this board, and a pip stays under the "guidance, not chrome" bar.
 - **Value:** Move Options shades every cell any legal placement of the held piece could cover
   (one `tone: 'legal'` hint, active-color tint, in `BlokusBoardView.tsx`). That shows *reach*
   but hides *why*: the player can't see the diagonal corner-contacts — the anchors — that make
