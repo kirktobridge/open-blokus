@@ -26,12 +26,12 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
-   can't poison the one-click path P35 leans on.
-2. **P15 M2** — game history list + replay scrubber: the residue of past games, and the scrubber
+1. **P15 M2** — game history list + replay scrubber: the residue of past games, and the scrubber
    it needs already exists (`ReplayScrubber`, shipped with P2 R0) — mostly assembly.
-3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
+3. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
+   work is generalizing board size out of the rules core (touches GAME_SPEC + ARCHITECTURE).
 
 ---
 
@@ -828,10 +828,11 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P35 (shipped — the rows + subtitles).
 
 ### P46 — Quick Play configurable default
-- **Status:** in-progress — `feat/p46-quickplay-default`. UX settled with the human: the default
-  is **pinned explicitly from Custom Game**, rejecting both a Settings-owned copy of the setup
-  form (splits one setup UI across two places) and keep-last-played-plus-reset (leaves the
-  default unpredictable; only adds an escape hatch after the fact).
+- **Status:** shipped — the default is **pinned explicitly from Custom Game**, rejecting both a
+  Settings-owned copy of the setup form (splits one setup UI across two places) and
+  keep-last-played-plus-reset (leaves the default unpredictable; only adds an escape hatch after
+  the fact). Launching and pinning are now separate paths; P17's blitz/extreme guard runs on
+  both, so no invalid setup can be started *or* pinned.
 - **Value:** "last custom config" makes Quick Play unpredictable — one odd experiment poisons
   the one-click path. A stable, *settable* default keeps Quick Play the reliable fallback P35
   leans on as the always-valid primary action.
