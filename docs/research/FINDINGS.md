@@ -10,18 +10,26 @@ confidence. Confidence is `replicated` (multiple seeds/runs agree), `significant
 (single well-powered run, CI clear), or `directional` (small sample, treat as a
 hint). Retracted claims are kept struck-through — the retraction *is* the lesson.
 
+**Variant scope.** Every finding below F19 was measured on **Classic — 20×20, four
+colors, basic scoring** — and any tuned constant it names is scoped to that variant
+unless it says otherwise. Duo ([GAME_SPEC_DUO.md](../GAME_SPEC_DUO.md): 14×14, two
+colors, advanced scoring only) is a *different search problem*: lower branching, one
+opponent instead of three, and a scoring rule under which the placed-square leader is
+not always the winner. Transfer is therefore an **open question per experiment, not an
+assumption** — see AE29–AE31, and [M6](#m6--a-tuned-constant-is-scoped-to-the-variant-it-was-measured-on-say-so-in-the-claim).
+
 ---
 
 ## AI strategy
 
 ### F1 — Positional heuristic ≫ greedy-size ≫ random
-`replicated`. The shipped weighted eval (`size·10 + frontier·3 + center·1 +
+`replicated` **(Classic)**. The shipped weighted eval (`size·10 + frontier·3 + center·1 +
 block·2`) beats size-greedy ~88% game-share and random ~100%, stable across seeds
 (Runs A, C). Positional play beats raw size decisively when the positional term is
 kept separate and size-dominant. See F5 for why cchung89 found the opposite.
 
 ### F2 — `frontier` (own-mobility) is the load-bearing term
-`replicated`. Ablating it collapses the bot to 15.5% — far outside any error band
+`replicated` **(Classic)**. Ablating it collapses the bot to 15.5% — far outside any error band
 (Run C). `block` is a mild real win (~4 pts, within ±std); `center` ≈ noise (`full`
 and `no-center` overlap completely — likely because it's averaged over the whole
 game, not just the opening). Weight `frontier: 3` stays; only `f=10` is clearly
@@ -34,7 +42,7 @@ different code path: whatever the bot optimizes, keeping its own future options
 open is the dominant signal.
 
 ### F4 — The hand-crafted heuristic hit a structural ceiling
-`significant`. Depth-2 alpha-beta (Run D), a weight-tuned depth-1 eval (Run E), and
+`significant` **(Classic)**. Depth-2 alpha-beta (Run D), a weight-tuned depth-1 eval (Run E), and
 an *unconfounded* pure eval (Run F, beam=all) all land 47–55% vs the heuristic —
 statistically indistinguishable, at up to ~100× the cost. Voronoi territory control
 (Run G) was neutral-to-harmful at every weight. Root cause: the alpha-beta beam is
@@ -54,7 +62,7 @@ Our own `f=10` result is direct evidence that overweighting the positional term
 hurts — the trap that probably bit their advanced bot.
 
 ### F6 — MCTS breaks the ceiling and scales with compute; rollout *quality* is the lever
-`significant`. Maxn UCT MCTS with per-color reward vectors (fixes the paranoid
+`significant` **(Classic)**. Maxn UCT MCTS with per-color reward vectors (fixes the paranoid
 mismatch) is the first strategy to genuinely beat the heuristic: `it=80/d=8` →
 54.6% game-share, p = 0.0007 over 1,200 games (Run H). Unlike the F4 plateau,
 strength scales monotonically with budget, and with **full rollouts** (`d=0`) it
@@ -69,7 +77,7 @@ bitboards — see AE27.) Cost is ~100–1000× the heuristic, so this is a
 budget-capped "hard" bot, not a drop-in.
 
 ### F14 — Absolute strength: our best bot ≈ Pentobi level 1–2 (the first external anchor)
-`significant`. Bridged our arena to `pentobi-gtp` (the calibrated open-source
+`significant` **(Classic)**. Bridged our arena to `pentobi-gtp` (the calibrated open-source
 reference) over GTP and placed our tiers on Pentobi's 1–9 ladder in 4p Classic 2v2,
 game-share vs a 50% null (Run R, AE19). **Our shipped easy tier (heuristic) is
 CI-clear below even L1** (21.2% game-share, CI [16.5,26.9], n=240), decaying
@@ -85,7 +93,7 @@ because both our fixed-iteration tiers and Pentobi's simulation-based levels are
 strength-invariant to wall-clock — only run-time changes.
 
 ### F15 — Light rank-normalized reward shaping wins placement for free; heavy over-trades
-`significant`. The winner-take-all placed-leader reward left a real gradient on the
+`significant` **(Classic)**. The winner-take-all placed-leader reward left a real gradient on the
 table between 2nd and 4th. Blending Pentobi's ties-averaged rank-normalized term into
 it — reward `(1−w)·winner + w·rankNorm`, `rankNorm = (beaten+(tied−1)/2)/(n−1)` over
 placed squares — improves a losing bot's final standing **at no cost to wins, at the
@@ -102,9 +110,14 @@ and a
 non-degenerate value signal for the advisor (AD2/AD3) where winner-take-all reads a
 flat 0. Per P13 this is a lost-position lever (not a ceiling lever) → retune tiers
 in place, not a new rung.
+**Does not apply to two-color variants.** At n=2 the `rankNorm` term is *algebraically
+identical* to the winner term (win 1/1, tie 0.5/0.5, loss 0/0), so `rankRewardWeight`
+has no effect whatsoever in Duo — the 2nd-vs-4th gradient this finding buys does not
+exist there, and w=0.25 is dead config on a Duo tier. The result stands for Classic;
+it is void, not merely untested, for Duo. See AE31.
 
 ### F16 — Rollout *width* beats rollout *smarts*: scoring playout candidates buys nothing
-`significant` (rejection) / `directional` (the width lever). F6 named rollout quality
+`significant` (rejection) / `directional` (the width lever) **(Classic)**. F6 named rollout quality
 as the strength lever, so AE11 tried to make each playout move smarter: rank the
 rejection-sampled candidates by the full heuristic (size + frontier + center + block)
 instead of by size alone, greedily (`score`) or Boltzmann-sampled (`softmax`,
@@ -128,7 +141,7 @@ compounds directly into the placed-leader signal. A rollout policy should be jud
 what it does to the *reward's* variance, not by how well it plays.
 
 ### F17 — Wider rollout sampling wins at matched wall-clock, but the win is mostly the *iterations* it buys, not the width
-Confidence: `significant` (matched-clock win) / `replicated` decomposition (three
+Confidence: `significant` (matched-clock win) / `replicated` decomposition (three **(Classic)**
 same-iteration contrasts agree). F16 left the width lever (`rolloutSamples`) open;
 AE26 swept {12,24,48} vs the shipped 6 at matched wall-clock, each arm at its benched
 iteration budget (12→57, 24→65, 48→65 vs base 48), n=600 each (Run U). Strength is
@@ -154,7 +167,7 @@ the "pure width is small" claim holds at these ~55–65-iter budgets only — at
 budgets it flips large; see F18.)**
 
 ### F18 — The value of rollout *width* scales with the iteration budget: negligible when starved, large (+11 pts) when deep
-Confidence: `significant` (n=600, CI clear). F17 measured the pure-width term (width
+Confidence: `significant` (n=600, CI clear) **(Classic)**. F17 measured the pure-width term (width
 held apart from the iterations it buys) as small and non-monotone at ~55–65 iters:
 −2.3 pts at 6→12, +2.3 pts at 24→48. AE28 re-ran the cleanest contrast — `s48` vs `s6`,
 **both pinned at 500 iters** (the shipped `extreme` tier's fixed, no-time-budget config,
@@ -177,6 +190,11 @@ as free iterations (F17, cap ~24 at the speed plateau), a high-iteration bot get
 strength (F18, keep widening — 48 clearly beats 6 at 500 iters). Deploy: raise the
 `extreme` tier's `rolloutSamples` from 6 toward 48 — a clean strength win on top of the
 ~1.35× move-speed gain; time-budgeted tiers were covered by F17.
+**Variant scope:** measured at 500 iters in **4p Classic**. This finding's own mechanism
+— that the right width is *budget-dependent* — is what makes it non-transferable: Duo
+changes the iteration budget per move, the rejection-sampling hit rate, and the endgame
+legal-move density that drives `fallbackMove` waste. The 48 is a Classic-500-iter
+number, not a constant. See AE30.
 
 ---
 
@@ -192,7 +210,7 @@ Output is byte-identical to the full scan (differential test in
 accuracy cost. Details in [log/ai-strategy.md](log/ai-strategy.md) (Engine note).
 
 ### F8 — MCTS `beam` must scale with the iteration budget; a fixed wide beam breaks the low tier
-`significant`. Time budgets deliver *few* iterations (Leg B: 500 ms ≈ 30/move, and
+`significant` **(Classic)**. Time budgets deliver *few* iterations (Leg B: 500 ms ≈ 30/move, and
 only ~17 early-game where branching is highest; 2000 ms ≈ 139). At the shipped
 default `beam=16`, the ~30-iteration medium tier spreads ~2 rollouts over 16
 children, so the most-visited pick is noise — **medium *loses* to the heuristic**
@@ -207,10 +225,14 @@ time budgets** (Run J-confirm): medium 67 % vs easy (was 31 % at beam 16), hard
 63 % vs medium — a monotonic, significant ladder. Runs J / J-confirm; resolved
 [AE10 + AE5](backlog/ai-engine.md). (Beams + the iters-per-time-budget counts here
 were measured pre-AE9 bitboards; timed tiers now complete ~2.5× the iterations per
-budget — see AE27.)
+budget — see AE27.) **Variant scope:** the `beam ≈ iters/6` rule and the shipped
+per-tier beams are **Classic numbers**, and *both* of the rule's inputs move on a 14×14
+two-color board — branching collapses while the ms-budgeted tiers complete more
+iterations per move, pushing `iters/beam` up. Duo's tiers are therefore likely
+*under*-beamed, the mirror image of the break above and equally invisible. See AE30.
 
 ### F9 — RAVE / AMAF value sharing does not buy strength in Blokus MCTS
-`replicated` (no-win). At **matched iterations** (150 iters, beam 16, rolloutDepth 12),
+`replicated` (no-win) **(Classic)**. At **matched iterations** (150 iters, beam 16, rolloutDepth 12),
 RAVE vs plain UCT pooled to **54.0 % game-share, CI [49.1, 58.8], n=400** (Runs L+M,
 two independent seed batches) — the pre-registered "CI clear of 50 %" bar is **not
 met**; the second batch regressed to 52 %, so the first batch's 56 % was mostly noise.
@@ -237,7 +259,7 @@ evaluation while our rollout cost is legality *sampling*. Points to [AE9](backlo
 as the next win. Run N.
 
 ### F11 — A small learned value net can't replace full rollouts, even at 15–100× the iterations
-`significant` (600 games, 8 shards agree, Run O). A 609-param value net trained on
+`significant` (600 games, 8 shards agree, Run O) **(Classic)**. A 609-param value net trained on
 697k self-play positions **passes its offline gate** — it out-predicts the shipped
 static eval as a mid-game winner predictor (42.9% vs 39.1% held-out, discordant
 pairs 57.9% [56.8, 59.0]) — yet as an MCTS **leaf eval replacing rollouts** it
@@ -330,3 +352,26 @@ track names its outside-world readout *first* — Pentobi for strength, a
 human-judgement benchmark for the advisor — and if no readout exists, building one
 is the track's first entry, not a footnote. Enforced at /triage (classification) and
 /research Phase P (entry gate).
+
+### M6 — A tuned constant is scoped to the variant it was measured on; say so in the claim
+Every finding F1–F18 was measured on Classic (20×20, four colors, basic scoring) and
+**not one of them said so** — because Classic was the only variant, "the game" and
+"this variant" were the same sentence, so the qualifier felt like noise. Adding Duo
+broke that silently, in three ways we only found by looking. The shipped
+`rankRewardWeight: 0.25` is *provably inert* at two colors — F15's rank term collapses
+onto the winner term at n=2, so a Duo tier carries it as dead config. F8's
+`beam ≈ iters/6` rule reads two inputs that **both** move with board size and opponent
+count, so Duo's tiers inherit a ratio tuned for a different branching factor. And the
+MCTS reward ranks by placed squares — exactly the winner under *basic* scoring, and not
+the winner under Duo's advanced-only scoring, so the search optimizes a proxy that is
+wrong at the margin where Duo games are decided. None of this turns a test red; the bot
+just plays worse, which is the most expensive kind of wrong.
+
+So: **a finding names the variant it was measured on, and a backlog entry names the
+variant it will run on.** Where a claim is *mechanism*-level rather than constant-level
+(F2/F3's "own mobility is load-bearing") say that too — the point is to make the
+transfer question **explicit**, not to assume either answer. A constant is presumed
+variant-scoped until measured otherwise; a mechanism is presumed portable but still
+says so. Enforced at /triage (classification) and /research Phase P (entry gate),
+alongside M5's anchor rule — because a new *variant* is a new track, and needs its own
+external readout before self-relative numbers accumulate (AE29).

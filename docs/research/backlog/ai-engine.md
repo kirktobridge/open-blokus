@@ -139,7 +139,11 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** slow; no code change.
 
 ### AE7 — MCTS mode coverage (2p / 3p)
-- **Status:** deferred (blocked on 2p/3p AI actually landing)
+- **Status:** deferred (blocked on 2p/3p AI actually landing). **Not Duo.** This is
+  2p/3p *Classic* — 20×20, four colour sets, one human steering two colours (or the 3p
+  shared colour). Duo is a two-*colour* game on 14×14 and is a different problem
+  ([AE29](#ae29--duo-external-anchor-extend-the-pentobi-bridge-to-the-duo-variant)–AE31);
+  don't merge the two entries.
 - **Objective:** validate MCTS reward + backup for non-4p modes.
 - **Hypothesis:** 2p (one human steers two colors) and 3p (shared color) have
   different reward structures — placed-leader reward and per-color backup need
@@ -150,7 +154,10 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** moderate; also unblocks AE8's tree-reuse revisit.
 
 ### AE8 — Tree reuse across turns (revisit in 2p)
-- **Status:** deferred (implemented; **no-win in 4p, measured** — kept, correct, zero-cost on miss)
+- **Status:** deferred (implemented; **no-win in 4p, measured** — kept, correct, zero-cost on miss).
+  **Duo makes this testable for the first time:** the entry has always said "revisit in 2p",
+  and Duo (two colours, so only 2 plies to your next turn) is that testbed — its hypothesis
+  predicts reuse should pay there. Gated on P20 M2b + product P54, not on AE7.
 - **Objective:** determine whether persisting + re-rooting the search tree between
   moves pays off outside 4p.
 - **Hypothesis:** reuse hit-rate is ~0–5% in 4p (your next turn is 4 plies deep in a
@@ -331,6 +338,10 @@ test (product P21) fails CI if any ID here is missing or terminal.
   shipped `book_classic.blksgf` is 173 *bytes* vs Duo's 22.5 KB: even the reference
   engine found books barely worth having on the 4p Classic start. The latency half
   of the objective stands; revisit the strength half with P20 M2 / Duo.)
+  **The deprioritization is Classic-only and does not carry to Duo** — the same
+  comparison that killed it here argues *for* it there: Pentobi ships 22.5 KB of Duo
+  book against 173 bytes for Classic, so opening theory is worth roughly two orders of
+  magnitude more on the Duo start. Re-rank this entry once Duo ships.
 - **Objective:** kill worst-case early-move latency (extreme tier: tens of seconds)
   and bank strength on the fixed start position.
 - **Hypothesis:** moves 1–3 recur across games (fixed corners, symmetric start), so
@@ -518,9 +529,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE23 — Solve a reduced Blokus (Duo on small boards)
-- **Status:** deferred (blocked on board-size generalization — product P20 M2 —
-  and wants AE9 node rates; the one true *solver* item, everything else is
-  player-strength)
+- **Status:** deferred (wants AE9 node rates; the one true *solver* item, everything
+  else is player-strength). **Board-size blocker partly cleared:** P20 M2a shipped the
+  rules-core generalization (board size + start cells are `GameConfig`, read via
+  `boardSizeOf`/`startCellOf`), so a reduced board is now expressible. Still blocked on
+  P20 M2b for the two-colour play set, and on product P54 for a variant-aware search
+  layer + a Duo-capable arena harness.
 - **Objective:** compute the exact game-theoretic value + principal variation of
   Blokus Duo on a reduced board (ladder: 6×6 → 7×7 → 8×8, full or reduced piece
   set) — a proof, and to our knowledge a novel result for any Blokus variant.
@@ -717,3 +731,115 @@ test (product P21) fails CI if any ID here is missing or terminal.
   not fire — the effect was large (+11 pts), CI cleared at n=600.
 - **Log:** [Run V](../log/ai-strategy.md) → [F18](../FINDINGS.md). Follow-up (product):
   ship the `extreme` `rolloutSamples` bump; instrument `fallbackMove` rate at width 48.
+
+### AE29 — Duo external anchor: extend the Pentobi bridge to the `duo` variant
+- **Status:** proposed (blocked on product P20 M2b + P54). **The M5 anchor for the Duo
+  track** — a new variant is a new track, so this lands before any self-relative Duo
+  number is trusted. [F14](../FINDINGS.md) placed our tiers on Pentobi's ladder in **4p
+  Classic only**; our Duo strength is entirely unmeasured, while every constant a Duo
+  bot would inherit was tuned on Classic ([M6](../FINDINGS.md)).
+- **Objective:** place each shipped tier on Pentobi's **Duo** ladder, so every later Duo
+  experiment has an outside-world readout from run one instead of after ~20 runs (M5).
+- **Hypothesis:** none needed — measurement infrastructure (the AE19 precedent). The one
+  interesting unknown: whether Classic-inherited configs land *lower* on the Duo ladder
+  than they do on the Classic ladder, which would quantify the transfer loss directly
+  and size AE30/AE31.
+- **Method:** `pentobi-gtp` already supports the variant (`-g duo`) — the gap is on our
+  side. Our bridge hardcodes `'classic'`
+  ([pentobi/gtp.ts:39](../../../src/game/ai/pentobi/gtp.ts)) and a 20-based coordinate
+  map (`20 − row`, [pentobi/coords.ts:25,33,46](../../../src/game/ai/pentobi/coords.ts));
+  parameterize both by board size, add a 2-seat Duo game loop, and replay-verify every
+  bridged game through our own rules core (the AE19 guard). Then each shipped tier vs
+  Pentobi Duo levels 1–4, ≥200 games per pairing, seed-averaged, configs in
+  `scripts/experiments/ae29-*.json`. Report the Classic ladder placement alongside as
+  the transfer readout.
+- **Success criteria:** measurement — game-share (± Wilson 95% CI) vs ≥3 Pentobi Duo
+  levels, identifying the highest level each tier beats CI-clear. Becomes the standing
+  Duo readout (`npm run arena:pentobi -- --variant=duo`) that AE30/AE31 cite.
+- **Power:** measurement — sized by target CI width, not a binomial bar; n=200/pairing
+  gives ≈ ±7 pts (the AE19 precedent).
+- **Cost / risk:** small–moderate. The bridge, GTP protocol and replay verifier all
+  exist; this is parameterization plus a 2-seat loop. Risk: Duo coordinate/piece mapping
+  bugs silently corrupting results — mitigated by the same replay verification that
+  caught exactly that for Classic.
+- **Log:** —
+
+### AE30 — Re-tune the Duo bot: beam:iterations and the heuristic weights
+- **Status:** proposed (blocked on product P54 + AE29 — the anchor lands first, per M5)
+- **Objective:** decide whether the Classic-tuned constants still hold on 14×14 with one
+  opponent: the per-tier `beam` (medium 6, hard 16, extreme 20,
+  [difficulty.ts](../../../src/client/ai/difficulty.ts)) and the heuristic weights
+  `{size:10, frontier:3, center:1, block:2}`
+  ([heuristic.ts:15-20](../../../src/game/ai/heuristic.ts)) — or whether Duo needs its own set.
+- **Hypothesis:** both drift, in *known directions*.
+  **(1) Beam.** [F8](../FINDINGS.md)'s lever is the beam:iterations ratio
+  (`beam ≈ iters/6`), and both inputs move in Duo: branching collapses (Classic peaked at
+  541 legal moves, F10) *and* the ms-budgeted tiers therefore complete more iterations
+  per move. Both push `iters/beam` up, so medium/hard are likely **under**-beamed —
+  the mirror image of F8's original break, and equally invisible to the suite.
+  **(2) Weights.** Two terms change *meaning*, not just magnitude. `center` is scored
+  against `CENTER = (BOARD_SIZE−1)/2` ([heuristic.ts:22](../../../src/game/ai/heuristic.ts))
+  and in Classic means "expand away from your corner" — but Duo *starts* interior at
+  (4,4)/(9,9) with the centre as the contested zone, so the term's role inverts. `block`
+  (`opponentCornersDenied`) counts denial against three diffuse opponents in Classic and
+  against the single decisive one in Duo. [F2](../FINDINGS.md)'s "`center` ≈ noise,
+  `block` mild" is a four-colour measurement.
+  Assumption (M4): F2/F3's *mechanism* — own mobility is load-bearing — is
+  domain-general and expected to survive; only the weights move.
+- **Method:** AE27's shape. **Phase 1 (measurement):** instrument branching factor by ply
+  and iterations/move per tier on Duo via `scripts/profile-mcts.ts`; compare the
+  resulting beam:iters against F8's counts. **Phase 2 (conditional — fires only if the
+  ratio drifted >2×):** rerun the J-confirm ladder arena on Duo sweeping medium/hard
+  beam. **Phase 3:** weight ablation on Duo (the Run C design: full / no-center /
+  no-block / f=10), seed-averaged, ≥600 pooled games per arm,
+  `scripts/experiments/ae30-*.json`. Report the AE29 Duo-ladder readout for the winning
+  config either way.
+- **Success criteria:** (a) every Duo ladder step (easy < medium < hard < extreme) is
+  CI-clear of 50% — a non-monotonic ladder is a **fail** regardless of absolute strength;
+  (b) adopt a retuned beam or weight vector only if it clears **52%** game-share (Wilson
+  lower bound) vs the Classic-inherited config over ≥600 pooled Duo games.
+- **Power:** n=600 → MDE 56.0%. F8's beam effects were large (31%→70% across the sweep),
+  so n=600 is comfortably sized if the drift is real — and a null at that n is itself the
+  useful answer (the constants transfer). Confirm with `stats.py --power` at the start gate.
+- **Cost / risk:** moderate compute (three phases; phase 2 only fires on measured drift),
+  no engine change beyond config. Risk: retuning per variant doubles the tier surface — if
+  phase 1 shows no drift, close early and record the transfer as a finding rather than
+  shipping a second constant set.
+- **Log:** —
+
+### AE31 — Duo reward model: the placed-square leader is not the Duo winner
+- **Status:** proposed (blocked on product P54; wants AE29's readout)
+- **Objective:** decide what an MCTS simulation in Duo should be rewarded for, given that
+  two of the shipped reward's premises are false there.
+- **Hypothesis:** two independent defects — one provable on paper, one measurable.
+  **(1) `rankRewardWeight` is inert at two colours.** `rewardVector`
+  ([mcts.ts:206-229](../../../src/game/ai/mcts.ts)) computes `(1−w)·winner + w·rankNorm`
+  with `rankNorm = (beaten + (tied−1)/2)/(n−1)`. At n=2 the two terms are *algebraically
+  identical* (win 1/1, tie 0.5/0.5, loss 0/0), so [F15](../FINDINGS.md)'s shipped w=0.25
+  has literally no effect and the "fight for 2nd vs 4th" gradient it buys does not exist.
+  **(2) The reward optimizes the wrong objective.** It ranks by *placed squares* — exactly
+  the winner under **basic** scoring, but Duo is **advanced-only**
+  ([GAME_SPEC_DUO.md](../../GAME_SPEC_DUO.md): +15 all-pieces, +5 monomino-last). A bot
+  maximizing placed squares can lose a Duo game it could have won by keeping the monomino
+  for last. Expect an advanced-score-aware terminal reward to beat the inherited one, with
+  the gap concentrated in close endgames.
+  Assumption (M4): the bonuses swing enough games to be detectable — measure that first.
+- **Method:** **Gate (cheap, runs first):** over ≥200 Duo self-play games, count the games
+  where the placed-square leader and the advanced-scoring winner *differ*. If <≈3%, close
+  `no-win` on the spot — the reward cannot be worth more than the disagreement rate.
+  **Arm:** terminal reward computed from `finalScores` under advanced scoring
+  (winner-take-all on the true result) vs the incumbent placed-leader reward, head-to-head
+  at matched iterations, ≥600 pooled Duo games, `scripts/experiments/ae31.json`. Report
+  AE29 Duo-ladder placement for the winner. Also record whether `rankRewardWeight` should
+  be dropped from the Duo tier configs as dead config (a hygiene outcome, not a bar).
+- **Success criteria:** score-aware reward clears **52%** game-share (Wilson lower bound)
+  vs the placed-leader reward at matched iterations over ≥600 Duo games. Gate: ≥3%
+  winner-disagreement rate before any arena spend.
+- **Power:** n=600 → MDE 56.0%, but the achievable effect is **bounded above by the gate's
+  disagreement rate** — at 5% disagreement the ceiling sits near ~52.5%, needing n≈2400
+  pooled. Set the required n from the *measured* gate rate at the start gate, not in advance.
+- **Cost / risk:** small code (a terminal-reward swap behind config; `finalScores` already
+  exists), moderate compute. Risk: the gate closes it cheaply — which is the design.
+  Interacts with AE30: retune the beam on the reward you intend to ship, or run them in
+  that order.
+- **Log:** —
