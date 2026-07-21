@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { Cell } from '../src/game/types';
-import { createInitialState, CORNERS } from '../src/game/modes';
+import { createInitialState, CORNERS, boardSizeOf, startCellOf } from '../src/game/modes';
 import { isLegalPlacement, applyPlacement } from '../src/game/placement';
-import { idx } from '../src/game/board';
+import { generateLegalMoves } from '../src/game/moves';
+import { idx, BOARD_SIZE } from '../src/game/board';
 
 const cell = (x: number, y: number): Cell => ({ x, y });
 
@@ -86,5 +87,47 @@ describe('applyPlacement', () => {
     expect(G.colors.blue.remaining.length).toBe(20);
     expect(G.colors.blue.lastPlaced).toBe('I2');
     expect(G.colors.blue.hasStarted).toBe(true);
+  });
+});
+
+/**
+ * P20 M2a made board size + start cells per-game config, but both fields are
+ * optional so that states persisted *before* they existed (localStorage games,
+ * shared replays, saved logs) still load. Those states are Classic by
+ * construction, and this pins that fallback: without it, a pre-M2a saved game
+ * would deserialize with an undefined board size and silently misbehave rather
+ * than fail loudly.
+ */
+describe('legacy states without boardSize/startCells (M2a back-compat)', () => {
+  /** A state as persisted before M2a: config carries neither new field. */
+  const legacy = () => {
+    const G = createInitialState(4);
+    delete G.config.boardSize;
+    delete G.config.startCells;
+    return G;
+  };
+
+  it('reads as a Classic 20×20 board', () => {
+    expect(boardSizeOf(legacy())).toBe(BOARD_SIZE);
+  });
+
+  it('falls back to the Classic corners as start cells', () => {
+    const G = legacy();
+    for (const color of ['blue', 'yellow', 'red', 'green'] as const) {
+      expect(startCellOf(G, color)).toEqual(CORNERS[color]);
+    }
+  });
+
+  it('still enforces the corner rule and bounds', () => {
+    const G = legacy();
+    expect(isLegalPlacement(G, 'blue', 'I2', [cell(0, 0), cell(1, 0)])).toBe(true);
+    expect(isLegalPlacement(G, 'blue', 'I2', [cell(1, 0), cell(2, 0)])).toBe(false);
+    expect(isLegalPlacement(G, 'blue', 'I2', [cell(19, 0), cell(20, 0)])).toBe(false);
+  });
+
+  it('generates the same legal moves as an equivalent modern state', () => {
+    expect(generateLegalMoves(legacy(), 'blue')).toEqual(
+      generateLegalMoves(createInitialState(4), 'blue'),
+    );
   });
 });
