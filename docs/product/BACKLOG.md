@@ -828,14 +828,19 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P35 (shipped — the rows + subtitles).
 
 ### P46 — Quick Play configurable default
-- **Status:** proposed (to flesh out)
+- **Status:** in-progress — `feat/p46-quickplay-default`. UX settled with the human: the default
+  is **pinned explicitly from Custom Game**, rejecting both a Settings-owned copy of the setup
+  form (splits one setup UI across two places) and keep-last-played-plus-reset (leaves the
+  default unpredictable; only adds an escape hatch after the fact).
 - **Value:** "last custom config" makes Quick Play unpredictable — one odd experiment poisons
   the one-click path. A stable, *settable* default keeps Quick Play the reliable fallback P35
   leans on as the always-valid primary action.
-- **Scope (rough):** define a built-in default vs-AI setup; Quick Play launches it unless the
-  player has set their own default. Surface a "set as my Quick Play default" affordance (from
-  the custom-game setup, or in Settings). Preserve P17's blitz/extreme-resolve guard. Exact
-  UX TBD.
+- **Scope:** *starting* a game stops writing the Quick Play default — that write is what makes
+  a one-off experiment sticky. Only an explicit "pin as my Quick Play default" in Custom Game
+  sets it; Quick Play launches the pinned setup, or the built-in one when nothing is pinned.
+  Pinning changes state without navigating, so it has to say what it did. Preserve P17's
+  blitz/extreme-resolve guard — it moves onto the launch path instead of riding along with
+  the save.
 - **Depends on:** P17 (shipped — Quick Play + persisted setup).
 
 ### P48 — Right-rail & piece-tray layout: widen horizontally + collapsible panels (all modes)
