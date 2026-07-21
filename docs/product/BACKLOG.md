@@ -1085,9 +1085,9 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 ## Epic: Game modes
 
 ### P20 — Variety: Blokus Duo & blitz
-- **Status:** partial — **M1 (blitz) shipped**: per-move countdown for human seats in the
-  offline vs-AI table. **M2 rescoped into M2a / M2b / M2c**, none started; the spec
-  dependency that blocked it is now cleared.
+- **Status:** in-progress — **M2a claimed** (branch `feat/p20-m2a-board-size-config`).
+  **M1 (blitz) shipped**: per-move countdown for human seats in the offline vs-AI table.
+  **M2 rescoped into M2a / M2b / M2c**; M2b/M2c not started.
 - **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
   move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
   entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
