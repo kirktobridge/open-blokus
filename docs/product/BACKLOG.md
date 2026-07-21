@@ -26,15 +26,12 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P52** — the review transport bar drops below the fold whenever the rail carries both
-   Analysis and the hand tray; P48's collapsible panels mitigate it but the bar still moves.
-   Small, no dependencies, and it degrades a shipped mode's primary control.
-2. **P53** — review opened from Your stats → Recent games has no Settings/Controls/Leave chips
+1. **P53** — review opened from Your stats → Recent games has no Settings/Controls/Leave chips
    and no visible route to the menu; the in-game path gets them for free from the table shell.
-   Small; pairs with P52, which is what hides its one exit.
-3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+   Small, and now dependency-clear — P52 (shipped) made its one exit reliably visible.
+2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-4. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
+3. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
    work is generalizing board size out of the rules core (touches GAME_SPEC + ARCHITECTURE).
 
 ---
@@ -933,7 +930,14 @@ four classic colors as accents, shapes as the star.
   corner-marking vocabulary with `CutMarks`, worth reusing for visual consistency.
 
 ### P52 — Pin the review transport: the action bar never moves
-- **Status:** in-progress
+- **Status:** shipped — `ReviewTable` is a `100dvh` grid (rows `1fr auto`): the board+rails
+  region takes `1fr` and scrolls inside itself, the transport is the `auto` bottom row and is
+  positionally invariant to panel folds, rail resize, and viewport height. Parents supply the
+  bounded cell (`LocalAIGame` while reviewing, `App` standalone). `e2e/rail-layout.spec.ts`
+  asserts an unchanged, fully-in-view transport rect across expanded/folded/short-viewport;
+  /verify confirmed identical rect (delta 0.0) with screenshots. The scope's play-dock tail
+  (apply the same seam to `BlokusBoardView.tsx` *if it holds*) was conditional and stays
+  deferred by design — out of the reported bug's scope, not owed by this fix.
 - **Value:** In review the transport bar sits in normal flow below the table, so its
   y-position is a function of the tallest column. With the rail carrying both Analysis and
   the Your Hand tray it lands below the fold — the primary control for the mode is off-screen
