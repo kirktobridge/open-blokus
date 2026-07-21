@@ -1033,7 +1033,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   replay assets shared with P2 (recap).
 
 ### P51 — "Best score" reports your worst game
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** P15 M1's headline "Best score" tile is wrong under the default scoring
   variant, and wrong in the direction that mocks you: `basic` scores remaining squares
   (lower is better, GAME_SPEC §6) while the fold takes `Math.max`. Ten real games
