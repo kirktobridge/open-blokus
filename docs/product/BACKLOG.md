@@ -26,18 +26,15 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P51** — "Best score" reports your worst game: the `basic` fold takes `Math.max` on a
-   lower-is-better score. A wrong headline number on a shipped surface, now sitting directly
-   above P15 M2's history rows that show the true spread. No dependencies; small.
-2. **P52** — the review transport bar drops below the fold whenever the rail carries both
+1. **P52** — the review transport bar drops below the fold whenever the rail carries both
    Analysis and the hand tray; P48's collapsible panels mitigate it but the bar still moves.
    Small, no dependencies, and it degrades a shipped mode's primary control.
-3. **P53** — review opened from Your stats → Recent games has no Settings/Controls/Leave chips
+2. **P53** — review opened from Your stats → Recent games has no Settings/Controls/Leave chips
    and no visible route to the menu; the in-game path gets them for free from the table shell.
    Small; pairs with P52, which is what hides its one exit.
-4. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-5. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
+4. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
    work is generalizing board size out of the rules core (touches GAME_SPEC + ARCHITECTURE).
 
 ---
@@ -1032,8 +1029,15 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Depends on:** M1: nothing. M2: P1 for the record *format* only (see Status);
   replay assets shared with P2 (recap).
 
-### P51 — "Best score" reports your worst game
-- **Status:** in-progress
+### P51 — "Best score" reports your worst game — SHIPPED
+- **Status:** shipped (2026-07-21, merge `e69687c`) — the fold is variant-aware:
+  `basic` folds `min` (lower is better, GAME_SPEC §6), `advanced` folds `max`. The
+  single `bestScore` slot became `bestScores` per variant (squares-left and points
+  share no scale), and the tile carries its unit ("37 left" / "20 pts"). Scope's two
+  fall-out decisions are settled in the diff, nothing owed: (a) the legacy cross-variant
+  `bestScore` had no variant tag and can't be repaired, so sanitize drops it — the tile
+  blanks until the next game, every other counter survives (e2e-covered); (b) the "best
+  takes the max" unit test was rewritten per variant, not deleted.
 - **Value:** P15 M1's headline "Best score" tile is wrong under the default scoring
   variant, and wrong in the direction that mocks you: `basic` scores remaining squares
   (lower is better, GAME_SPEC §6) while the fold takes `Math.max`. Ten real games
