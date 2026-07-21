@@ -1,5 +1,6 @@
 import type { Beat } from '../hooks/useGameEvents';
-import { FONT_MONO, FONT_UI, PIECE_VAR } from '../theme';
+import { FONT_MONO, PIECE_VAR } from '../theme';
+import { RailPanel } from '../rail/RailPanel';
 
 /**
  * Persistent event feed (P43) — a scrollable history of the game's beats. Where
@@ -11,33 +12,24 @@ import { FONT_MONO, FONT_UI, PIECE_VAR } from '../theme';
  */
 export function EventFeed({ log }: { log: Beat[] }) {
   return (
-    <div
-      data-testid="event-feed"
-      style={{
-        width: 300,
-        background: 'var(--pnl)',
-        border: '1px solid var(--pnl-bd)',
-        borderRadius: 14,
-        padding: '14px 16px',
-        boxShadow: '0 14px 28px rgba(15,9,3,.32)',
-        boxSizing: 'border-box',
-        fontFamily: FONT_UI,
-      }}
+    <RailPanel
+      id="log"
+      testid="event-feed"
+      title={
+        <span
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 9.5,
+            fontWeight: 900,
+            letterSpacing: '.15em',
+            textTransform: 'uppercase',
+            color: 'var(--fg-muted)',
+          }}
+        >
+          Game log
+        </span>
+      }
     >
-      <div
-        style={{
-          fontFamily: FONT_MONO,
-          fontSize: 9.5,
-          fontWeight: 900,
-          letterSpacing: '.15em',
-          textTransform: 'uppercase',
-          color: 'var(--fg-muted)',
-          marginBottom: 10,
-        }}
-      >
-        Game log
-      </div>
-
       {log.length === 0 ? (
         <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.5 }}>
           Cuts, cramped corners and endgame beats will show here as they happen.
@@ -77,6 +69,6 @@ export function EventFeed({ log }: { log: Beat[] }) {
           ))}
         </div>
       )}
-    </div>
+    </RailPanel>
   );
 }

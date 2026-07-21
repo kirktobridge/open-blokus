@@ -16,6 +16,7 @@ import {
 } from '../../game/puzzle/daily';
 import { Board } from '../board/Board';
 import { HandTray } from '../tray/HandTray';
+import { RailColumn } from '../rail/RailPanel';
 import { Controls } from '../controls/Controls';
 import { useSelection } from '../hooks/useSelection';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -438,14 +439,17 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
           />
         </div>
 
-        {/* Right column — your hand */}
-        <HandTray
-          color={color}
-          state={board.colors[color]}
-          interactive={canPlay}
-          selectedId={sel.pieceId}
-          onSelect={sel.selectPiece}
-        />
+        {/* Right column — your hand, in the shared elastic rail (P48) so the tray
+            widens and folds here exactly as it does at the play and review tables. */}
+        <RailColumn>
+          <HandTray
+            color={color}
+            state={board.colors[color]}
+            interactive={canPlay}
+            selectedId={sel.pieceId}
+            onSelect={sel.selectPiece}
+          />
+        </RailColumn>
       </div>
 
       {finished && (

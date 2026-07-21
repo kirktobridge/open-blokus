@@ -14,6 +14,7 @@ import { incursionCorners } from './advisor/incursions';
 import { RoomMeter } from './advisor/RoomMeter';
 import type { Hint } from './advisor/LegalMoveHints';
 import { HandTray } from './tray/HandTray';
+import { RailColumn, RailPanel } from './rail/RailPanel';
 import { Standings } from './controls/ScorePanel';
 import { PlayerCard, type SeatTag } from './controls/PlayerCard';
 import { Controls } from './controls/Controls';
@@ -586,8 +587,10 @@ export function BlokusBoardView({
         {isMultiplayer && <ReactionBar onReact={onReact} />}
       </div>
 
-      {/* Right column — your hand + standings */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Right column — your hand + standings. Elastic width and collapsible
+          panels (P48), shared with the review table's rail: folding the tray or
+          standings away keeps the action dock above the fold on a short viewport. */}
+      <RailColumn>
         {homeColor && (
           <HandTray
             color={homeColor}
@@ -598,27 +601,14 @@ export function BlokusBoardView({
             unplayable={unplayableByColor[homeColor]}
           />
         )}
-        <div
-          style={{
-            width: 300,
-            background: 'var(--pnl)',
-            border: '1px solid var(--pnl-bd)',
-            borderRadius: 14,
-            padding: '14px 16px',
-            boxShadow: '0 14px 28px rgba(15,9,3,.32)',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
-        >
+        <RailPanel id="standings" title={<span style={{ fontWeight: 600, fontSize: 15 }}>Standings</span>}>
           {roomOn && <RoomMeter G={G} />}
-          <Standings G={G} />
-        </div>
+          <Standings G={G} divider={roomOn} />
+        </RailPanel>
         {/* Persistent event feed (P43) — ambient narration, on by default. Its own
             panel below Standings so it toggles independently. */}
         {prefs.eventFeed && <EventFeed log={log} />}
-      </div>
+      </RailColumn>
 
       <EventBeats beats={beats} />
 

@@ -8,6 +8,7 @@ import { BoardFrame } from '../board/BoardFrame';
 import { TURNS_TO_BOTTOM_RIGHT, humanColor } from '../board/orientation';
 import { PlayerCard, type SeatTag } from '../controls/PlayerCard';
 import { HandTray } from '../tray/HandTray';
+import { RailColumn, RailPanel } from '../rail/RailPanel';
 import { ScoreTimeline } from './ScoreTimeline';
 import { MobilityTimeline } from './MobilityTimeline';
 import { useReplay } from './useReplay';
@@ -154,28 +155,21 @@ export function ReviewTable({
           </p>
         </div>
 
-        {/* Right column — identical footprint to the play table's right rail (a
-            300-wide panel + tray) so nothing shifts between views. It swaps the
-            live standings for the score + mobility timelines (taller than the old
-            modal's, for readability), hand tray below as reference (R0.2 c). */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div
-            style={{
-              width: 300,
-              background: 'var(--pnl)',
-              border: '1px solid var(--pnl-bd)',
-              borderRadius: 14,
-              padding: '14px 16px',
-              boxShadow: '0 14px 28px rgba(15,9,3,.32)',
-              boxSizing: 'border-box',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
+        {/* Right column — the same elastic, collapsible rail as the play table
+            (P48), so nothing shifts between views. It swaps the live standings for
+            the score + mobility timelines (taller than the old modal's, for
+            readability), hand tray below as reference (R0.2 c). Analysis being the
+            taller panel is what used to push the transport bar below the fold;
+            either panel folds away now to bring it back up. */}
+        <RailColumn>
+          <RailPanel
+            id="analysis"
+            title={
+              <span data-testid="analysis-header" style={{ fontWeight: 600, fontSize: 15 }}>
+                Analysis
+              </span>
+            }
           >
-            <div data-testid="analysis-header" style={{ fontWeight: 600, fontSize: 15 }}>
-              Analysis
-            </div>
             <div>
               <p style={chartLabel}>Score — squares placed</p>
               <ScoreTimeline frames={frames} ply={ply} onSeek={seekTo} />
@@ -184,11 +178,11 @@ export function ReviewTable({
               <p style={chartLabel}>Open Corners — room to play into</p>
               <MobilityTimeline frames={frames} ply={ply} onSeek={seekTo} />
             </div>
-          </div>
+          </RailPanel>
           {home && (
             <HandTray color={home} state={frame.colors[home]} interactive={false} selectedId={null} />
           )}
-        </div>
+        </RailColumn>
       </div>
 
       {/* One full-width transport bar below the table (mirrors the play dock's role):
