@@ -26,10 +26,10 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
-   frame-detach bug; spike the coord-reindex vs CSS-layer question first.
-2. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
+1. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
    can't poison the one-click path P35 leans on.
+2. **P15 M2** — game history list + replay scrubber: the residue of past games, and the scrubber
+   it needs already exists (`ReplayScrubber`, shipped with P2 R0) — mostly assembly.
 3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
 
@@ -867,12 +867,17 @@ four classic colors as accents, shapes as the star.
   review layout. Surfaces: `BlokusBoardView.tsx`, `ReviewTable.tsx`, `HandTray.tsx`.
 
 ### P49 — Rotate-view: rotate the frame, settle to a fixed grid
-- **Status:** in-progress — `feat/p49-rotate-view`. Spike resolved in favour of the
+- **Status:** shipped (2026-07-21) — both facets. Spike resolved in favour of the
   **coordinate re-index**: the CSS-layer option leaves a rotated pointer space *and*
   drags every grid-riding overlay into it, which is the frame/contents split this
-  entry exists to kill. The re-index turns out contained — each board layer already
+  entry exists to kill. The re-index turned out contained — each board layer already
   positions from board indices, so `Board` takes the turns and screen-space stays an
-  implementation detail behind it.
+  implementation detail behind it. Orientation is now a fact about the *contents*:
+  `Board`'s whole interface (board array, hints, cut marks, the `(x, y)` it reports
+  back) stays in board coordinates, and the spin is a transient on a wrapper *outside*
+  `BoardFrame` — frame and grid turn as one rigid object, then the turn commits to the
+  data and the transform snaps back to identity. `ReviewTable` dropped its second copy
+  of the transform and takes the same prop.
 - **Value:** the rotate control spins the grid *inside* a static frame — `.board-rotator`
   carries the `rotate(boardTurns*90deg)` transform, `BoardFrame` doesn't — so the frame
   visibly detaches from its contents mid-animation. And because a 20×20 grid is rotationally

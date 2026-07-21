@@ -331,6 +331,18 @@ The board view reads authoritative data from props: `G` (board, colors), `ctx`
 (currentPlayer, gameover), and `playerID` (which seat this browser is). It disables
 input when `ctx.currentPlayer`'s color isn't owned by this `playerID`.
 
+**View orientation is a render-time re-index, not a coordinate space.** `Board` takes
+the number of quarter-turns and re-indexes what it draws into an upright grid, so
+everything crossing its interface — the board array, hints, cut marks, the `(x, y)` it
+reports from hover/click — stays in **board coordinates**. There is one pointer space,
+and grid-riding overlays cannot lag behind in a stale rotated frame. The visible spin is
+a transient transform on a wrapper *outside* `BoardFrame` (so frame and grid turn as one
+rigid object); when it ends the turn commits to the data and the transform snaps back to
+identity. A 20×20 grid is rotationally symmetric, which is what makes that swap
+invisible — the only thing that ends up reoriented is the pieces. Corollary for any
+one-shot visual keyed off geometry: key it on board-space identity, not on the drawn
+cell list, which a view turn changes.
+
 ### Derived events (the drama layer)
 
 The moments the app notices out loud — *cut*, *cramped*, *endgame*, *out-of-moves* — are
