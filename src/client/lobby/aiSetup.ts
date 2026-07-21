@@ -85,7 +85,7 @@ export function normalizeSetup(setup: AiSetup): AiSetup {
   };
 }
 
-/** The saved setup (or the default), normalized — what Quick Play starts. */
+/** The pinned setup (or the built-in default), normalized — what Quick Play starts. */
 export function loadSetup(): AiSetup {
   const saved = loadQuickPlay();
   if (!saved) return DEFAULT_SETUP;
@@ -97,9 +97,33 @@ export function loadSetup(): AiSetup {
   });
 }
 
-/** Normalize + persist at the launch boundary, so no invalid setup can ever start. */
-export function persistSetup(setup: AiSetup): AiSetup {
+/**
+ * Normalize at the launch boundary, so no invalid setup can ever start (P17's
+ * guard). Deliberately does *not* save: starting a game says nothing about what
+ * you want next time, and it was that write which let one odd experiment become
+ * the one-click default (P46).
+ */
+export function launchSetup(setup: AiSetup): AiSetup {
+  return normalizeSetup(setup);
+}
+
+/** Pin a setup as the Quick Play default — the only thing that writes it (P46). */
+export function pinSetup(setup: AiSetup): AiSetup {
   const normalized = normalizeSetup(setup);
   saveQuickPlay(normalized);
   return normalized;
+}
+
+/**
+ * Canonical identity of a setup, for "is this already my default?". Compares what
+ * a game would actually start with, so the two sides are normalized first and the
+ * per-seat tiers are ordered — an equivalent setup reached by a different route
+ * still counts as the same one.
+ */
+export function setupKey(setup: AiSetup): string {
+  const { mode, aiCount, blitzSeconds, botDifficulties } = normalizeSetup(setup);
+  const tiers = Object.keys(botDifficulties)
+    .sort()
+    .map((seat) => `${seat}:${botDifficulties[seat]}`);
+  return [mode, aiCount, blitzSeconds ?? 'off', ...tiers].join('|');
 }

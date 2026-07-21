@@ -3,7 +3,15 @@ import type { GameMode } from '../../game/types';
 import { DIFFICULTIES, resolveExtremeForBlitz, type Difficulty } from '../ai/difficulty';
 import { BLITZ_OPTIONS } from '../blitz/blitz';
 import { FIELD, FONT_UI, GHOST_BTN, PANEL, PRIMARY_BTN, WELL_ROW } from '../theme';
-import { botSeatLabels, loadSetup, persistSetup, setupSummary, type AiSetup } from './aiSetup';
+import {
+  botSeatLabels,
+  launchSetup,
+  loadSetup,
+  pinSetup,
+  setupKey,
+  setupSummary,
+  type AiSetup,
+} from './aiSetup';
 import { LobbyTopBar } from './LobbyTopBar';
 
 /**
@@ -23,7 +31,14 @@ export function CustomGameScreen({
   const { mode, aiCount, botDifficulties, blitzSeconds } = setup;
   const botSeats = useMemo(() => botSeatLabels(mode, aiCount), [mode, aiCount]);
 
-  const start = () => onStart(persistSetup(setup));
+  // What Quick Play would start right now. Starting a game no longer touches this
+  // (P46) — only pinning does — so the screen tracks it separately from the setup
+  // being edited, and the pin control can say which of the two you're looking at.
+  const [quickPlay, setQuickPlay] = useState<AiSetup>(() => loadSetup());
+  const isPinned = setupKey(setup) === setupKey(quickPlay);
+
+  const start = () => onStart(launchSetup(setup));
+  const pin = () => setQuickPlay(pinSetup(setup));
 
   return (
     <div style={{ background: 'var(--table-bg)', minHeight: '100vh', fontFamily: FONT_UI }}>
@@ -148,6 +163,40 @@ export function CustomGameScreen({
             >
               Start this setup
             </button>
+
+            {/* Pinning is a state change with nowhere to navigate to, so the control
+                has to report the result itself, settling into a disabled "this is your
+                default". Outlined rather than bare text: it stays legible as a control
+                in that settled state instead of reading as a caption. Secondary to
+                Start — starting a game is still the point of this screen, and pinning
+                is the rarer, deliberate act. */}
+            <button
+              data-testid="pin-default"
+              onClick={pin}
+              disabled={isPinned}
+              style={{
+                ...GHOST_BTN,
+                width: '100%',
+                border: '1px solid var(--top-bd)',
+                borderRadius: 8,
+                padding: '8px 10px',
+                opacity: isPinned ? 0.75 : 1,
+                cursor: isPinned ? 'default' : 'pointer',
+              }}
+            >
+              {isPinned ? '✓ Pinned as your Quick Play default' : 'Pin as my Quick Play default'}
+            </button>
+            {/* Only worth saying when it differs from the setup on screen — once
+                pinned, this line and the card's own summary are the same sentence
+                twice. */}
+            {!isPinned && (
+              <p
+                data-testid="quick-play-default"
+                style={{ margin: 0, color: 'var(--mut)', fontSize: 12.5, textAlign: 'center' }}
+              >
+                Quick Play starts: {setupSummary(quickPlay)}
+              </p>
+            )}
           </div>
         </section>
       </div>
