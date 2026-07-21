@@ -32,9 +32,12 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 2. **P52** — the review transport bar drops below the fold whenever the rail carries both
    Analysis and the hand tray; P48's collapsible panels mitigate it but the bar still moves.
    Small, no dependencies, and it degrades a shipped mode's primary control.
-3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+3. **P53** — review opened from Your stats → Recent games has no Settings/Controls/Leave chips
+   and no visible route to the menu; the in-game path gets them for free from the table shell.
+   Small; pairs with P52, which is what hides its one exit.
+4. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-4. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
+5. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
    work is generalizing board size out of the rules core (touches GAME_SPEC + ARCHITECTURE).
 
 ---
@@ -955,6 +958,29 @@ four classic colors as accents, shapes as the star.
   `e2e/rail-layout.spec.ts`.
 - **Depends on:** nothing. Succeeds P48 (shipped) — completes its intent. Surfaces:
   `ReviewTable.tsx`, `RailPanel.tsx`, possibly `BlokusBoardView.tsx`.
+
+### P53 — Standalone review needs the table's chrome (Settings, Controls, Leave)
+- **Status:** proposed
+- **Value:** review reached from a table is rendered inside `LocalAIGame`, so it inherits
+  the table's chip row — Settings, Controls help, Leave. Review reached from "Your stats" →
+  Recent games is a sibling branch in `App` with no shell at all: the chips are gated on
+  `session && !aiConfig`, false there, so the screen has no Settings, no Controls help, and
+  no visible way to the menu. Its one exit (`‹ Back`) lives in the transport bar — the bar
+  P52 exists because it drops below the fold — so in practice the screen reads as a dead
+  end. Same view, two different amounts of chrome depending on how you arrived.
+- **Scope:** give the standalone review branch the same session chrome as the in-game one.
+  Preferred shape: lift the chip row out of `LocalAIGame` into a small shared review/table
+  shell both branches render, so the two entry paths can't drift again — not a second copy
+  of the chips in `App.tsx`. Leave here means "back to main menu" (the `‹ Back` destination);
+  Play Again stays absent (no session behind it, per the existing comment). No change to
+  scrubber, timelines, or the record format.
+- **Acceptance:** enter review from Recent games and from a finished vs-AI game; both show
+  the same chip set and both reach the menu without scrolling or the Escape key. **/verify
+  with screenshots of both entry paths** — this is chrome presence, which the suite doesn't
+  assert. Add an e2e that walks Your stats → Review → back to the home screen.
+- **Depends on:** P52 for the *reliably visible exit* half — if the transport bar still falls
+  out of view, `‹ Back` stays hidden regardless. Build P52 first or together. Succeeds P15 M2
+  (shipped). Surfaces: `App.tsx`, `LocalAIGame.tsx`, `ReviewTable.tsx`.
 
 ---
 
