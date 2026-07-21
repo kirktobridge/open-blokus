@@ -1,6 +1,6 @@
 /**
- * Bitboard-accelerated legality (AE9). The 20×20 board is stored as one 20-bit
- * word per row (`Uint32Array(20)`, bit x set ⇒ cell (x,y) occupied), so the
+ * Bitboard-accelerated legality (AE9). The N×N board is stored as one N-bit
+ * word per row (`Uint32Array(N)`, bit x set ⇒ cell (x,y) occupied), so the
  * cell-by-cell scan in `isLegalPlacement` (GAME_SPEC §4) collapses into a handful
  * of masked lookups. F10/Run N showed MCTS is legality-bound (~75 % of time on
  * gen + rollout legality); this module attacks that shared hot path.
@@ -11,10 +11,8 @@
  * test in `bitboard.test.ts` validates this against, byte-identical.
  */
 import { COLOR_ORDER } from './types';
+import { boardSizeOf } from './modes';
 import type { Cell, Color, GameState } from './types';
-
-const SIZE = 20;
-const MASK20 = 0xfffff; // low 20 bits = one board row
 
 /**
  * Per-row occupancy words plus, per color, that color's own cells and the lazily
@@ -22,7 +20,11 @@ const MASK20 = 0xfffff; // low 20 bits = one board row
  * color whose `own` changed since its dilations were last computed.
  */
 export interface BitBoards {
-  /** Any-color occupancy, one 20-bit word per row. */
+  /** Board side length these boards were built for (rows = size, bits per row = size). */
+  size: number;
+  /** Low `size` bits set — the valid-cell mask for one row. */
+  mask: number;
+  /** Any-color occupancy, one `size`-bit word per row. */
   occ: Uint32Array;
   /** Per-color own cells. */
   own: Record<Color, Uint32Array>;
@@ -34,21 +36,24 @@ export interface BitBoards {
   dirty: Record<Color, boolean>;
 }
 
-function emptyRows(): Uint32Array {
-  return new Uint32Array(SIZE);
+function emptyRows(size: number): Uint32Array {
+  return new Uint32Array(size);
 }
 
 /** Build bitboards from a game state's flat board. */
 export function buildBitBoards(G: GameState): BitBoards {
-  const occ = emptyRows();
+  const SIZE = boardSizeOf(G);
+  const mask = (1 << SIZE) - 1; // safe for every supported board size (SIZE < 32)
+  const emptyRowsN = () => emptyRows(SIZE);
+  const occ = emptyRowsN();
   const own = {} as Record<Color, Uint32Array>;
   const edgeDil = {} as Record<Color, Uint32Array>;
   const diagDil = {} as Record<Color, Uint32Array>;
   const dirty = {} as Record<Color, boolean>;
   for (const c of COLOR_ORDER) {
-    own[c] = emptyRows();
-    edgeDil[c] = emptyRows();
-    diagDil[c] = emptyRows();
+    own[c] = emptyRowsN();
+    edgeDil[c] = emptyRowsN();
+    diagDil[c] = emptyRowsN();
     dirty[c] = true;
   }
   const board = G.board;
@@ -60,12 +65,13 @@ export function buildBitBoards(G: GameState): BitBoards {
     occ[y] |= bit;
     own[v as Color][y] |= bit;
   }
-  return { occ, own, edgeDil, diagDil, dirty };
+  return { size: SIZE, mask, occ, own, edgeDil, diagDil, dirty };
 }
 
 /** Recompute a color's dilations from its own cells if they went stale. */
 function ensureDil(bb: BitBoards, color: Color): void {
   if (!bb.dirty[color]) return;
+  const { size: SIZE, mask: MASK } = bb;
   const own = bb.own[color];
   const edge = bb.edgeDil[color];
   const diag = bb.diagDil[color];
@@ -74,9 +80,9 @@ function ensureDil(bb: BitBoards, color: Color): void {
     const up = y > 0 ? own[y - 1] : 0;
     const down = y + 1 < SIZE ? own[y + 1] : 0;
     // Orthogonal: left/right of this row, plus the row above and below.
-    edge[y] = (((row << 1) | (row >>> 1)) | up | down) & MASK20;
+    edge[y] = (((row << 1) | (row >>> 1)) | up | down) & MASK;
     // Diagonal: left/right of the rows above and below.
-    diag[y] = (((up | down) << 1) | ((up | down) >>> 1)) & MASK20;
+    diag[y] = (((up | down) << 1) | ((up | down) >>> 1)) & MASK;
   }
   bb.dirty[color] = false;
 }
@@ -92,14 +98,15 @@ export function bbLegal(
   color: Color,
   cells: Cell[],
   hasStarted: boolean,
-  corner: Cell,
+  startCell: Cell,
 ): boolean {
   ensureDil(bb, color);
+  const SIZE = bb.size;
   const occ = bb.occ;
   const edge = bb.edgeDil[color];
   const diag = bb.diagDil[color];
   let attach = false;
-  let coversCorner = false;
+  let coversStart = false;
   for (const c of cells) {
     const { x, y } = c;
     if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) return false; // rule 2: bounds
@@ -107,10 +114,10 @@ export function bbLegal(
     if (occ[y] & bit) return false; // rule 3: empty
     if (edge[y] & bit) return false; // rule 5: no same-color edge contact
     if (diag[y] & bit) attach = true; // rule 4: diagonal attach
-    if (x === corner.x && y === corner.y) coversCorner = true;
+    if (x === startCell.x && y === startCell.y) coversStart = true;
   }
-  // Rule 4: first move must cover the start corner; later moves must attach.
-  return hasStarted ? attach : coversCorner;
+  // Rule 4: first move must cover the start cell; later moves must attach.
+  return hasStarted ? attach : coversStart;
 }
 
 /** Apply a placement to the bitboards (mirrors applyPlacement's board writes). */
@@ -137,5 +144,5 @@ export function cloneBitBoards(bb: BitBoards): BitBoards {
     diagDil[c] = bb.diagDil[c].slice();
     dirty[c] = bb.dirty[c];
   }
-  return { occ: bb.occ.slice(), own, edgeDil, diagDil, dirty };
+  return { size: bb.size, mask: bb.mask, occ: bb.occ.slice(), own, edgeDil, diagDil, dirty };
 }
