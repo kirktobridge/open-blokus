@@ -978,6 +978,25 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Depends on:** M1: nothing. M2: P1 for the record *format* only (see Status);
   replay assets shared with P2 (recap).
 
+### P51 — "Best score" reports your worst game
+- **Status:** proposed
+- **Value:** P15 M1's headline "Best score" tile is wrong under the default scoring
+  variant, and wrong in the direction that mocks you: `basic` scores remaining squares
+  (lower is better, GAME_SPEC §6) while the fold takes `Math.max`. Ten real games
+  scoring 32–43 displayed **43**. It's one of three headline numbers on the stats
+  surface, and P15 M2 has just put a per-game list underneath it whose rows show the
+  true spread — so the tile is now visibly contradicted by the rows below it.
+- **Scope:** make the fold variant-aware (`advanced` is already right; this is purely
+  the `basic` path, which is the default). `GameResult` carries a bare `score` today,
+  so either the variant reaches the fold or the caller normalizes to a higher-is-better
+  figure first — that choice is the work. Two things fall out and want settling with
+  it: (a) stored `bestScore` values are already polluted and a single stored number
+  can't be recovered from, so decide reset vs. let-it-self-correct; (b) the existing
+  "best score takes the max" unit test encodes the bug as intended behaviour and needs
+  rewriting per variant, not deleting. Label the unit on the tile while you're there —
+  M2's history rows read "37 left" for exactly this reason.
+- **Depends on:** nothing. Fixes P15 M1 (shipped); sits under P15 M2's list.
+
 ---
 
 ## Epic: Social & multiplayer presence
