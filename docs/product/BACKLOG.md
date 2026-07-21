@@ -31,9 +31,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    Small, and now dependency-clear — P52 (shipped) made its one exit reliably visible.
 2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-3. **P20** M2a — Blokus Duo, first milestone: lift board size + start cells out of the rules
-   core into `GameConfig`. Newly unblocked (rules now specified in GAME_SPEC_DUO.md), and the
-   safest branch on this list — Classic stays the only variant, so it's a pure refactor.
+3. **P20** M2b — Blokus Duo, the playable milestone: two-colour rules (`black`/`white` into
+   the `Color` union), the 14×14 preset, forced advanced scoring, lobby + turn glue.
+   Unblocked by M2a (shipped). The big one — a wide `Color`-union change, plus the owed
+   sweep of size-defaulting call sites that M2a's Classic fallbacks left silent.
 
 ---
 
@@ -1085,9 +1086,13 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 ## Epic: Game modes
 
 ### P20 — Variety: Blokus Duo & blitz
-- **Status:** in-progress — **M2a claimed** (branch `feat/p20-m2a-board-size-config`).
-  **M1 (blitz) shipped**: per-move countdown for human seats in the offline vs-AI table.
-  **M2 rescoped into M2a / M2b / M2c**; M2b/M2c not started.
+- **Status:** partial — **M1 (blitz) shipped**: per-move countdown for human seats in the
+  offline vs-AI table. **M2a shipped**: board size + start cells live in `GameConfig`,
+  read through `boardSizeOf` / `startCellOf` accessors; `bitboard.ts`'s hardcoded
+  `SIZE`/`MASK20` are gone. Classic remains the only shipped variant and no behaviour
+  changed — the brute-force move oracle and the bitboard-vs-`isLegalPlacement`
+  differential still pass, which is what makes that claim checkable. **M2b/M2c not
+  started.**
 - **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
   move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
   entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
@@ -1104,14 +1109,19 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   same engine feel like a different game.
 - **Scope / milestones:**
   - **M1 blitz** — shipped (see Status/Note).
-  - **M2a rules-core generalization** — board size + start cells move into `GameConfig`;
-    drop the hardcoded `SIZE`/`MASK20` in `src/game/bitboard.ts`. Classic stays the only
-    shipped variant, so this is a **no-behaviour-change refactor** the existing suite
-    fully guards — that's what makes it a safe first branch.
+  - **M2a rules-core generalization** — shipped (see Status). "Corner" was renamed to
+    "start cell" throughout the rules core, since Duo's start cells are interior and the
+    old name misleads.
   - **M2b Duo rules** — `config.playColors`; add `black` + `white` to the `Color` union
     (today `blue|yellow|red|green`, ~171 refs / 36 files / 58 `Record<Color,…>` sites);
     14×14 preset, start cells, forced advanced scoring, lobby + turn glue. Ships playable
-    on a provisional flat skin.
+    on a provisional flat skin. **Owes an explicit sweep of the size-defaulting call
+    sites** — `idx`/`xy`/`inBounds` default to Classic, so a Duo-aware caller that omits
+    the size argument silently gets 20. Confirmed real, not hypothetical:
+    [../../src/game/ai/heuristic.ts](../../src/game/ai/heuristic.ts) already calls them
+    with no size argument, so on a 196-cell board it would index as if 400, read
+    `undefined`, and `undefined !== null` makes out-of-range cells read as *occupied*.
+    Silent corruption with nothing red — grep the call sites, don't trust the suite.
   - **M2c achromatic tile finish** — per-theme `--piece-black` / `--piece-white` plus
     finish handling so bevel, AO and shadow survive at both ends of the value range.
     Split out because `MatLayer`/`PlacedLayer` shade tiles with *relative* modulations

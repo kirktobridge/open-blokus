@@ -178,6 +178,14 @@ Notes:
 
 - `board` is a flat array for cheap immer updates and serialization. Helpers in
   `board.ts` convert `(x,y) ↔ index`.
+- **Board size and start cells are per-game, not global** (P20 M2a). `GameConfig`
+  carries them optionally, and the rules core reads them through accessors
+  (`boardSizeOf` / `startCellOf` in `modes.ts`) rather than a module constant — so a
+  variant like Duo (14×14, interior start cells) is a config value, not a fork of the
+  engine. The accessors fall back to Classic, which keeps states persisted before the
+  change readable. Consequence to respect: the `board.ts` helpers and the bitboard
+  take size as an argument that *defaults* to Classic, so any variant-aware caller
+  that omits it silently computes on a 20×20 board with nothing red.
 - The **active color** is `COLOR_ORDER[activeColorIndex]`, derived state kept in `G`
   so the UI and turn order agree without recomputation.
 - The current human (`ctx.currentPlayer`) is derived from the active color's owner
