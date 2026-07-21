@@ -26,13 +26,11 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P47** — auto-mute a fully-bot watch game: silence cues no human triggered. Small, dependency-ready
-   (gates the existing `useGameSound` path on `humanCount === 0`).
-2. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
+1. **P49** — rotate-view: rotate the frame with the grid, settle to a fixed grid. Fixes a visible
    frame-detach bug; spike the coord-reindex vs CSS-layer question first.
-3. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
+2. **P46** — Quick Play configurable default: a stable, settable default so one odd custom config
    can't poison the one-click path P35 leans on.
-4. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
 
 ---
@@ -415,8 +413,11 @@ four classic colors as accents, shapes as the star.
 - **Depended on:** P32 (event vocabulary — the cues' trigger source). Synergy with P16
   (juice) noted there: same event hooks.
 
-### P47 — Auto-mute when watching a fully-bot game
-- **Status:** in-progress — `feat/p47-watch-mute`
+### P47 — Auto-mute when watching a fully-bot game — SHIPPED
+- **Status:** shipped — the prefs store now publishes an *effective* snapshot (stored
+  pref narrowed by a non-persisted contextual mute); `LocalAIGame` declares
+  `humanCount === 0` and the settings panel says "Muted — watch game", so the quiet is
+  legible and an explicit un-mute overrules the context for that game only.
 - **Value:** an all-AI watch game (0 human seats) fires placement/pickup cues with no
   one acting, so the audio is a soundtrack the spectator never asked for. Defaulting a
   watch game to silence respects that no human triggered any of it.

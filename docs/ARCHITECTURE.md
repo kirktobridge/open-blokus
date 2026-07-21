@@ -379,6 +379,12 @@ it migrates the four pre-unification keys on first load. Behavioral preferences
 (inventory display) are *not* appearance — they live in `settings.ts` /
 `openblokus-settings`. This is why display concerns stay out of `G`.
 
+`settings.ts` publishes an **effective** snapshot, not the stored one: a *context* (a
+fully-bot watch game, P47) can narrow a pref without being written to storage, so
+leaving the situation restores the user's own setting with nothing to undo, and an
+explicit choice in the panel outranks the context. Consumers read the effective value;
+only user actions ever commit.
+
 ---
 
 ## 7. Room / lobby system
