@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { Cell as CellCoord, Color } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
@@ -7,6 +7,7 @@ import { MatLayer } from './MatLayer';
 import { PlacedLayer } from './PlacedLayer';
 import { LegalMoveHints, type Hint } from '../advisor/LegalMoveHints';
 import { CutMarks, type CutMark } from './CutMarks';
+import { normTurns, toBoardXY, toScreenBoard, toScreenIndex, toScreenXY } from './orientation';
 
 export interface BoardPreview {
   /** Set of "x,y" keys that the previewed piece would occupy. */
@@ -32,6 +33,7 @@ export function Board({
   glowColors,
   hints,
   cutMarks,
+  turns = 0,
 }: {
   board: (Color | null)[];
   activeColor: Color;
@@ -52,7 +54,15 @@ export function Board({
   hints?: Hint[];
   /** Corners a `cut` just destroyed, marked briefly (P32). Display-only. */
   cutMarks?: CutMark[];
+  /**
+   * Clockwise quarter-turns to view the board's *contents* through (P49). The grid
+   * itself never turns: cells are laid out in screen order and the contents are
+   * re-indexed into it, so the props above — and the `(x, y)` handed back by
+   * `onCellEnter`/`onCellClick` — all stay in board coordinates whatever the view.
+   */
+  turns?: number;
 }) {
+  const t = normTurns(turns);
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
   const ref = useRef<HTMLDivElement>(null);
 
@@ -62,10 +72,35 @@ export function Board({
     ? new Set(
         [...preview.cells].map((k) => {
           const [x, y] = k.split(',').map(Number);
-          return y * BOARD_SIZE + x;
+          return toScreenIndex(y * BOARD_SIZE + x, t);
         }),
       )
     : undefined;
+
+  // The index-positioned layers (piece finish, hints, cut marks) draw straight
+  // into the grid, so they get screen-space copies of their board-space inputs.
+  const screenBoard = useMemo(() => toScreenBoard(board, t), [board, t]);
+  const screenLastMove = useMemo(
+    () => (t === 0 ? lastMove : lastMove?.map((i) => toScreenIndex(i, t))),
+    [lastMove, t],
+  );
+  const screenHints = useMemo(
+    () => (t === 0 ? hints : hints?.map((h) => ({ ...h, cells: h.cells.map((i) => toScreenIndex(i, t)) }))),
+    [hints, t],
+  );
+  const screenCutMarks = useMemo(
+    () =>
+      t === 0
+        ? cutMarks
+        : cutMarks?.map((m) => ({
+            ...m,
+            cells: m.cells.map((c) => {
+              const [x, y] = toScreenXY(c.x, c.y, t);
+              return { x, y };
+            }),
+          })),
+    [cutMarks, t],
+  );
 
   // React attaches wheel listeners as passive, so preventDefault (to stop the
   // page scrolling while rotating) needs a native non-passive listener.
@@ -105,14 +140,18 @@ export function Board({
       }}
     >
       <MatLayer />
-      {board.map((value, i) => {
-        const x = i % BOARD_SIZE;
-        const y = Math.floor(i / BOARD_SIZE);
+      {/* Laid out in screen order (so the DOM never reshuffles on a view turn),
+          but every cell keeps the identity — value, test id, callbacks — of the
+          board cell it shows. */}
+      {board.map((_, si) => {
+        const [x, y] = toBoardXY(si % BOARD_SIZE, Math.floor(si / BOARD_SIZE), t);
+        const i = y * BOARD_SIZE + x;
+        const value = board[i];
         const inPreview = preview?.cells.has(`${x},${y}`) ?? false;
         const state = inPreview ? (preview!.legal ? 'legal' : 'illegal') : 'none';
         return (
           <Cell
-            key={i}
+            key={si}
             value={value}
             preview={state}
             staged={inPreview && (preview?.staged ?? false)}
@@ -127,13 +166,14 @@ export function Board({
         );
       })}
       <PlacedLayer
-        board={board}
+        board={screenBoard}
         previewCells={previewIdx}
-        lastMove={lastMove}
+        lastMove={screenLastMove}
         glowColors={glowColors}
+        settleId={lastMove?.join(',')}
       />
-      {hints && hints.length > 0 && <LegalMoveHints hints={hints} />}
-      {cutMarks && cutMarks.length > 0 && <CutMarks marks={cutMarks} />}
+      {screenHints && screenHints.length > 0 && <LegalMoveHints hints={screenHints} />}
+      {screenCutMarks && screenCutMarks.length > 0 && <CutMarks marks={screenCutMarks} />}
     </div>
   );
 }

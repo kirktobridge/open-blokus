@@ -47,6 +47,9 @@ function toBoardDelta(dx: number, dy: number, turns: number): [number, number] {
   return [a, b];
 }
 
+/** Length of the rotate-view spin; the turn commits to the data when it ends. */
+const SPIN_MS = 200;
+
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
 /** Stable empty Move Options result, so the advisor memo doesn't churn when off. */
@@ -147,11 +150,34 @@ export function BlokusBoardView({
   }
 
   // Orient the board to the local seat's color (bottom-right); manual button cycles.
+  //
+  // Two pieces (P49): `boardTurns` is the committed orientation and lives in the
+  // *data* — `Board` re-indexes its contents through it, over a grid and frame that
+  // never leave upright. `spinning` is the transient: the frame and everything in it
+  // turn as one rigid object for SPIN_MS, then the turn commits and the transform
+  // snaps back to identity under it. The grid is 4-fold symmetric, so that swap is
+  // invisible; what settles reoriented is the pieces, which is the only thing that
+  // needed to move.
   const homeColor =
     playerID != null ? COLOR_ORDER.find((c) => G.config.owners[c] === playerID) : undefined;
   const [boardTurns, setBoardTurns] = useState(
     homeColor ? TURNS_TO_BOTTOM_RIGHT[homeColor] : 0,
   );
+  const [spinning, setSpinning] = useState(false);
+  useEffect(() => {
+    if (!spinning) return;
+    const id = setTimeout(() => {
+      setBoardTurns((t) => t + 1);
+      setSpinning(false);
+    }, SPIN_MS);
+    return () => clearTimeout(id);
+  }, [spinning]);
+  // Reduced motion commits the turn outright — there is no spin to wait on. A click
+  // mid-spin is ignored rather than queued: the window is one animation long.
+  function rotateView(): void {
+    if (reduce) setBoardTurns((t) => t + 1);
+    else if (!spinning) setSpinning(true);
+  }
   // Rotate-view control (P41): faint at rest, revealed when the board frame is
   // hovered or the button itself is focused. Tracked separately so a keyboard
   // focus survives the mouse leaving the frame.
@@ -480,18 +506,23 @@ export function BlokusBoardView({
           onMouseEnter={() => setRotHover(true)}
           onMouseLeave={() => setRotHover(false)}
         >
-          <BoardFrame outerRef={frameRef} urgent={blitzUrgent}>
-            <div
-              data-testid="board-rotator"
-              style={{
-                display: 'inline-block',
-                transform: `rotate(${boardTurns * 90}deg)`,
-                transformOrigin: 'center',
-                transition: 'transform 0.2s ease',
-                verticalAlign: 'top',
-              }}
-            >
+          {/* The rotator wraps the *frame*, so a view turn reads as one rigid object
+              turning rather than the grid spinning loose inside a static frame. It
+              holds no orientation of its own — at rest it is identity, and the
+              committed turn lives in the board data below. */}
+          <div
+            data-testid="board-rotator"
+            style={{
+              transform: spinning ? 'rotate(90deg)' : 'none',
+              transformOrigin: 'center',
+              transitionProperty: 'transform',
+              transitionDuration: spinning ? `${SPIN_MS}ms` : '0s',
+              transitionTimingFunction: 'ease',
+            }}
+          >
+            <BoardFrame outerRef={frameRef} urgent={blitzUrgent}>
               <Board
+                turns={boardTurns}
                 board={G.board}
                 activeColor={activeColor}
                 preview={preview}
@@ -509,8 +540,8 @@ export function BlokusBoardView({
                 hints={boardHints}
                 cutMarks={cutMarks}
               />
-            </div>
-          </BoardFrame>
+            </BoardFrame>
+          </div>
 
           {/* Icon-only rotate-view control. Persistent in the tab order and
               faintly visible at rest so keyboard and touch users are never
@@ -520,9 +551,7 @@ export function BlokusBoardView({
             data-testid="rotate-board"
             aria-label="Rotate the board view 90°"
             title="Rotate the board view 90°"
-            // Increment without wrapping so the CSS transform always animates
-            // forward (270°→360° instead of 270°→0°, which spins backwards).
-            onClick={() => setBoardTurns((t) => t + 1)}
+            onClick={rotateView}
             onFocus={() => setRotFocus(true)}
             onBlur={() => setRotFocus(false)}
             style={{

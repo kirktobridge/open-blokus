@@ -42,7 +42,9 @@ export function ReviewTable({
   const inventoryDisplay = usePrefs().inventoryDisplay;
 
   // Show the board in the orientation the player saw: their color's corner
-  // bottom-right (matches play). All-AI watch records leave it upright.
+  // bottom-right (matches play). All-AI watch records leave it upright. Same
+  // model as the play table (P49) — the orientation is a view of the contents,
+  // so the frame and grid stay upright here too.
   const home = humanColor(record.seats);
   const boardTurns = home ? TURNS_TO_BOTTOM_RIGHT[home] : 0;
 
@@ -129,21 +131,12 @@ export function ReviewTable({
             the board and the flanking columns don't shift between play and review. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', width: DOCK_COLUMN_W }}>
           <BoardFrame>
-            <div
-              style={{
-                transform: `rotate(${boardTurns * 90}deg)`,
-                transformOrigin: 'center',
-                transition: 'transform 0.2s ease',
-                display: 'inline-block',
-                verticalAlign: 'top',
-              }}
-            >
-              <Board
-                board={frame.board}
-                activeColor={frame.move?.color ?? 'blue'}
-                lastMove={frame.moveCells}
-              />
-            </div>
+            <Board
+              turns={boardTurns}
+              board={frame.board}
+              activeColor={frame.move?.color ?? 'blue'}
+              lastMove={frame.moveCells}
+            />
           </BoardFrame>
 
           <p
