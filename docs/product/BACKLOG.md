@@ -29,9 +29,12 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 1. **P51** — "Best score" reports your worst game: the `basic` fold takes `Math.max` on a
    lower-is-better score. A wrong headline number on a shipped surface, now sitting directly
    above P15 M2's history rows that show the true spread. No dependencies; small.
-2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+2. **P52** — the review transport bar drops below the fold whenever the rail carries both
+   Analysis and the hand tray; P48's collapsible panels mitigate it but the bar still moves.
+   Small, no dependencies, and it degrades a shipped mode's primary control.
+3. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-3. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
+4. **P20 M2** — Blokus Duo (14×14, center-adjacent starts). The canonical 2p experience; the
    work is generalizing board size out of the rules core (touches GAME_SPEC + ARCHITECTURE).
 
 ---
@@ -928,6 +931,30 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing — anchors are deterministic from the placement rules (no advisor
   signal, no research). Sibling to P44 (which marks *opponent* cut corners); shares the
   corner-marking vocabulary with `CutMarks`, worth reusing for visual consistency.
+
+### P52 — Pin the review transport: the action bar never moves
+- **Status:** proposed
+- **Value:** In review the transport bar sits in normal flow below the table, so its
+  y-position is a function of the tallest column. With the rail carrying both Analysis and
+  the Your Hand tray it lands below the fold — the primary control for the mode is off-screen
+  until you scroll or fold a panel. P48 shipped collapsible rail panels as a mitigation; this
+  makes it structural. The bar should be positionally invariant: it does not move when panels
+  open, close, resize, or when the window does.
+- **Scope:** restructure the review table as a viewport-height grid (`100dvh`, rows
+  `1fr auto`): the table region scrolls internally (`min-height: 0` + rail `overflow-y: auto`),
+  the transport is the fixed bottom row and never participates in content height. Removes the
+  rail→bar coupling rather than trimming it. Rejected alternatives: `position: sticky/fixed`
+  (bar floats over content, and sticky still moves before it sticks); capping rail height alone
+  (bar still shifts as content reflows). Pure layout — no change to scrubber behavior,
+  timelines, or move logic. The same seam covers the play dock in `BlokusBoardView.tsx`; do
+  review first, then apply the pattern to play if it holds.
+- **Acceptance:** an e2e assertion that the transport bar's viewport rect is unchanged and
+  fully in view across (a) both rail panels expanded, (b) both folded, (c) a short viewport
+  (e.g. 1280×720), plus **/verify with screenshots at each state** — the bug is invisible to
+  vitest and typecheck, so a visual pass is required before it's done. Extend
+  `e2e/rail-layout.spec.ts`.
+- **Depends on:** nothing. Succeeds P48 (shipped) — completes its intent. Surfaces:
+  `ReviewTable.tsx`, `RailPanel.tsx`, possibly `BlokusBoardView.tsx`.
 
 ---
 
