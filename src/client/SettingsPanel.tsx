@@ -326,7 +326,7 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
                   if (on) play('place', 4);
                 }}
               />
-              {prefs.sound ? 'On' : 'Muted'}
+              {prefs.sound ? 'On' : prefs.soundContextMuted ? 'Muted — watch game' : 'Muted'}
             </label>
             <input
               type="range"

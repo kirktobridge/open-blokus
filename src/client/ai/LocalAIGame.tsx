@@ -19,6 +19,7 @@ import { MilestoneToasts } from '../progression/MilestoneToasts';
 import { hardestTier } from '../progression/progression';
 import { SessionActionsContext } from '../lobby/sessionContext';
 import { SettingsPanel } from '../SettingsPanel';
+import { setSoundContextMute } from '../settings';
 import { ControlsHelp } from '../ControlsHelp';
 import { ICON_CHIP, FONT_MONO, FONT_UI } from '../theme';
 import { LeaveIcon } from '../icons';
@@ -148,6 +149,15 @@ export function LocalAIGame({
     () => new Set(Array.from({ length: humanCount }, (_, i) => String(i))),
     [humanCount],
   );
+
+  // A watch game (no human seat) starts silent (P47) — nobody triggered those cues.
+  // Contextual, not a pref change: leaving the table hands the sound back untouched,
+  // and the settings toggle still un-mutes this game by hand.
+  useEffect(() => {
+    if (humanCount > 0) return;
+    setSoundContextMute(true);
+    return () => setSoundContextMute(false);
+  }, [humanCount]);
 
   // Seat provenance per color for the game log (product P1): "human", a bot tier,
   // or "shared" for the 3p rotating color. Read by useGameRecorder.
