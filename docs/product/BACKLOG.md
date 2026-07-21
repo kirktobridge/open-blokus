@@ -867,7 +867,12 @@ four classic colors as accents, shapes as the star.
   review layout. Surfaces: `BlokusBoardView.tsx`, `ReviewTable.tsx`, `HandTray.tsx`.
 
 ### P49 — Rotate-view: rotate the frame, settle to a fixed grid
-- **Status:** proposed
+- **Status:** in-progress — `feat/p49-rotate-view`. Spike resolved in favour of the
+  **coordinate re-index**: the CSS-layer option leaves a rotated pointer space *and*
+  drags every grid-riding overlay into it, which is the frame/contents split this
+  entry exists to kill. The re-index turns out contained — each board layer already
+  positions from board indices, so `Board` takes the turns and screen-space stays an
+  implementation detail behind it.
 - **Value:** the rotate control spins the grid *inside* a static frame — `.board-rotator`
   carries the `rotate(boardTurns*90deg)` transform, `BoardFrame` doesn't — so the frame
   visibly detaches from its contents mid-animation. And because a 20×20 grid is rotationally
