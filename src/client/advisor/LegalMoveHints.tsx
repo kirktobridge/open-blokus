@@ -13,6 +13,12 @@ export interface Hint {
    *  so legal-move hints read as "where *your* piece fits"). Any CSS color,
    *  including a `var(--piece-*)` so it re-tints with the theme. */
   color?: string;
+  /** How each cell is drawn. `fill` (default) shades the whole cell — the "reach"
+   *  read. `pip` puts a single small centred square on it instead, for a sparse
+   *  layer that sits *over* a fill without becoming a second wash of colour (P50's
+   *  anchor marks): guidance, not chrome. Square, not round — every mark on this
+   *  board is a square, and a lone circle reads as foreign UI chrome. */
+  mark?: 'fill' | 'pip';
 }
 
 const TONE: Record<HintTone, { fill: string; ring: string }> = {
@@ -24,6 +30,14 @@ const TONE: Record<HintTone, { fill: string; ring: string }> = {
   // at-risk corner is a threat to weigh, not a rejected move.
   threat: { fill: 'rgba(249, 115, 22, 0.26)', ring: '#f97316' },
 };
+
+/** A `pip`'s side as a fraction of the cell, the corner rounding that matches the
+ *  board's tiles, and the soft halo that lifts it off whatever it's drawn over.
+ *  Small enough that a board full of anchor marks still reads as a scatter of
+ *  points, not a second overlay. */
+const PIP_SCALE = 0.3;
+const PIP_RADIUS_PX = 1;
+const PIP_HALO_PX = 2;
 
 /** Fill + ring for a hint: the color override when given (the color at ~23% for
  *  the fill — mixed in CSS, so a var() override needs no resolution here), else
@@ -59,6 +73,9 @@ export function LegalMoveHints({
           const x = ci % BOARD_SIZE;
           const y = (ci / BOARD_SIZE) | 0;
           const t = hintStyle(h);
+          const pip = h.mark === 'pip';
+          const size = pip ? Math.round(CELL_PX * PIP_SCALE) : CELL_PX;
+          const inset = (CELL_PX - size) / 2;
           return (
             <div
               key={`${h.id}:${ci}`}
@@ -67,14 +84,17 @@ export function LegalMoveHints({
               onClick={onPick ? () => onPick(h.id) : undefined}
               style={{
                 position: 'absolute',
-                left: x * CELL_PX,
-                top: y * CELL_PX,
-                width: CELL_PX,
-                height: CELL_PX,
+                left: x * CELL_PX + inset,
+                top: y * CELL_PX + inset,
+                width: size,
+                height: size,
                 boxSizing: 'border-box',
-                background: t.fill,
-                boxShadow: `inset 0 0 0 2px ${t.ring}`,
-                borderRadius: 4,
+                // A pip is solid and small; a fill is a wash with a ring.
+                background: pip ? t.ring : t.fill,
+                boxShadow: pip
+                  ? `0 0 0 1px rgba(0, 0, 0, 0.28), 0 0 0 ${PIP_HALO_PX}px ${t.fill}`
+                  : `inset 0 0 0 2px ${t.ring}`,
+                borderRadius: pip ? PIP_RADIUS_PX : 4,
                 cursor: onPick ? 'pointer' : 'default',
                 pointerEvents: onPick ? 'auto' : 'none',
               }}
