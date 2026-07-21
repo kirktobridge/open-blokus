@@ -90,17 +90,37 @@ export function ReviewTable({
     <div
       data-testid="review-table"
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 16,
-        padding: '8px 26px 24px',
+        // Viewport-height grid (P52): the board+rails region takes `1fr` and
+        // scrolls inside itself; the transport is the `auto` bottom row and never
+        // participates in content height. This removes the rail→bar coupling
+        // structurally — the bar's y-position is invariant to panel folds, rail
+        // resize, and window height, instead of tracking the tallest column.
+        // Fills the bounded-height cell its parent supplies (100dvh shell).
+        height: '100%',
+        minHeight: 0,
+        display: 'grid',
+        gridTemplateRows: '1fr auto',
         fontFamily: FONT_UI,
         color: 'var(--ink)',
         background: 'var(--table-bg)',
         boxSizing: 'border-box',
       }}
     >
+      {/* Scroll region — the table content. `min-height: 0` lets it shrink below
+          its natural height so the overflow (not the page) absorbs a tall column
+          or a short viewport; the transport below stays put. */}
+      <div
+        data-testid="review-scroll"
+        style={{
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '8px 26px 24px',
+        }}
+      >
       {/* Board + rails, laid out like the play table so the graphs sit the same
           distance from the board as the in-game right panel (gap 22). */}
       <div
@@ -184,11 +204,14 @@ export function ReviewTable({
           )}
         </RailColumn>
       </div>
+      </div>
 
-      {/* One full-width transport bar below the table (mirrors the play dock's role):
-          session exits bookend the scrubber, and play/pause + speed sit inline with
-          it — one row, so review costs no extra vertical stacking. */}
-      <div style={actionBar}>
+      {/* Pinned transport footer (P52) — the grid's `auto` bottom row. Sits on a
+          solid table-bg strip with a hairline top edge so scrolled content passes
+          cleanly beneath it. Mirrors the play dock's role: session exits bookend
+          the scrubber, play/pause + speed inline — one row, no extra stacking. */}
+      <div style={transportRow}>
+      <div data-testid="review-transport" style={actionBar}>
           {onExitReview && (
             <button data-testid="review-results" onClick={onExitReview} style={{ ...SECONDARY_BTN, fontSize: 13, whiteSpace: 'nowrap' }}>
               ‹ {exitLabel}
@@ -264,17 +287,28 @@ export function ReviewTable({
             </>
           )}
         </div>
+      </div>
     </div>
   );
 }
+
+// The pinned footer strip that holds the transport (P52). Full-width table-bg band
+// so scrolled content vanishes cleanly under it; a hairline top edge marks the
+// scroll boundary. Centers the bar horizontally.
+const transportRow: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  padding: '12px 26px',
+  background: 'var(--table-bg)',
+  borderTop: '1px solid var(--pnl-bd)',
+};
 
 const actionBar: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 8,
-  // Full-width transport under the table (own row, so it no longer stretches the
-  // board column — that's what kept the graphs hugging the board). Wide, so the
-  // scrubber slider has a generous length; only used in review, never in play.
+  // The transport card itself. Wide, so the scrubber slider has a generous length;
+  // only used in review, never in play.
   width: 'min(1040px, 94vw)',
   background: 'var(--pnl)',
   border: '1px solid var(--pnl-bd)',

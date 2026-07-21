@@ -264,7 +264,18 @@ export function LocalAIGame({
         onLeave,
       }}
     >
-      <div style={{ background: 'var(--table-bg)', minHeight: '100vh' }}>
+      <div
+        style={{
+          background: 'var(--table-bg)',
+          // While reviewing, the shell is a fixed-height flex column so the review
+          // transport can pin to the viewport bottom (P52): TopBar is a fixed row,
+          // the review region takes the rest and scrolls inside itself. Play keeps
+          // the natural page-flow height it always had.
+          ...(reviewing && gameRecord
+            ? { height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+            : { minHeight: '100vh' }),
+        }}
+      >
         {/* TopBar — wordmark · match chip · status · utility chips */}
         <div
           style={{
@@ -273,6 +284,7 @@ export function LocalAIGame({
             gap: 14,
             padding: '12px 26px',
             fontFamily: FONT_UI,
+            flexShrink: 0,
           }}
         >
           <span style={{ fontFamily: FONT_UI, fontWeight: 900, fontSize: 25, color: 'var(--top-ink)' }}>
@@ -314,7 +326,11 @@ export function LocalAIGame({
           </button>
         </div>
         {reviewing && gameRecord ? (
-          <ReviewTable record={gameRecord} onExitReview={() => setReviewing(false)} />
+          // Fill cell for the review grid: takes the height left under the TopBar
+          // (`min-height: 0` so its overflow, not the page, absorbs a tall column).
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ReviewTable record={gameRecord} onExitReview={() => setReviewing(false)} />
+          </div>
         ) : (
           <BlokusBoardView
             {...boardProps}

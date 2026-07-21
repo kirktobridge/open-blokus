@@ -150,12 +150,16 @@ export function App() {
   } else if (reviewGame) {
     // Standalone review: no live client behind it, so ReviewTable renders from the
     // record alone and its Play Again (a session action) simply isn't offered.
+    // 100dvh cell so the review grid's transport pins to the viewport bottom (P52).
+    // No TopBar here (that chrome gap is P53); review fills the whole viewport.
     screen = (
-      <ReviewTable
-        record={reviewGame.record}
-        onExitReview={() => setReviewGame(null)}
-        exitLabel="Back"
-      />
+      <div style={{ height: '100dvh' }}>
+        <ReviewTable
+          record={reviewGame.record}
+          onExitReview={() => setReviewGame(null)}
+          exitLabel="Back"
+        />
+      </div>
     );
   } else if (showCustom) {
     screen = <CustomGameScreen onStart={startAI} onBack={() => setShowCustom(false)} />;

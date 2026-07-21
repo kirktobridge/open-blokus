@@ -97,6 +97,59 @@ test('review rail: Analysis folds and the transport bar stays in view', async ({
   await expect(page.getByTestId('scrubber-ply')).toHaveText(/^0 \//);
 });
 
+test('review transport is pinned: its rect never moves across folds and viewports (P52)', async ({
+  page,
+}) => {
+  // The bar's y-position must be a function of the viewport alone — not of the
+  // tallest rail column. We prove it by measuring the transport's viewport rect in
+  // three states and asserting it stays put and fully in view each time:
+  //   (a) Analysis expanded, (b) Analysis folded, (c) a short viewport.
+  await page.setViewportSize(WIDE);
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('open-custom').click();
+  await page.getByTestId('ai-mode-select').selectOption('4');
+  await page.getByTestId('ai-count-select').selectOption('4'); // 0 humans → watch
+  await page.getByTestId('start-ai').click();
+  await expect(page.getByRole('heading', { name: 'Game over' })).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('review-game').click();
+  await expect(page.getByTestId('review-table')).toBeVisible();
+
+  const transportRect = async () => (await page.getByTestId('review-transport').boundingBox())!;
+  const inView = (r: { y: number; height: number }, vh: number) => {
+    expect(r.y).toBeGreaterThanOrEqual(0);
+    expect(r.y + r.height).toBeLessThanOrEqual(vh + 1); // +1 for sub-pixel rounding
+  };
+
+  // (a) Both panels expanded — the state that used to push the bar below the fold.
+  await expect(page.getByTestId('rail-body-analysis')).toBeVisible();
+  const expanded = await transportRect();
+  inView(expanded, WIDE.height);
+
+  // (b) Fold Analysis away. The rail collapses, but the bar does not move: same
+  // viewport rect, still fully in view. This is the coupling being gone.
+  await page.getByTestId('rail-toggle-analysis').click();
+  await expect(page.getByTestId('rail-body-analysis')).toBeHidden();
+  const folded = await transportRect();
+  expect(Math.abs(folded.y - expanded.y)).toBeLessThan(1);
+  expect(Math.abs(folded.height - expanded.height)).toBeLessThan(1);
+  inView(folded, WIDE.height);
+
+  // (c) A short viewport (the acceptance's 1280×720). Re-expand first, so the rail
+  // is at its tallest — the bar still sits fully within the shorter viewport, and
+  // the table region scrolls internally instead of shipping the bar off-screen.
+  await page.getByTestId('rail-toggle-analysis').click();
+  await expect(page.getByTestId('rail-body-analysis')).toBeVisible();
+  const SHORT = { width: 1280, height: 720 };
+  await page.setViewportSize(SHORT);
+  const short = await transportRect();
+  inView(short, SHORT.height);
+
+  // The scrubber still works with the bar pinned in the short viewport (review
+  // opens at the last ply, so stepping to the first is the live control here).
+  await page.getByTestId('scrubber-first').click();
+  await expect(page.getByTestId('scrubber-ply')).toHaveText(/^0 \//);
+});
+
 test('the rail stays inside its width band, wide viewport and narrow', async ({ page }) => {
   // The rail is elastic, not unbounded: it must never outgrow RAIL_MAX_W (a tray
   // wider than that stops reading as a tray) nor squeeze below the width its
