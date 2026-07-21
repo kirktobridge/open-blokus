@@ -24,6 +24,21 @@ export const CORNERS: Record<Color, Cell> = {
 };
 
 /**
+ * The board's side length. Reads `config.boardSize`, falling back to Classic for
+ * states persisted before the field existed (localStorage games, saved logs, shared
+ * replays) — those are all Classic by construction.
+ */
+export const boardSizeOf = (G: GameState): number => G.config.boardSize ?? BOARD_SIZE;
+
+/**
+ * The cell `color`'s first piece must cover. Reads `config.startCells` with the same
+ * backward-compatible fallback as boardSizeOf: pre-field states are Classic, whose
+ * start cells are the corners.
+ */
+export const startCellOf = (G: GameState, color: Color): Cell =>
+  G.config.startCells?.[color] ?? CORNERS[color];
+
+/**
  * Maps each color to the human playerID that owns it, or 'shared' for the
  * rotating color (3p). See GAME_SPEC §7.
  */
@@ -58,7 +73,13 @@ export function createInitialState(
   }
 
   return {
-    config: { mode, scoring, owners: ownersFor(mode) },
+    config: {
+      mode,
+      scoring,
+      owners: ownersFor(mode),
+      boardSize: BOARD_SIZE,
+      startCells: { ...CORNERS },
+    },
     board: Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null),
     colors,
     activeColorIndex: 0,

@@ -3,15 +3,23 @@ import type { Cell } from './types';
 
 export { BOARD_SIZE };
 
-/** Flat-array index for a cell. Index = y * BOARD_SIZE + x. */
-export const idx = (x: number, y: number): number => y * BOARD_SIZE + x;
+/**
+ * Flat-array index for a cell. Index = y * size + x.
+ *
+ * `size` defaults to Classic so the ~70 existing Classic-only call sites stay
+ * unchanged; variant-aware callers (the rules core) pass `boardSizeOf(G)`.
+ */
+export const idx = (x: number, y: number, size: number = BOARD_SIZE): number => y * size + x;
 
 /** Inverse of idx(): flat index → cell. */
-export const xy = (i: number): Cell => ({ x: i % BOARD_SIZE, y: Math.floor(i / BOARD_SIZE) });
+export const xy = (i: number, size: number = BOARD_SIZE): Cell => ({
+  x: i % size,
+  y: Math.floor(i / size),
+});
 
 /** True if (x, y) is on the board. */
-export const inBounds = (x: number, y: number): boolean =>
-  x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+export const inBounds = (x: number, y: number, size: number = BOARD_SIZE): boolean =>
+  x >= 0 && x < size && y >= 0 && y < size;
 
 /** The four edge-sharing (orthogonal) neighbors of a cell. */
 export const orthoNeighbors = ({ x, y }: Cell): Cell[] => [

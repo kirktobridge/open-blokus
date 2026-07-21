@@ -1,5 +1,5 @@
 import { idx, inBounds, orthoNeighbors, diagNeighbors } from './board';
-import { CORNERS } from './modes';
+import { boardSizeOf, startCellOf } from './modes';
 import type { Cell, Color, GameState, PieceId } from './types';
 
 /**
@@ -14,31 +14,32 @@ export function isLegalPlacement(
   cells: Cell[],
 ): boolean {
   const cs = G.colors[color];
+  const N = boardSizeOf(G);
 
   // 1. Available.
   if (!cs.remaining.includes(pieceId)) return false;
 
   // 2. In bounds, and 3. Empty.
   for (const c of cells) {
-    if (!inBounds(c.x, c.y)) return false;
-    if (G.board[idx(c.x, c.y)] !== null) return false;
+    if (!inBounds(c.x, c.y, N)) return false;
+    if (G.board[idx(c.x, c.y, N)] !== null) return false;
   }
 
   // 5. No edge contact with the same color.
   for (const c of cells) {
     for (const n of orthoNeighbors(c)) {
-      if (inBounds(n.x, n.y) && G.board[idx(n.x, n.y)] === color) return false;
+      if (inBounds(n.x, n.y, N) && G.board[idx(n.x, n.y, N)] === color) return false;
     }
   }
 
-  // 4. First-move / corner rule.
+  // 4. First-move / start-cell rule.
   if (!cs.hasStarted) {
-    const corner = CORNERS[color];
-    return cells.some((c) => c.x === corner.x && c.y === corner.y);
+    const start = startCellOf(G, color);
+    return cells.some((c) => c.x === start.x && c.y === start.y);
   }
   for (const c of cells) {
     for (const n of diagNeighbors(c)) {
-      if (inBounds(n.x, n.y) && G.board[idx(n.x, n.y)] === color) return true;
+      if (inBounds(n.x, n.y, N) && G.board[idx(n.x, n.y, N)] === color) return true;
     }
   }
   return false;
@@ -55,7 +56,7 @@ export function applyPlacement(
   pieceId: PieceId,
   cells: Cell[],
 ): void {
-  const indices = cells.map((c) => idx(c.x, c.y));
+  const indices = cells.map((c) => idx(c.x, c.y, boardSizeOf(G)));
   for (const i of indices) G.board[i] = color;
   G.lastMove = indices;
   const cs = G.colors[color];

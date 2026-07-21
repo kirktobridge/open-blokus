@@ -66,12 +66,24 @@ export interface GameConfig {
   scoring: ScoringVariant;
   /** color → owning human playerID, or 'shared' for the rotating color (3p). */
   owners: Record<Color, string | 'shared'>;
+  /**
+   * Side length of the square board. Classic is 20 (GAME_SPEC §1); the Duo variant
+   * is 14 (GAME_SPEC_DUO §1). Optional for backward compatibility — states persisted
+   * before this field existed are Classic; read it via `boardSizeOf(G)`, never directly.
+   */
+  boardSize?: number;
+  /**
+   * color → the cell its first piece must cover (GAME_SPEC §3 / GAME_SPEC_DUO §3).
+   * Classic uses the four corners, Duo two interior cells. Optional for the same
+   * backward-compatibility reason; read it via `startCellOf(G, color)`.
+   */
+  startCells?: Partial<Record<Color, Cell>>;
 }
 
 /** The full boardgame.io game state (G). Must stay plain-JSON-serializable. */
 export interface GameState {
   config: GameConfig;
-  /** Flat 20×20 board; cell = Color or null. Index = y * BOARD_SIZE + x. */
+  /** Flat N×N board (N = config.boardSize, default 20); cell = Color or null. Index = y * N + x. */
   board: (Color | null)[];
   colors: Record<Color, ColorState>;
   /** Index into COLOR_ORDER of the color whose turn it currently is. */
