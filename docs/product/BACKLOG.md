@@ -331,6 +331,56 @@ this epic owns the user-facing feature + its UX.
   later research follow-up if we want to *verify* styles are distinct (would then
   get an AE entry).
 
+### P54 — Variant-aware AI & advisor layer (make the bots actually play Duo)
+- **Status:** proposed
+- **Value:** [P20](#p20--variety-blokus-duo--blitz) M2a made the *rules core*
+  board-size aware (`boardSizeOf`/`startCellOf`), but every layer above it still
+  hardcodes 20×20 and four colors — and on a 14×14 Duo board that fails **silently**.
+  `heuristic.ts` calls `idx`/`inBounds` with **no size argument**, so it indexes a
+  196-cell board as if it were 400 and reads `undefined`; `undefined !== null` is true,
+  so out-of-range cells read as *occupied* and `newFrontier`/`opponentCornersDenied`
+  return garbage. MCTS rollouts force first moves onto `CORNERS[color]` = (0,0) instead
+  of Duo's (4,4)/(9,9) — rollouts play a different game than the tree — and sample
+  offsets over a 20-wide space, so ~half of every draw is off-board and rejected.
+  `mcts.ts`/`simstate.ts` treat `COLOR_ORDER` as the playing set, so absent colors score
+  0 and count as "beaten", corrupting the rank term and the terminal test. `alphabeta.ts`
+  has literal 20×20 loops and an `Int8Array(400)` grid. Nothing goes red for any of it:
+  vitest, typecheck and lint all stay green while the bot plays a corrupted game.
+- **Not just bot quality — shipped surfaces break too.** `attachPoints`/`attachCells`
+  live in `alphabeta.ts` and are dependencies of `drama.ts`
+  ([P32](#p32--in-game-event-vocabulary-cuts-mobility-swings-endgame-beats--maintained-registry)
+  cut/cramped), the P34 room meter, and `recap.ts` — so the same 20×20 scan and
+  `CORNERS` fallback break the **events and advisor** surfaces on a Duo board.
+  `EVENT_THRESHOLDS` were calibrated against Classic frontier magnitudes, and
+  [../EVENTS.md](../EVENTS.md) names `attachCells` as the frontier definition, so that
+  doc is Classic-scoped too.
+- **Scope:**
+  - Thread `boardSizeOf(G)`/`startCellOf(G, color)` through `heuristic.ts` (`CENTER`,
+    `newFrontier`, `opponentCornersDenied`), `mcts.ts` (`sampleLegalMove`, `moveKey`)
+    and `alphabeta.ts` (the 20×20 loops, `const SIZE`, the Voronoi grid, the `CORNERS`
+    pre-first-move branch).
+  - Replace `COLOR_ORDER` with the playing set from `config.playColors` in `mcts.ts`
+    (`isTerminal`, reward-vector length, the `n−1` rank denominator, pass-streak, turn
+    rotation) and `simstate.ts` (`cloneState`, `recomputeStuck`, `nextColorIndex` —
+    today they full-scan `hasAnyMove` for colors that aren't playing, the expensive path
+    per research F10).
+  - Fix `attachCells` **once at the source** so `drama.ts`, `legalMoves.ts` and
+    `recap.ts` all inherit it; re-check `EVENT_THRESHOLDS` legibility on a 14×14 board
+    and update EVENTS.md's frontier note if they move.
+  - **Harness:** `playGame` hardcodes `mode = 4, scoring = 'basic'`, so the arena cannot
+    play a Duo game at all. Take a variant/config. This is the prerequisite for *every*
+    Duo experiment, which is why it lands here rather than in research.
+  - **Guard:** a differential/invariant test running the heuristic and a short MCTS
+    search on a Duo state, asserting no out-of-range board reads and legal first moves —
+    the failure mode above is invisible otherwise.
+  - **Explicitly not here:** *tuning* for Duo (weights, beams, reward). Those are
+    measurable and belong to research (AE29–AE31). This entry only makes the code
+    correct and the harness capable.
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`config.playColors`,
+  `black`/`white` in the `Color` union). **Blocks** research AE29–AE31
+  ([ai-engine.md](../research/backlog/ai-engine.md)) — none of them can run until the
+  arena can play a Duo game.
+
 ---
 
 ## Epic: Game feel & UI
@@ -1122,6 +1172,9 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     with no size argument, so on a 196-cell board it would index as if 400, read
     `undefined`, and `undefined !== null` makes out-of-range cells read as *occupied*.
     Silent corruption with nothing red — grep the call sites, don't trust the suite.
+    The AI/advisor half of that sweep is its own entry —
+    [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo), which
+    M2b unblocks; M2b itself only owes the rules-core and client call sites.
   - **M2c achromatic tile finish** — per-theme `--piece-black` / `--piece-white` plus
     finish handling so bevel, AO and shadow survive at both ends of the value range.
     Split out because `MatLayer`/`PlacedLayer` shade tiles with *relative* modulations
