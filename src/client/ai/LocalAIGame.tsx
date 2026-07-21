@@ -211,6 +211,7 @@ export function LocalAIGame({
       return {
         won: gameover.winners.includes(you),
         score: gameover.players[you] ?? 0,
+        scoring: G.config.scoring,
         hardestTier: hardestTier(tiers),
         perfectClear: yourColors.length > 0 && yourColors.every((c) => remainingSquares(G.colors[c]) === 0),
       };

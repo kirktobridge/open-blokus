@@ -5,7 +5,7 @@ const SEED = {
   wins: 3,
   currentStreak: 2,
   bestStreak: 4,
-  bestScore: 66,
+  bestScores: { basic: 32, advanced: null },
   perTier: {
     easy: { played: 3, won: 3 },
     medium: { played: 2, won: 0 },
@@ -28,7 +28,8 @@ test('progression panel renders lifetime stats from storage (P15)', async ({ pag
   await expect(panel).toBeVisible();
   await expect(page.getByTestId('stat-games')).toHaveText('7');
   await expect(page.getByTestId('stat-winrate')).toHaveText('43%'); // 3/7
-  await expect(page.getByTestId('stat-best-score')).toHaveText('66');
+  // P51: the tile carries its unit — basic scores squares still in your tray.
+  await expect(page.getByTestId('stat-best-score')).toHaveText('32 left');
   await expect(page.getByTestId('stat-streak')).toHaveText('2');
   await expect(page.getByTestId('stat-best-streak')).toHaveText('4');
 
@@ -39,6 +40,20 @@ test('progression panel renders lifetime stats from storage (P15)', async ({ pag
   await expect(page.getByTestId('tier-stat-medium')).toContainText('0/2');
   await expect(page.getByTestId('tier-stat-medium')).not.toContainText('BEATEN');
   await expect(page.getByTestId('stat-perfect-clears')).toContainText('1');
+});
+
+test('a pre-P51 stored best score is dropped, not shown (P51)', async ({ page }) => {
+  // The old blob's single `bestScore` was a max-fold across variants — under
+  // basic that's your worst game, and it can't be repaired, so the tile goes
+  // blank until the next game while the honest counters stay put.
+  await page.addInitScript((seed) => {
+    localStorage.setItem('openblokus-progression', JSON.stringify(seed));
+  }, { ...SEED, bestScores: undefined, bestScore: 43 });
+  await page.goto('/');
+  await page.getByTestId('profile-chip').click();
+
+  await expect(page.getByTestId('stat-best-score')).toHaveText('—');
+  await expect(page.getByTestId('stat-games')).toHaveText('7');
 });
 
 test('progression panel shows an empty state before any game (P15)', async ({ page }) => {
