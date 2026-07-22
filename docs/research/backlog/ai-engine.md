@@ -20,19 +20,24 @@ test (product P21) fails CI if any ID here is missing or terminal.
    quality gap vs Pentobi (F14). F17 sharpens it — priors must beat *width*, and width
    is now known to be mostly the iterations shorter playouts buy (not per-move smarts),
    so a prior has to add signal a cheap size-max sampler doesn't.
-2. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
+2. **AE29** — Duo external anchor (newly dependency-ready, 2026-07-22, when product P54
+   made the arena variant-aware). The M5 gate for a whole track: Duo is **shipped to
+   players** and the bots' strength there is entirely unmeasured, while every constant
+   they use was tuned on Classic (M6). Nothing self-relative about Duo — AE30, AE31 —
+   is trustworthy until this lands.
+3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
-3. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
-4. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
+4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+5. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
    guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
    F8/AE10).
-5. **AE15 replication** — second independent seed pool confirming F15's w=0.25
+6. **AE15 replication** — second independent seed pool confirming F15's w=0.25
    game-share guard (≥48% lower bound), owed because w=0.25 now backs a shipped default
    (tiers + P36 base default). On agreement, upgrades F15 to `replicated` and clears
    **P36's** `replication-pending` only — P37's is a distinct debt (F18/AE28,
    `rolloutSamples` 48 vs 6, a Run V re-batch). Cheap: one re-run of Run S's config on
    fresh seeds.
-6. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
+7. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
    fixed 500 iters); clears **P37's** `replication-pending`, upgrades F18 to
    `replicated`. Compute-heavy (~150 CPU-h at n=600) — schedule deliberately.
 
@@ -162,7 +167,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Status:** deferred (implemented; **no-win in 4p, measured** — kept, correct, zero-cost on miss).
   **Duo makes this testable for the first time:** the entry has always said "revisit in 2p",
   and Duo (two colours, so only 2 plies to your next turn) is that testbed — its hypothesis
-  predicts reuse should pay there. Gated on P20 M2b + product P54, not on AE7.
+  predicts reuse should pay there. **Both product gates are shipped** (P20 M2b, and P54
+  on 2026-07-22 — the arena takes a `variant`), so this is testable now, not on AE7.
 - **Variant:** mechanism — tree reuse is a search-structure change, no constant riding
   on the board.
 - **Objective:** determine whether persisting + re-rooting the search tree between
@@ -553,9 +559,10 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Status:** deferred (wants AE9 node rates; the one true *solver* item, everything
   else is player-strength). **Board-size blocker partly cleared:** P20 M2a shipped the
   rules-core generalization (board size + start cells are `GameConfig`, read via
-  `boardSizeOf`/`startCellOf`), so a reduced board is now expressible. Still blocked on
-  P20 M2b for the two-colour play set, and on product P54 for a variant-aware search
-  layer + a Duo-capable arena harness.
+  `boardSizeOf`/`startCellOf`), so a reduced board is now expressible. **The rest of the
+  board-size blocker is now cleared too:** P20 M2b shipped the two-colour play set, and
+  P54 (2026-07-22) the variant-aware search layer + Duo-capable arena. What remains is
+  the original gate — AE9 node rates — not a product dependency.
 - **Variant:** mechanism — exact endgame value; the tractable-depth constant it yields
   is variant-scoped.
 - **Objective:** compute the exact game-theoretic value + principal variation of
@@ -760,7 +767,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
   ship the `extreme` `rolloutSamples` bump; instrument `fallbackMove` rate at width 48.
 
 ### AE29 — Duo external anchor: extend the Pentobi bridge to the `duo` variant
-- **Status:** proposed (blocked on product P20 M2b + P54). **The M5 anchor for the Duo
+- **Status:** proposed — **dependency-ready** as of 2026-07-22: both product gates
+  (P20 M2b, P54) shipped, so the arena plays Duo (`npm run arena -- --duo`, or a
+  `--config` JSON carrying `"variant": "duo"` — the reproducible path a run should use;
+  `--result` shard pooling works with it). Extending the Pentobi bridge itself is *this
+  entry's* work, not a blocker: `pentobi/arena.ts` is still Classic-only by construction.
+  **The M5 anchor for the Duo
   track** — a new variant is a new track, so this lands before any self-relative Duo
   number is trusted. [F14](../FINDINGS.md) placed our tiers on Pentobi's ladder in **4p
   Classic only**; our Duo strength is entirely unmeasured, while every constant a Duo
@@ -794,7 +806,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE30 — Re-tune the Duo bot: beam:iterations and the heuristic weights
-- **Status:** proposed (blocked on product P54 + AE29 — the anchor lands first, per M5)
+- **Status:** proposed (blocked on **AE29** only — the anchor lands first, per M5. The
+  product gate cleared: P54 shipped 2026-07-22 and the arena plays Duo.)
 - **Variant:** duo — the question *is* whether the Classic-tuned constants transfer to
   14×14.
 - **Objective:** decide whether the Classic-tuned constants still hold on 14×14 with one
@@ -839,7 +852,10 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE31 — Duo reward model: the placed-square leader is not the Duo winner
-- **Status:** proposed (blocked on product P54; wants AE29's readout)
+- **Status:** proposed (wants AE29's readout; no product gate left — P54 shipped
+  2026-07-22 and the arena plays Duo, with placement now ranked by score in the scoring
+  variant's own direction and placed-squares recovered separately, so advanced-scoring
+  Duo readouts are trustworthy.)
 - **Variant:** duo — Duo's advanced-only scoring is what makes the reward proxy wrong
   (M6).
 - **Objective:** decide what an MCTS simulation in Duo should be rewarded for, given that
@@ -857,6 +873,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
   for last. Expect an advanced-score-aware terminal reward to beat the inherited one, with
   the gap concentrated in close endgames.
   Assumption (M4): the bonuses swing enough games to be detectable — measure that first.
+  **Not evidence, just a reason the gate is worth running:** an incidental 12–20 game Duo
+  probe while verifying product P54 showed the heuristic placing *more* squares than
+  greedy-size (68.3 vs 66.7) while winning *fewer* games (~47% vs ~53%) — the exact shape
+  hypothesis (2) predicts. At that n the spread was ±32–35%, i.e. indistinguishable from
+  noise, and it was not seed-averaged (M1). It is recorded here as a pre-registration hint
+  only; it is **not** a result, has no log run, and must not be cited as support.
 - **Method:** **Gate (cheap, runs first):** over ≥200 Duo self-play games, count the games
   where the placed-square leader and the advanced-scoring winner *differ*. If <≈3%, close
   `no-win` on the spot — the reward cannot be worth more than the disagreement rate.
