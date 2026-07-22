@@ -164,7 +164,7 @@ describe('Duo survives the silent persistence paths (P56)', () => {
     const rec = duoRecord();
     const s = summarize({ id: '1', at: 1_000, record: rec });
     expect(s.outcome).not.toBe('watched');
-    expect(s.score).not.toBeNull();
+    expect(s.yourScore).not.toBeNull();
     expect(s.lineup).toContain('hard');
   });
 });

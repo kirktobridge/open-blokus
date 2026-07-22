@@ -1,4 +1,4 @@
-import type { GameMode } from '../../game/types';
+import type { GameMode, Variant } from '../../game/types';
 import type { Difficulty } from '../ai/difficulty';
 import type { BlitzSeconds } from '../blitz/blitz';
 import { dailyDateKey } from '../../game/puzzle/daily';
@@ -79,6 +79,8 @@ export interface QuickPlayConfig {
   botDifficulties: Record<string, Difficulty>;
   /** Blitz per-move limit in seconds; null/absent = untimed (P20 M1). */
   blitzSeconds?: BlitzSeconds;
+  /** Rule set; absent = Classic (every setup pinned before Duo existed). */
+  variant?: Variant;
 }
 
 export function loadQuickPlay(): QuickPlayConfig | null {

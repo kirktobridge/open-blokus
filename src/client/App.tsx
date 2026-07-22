@@ -143,6 +143,7 @@ export function App() {
         aiCount={aiConfig.aiCount}
         botDifficulties={aiConfig.botDifficulties}
         blitzSeconds={aiConfig.blitzSeconds}
+        variant={aiConfig.variant}
         onLeave={() => setAiConfig(null)}
       />
     );

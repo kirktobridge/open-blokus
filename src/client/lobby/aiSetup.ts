@@ -1,6 +1,5 @@
-import type { Color, GameMode } from '../../game/types';
-import { COLOR_ORDER } from '../../game/types';
-import { ownersFor } from '../../game/modes';
+import type { Color, GameMode, Variant } from '../../game/types';
+import { VARIANTS, ownersFor } from '../../game/modes';
 import { resolveExtremeForBlitz, type Difficulty } from '../ai/difficulty';
 import type { BlitzSeconds } from '../blitz/blitz';
 import { loadQuickPlay, saveQuickPlay } from './config';
@@ -11,6 +10,8 @@ export interface AiSetup {
   aiCount: number;
   botDifficulties: Record<string, Difficulty>;
   blitzSeconds: BlitzSeconds;
+  /** Rule set (P20 M2b). Duo is a fixed 2-seat game, so it pins `mode`. */
+  variant: Variant;
 }
 
 export const DEFAULT_SETUP: AiSetup = {
@@ -18,6 +19,7 @@ export const DEFAULT_SETUP: AiSetup = {
   aiCount: 3,
   botDifficulties: {},
   blitzSeconds: null,
+  variant: 'classic',
 };
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -28,12 +30,16 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * color belongs to no fixed seat, so it doesn't add a label. If a seat owns a
  * shared color's turns too (3p), we note it. Returned in seat order.
  */
-export function botSeatLabels(mode: GameMode, aiCount: number): { seat: string; label: string }[] {
+export function botSeatLabels(
+  mode: GameMode,
+  aiCount: number,
+  variant: Variant = 'classic',
+): { seat: string; label: string }[] {
   const humanCount = Math.max(0, mode - aiCount);
-  const owners = ownersFor(mode);
-  const colorsForSeat = (seat: string): Color[] =>
-    COLOR_ORDER.filter((c) => owners[c] === seat);
-  const hasShared = COLOR_ORDER.some((c) => owners[c] === 'shared');
+  const owners = ownersFor(mode, variant);
+  const play = VARIANTS[variant].playColors;
+  const colorsForSeat = (seat: string): Color[] => play.filter((c) => owners[c] === seat);
+  const hasShared = play.some((c) => owners[c] === 'shared');
 
   return Array.from({ length: mode }, (_, i) => String(i))
     .filter((s) => Number(s) >= humanCount)
@@ -51,12 +57,13 @@ export function botSeatLabels(mode: GameMode, aiCount: number): { seat: string; 
  * when off, so the summary reads like a sentence, not a debug dump. It's the
  * subtitle under Quick Play — the one thing that says what that button will start.
  */
-export function setupSummary({ mode, aiCount, botDifficulties, blitzSeconds }: AiSetup): string {
+export function setupSummary({ mode, aiCount, botDifficulties, blitzSeconds, variant }: AiSetup): string {
   const humanCount = mode - aiCount;
-  const tiers = botSeatLabels(mode, aiCount).map(({ seat }) => botDifficulties[seat] ?? 'easy');
+  const tiers = botSeatLabels(mode, aiCount, variant).map(({ seat }) => botDifficulties[seat] ?? 'easy');
   const uniform = tiers.length > 0 && tiers.every((t) => t === tiers[0]);
 
   return [
+    variant === 'duo' ? 'Duo' : null,
     aiCount === mode
       ? `Watch — ${mode} bots`
       : `You${humanCount > 1 ? ` +${humanCount - 1}` : ''} vs ${aiCount} ${aiCount === 1 ? 'bot' : 'bots'}`,
@@ -75,12 +82,20 @@ export function setupSummary({ mode, aiCount, botDifficulties, blitzSeconds }: A
  * race one (P25).
  */
 export function normalizeSetup(setup: AiSetup): AiSetup {
-  const seats = botSeatLabels(setup.mode, setup.aiCount);
+  const variant: Variant = setup.variant ?? 'classic';
+  // Duo is exactly two seats (GAME_SPEC_DUO §5), so switching to it pins the player
+  // count rather than leaving an unstartable 4-player Duo in the form.
+  const modes = VARIANTS[variant].modes;
+  const mode = modes.includes(setup.mode) ? setup.mode : modes[0];
+  const aiCount = Math.min(setup.aiCount, mode);
+  const seats = botSeatLabels(mode, aiCount, variant);
   const tiers: Record<string, Difficulty> = {};
   for (const { seat } of seats) tiers[seat] = setup.botDifficulties[seat] ?? 'easy';
   return {
     ...setup,
-    aiCount: Math.min(setup.aiCount, setup.mode),
+    variant,
+    mode,
+    aiCount,
     botDifficulties: resolveExtremeForBlitz(tiers, setup.blitzSeconds),
   };
 }
@@ -94,6 +109,7 @@ export function loadSetup(): AiSetup {
     aiCount: saved.aiCount,
     botDifficulties: saved.botDifficulties ?? {},
     blitzSeconds: saved.blitzSeconds ?? null,
+    variant: saved.variant ?? 'classic',
   });
 }
 
@@ -121,9 +137,9 @@ export function pinSetup(setup: AiSetup): AiSetup {
  * still counts as the same one.
  */
 export function setupKey(setup: AiSetup): string {
-  const { mode, aiCount, blitzSeconds, botDifficulties } = normalizeSetup(setup);
+  const { mode, aiCount, blitzSeconds, botDifficulties, variant } = normalizeSetup(setup);
   const tiers = Object.keys(botDifficulties)
     .sort()
     .map((seat) => `${seat}:${botDifficulties[seat]}`);
-  return [mode, aiCount, blitzSeconds ?? 'off', ...tiers].join('|');
+  return [variant, mode, aiCount, blitzSeconds ?? 'off', ...tiers].join('|');
 }
