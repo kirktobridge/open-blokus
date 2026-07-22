@@ -9,8 +9,7 @@ Takes one entry (or one milestone of one entry) from
 [docs/product/BACKLOG.md](../../../docs/product/BACKLOG.md) to working, verified code
 on a feature branch. This skill **writes code and tests only** — every backlog/doc
 edit goes through its owner: **/ship** owns BACKLOG.md, BUILD_ORDER.md, and
-ARCHITECTURE.md; **/research** owns `docs/research/**`; GAME_SPEC.md and CLAUDE.md
-are human-owned.
+ARCHITECTURE.md; **/research** owns `docs/research/**`; GAME_SPEC.md is human-owned.
 
 `<ID>` = a product id like `P4`, optionally with a milestone (`P3 R1`).
 

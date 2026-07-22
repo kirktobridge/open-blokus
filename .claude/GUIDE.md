@@ -82,8 +82,7 @@ mark P5 partial — tray finish landed
 add the approved draft to the backlog
 ```
 
-It will *propose* GAME_SPEC or CLAUDE.md changes to you but never edit them —
-those are yours.
+It will *propose* GAME_SPEC changes to you but never edit them — those are yours.
 
 ### /checkpoint — "wrap up the session"
 End-of-session closeout: checks nothing is dangling (statuses honest, tree
@@ -142,4 +141,4 @@ read .claude/HANDOFF.md   (or just: "what's next?")
 | `docs/product/BACKLOG.md`, `BUILD_ORDER.md`, `ARCHITECTURE.md` | /ship | **main only** |
 | `.claude/HANDOFF.md` | /checkpoint (own branch's section only) | local, gitignored |
 | *(nothing — scratchpad scripts only)* | /verify | — |
-| `GAME_SPEC.md`, `CLAUDE.md`, `docs/dev_notes/` | **you** (human-only) | — |
+| `GAME_SPEC.md`, `docs/dev_notes/` | **you** (human-only) | — |

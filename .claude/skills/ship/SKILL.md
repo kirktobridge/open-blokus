@@ -41,8 +41,8 @@ asserted. Before committing any factual claim about the code:
 [docs/product/BACKLOG.md](../../../docs/product/BACKLOG.md),
 [docs/BUILD_ORDER.md](../../../docs/BUILD_ORDER.md), and
 [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md). It writes **nothing else** —
-`docs/research/**` belongs to /research; GAME_SPEC.md and CLAUDE.md are human-owned
-(propose diffs, never edit).
+`docs/research/**` belongs to /research; GAME_SPEC.md is human-owned (propose diffs,
+never edit).
 
 **Edits land on main only.** Feature branches never carry edits to these three files
 (two parallel branches touching `## Next up` conflict every time). So: the
@@ -64,7 +64,6 @@ directly.
 | A build phase completed | [docs/BUILD_ORDER.md](../../../docs/BUILD_ORDER.md) | tick / delete the phase (it's disposable). |
 | Structure/architecture changed | [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) | update the *why* **only** — not signatures (its code blocks are illustrative sketches; `src/` wins). |
 | Rules changed | *(human-only)* | **do not edit** [docs/GAME_SPEC.md](../../../docs/GAME_SPEC.md) — it's human-owned and edit-guard blocks it. Propose the exact diff to the user, and flag that ARCHITECTURE needs its matching update once applied (they're a kept-in-sync pair). |
-| A new easy-to-get-wrong gotcha | *(human-only)* | suggest the **Invariants** line for CLAUDE.md to the user — it governs every session, so it gets human sign-off. Don't edit it directly. |
 
 3. **Cross-link** if the shipped item had a research question or dependency
    (e.g. AE1 → FINDINGS F6; a backlog feature → its research `AD#`).
