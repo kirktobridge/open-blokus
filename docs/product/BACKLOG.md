@@ -26,18 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
-   open work is the call itself (tidiness vs. touch discoverability), not more code.
-2. **P20** M2b — Blokus Duo, the playable milestone: two-colour rules (`black`/`white` into
+1. **P20** M2b — Blokus Duo, the playable milestone: two-colour rules (`black`/`white` into
    the `Color` union), the 14×14 preset, forced advanced scoring, lobby + turn glue.
    Unblocked by M2a (shipped). The big one — a wide `Color`-union change, plus the owed
    sweep of size-defaulting call sites that M2a's Classic fallbacks left silent.
    **Co-lands with P56** (record/stats variant identity) — without it the recorder
    silently drops every finished Duo game.
-3. **P57** — variant scope as schema in the research layer. Dependency-free and cheap
+2. **P57** — variant scope as schema in the research layer. Dependency-free and cheap
    (a schema-test field + skill-gate lines); closes the gap where FINDINGS M6 claims an
    enforcement that doesn't exist, before more variant-silent entries accumulate.
-4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; listed because the rest of the tail (P54, P55,
    P56, P58) is blocked behind P20 M2b, so the queue is genuinely short until Duo is playable.
 
@@ -903,7 +901,9 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** P32 (the event registry + detector pattern), P38 (the toggle home).
 
 ### P45 — Lobby menu: subtitles into hover tooltips
-- **Status:** proposed (exploratory — mockup reviewed)
+- **Status:** deferred — the call went against it (2026-07-22). The mockup was the whole
+  deliverable, so the open work was the judgement, not code: the Tension below wins, and
+  the subtitles stay. Revisit only if the menu grows enough rows to feel noisy.
 - **Value:** a cleaner, calmer menu column — the P35 hierarchy reads faster without a
   subtitle under every row.
 - **Tension (why it stays exploratory):** the subtitles currently *teach* what each row does
