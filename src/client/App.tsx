@@ -23,6 +23,7 @@ import { ReviewTable } from './recap/ReviewTable';
 import type { HistoryGame } from './log/history';
 import { SettingsPanel } from './SettingsPanel';
 import { ControlsHelp } from './ControlsHelp';
+import { TableShell } from './TableShell';
 
 export function App() {
   const lobby = useLobby();
@@ -150,16 +151,24 @@ export function App() {
   } else if (reviewGame) {
     // Standalone review: no live client behind it, so ReviewTable renders from the
     // record alone and its Play Again (a session action) simply isn't offered.
-    // 100dvh cell so the review grid's transport pins to the viewport bottom (P52).
-    // No TopBar here (that chrome gap is P53); review fills the whole viewport.
+    // It wears the same TableShell as review-inside-a-table (P53), so both entry
+    // paths get the same chips; `fill` pins the transport to the viewport bottom (P52).
     screen = (
-      <div style={{ height: '100dvh' }}>
-        <ReviewTable
-          record={reviewGame.record}
-          onExitReview={() => setReviewGame(null)}
-          exitLabel="Back"
-        />
-      </div>
+      <TableShell
+        label="Review"
+        fill
+        onLeave={() => setReviewGame(null)}
+        leaveLabel="Back to menu"
+        leaveTestId="leave-review"
+      >
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <ReviewTable
+            record={reviewGame.record}
+            onExitReview={() => setReviewGame(null)}
+            exitLabel="Back"
+          />
+        </div>
+      </TableShell>
     );
   } else if (showCustom) {
     screen = <CustomGameScreen onStart={startAI} onBack={() => setShowCustom(false)} />;

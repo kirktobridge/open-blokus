@@ -55,6 +55,34 @@ test('a finished game shows up in the history and replays from it (P15 M2)', asy
   await expect(page.getByTestId('quick-play')).toBeVisible();
 });
 
+test('standalone review wears the table chrome and leaves to the menu (P53)', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await playAWatchGame(page);
+
+  await page.goto('/?botDelay=0');
+  await openStats(page);
+  await page.getByTestId('history-row').getByTestId('history-review').click();
+  await expect(page.getByTestId('review-table')).toBeVisible();
+
+  // Same chip set as review reached from inside a table — the shared TableShell.
+  await expect(page.getByTestId('settings-toggle')).toBeVisible();
+  await expect(page.getByTestId('controls-help-toggle')).toBeVisible();
+
+  // The chips work here, not just render: the controls overlay opens. Close it by
+  // clicking the toggle again — Escape is bound to "exit review", not to the popover.
+  const help = page.getByTestId('controls-help-toggle');
+  await help.click();
+  await expect(page.getByTestId('controls-help')).toBeVisible();
+  await help.click();
+  await expect(page.getByTestId('controls-help')).toHaveCount(0);
+
+  // Leave means "back to the main menu", and it's reachable without scrolling.
+  const leave = page.getByTestId('leave-review');
+  await expect(leave).toBeInViewport();
+  await leave.click();
+  await expect(page.getByTestId('quick-play')).toBeVisible();
+});
+
 test('history survives a reload and keeps the newest game first (P15 M2)', async ({ page }) => {
   await page.goto('/?botDelay=0');
   await playAWatchGame(page);
