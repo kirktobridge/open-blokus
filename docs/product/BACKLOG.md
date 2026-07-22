@@ -1162,7 +1162,9 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ### P20 — Variety: Blokus Duo & blitz
 - **Drafted:** 2026-07-06
-- **Status:** partial — **M1 (blitz) shipped**: per-move countdown for human seats in the
+- **Status:** in-progress — **M2c is claimed this session** (branch
+  `feat/p20-m2c-achromatic-finish`); everything below is the `partial` state it builds on,
+  and the entry returns to `partial`/`shipped` at land time. **M1 (blitz) shipped**: per-move countdown for human seats in the
   offline vs-AI table. **M2a shipped**: board size + start cells live in `GameConfig`,
   read through `boardSizeOf` / `startCellOf` accessors; `bitboard.ts`'s hardcoded
   `SIZE`/`MASK20` are gone. Classic remains the only shipped variant and no behaviour
