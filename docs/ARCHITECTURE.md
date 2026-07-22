@@ -112,8 +112,10 @@ depends only on `src/bgio`.
 
 ```ts
 // src/game/types.ts
-export type Color = 'blue' | 'yellow' | 'red' | 'green';
-export const COLOR_ORDER: Color[] = ['blue', 'yellow', 'red', 'green'];
+// Any color any variant can deal; a game holds only its variant's subset
+// (Classic's four, or Duo's black/white) — read it via playColorsOf(G).
+export type Color = 'blue' | 'yellow' | 'red' | 'green' | 'black' | 'white';
+export const COLOR_ORDER: readonly Color[] = ['blue', 'yellow', 'red', 'green'];
 
 export type PieceId =
   | 'I1' | 'I2' | 'I3' | 'V3'
@@ -162,7 +164,7 @@ export interface GameState {
   /** Per-color piece + status tracking. */
   colors: Record<Color, ColorState>;
 
-  /** Index into COLOR_ORDER of the color whose turn it currently is. */
+  /** Index into playColorsOf(G) of the color whose turn it currently is. */
   activeColorIndex: number;
 
   /** Whose turn it is to play the shared color next (3p only): index into the
@@ -178,15 +180,21 @@ Notes:
 
 - `board` is a flat array for cheap immer updates and serialization. Helpers in
   `board.ts` convert `(x,y) ↔ index`.
-- **Board size and start cells are per-game, not global** (P20 M2a). `GameConfig`
-  carries them optionally, and the rules core reads them through accessors
-  (`boardSizeOf` / `startCellOf` in `modes.ts`) rather than a module constant — so a
-  variant like Duo (14×14, interior start cells) is a config value, not a fork of the
-  engine. The accessors fall back to Classic, which keeps states persisted before the
-  change readable. Consequence to respect: the `board.ts` helpers and the bitboard
-  take size as an argument that *defaults* to Classic, so any variant-aware caller
-  that omits it silently computes on a 20×20 board with nothing red.
-- The **active color** is `COLOR_ORDER[activeColorIndex]`, derived state kept in `G`
+- **A variant is a table entry, not a fork of the engine** (P20 M2a/M2b). `GameConfig`
+  carries `variant`, `playColors` and board size *optionally*, and everything reads them
+  through accessors (`variantOf` / `playColorsOf` / `boardSizeOf` / `startCellOf` in
+  `modes.ts`) that fall back to Classic — which is what keeps states persisted before
+  variants existed readable. The per-variant facts (colors, size, start cells, forced
+  scoring, seat counts) live in one `VARIANTS` table so adding a variant is a row, not
+  a scatter of conditionals. "Corner" is called **start cell** throughout the core
+  because Duo's are interior.
+- **`size` is a required argument** of the `board.ts` helpers (`idx`/`xy`/`inBounds`)
+  and the bitboard. It defaulted to Classic through M2a, and that default was the whole
+  bug class: a variant-aware caller that omitted it indexed a 196-cell board as 400,
+  read `undefined`, and `undefined !== null` made out-of-range cells read as *occupied* —
+  silent corruption with vitest, typecheck and lint all green. Requiring it converts
+  that class into a typecheck error. Don't reintroduce a default.
+- The **active color** is `playColorsOf(G)[activeColorIndex]`, derived state kept in `G`
   so the UI and turn order agree without recomputation.
 - The current human (`ctx.currentPlayer`) is derived from the active color's owner
   (see §4); for the shared color it is `humanRotationOrder[sharedRotation % numPlayers]`.
@@ -554,6 +562,15 @@ client. Networked rooms stay human-only.
   ([src/client/log/history.ts](../src/client/log/history.ts)), written synchronously and never
   gated on the POST. Same `GameRecord` shape, two audiences — research reads the disk JSONL, the
   player reads their own browser. A record that won't parse is skipped, not fatal to the list.
+  **A record names its variant** (product P56, serialized `v3`; `v1`/`v2` read back as Classic):
+  seats, scores, winners and moves are keyed by the variant's play-color list rather than by
+  `COLOR_ORDER` position, and every reconstruction path (`replayGame`, `buildRecap`, the
+  recorder's replay cross-check) rebuilds the right board from it. The reason it had to land
+  *with* playable Duo: both the recorder's catch-and-warn and history's drop-on-read were built
+  for legacy corruption and swallow structurally-new data identically, so an unlabelled Duo game
+  would simply vanish — no log line, no history row, no recap — with the suite green. For the
+  same reason the P15 progression store keys `perTier`, `bestScores` and the milestone unlocks
+  per variant instead of blending two different games into one bucket.
 
 **Recorded decisions (do not silently change — see [GAME_SPEC §10](GAME_SPEC.md)):**
 - Bots are **client-side / offline only**. Networked bot-fill (bots in SocketIO rooms via a

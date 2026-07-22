@@ -26,15 +26,18 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P20** M2b — Blokus Duo, the playable milestone: two-colour rules (`black`/`white` into
-   the `Color` union), the 14×14 preset, forced advanced scoring, lobby + turn glue.
-   Unblocked by M2a (shipped). The big one — a wide `Color`-union change, plus the owed
-   sweep of size-defaulting call sites that M2a's Classic fallbacks left silent.
-   **Co-lands with P56** (record/stats variant identity) — without it the recorder
-   silently drops every finished Duo game.
-2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
-   but the lowest-urgency of the ready set; listed because the rest of the tail (P54, P55,
-   P56, P58) is blocked behind P20 M2b, so the queue is genuinely short until Duo is playable.
+1. **P54** — variant-aware AI & advisor layer. Duo is playable now, so the bots and the
+   event/advisor surfaces are *wrong in a shipped mode*: `COLOR_ORDER` as the playing set
+   and `CORNERS`/`BOARD_SIZE` constant reads corrupt search, drama beats and the share
+   grid with nothing red. The required-`size` half of its scope already landed with M2b;
+   what's left is the semantic half, plus the arena harness every Duo experiment needs.
+   Blocks P55, P58 and research AE29–AE31.
+2. **P20** M2c — achromatic tile finish. Duo ships on a provisional flat skin; black and
+   white are the degenerate case for the relative tile modulations, and per CLAUDE.md no
+   check can see it — an eyes-on pass per theme.
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+   but the lowest-urgency of the ready set; P13's bands are also worth re-asking per
+   variant once P54 lets the bots actually play Duo.
 
 ---
 
@@ -393,17 +396,14 @@ this epic owns the user-facing feature + its UX.
   - **Explicitly not here:** *tuning* for Duo (weights, beams, reward). Those are
     measurable and belong to research (AE29–AE31). This entry only makes the code
     correct and the harness capable.
-  - **Closing step — make `size` required.** Once the above lands, flip `size` from
-    optional to a **required** argument of `idx`/`xy`/`inBounds` in
-    [../../src/game/board.ts](../../src/game/board.ts). M2a made it optional (defaulting
-    to Classic) to keep that refactor small, and that default is precisely what lets a
-    variant-unaware caller corrupt silently. The blast radius is small — **25 call sites
-    across 5 files** (`placement.ts` 5, `moves.ts` 3, `alphabeta.ts` 7, `heuristic.ts` 6,
-    `legalMoves.ts` 4) — and this entry already rewrites three of them, so by this point
-    nearly every caller passes `size` explicitly and the flip is close to free. It
-    converts the whole bug class from silent corruption into a **typecheck error**: the
-    single highest-value guard in the Duo work, which is why it lives here rather than in
-    [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged).
+  - ~~**Closing step — make `size` required.**~~ **Already landed with P20 M2b** —
+    `size` is a required argument of `idx`/`xy`/`inBounds` in
+    [../../src/game/board.ts](../../src/game/board.ts), so the silent-corruption path is
+    now a typecheck error. M2b's own sweep had to touch the same call sites, and
+    `heuristic.ts` was the live wrong-size caller, so splitting it would have touched them
+    twice. Consequence for this entry: the remaining work is the *semantic* half — the
+    `COLOR_ORDER`-as-playing-set and `CORNERS`/`BOARD_SIZE` constant reads, which the
+    required param does **not** catch (they are imports, not calls).
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`config.playColors`,
   `black`/`white` in the `Color` union). **Blocks** research AE29–AE31
   ([ai-engine.md](../research/backlog/ai-engine.md)) — none of them can run until the
@@ -1179,8 +1179,19 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   read through `boardSizeOf` / `startCellOf` accessors; `bitboard.ts`'s hardcoded
   `SIZE`/`MASK20` are gone. Classic remains the only shipped variant and no behaviour
   changed — the brute-force move oracle and the bitboard-vs-`isLegalPlacement`
-  differential still pass, which is what makes that claim checkable. **M2b in-progress**
-  on `feat/p20-duo-rules` (co-landing P56); **M2c not started.**
+  differential still pass, which is what makes that claim checkable. **M2b shipped** —
+  **Duo is playable**, offline and online: `black`/`white` in the `Color` union,
+  per-variant `VARIANTS` table (play colors, 14×14, interior start cells, forced
+  advanced scoring, seat counts), lobby variant switch with Duo's now-moot mode/scoring
+  controls shown resolved rather than lying, GAME_SPEC_DUO §6's D1–D5 as rules-core
+  tests, plus an e2e. The owed size-defaulting sweep is done and then some: `size` is now
+  **required** on `idx`/`xy`/`inBounds` (P54's closing step, pulled in here because the
+  sweep already touched the call sites), so the silent-corruption class is a typecheck
+  error. Five further defects only the running app could show — keyboard cursor clamped
+  to 19, advisor footprint keyed to a 20-stride, progression defaulting to Classic,
+  Duo setup dropping the human seat, game-over mosaic framed at Classic's pixel size —
+  were found by /verify and fixed. Co-landed with **P56** (merge `eaaf694`).
+  **M2c not started.**
 - **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
   move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
   entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
@@ -1200,7 +1211,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   - **M2a rules-core generalization** — shipped (see Status). "Corner" was renamed to
     "start cell" throughout the rules core, since Duo's start cells are interior and the
     old name misleads.
-  - **M2b Duo rules** — `config.playColors`; add `black` + `white` to the `Color` union
+  - **M2b Duo rules** — shipped (see Status). `config.playColors`; add `black` + `white` to the `Color` union
     (today `blue|yellow|red|green`, ~171 refs / 36 files / 58 `Record<Color,…>` sites);
     14×14 preset, start cells, forced advanced scoring, lobby + turn glue. Ships playable
     on a provisional flat skin. **Owes an explicit sweep of the size-defaulting call
@@ -1220,7 +1231,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     D5 pins the start-cell pair against the anti-diagonal misreading §3 documents,
     the only mechanical guard on those coordinates until P55's registry test exists.
     And M2b **co-lands
-    [P56](#p56--variant-identity-through-game-records-history--progression)**: the
+    [P56](#p56--variant-identity-through-game-records-history--progression--shipped)**: the
     game recorder runs at every game-over, so a playable Duo without record/stats
     variant identity silently loses every Duo game it finishes (see P56).
   - **M2c achromatic tile finish** — per-theme `--piece-black` / `--piece-white` plus
@@ -1306,9 +1317,18 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Depends on:** P1 (logs) + P2 R0 scrubber (both shipped). Subsumes P2 R2's
   replay-fork substrate if built — build the substrate once (see P2's R2 note).
 
-### P56 — Variant identity through game records, history & progression
-- **Status:** in-progress — co-landing with P20 M2b on `feat/p20-duo-rules` (a playable
-  Duo without this silently drops every finished Duo game).
+### P56 — Variant identity through game records, history & progression — SHIPPED
+- **Status:** shipped — co-landed with [P20](#p20--variety-blokus-duo--blitz) M2b
+  (merge `eaaf694`). `GameRecord` carries `variant`; `SerializedRecord` is **v3** with
+  v1/v2 reading back as `classic`, and seats/scores/winners/moves keyed by the variant's
+  play-color list instead of `COLOR_ORDER` position. The variant threads through every
+  reconstruction (`replayGame`, `buildRecap`, `summarize`, the recorder's capture +
+  score cross-check) and through the P15 store (`perTier`, `bestScores` and the
+  milestone unlocks are per-variant; `sanitize` migrates pre-variant blobs to
+  `classic`). Guards landed as specified: a Duo serialize → deserialize → replay
+  round-trip, a test that a finished Duo game **survives** the recorder's catch and
+  `loadHistory`'s drop-on-read, and a progression fold keeping Classic and Duo in
+  separate buckets (`tests/duoRecords.test.ts`).
 - **Value:** the whole persistence pipeline identifies a game by `(mode, scoring)` and
   addresses colors *positionally* through `COLOR_ORDER` — the variant is
   unrepresentable. `GameRecord` ([../../src/game/ai/selfplay.ts](../../src/game/ai/selfplay.ts))
@@ -1509,9 +1529,13 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     that is P54's closing step, since P54 already rewrites three of the five files
     involved and splitting it would touch them twice. It is also the highest-value guard
     of the lot, so it must not wait on P55.
-- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b + P54 — the registry needs a
-  real second variant to hold, and the lint rule would fire on code P54 is already fixing.
-  Don't start before them: a registry with one variant in it enforces nothing.
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (shipped) + P54 — the registry
+  needs a real second variant to hold, and the lint rule would fire on code P54 is already
+  fixing. Don't start before them: a registry with one variant in it enforces nothing.
+  **Half the first bullet is already there:** M2b landed a `VARIANTS` table in
+  [../../src/game/modes.ts](../../src/game/modes.ts) as the code-side source of truth, so
+  what this entry still owes is the *both-ways test* against GAME_SPEC_DUO.md, not a new
+  registry.
 
 ### P57 — Variant scope as schema in the research layer (make M6 true) — SHIPPED
 - **Status:** shipped — every Scope item landed, including the optional findings tag:
