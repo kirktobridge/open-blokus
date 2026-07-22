@@ -1,0 +1,17 @@
+# Claude edit blocklist — one pattern per line
+# Syntax:
+#   docs/              — block entire folder
+#   docs/GAME_SPEC.md  — exact relative path
+#   *.lock             — glob on filename
+#   src/generated/**   — glob on full path
+#
+# Uncomment examples to activate:
+# docs/GAME_SPEC.md
+# package-lock.json
+
+docs/dev_notes/
+docs/boardgame.io
+edit-blocklist
+docs/GAME_SPEC.md
+GAME_SPEC_DUO.md
+edit-guard.py
