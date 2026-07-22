@@ -18,11 +18,8 @@ import { useProgressionRecorder, type ProgressionClient } from '../progression/u
 import { MilestoneToasts } from '../progression/MilestoneToasts';
 import { hardestTier } from '../progression/progression';
 import { SessionActionsContext } from '../lobby/sessionContext';
-import { SettingsPanel } from '../SettingsPanel';
 import { setSoundContextMute } from '../settings';
-import { ControlsHelp } from '../ControlsHelp';
-import { ICON_CHIP, FONT_MONO, FONT_UI } from '../theme';
-import { LeaveIcon } from '../icons';
+import { TableShell } from '../TableShell';
 import { useBotRunner } from './useBotRunner';
 import { AiThinkingIndicator } from './AiThinkingIndicator';
 import { blitzPaceMs, mctsConfigFor, type Difficulty } from './difficulty';
@@ -264,67 +261,24 @@ export function LocalAIGame({
         onLeave,
       }}
     >
-      <div
-        style={{
-          background: 'var(--table-bg)',
-          // While reviewing, the shell is a fixed-height flex column so the review
-          // transport can pin to the viewport bottom (P52): TopBar is a fixed row,
-          // the review region takes the rest and scrolls inside itself. Play keeps
-          // the natural page-flow height it always had.
-          ...(reviewing && gameRecord
-            ? { height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
-            : { minHeight: '100vh' }),
-        }}
+      {/* While reviewing the shell fills the viewport so the review transport can pin
+          to its bottom (P52); play keeps the natural page-flow height it always had. */}
+      <TableShell
+        label="Local game"
+        fill={Boolean(reviewing && gameRecord)}
+        onLeave={onLeave}
+        leaveTestId="leave-ai"
+        status={
+          <>
+            <span style={{ fontSize: 12.5, color: 'var(--top-mut)' }}>
+              {humanCount} human / {aiCount} AI
+              {blitzLimit != null && ` · blitz ${blitzLimit}s`}
+            </span>
+            <AiThinkingIndicator since={thinkingSince} />
+            <BlitzClock remainingMs={remainingMs} />
+          </>
+        }
       >
-        {/* TopBar — wordmark · match chip · status · utility chips */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '12px 26px',
-            fontFamily: FONT_UI,
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontFamily: FONT_UI, fontWeight: 900, fontSize: 25, color: 'var(--top-ink)' }}>
-            OpenBlokus
-          </span>
-          <span
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 14,
-              textTransform: 'uppercase',
-              letterSpacing: '.09em',
-              color: 'var(--top-mut)',
-              border: '1px solid var(--top-bd)',
-              borderRadius: 999,
-              padding: '5px 12px',
-            }}
-          >
-            Local game
-          </span>
-          <span style={{ fontSize: 12.5, color: 'var(--top-mut)' }}>
-            {humanCount} human / {aiCount} AI
-            {blitzLimit != null && ` · blitz ${blitzLimit}s`}
-          </span>
-          <AiThinkingIndicator since={thinkingSince} />
-          <BlitzClock remainingMs={remainingMs} />
-
-          <span style={{ flex: 1 }} />
-
-          <SettingsPanel docked />
-          <ControlsHelp docked />
-          <button
-            data-testid="leave-ai"
-            onClick={onLeave}
-            aria-label="Leave table"
-            title="Leave table"
-            style={{ ...ICON_CHIP, opacity: 0.85 }}
-          >
-            <LeaveIcon />
-          </button>
-        </div>
         {reviewing && gameRecord ? (
           // Fill cell for the review grid: takes the height left under the TopBar
           // (`min-height: 0` so its overflow, not the page, absorbs a tall column).
@@ -341,7 +295,7 @@ export function LocalAIGame({
             onReview={() => setReviewing(true)}
           />
         )}
-      </div>
+      </TableShell>
       <MilestoneToasts items={milestoneToasts} onDismiss={dismissMilestones} />
     </SessionActionsContext.Provider>
   );
