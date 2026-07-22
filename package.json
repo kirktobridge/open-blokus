@@ -17,7 +17,7 @@
     "arena": "vite-node src/game/ai/arena.cli.ts",
     "arena:pentobi": "vite-node src/game/ai/pentobi/run.ts",
     "test:e2e": "playwright test",
-    "mutate": "stryker run"
+    "mutate": "bash scripts/mutate.sh"
   },
   "dependencies": {
     "boardgame.io": "^0.50.2",
