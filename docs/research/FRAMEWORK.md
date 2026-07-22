@@ -30,6 +30,8 @@ Each planned experiment is one block in a `backlog/*.md` file:
 ```markdown
 ### <id> — <short title>
 - **Status:** proposed
+- **Variant:** classic | duo | both | mechanism — which variant this runs on (see
+  **Variant scope** below). Required while the entry is open.
 - **Objective:** the question in one sentence — what decision does the answer change?
 - **Hypothesis:** predicted direction + the mechanism (why we expect it).
 - **Method:** harness, contestants/configs, N games, seeds, what's held fixed.
@@ -107,6 +109,26 @@ these.
 - `replicated` — multiple seeds/runs independently agree.
 - `significant` — one well-powered run, CI clear of the null.
 - `directional` — small sample or uncontrolled comparison; a hint, not a fact.
+
+## Variant scope
+
+Method lesson **M6**: a tuned constant is scoped to the variant it was measured on, so
+the claim has to say which. A constant is presumed variant-scoped until measured
+otherwise; a mechanism is presumed portable but still says so — the point is to make
+the transfer question explicit, not to assume either answer.
+
+| variant | meaning |
+|---------|---------|
+| `classic` | 20×20, four colors, basic scoring — the GAME_SPEC.md game |
+| `duo` | 14×14, two colors, interior start cells, advanced-only scoring — GAME_SPEC_DUO.md |
+| `both` | measured on (or claimed for) both variants |
+| `mechanism` | a mechanism-level claim — search technique, throughput, methodology — presumed to transfer, with no constant riding on the board |
+
+Two places carry it, and [tests/backlog-schema.test.ts](../../tests/backlog-schema.test.ts)
+enforces both: every **open** backlog entry carries a **Variant:** line, and every
+finding from **F19** on carries a bold tag on its Confidence line (the **(Classic)**
+form F17/F18 already use). F1–F18 are grandfathered — M6 exists precisely because none
+of them said so.
 
 ## Harnesses
 

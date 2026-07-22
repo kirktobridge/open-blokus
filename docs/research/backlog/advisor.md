@@ -42,6 +42,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AD2 — Position evaluator ("how am I doing right now?")
 - **Status:** proposed (arena-log validation unblocked; human-game validation waits on P1)
+- **Variant:** classic — the Run O validation corpus (697k positions) is Classic 4p
+  self-play, and the F15 rank term this leans on is algebraically void at two colors
+  (AE31). A Duo evaluator needs its own corpus and its own value signal.
 - **Objective:** score the current game state from a color's perspective.
 - **Hypothesis:** the same intelligence the bot uses (heuristic, MCTS, **or the F11
   value net**) can be surfaced as a state-of-game readout without a new model.
@@ -61,6 +64,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 ### AD3 — Win probability
 - **Status:** proposed (arena-log validation unblocked; human-game calibration waits
   on P1, AD2)
+- **Variant:** classic — calibration rides on AD2's Classic evaluator and a Classic
+  outcome corpus; win-probability does not transfer across variants unmeasured.
 - **Objective:** turn a position into a calibrated win-probability per color.
 - **Hypothesis:** MCTS rollout outcomes and/or a value model over logged games yield
   a probability that is *calibrated*, not just correctly ordered. (The shipped
@@ -80,6 +85,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   so best-move gap = played move's Q vs best child's Q straight off the returned tree.
   Payoff doubled: besides P2 (recap), this signal now also gates product **P14 M2**
   (daily-puzzle move grading).
+- **Variant:** classic — blunder/swing thresholds are tuned against Classic score
+  magnitudes; Duo's 14×14 swings are a different scale.
 - **Objective:** identify turn-level "good plays," blunders, and key swings in a
   finished game — the *signal*, not the presentation.
 - **Hypothesis:** running the strongest available intelligence (MCTS) over each logged

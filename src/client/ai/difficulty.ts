@@ -35,6 +35,15 @@ type MctsTier = Exclude<Difficulty, 'easy'>;
  * *and* runs ~1.35× faster (bigger-piece playouts terminate sooner). medium/hard keep
  * the default 6 — their width optimum trades against *free iterations* (F17), a
  * separate budget regime left as-is here.
+ *
+ * **Variant scope (Classic).** Every constant above was measured on Classic 20×20 4p
+ * (F6/F8/F15/F17/F18) and is scoped to it, not to "the game" — see FINDINGS M6. Three
+ * are known not to transfer as written: `rankRewardWeight` is provably inert at two
+ * colors (the rank term collapses onto the winner term at n=2), `beam ≈ iters/6` reads
+ * a branching factor that moves with board size *and* opponent count, and the reward
+ * ranks by placed squares — the winner under *basic* scoring, not under Duo's
+ * advanced-only scoring. A Duo ladder needs its own measurements (AE29–AE31), so don't
+ * read these numbers as universal.
  */
 const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
   medium: { timeBudgetMs: 500, beam: 6, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },

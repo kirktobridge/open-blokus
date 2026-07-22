@@ -372,6 +372,12 @@ variant it will run on.** Where a claim is *mechanism*-level rather than constan
 (F2/F3's "own mobility is load-bearing") say that too — the point is to make the
 transfer question **explicit**, not to assume either answer. A constant is presumed
 variant-scoped until measured otherwise; a mechanism is presumed portable but still
-says so. Enforced at /triage (classification) and /research Phase P (entry gate),
+says so. **Enforced by [tests/backlog-schema.test.ts](../../tests/backlog-schema.test.ts)**
+(product P57): an open backlog entry without a `Variant:` line fails, as does a finding
+from F19 on without its variant tag — the vocabulary lives in
+[FRAMEWORK.md](FRAMEWORK.md)'s `## Variant scope`. /triage and /research Phase P carry
+the matching prompt so the scope is decided at drafting time rather than caught at CI,
 alongside M5's anchor rule — because a new *variant* is a new track, and needs its own
-external readout before self-relative numbers accumulate (AE29).
+external readout before self-relative numbers accumulate (AE29). This sentence
+previously claimed the two skill gates as the enforcement while neither existed; a rule
+that only asks to be remembered is the thing M6 is about.
