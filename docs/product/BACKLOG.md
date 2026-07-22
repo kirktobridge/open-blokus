@@ -26,21 +26,20 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P55** — mechanical Classic/Duo separation. Dependency-ready now that P54 shipped;
-   highest-leverage guard left, since variant drift is the one class of bug that stays
-   green through vitest, typecheck **and** lint. Scoped smaller than drafted: the lint
-   rule wants an exemption list for the Classic-by-design callers, not a sweep.
-2. **P58** — variant-scoped onboarding & feel. Fully dependency-ready now that P20 M2c
+1. **P58** — variant-scoped onboarding & feel. Fully dependency-ready now that P20 M2c
    closed the Duo build-out; it's the Duo *content* gap that only a human can see (P59 is
-   the rendering one), and
-   its Classic-by-design sites want writing at the same time as P55's exemptions.
-3. **P59** — achromatic tray & thumbnail finish. A live legibility defect in a shipped
+   the rendering one), and its Classic-by-design sites now have a written precedent to
+   follow — P55's lint exemptions.
+2. **P59** — achromatic tray & thumbnail finish. A live legibility defect in a shipped
    variant, not a gap: one Duo seat's inventory is near-illegible on all three themes, seen
    during M2c's eyes-on pass. Small (tokenize four constants) and dependency-free, and it
    reuses the vocabulary M2c just landed while that is still fresh.
-4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
+4. **P55** — last, and not a build task: its three mechanical guards landed, and all that
+   remains is *proposing* the CLAUDE.md Invariant line to the user. Listed so the one
+   human-owned scrap doesn't drop off the map.
 
 ---
 
@@ -1503,7 +1502,17 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
 
 ### P55 — Mechanical Classic/Duo separation (make variant drift impossible, not discouraged)
 - **Drafted:** 2026-07-22
-- **Status:** in-progress
+- **Status:** partial — **the three mechanical guards shipped** (`052c867`), each *held
+  by a test* rather than asserted: (1) `tests/variants-registry.test.ts` holds `VARIANTS`
+  to GAME_SPEC/GAME_SPEC_DUO both ways — board size, colours + turn order, start cells,
+  scoring, seat counts; (2) [../../src/client/tuning.ts](../../src/client/tuning.ts)
+  generalises P54's one-off `DUO_EVENT_THRESHOLDS` into a per-variant delta axis, and
+  [../../src/client/signals.ts](../../src/client/signals.ts) registers the standing
+  signals (`INCURSION_MIN_PIECE`) that had no doc mirror at all, both mirrored in
+  [../EVENTS.md](../EVENTS.md); (3) the `no-restricted-imports` guard, with four
+  Classic-by-design file exemptions that state their reason. **Only the CLAUDE.md
+  Invariant line is still owed** — human-owned, so it is a proposal awaiting sign-off,
+  not work an agent finishes.
 - **Value:** Duo's arrival turned every board-size and colour-set assumption into a
   correctness question, and today the answer is *convention*: research M6 and the
   `(Classic)` finding tags ask future sessions to remember, and GAME_SPEC_DUO.md's delta
@@ -1564,6 +1573,13 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     and the client palette UI (`Wordmark`, `AmbientBoard`, appearance, `PalettePicker`).
     Guards the **constant-import** path; P54's required-`size`
     param guards the **function-call** path — different holes, both needed.
+    **Shipped — and the snapshot above had indeed rotted, exactly as warned.** Membership
+    was re-derived at build time: `drama.ts`/`recap.ts`/`share.ts` no longer import any of
+    the three (the rule now keeps it that way), `puzzle/daily.ts` and the palette UI fall
+    outside the guarded trees, and `board/orientation.ts` was *converted*, not exempted —
+    it wants every colour any variant deals, so it reads a variant-union `ALL_COLORS` the
+    registry test holds. Four files were genuinely Classic-by-design and carry the stated
+    reason. **Read `eslint.config.js`, not this paragraph, for the current membership.**
   - **Agentic-layer guard:** propose a CLAUDE.md **Invariant** line naming the variant
     split. The former blocker is gone — CLAUDE.md has been tracked since `7aa4017`, so an
     invariant written there reaches parallel sessions and fresh clones; the line is

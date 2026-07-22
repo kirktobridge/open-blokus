@@ -194,6 +194,14 @@ Notes:
   read `undefined`, and `undefined !== null` made out-of-range cells read as *occupied* —
   silent corruption with vitest, typecheck and lint all green. Requiring it converts
   that class into a typecheck error. Don't reintroduce a default.
+- **The Classic constants are lint-guarded inside variant-sensitive trees** (P55).
+  Requiring `size` closes the *function-call* route into that bug class; importing
+  `BOARD_SIZE` / `COLOR_ORDER` / `CORNERS` directly is the other route, and it stays
+  green through typecheck, so `eslint.config.js` makes it an error under `src/game/ai/**`,
+  `src/client/board/**`, `src/client/advisor/**`. Code that really is Classic-only takes a
+  file-level disable **stating why** — that comment is the only record of the intent.
+  `VARIANTS` itself is held to GAME_SPEC/GAME_SPEC_DUO both ways by
+  `tests/variants-registry.test.ts`, so the table can't drift from the specs either.
 - The **active color** is `playColorsOf(G)[activeColorIndex]`, derived state kept in `G`
   so the UI and turn order agree without recomputation.
 - The current human (`ctx.currentPlayer`) is derived from the active color's owner
