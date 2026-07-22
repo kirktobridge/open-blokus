@@ -1,6 +1,7 @@
 import type { Cell, Color, ColorState, GameState } from '../game/types';
 import { PIECE_IDS } from '../game/types';
-import { colorStateOf, ownerOf, playColorsOf, variantOf } from '../game/modes';
+import { colorStateOf, ownerOf, playColorsOf } from '../game/modes';
+import { tunedFor, type Tuned, type VariantDeltas } from './tuning';
 import { pieceSize } from '../game/pieces';
 import { remainingSquares } from '../game/scoring';
 import { attachCells } from '../game/ai/alphabeta';
@@ -73,15 +74,12 @@ export const EVENT_THRESHOLDS = {
   ENDGAME_PIECES_LEFT: 5,
 } as const;
 
-/**
- * The threshold set, with values widened to `number` — `EVENT_THRESHOLDS` is
- * `as const`, so without this a variant delta couldn't hold a different value than
- * Classic's literal type.
- */
-export type EventThresholds = { readonly [K in keyof typeof EVENT_THRESHOLDS]: number };
+/** The threshold set with values widened to `number`, so a delta can differ. */
+export type EventThresholds = Tuned<typeof EVENT_THRESHOLDS>;
 
 /**
- * Duo's deltas, stated the way GAME_SPEC_DUO states rules: only what changes.
+ * Per-variant deltas, stated the way GAME_SPEC_DUO states rules: only what changes.
+ * Documented in EVENTS.md's deltas table, both directions held by the registry test.
  *
  * Re-measured on 20 heuristic self-play games per variant (P54). Duo's frontier
  * runs ~11 wide against Classic's ~13, so the *same* 2-cell loss clears
@@ -93,13 +91,13 @@ export type EventThresholds = { readonly [K in keyof typeof EVENT_THRESHOLDS]: n
  * delta — it sits at the 10th percentile of the frontier in *both* variants and
  * fires ~0.4 times per game either way — and piece counts are variant-independent.
  */
-export const DUO_EVENT_THRESHOLDS = {
-  CUT_MIN_LOSS: 3,
-} as const satisfies Partial<EventThresholds>;
+export const EVENT_THRESHOLD_DELTAS: VariantDeltas<typeof EVENT_THRESHOLDS> = {
+  duo: { CUT_MIN_LOSS: 3 },
+};
 
 /** The thresholds this game's variant plays under. */
 export const thresholdsFor = (G: GameState): EventThresholds =>
-  variantOf(G) === 'duo' ? { ...EVENT_THRESHOLDS, ...DUO_EVENT_THRESHOLDS } : EVENT_THRESHOLDS;
+  tunedFor(EVENT_THRESHOLDS, EVENT_THRESHOLD_DELTAS, G);
 
 /** One detected event. `color` is the subject (null for board-wide events). */
 export interface DramaEvent {

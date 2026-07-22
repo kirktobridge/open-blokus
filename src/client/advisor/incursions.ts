@@ -3,6 +3,7 @@ import { generateLegalMoves } from '../../game/moves';
 import { colorStateOf, playColorsOf } from '../../game/modes';
 import type { Color, GameState } from '../../game/types';
 import { expansionAnchors, placementCells } from './legalMoves';
+import { signalThresholdsFor } from '../signals';
 
 /**
  * Incursion advisor (P44): a *standing* read of the current position — the open
@@ -19,12 +20,10 @@ import { expansionAnchors, placementCells } from './legalMoves';
  */
 
 /**
- * The one feel-tuned threshold. A single-square nub poking one of your corners is a
- * scratch, not an incursion — an opponent has to be able to thread a *real* piece
- * (this many squares or more) onto the corner for it to read as a threat worth
- * flagging. Analogous to `cut`'s `CUT_MIN_LOSS`: magnitude, tuned by feel.
+ * The one feel-tuned threshold lives in the standing-signals registry
+ * ([`signals.ts`](../signals.ts)), where a doc mirror and a both-ways test hold it —
+ * P55. Read it per game, since a variant may retune it.
  */
-export const INCURSION_MIN_PIECE = 3;
 
 /** Two colors are the same player's (so not opponents). Shared is nobody's ally. */
 function sameOwner(G: GameState, a: Color, b: Color): boolean {
@@ -48,6 +47,7 @@ export function incursionCorners(G: GameState, forColor: Color): number[] {
   const anchors = new Set(expansionAnchors(G, forColor));
   if (anchors.size === 0) return [];
 
+  const { INCURSION_MIN_PIECE } = signalThresholdsFor(G);
   const atRisk = new Set<number>();
   for (const opp of playColorsOf(G)) {
     if (opp === forColor || sameOwner(G, opp, forColor)) continue;
