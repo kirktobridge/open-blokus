@@ -5,6 +5,7 @@ real-time multiplayer, lobby, and persistence. See [docs/BUILD_ORDER.md](docs/BU
 
 **Run:** `npm run serve` (game server :8000) + `npm run dev` (app :5173). `npm test`
 runs unit (vitest) + e2e (Playwright). `npm run typecheck` / `npm run lint` for checks.
+`npm run mutate` runs Stryker mutation testing over the rules core (per-file loop).
 
 ## Canonical docs — read before working
 
