@@ -59,17 +59,27 @@ describe('GAME_SPEC_DUO.md cross-references resolve', () => {
     }
   });
 
-  it('points every bare `§N` at a section of its own', () => {
-    // Per the doc's stated convention, a bare §N is a self-reference; anything meant
-    // for the base doc must be written `GAME_SPEC §N`. Strip the qualified ones first.
-    const selfRefs = [...duo.replace(/GAME_SPEC §\d+(?:\.\d+)?/g, '').matchAll(/§(\d+(?:\.\d+)?)/g)];
-    expect(selfRefs.length).toBeGreaterThan(0);
-    for (const [, ref] of selfRefs) {
-      expect(
-        duoSections,
-        `GAME_SPEC_DUO has a bare §${ref}; it defines no such section, so this likely means GAME_SPEC §${ref}`,
-      ).toContain(ref);
+  it('points every `Duo §N` at a section it defines', () => {
+    const refs = [...duo.matchAll(/Duo §(\d+(?:\.\d+)?)/g)].map((m) => m[1]);
+    expect(refs.length).toBeGreaterThan(0);
+    for (const ref of refs) {
+      expect(duoSections, `GAME_SPEC_DUO cites Duo §${ref}, which it does not define`).toContain(
+        ref,
+      );
     }
+  });
+
+  /**
+   * The load-bearing one. A qualified ref that dangles is caught above, but an
+   * *unqualified* one usually resolves in both docs by coincidence — `§5` is a real
+   * section of each — so it can't be validated, only banned. Hence: no bare numeric
+   * section reference anywhere in the delta doc.
+   */
+  it('leaves no unqualified section reference', () => {
+    const unqualified = [...duo.replace(/(?:GAME_SPEC|Duo) §\d+(?:\.\d+)?/g, '').matchAll(
+      /§\d+(?:\.\d+)?/g,
+    )].map((m) => m[0]);
+    expect(unqualified, `unqualified refs: ${unqualified.join(', ')}`).toEqual([]);
   });
 });
 

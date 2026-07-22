@@ -15,9 +15,11 @@ resolved here and marked **[RULING]**.
 > *without* changing it is a bug in **this** file — delete the restatement, don't
 > reconcile the two copies.
 >
-> **Cross-references.** `GAME_SPEC §N` always means that document; a bare `§N` is a
-> section of this one. [tests/spec-linkage.test.ts](../tests/spec-linkage.test.ts)
-> fails if either kind points at a section that doesn't exist.
+> **Cross-references.** Every section reference names its document — `GAME_SPEC §6.2`
+> or `Duo §3` — because with two specs in play a bare number is ambiguous, and the
+> ambiguity is invisible: a bare `§N` reads fine whether it meant this file or the base.
+> [tests/spec-linkage.test.ts](../tests/spec-linkage.test.ts) fails on an unqualified
+> reference, or a qualified one pointing at a section that doesn't exist.
 
 ---
 
@@ -30,8 +32,8 @@ resolved here and marked **[RULING]**.
 | Players | 2–4 humans | **exactly 2** |
 | Pieces per color | 21 | 21 (identical set) |
 | Pieces total | 84 | **42** |
-| Start cells | the four corners | **two interior cells** (§3) |
-| Scoring | basic *or* advanced | **advanced only** (§4) |
+| Start cells | the four corners | **two interior cells** (Duo §3) |
+| Scoring | basic *or* advanced | **advanced only** (Duo §4) |
 
 Everything else — the 21 shapes and their coordinates (GAME_SPEC §2), the five
 placement rules and adjacency helpers (GAME_SPEC §4), turn flow / passing / game end
@@ -125,7 +127,7 @@ White wins.
 - Only the two Duo color sets are in play. The Classic colors are **absent from the
   game** — not merely unowned. They have no pieces, no start cell, and never take a turn.
 - Turn order alternates `P0, P1`.
-- Player score = their single color's score (§4). There is no shared color and no
+- Player score = their single color's score (Duo §4). There is no shared color and no
   multi-color ownership, so GAME_SPEC §7.2 and GAME_SPEC §7.3 do not apply.
 - Passing and game end follow GAME_SPEC §5 unchanged: a player who cannot place any
   remaining piece passes, and the game ends when both players are blocked. The sheet
@@ -146,11 +148,11 @@ White wins.
 | D1 | empty board | `black` plays `I1` at `(0,0)` | **No** | first move must cover black's start cell `(4,4)`; a board corner is not a start cell in Duo |
 | D2 | empty board | `black` plays `I1` at `(4,4)` | **Yes** | covers black's assigned start cell |
 | D3 | empty board | `white` plays `I1` at `(4,4)` | **No** | `(4,4)` is black's start cell; white must cover `(9,9)` |
-| D4 | any | any placement with a cell at `x = 14` or `y = 14` | **No** | out of bounds — Duo indices are `0..13` (§3.1) |
-| D5 | — | the start-cell pair | — | invariant: `black.x + white.x == 13` and `black.y + white.y == 13` (180° symmetry, §3) |
+| D4 | any | any placement with a cell at `x = 14` or `y = 14` | **No** | out of bounds — Duo indices are `0..13` (Duo §3.1) |
+| D5 | — | the start-cell pair | — | invariant: `black.x + white.x == 13` and `black.y + white.y == 13` (180° symmetry, Duo §3) |
 
 D5 is an invariant test, not a placement case — it guards the coordinate convention
-against the anti-diagonal misreading described in §3.
+against the anti-diagonal misreading described in Duo §3.
 
 ---
 
