@@ -26,12 +26,11 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P54** — variant-aware AI & advisor layer. Duo is playable now, so the bots and the
-   event/advisor surfaces are *wrong in a shipped mode*: `COLOR_ORDER` as the playing set
-   and `CORNERS`/`BOARD_SIZE` constant reads corrupt search, drama beats and the share
-   grid with nothing red. The required-`size` half of its scope already landed with M2b;
-   what's left is the semantic half, plus the arena harness every Duo experiment needs.
-   Blocks P55, P58 and research AE29–AE31.
+1. **P54** — variant-aware AI harness (**in-progress**). Rescoped 2026-07-22: the bots
+   and the event/advisor surfaces turned out to be variant-aware already (M2b + P56 took
+   that half), so what's left is the arena — `playGame`/`runTournament` are Classic-only
+   by construction, which is the single thing blocking every Duo experiment. Blocks P55,
+   P58 and research AE29–AE31.
 2. **P20** M2c — achromatic tile finish. Duo ships on a provisional flat skin; black and
    white are the degenerate case for the relative tile modulations, and per CLAUDE.md no
    check can see it — an eyes-on pass per theme.
@@ -334,82 +333,56 @@ this epic owns the user-facing feature + its UX.
   later research follow-up if we want to *verify* styles are distinct (would then
   get an AE entry).
 
-### P54 — Variant-aware AI & advisor layer (make the bots actually play Duo)
-- **Status:** proposed
-- **Value:** [P20](#p20--variety-blokus-duo--blitz) M2a made the *rules core*
-  board-size aware (`boardSizeOf`/`startCellOf`), but every layer above it still
-  hardcodes 20×20 and four colors — and on a 14×14 Duo board that fails **silently**.
-  `heuristic.ts` calls `idx`/`inBounds` with **no size argument**, so it indexes a
-  196-cell board as if it were 400 and reads `undefined`; `undefined !== null` is true,
-  so out-of-range cells read as *occupied* and `newFrontier`/`opponentCornersDenied`
-  return garbage. MCTS rollouts force first moves onto `CORNERS[color]` = (0,0) instead
-  of Duo's (4,4)/(9,9) — rollouts play a different game than the tree — and sample
-  offsets over a 20-wide space, so ~half of every draw is off-board and rejected.
-  `mcts.ts`/`simstate.ts` treat `COLOR_ORDER` as the playing set, so absent colors score
-  0 and count as "beaten", corrupting the rank term and the terminal test. `alphabeta.ts`
-  has literal 20×20 loops and an `Int8Array(400)` grid. Nothing goes red for any of it:
-  vitest, typecheck and lint all stay green while the bot plays a corrupted game.
-- **Not just bot quality — shipped surfaces break too.** `attachPoints`/`attachCells`
-  live in `alphabeta.ts` and are dependencies of `drama.ts`
-  ([P32](#p32--in-game-event-vocabulary-cuts-mobility-swings-endgame-beats--maintained-registry)
-  cut/cramped), the P34 room meter, and `recap.ts` — so the same 20×20 scan and
-  `CORNERS` fallback break the **events and advisor** surfaces on a Duo board.
-  `EVENT_THRESHOLDS` were calibrated against Classic frontier magnitudes, and
-  [../EVENTS.md](../EVENTS.md) names `attachCells` as the frontier definition, so that
-  doc is Classic-scoped too.
+### P54 — Variant-aware AI harness (let the arena play Duo)
+- **Status:** in-progress
+- **Rescoped 2026-07-22 — most of this entry was already built.** As drafted, P54
+  claimed the whole layer above the rules core still hardcoded 20×20 and four colors,
+  so the bots played "a corrupted game" and the event/advisor/share surfaces silently
+  produced nothing on a Duo board. Checked against `src/` before claiming: **not true
+  any more.** P20 M2b's required-`size` sweep and P56's variant-identity pass together
+  fixed the live callers — `heuristic.ts`, `mcts.ts`, `alphabeta.ts` and `simstate.ts`
+  all read `boardSizeOf`/`startCellOf`/`playColorsOf`, and `drama.ts`, `recap.ts`,
+  `share.ts`, `advisor/incursions.ts` and `advisor/legalMoves.ts` are variant-aware
+  too (`drama.ts`'s literal 20-stride cell key is now a variant-agnostic 32-stride).
+  The *why* those two entries absorbed it: both had to touch the same call sites, so
+  splitting the work would have edited them twice. What survives is the part neither
+  entry needed — the research harness.
+- **Value:** the **arena cannot set up a Duo game at all**, so no Duo experiment can
+  be run, measured, or replicated. That is the one thing still blocking AE29–AE31, and
+  it is a harness gap rather than a correctness bug: the bots are already right, they
+  just can't be benchmarked on the variant.
 - **Scope:**
-  - Thread `boardSizeOf(G)`/`startCellOf(G, color)` through `heuristic.ts` (`CENTER`,
-    `newFrontier`, `opponentCornersDenied`), `mcts.ts` (`sampleLegalMove`, `moveKey`)
-    and `alphabeta.ts` (the 20×20 loops, `const SIZE`, the Voronoi grid, the `CORNERS`
-    pre-first-move branch).
-  - Replace `COLOR_ORDER` with the playing set from `config.playColors` in `mcts.ts`
-    (`isTerminal`, reward-vector length, the `n−1` rank denominator, pass-streak, turn
-    rotation) and `simstate.ts` (`cloneState`, `recomputeStuck`, `nextColorIndex` —
-    today they full-scan `hasAnyMove` for colors that aren't playing, the expensive path
-    per research F10).
-  - Fix `attachCells` **once at the source** so `drama.ts`, `legalMoves.ts` and
-    `recap.ts` all inherit it; re-check `EVENT_THRESHOLDS` legibility on a 14×14 board
-    and update EVENTS.md's frontier note if they move.
-  - **Same two holes, presentation layer.** The sweep extends past the AI files to the
-    surfaces that read live `GameState` with `COLOR_ORDER` as the playing set or a
-    20-stride: [../../src/client/drama.ts](../../src/client/drama.ts) (detector loops,
-    `revealRows`/`resultSummary`, and a literal `y * 20` cell key that neither lint nor
-    the required-`size` flip can see),
-    [../../src/game/recap.ts](../../src/game/recap.ts) (frame flattening + per-color
-    maps), [../../src/game/share.ts](../../src/game/share.ts) (`emojiBoard` loops the
-    constant — past cell 196 it reads `undefined` and prints it), and the advisor
-    readouts ([../../src/client/advisor/incursions.ts](../../src/client/advisor/incursions.ts)
-    opponent loop, `roomReadout` in
-    [../../src/client/advisor/legalMoves.ts](../../src/client/advisor/legalMoves.ts)).
-    On a Duo board these fail in the same silent shape as the bots: no beat, cue, or
-    cut highlight ever fires, game-over reveals four Classic rows, the share grid is
-    garbage. Same fix idiom — `boardSizeOf` and the `config.playColors` read (one
-    shared accessor, so the door is single) — and then held closed by P55's widened
-    lint scope. These are constant imports and literals, not size-defaulting calls, so
-    the closing step below does **not** catch them; they must be swept here.
-  - **Harness:** `playGame` hardcodes `mode = 4, scoring = 'basic'`, so the arena cannot
-    play a Duo game at all. Take a variant/config. This is the prerequisite for *every*
-    Duo experiment, which is why it lands here rather than in research.
-  - **Guard:** a differential/invariant test running the heuristic and a short MCTS
-    search on a Duo state, asserting no out-of-range board reads and legal first moves —
-    the failure mode above is invisible otherwise.
+  - **Harness.** [../../src/game/ai/arena.ts](../../src/game/ai/arena.ts) is Classic-only
+    *by construction*, not by oversight: it imports `COLOR_ORDER` as the playing set
+    (`advanceActiveColor`, `playGame`'s live-color counter and active-color read,
+    `runTournament`'s seat rotation, winner filter and placement loop, `seatPosOf`),
+    `playGame` defaults `mode = 4` with no `variant` argument, and `runTournament`
+    throws unless handed exactly four contestants. A comment in `advanceActiveColor`
+    explicitly defers this to P54. Take a variant and drive the playing set from it.
+    Sweep [../../src/game/ai/arena.cli.ts](../../src/game/ai/arena.cli.ts)'s seat
+    construction too, so `npm run arena` can actually run the match.
+  - **Guard:** there is no Duo AI test anywhere in `src/game/ai/`. Add a
+    differential/invariant test running the heuristic and a short MCTS search on a Duo
+    state — no out-of-range board reads, legal first moves on the interior start cells,
+    terminal detection over two colors and not four. The failure mode is invisible
+    otherwise, which is exactly how the original entry's premise went stale unnoticed.
+  - **Thresholds:** re-check `EVENT_THRESHOLDS` legibility on a 14×14 board (they were
+    calibrated against Classic frontier magnitudes) and update
+    [../EVENTS.md](../EVENTS.md)'s frontier note if they move.
   - **Explicitly not here:** *tuning* for Duo (weights, beams, reward). Those are
-    measurable and belong to research (AE29–AE31). This entry only makes the code
-    correct and the harness capable.
-  - ~~**Closing step — make `size` required.**~~ **Already landed with P20 M2b** —
-    `size` is a required argument of `idx`/`xy`/`inBounds` in
+    measurable and belong to research (AE29–AE31). This entry only makes the harness
+    capable.
+  - ~~**Closing step — make `size` required.**~~ Landed with P20 M2b — `size` is a
+    required argument of `idx`/`xy`/`inBounds` in
     [../../src/game/board.ts](../../src/game/board.ts), so the silent-corruption path is
-    now a typecheck error. M2b's own sweep had to touch the same call sites, and
-    `heuristic.ts` was the live wrong-size caller, so splitting it would have touched them
-    twice. Consequence for this entry: the remaining work is the *semantic* half — the
-    `COLOR_ORDER`-as-playing-set and `CORNERS`/`BOARD_SIZE` constant reads, which the
-    required param does **not** catch (they are imports, not calls).
+    a typecheck error now.
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`config.playColors`,
   `black`/`white` in the `Color` union). **Blocks** research AE29–AE31
   ([ai-engine.md](../research/backlog/ai-engine.md)) — none of them can run until the
   arena can play a Duo game. Also **blocks
   [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)**,
-  which guards the constant-import path once this entry has fixed the callers.
+  which guards the constant-import path once every caller is fixed — `arena.ts` and
+  `arena.cli.ts` are the last two, so P55's lint scope can only be widened after this.
 
 ---
 
@@ -1224,9 +1197,9 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     The sweep is bounded and small: **25 call sites across 5 files** (`placement.ts` 5,
     `moves.ts` 3, `alphabeta.ts` 7, `heuristic.ts` 6, `legalMoves.ts` 4) — the rules-core
     two are already size-aware from M2a, so M2b's own share is the client callers.
-    The AI/advisor half of that sweep is its own entry —
-    [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo), which
-    M2b unblocks; M2b itself only owes the rules-core and client call sites.
+    The AI/advisor half of that sweep was meant to be its own entry —
+    [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo) — but M2b's required-`size`
+    flip forced those call sites anyway, so it absorbed them and left P54 the harness.
     M2b also encodes GAME_SPEC_DUO §6's worked cases **D1–D5** as rules-core tests —
     D5 pins the start-cell pair against the anti-diagonal misreading §3 documents,
     the only mechanical guard on those coordinates until P55's registry test exists.
@@ -1371,7 +1344,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   - **Sequencing constraint:** must **co-land with [P20](#p20--variety-blokus-duo--blitz)
     M2b** — the recorder runs at every game-over, so "ships playable" opens this window
     immediately, one dependency *before*
-    [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo).
+    [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo).
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`black`/`white` in
   `Color`, `config.playColors`). Reads the variant registry from
   [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)
@@ -1404,8 +1377,8 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
     lint exemptions — not silently inherited.
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (playable Duo). The pacing
-  check wants [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo)
-  first — the bots must actually be playing Duo correctly before timing them.
+  check wants [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo)
+  first — pacing has to be *measured* on a Duo board, which needs the arena.
 
 ---
 
@@ -1478,7 +1451,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
   [P32](#p32--in-game-event-vocabulary-cuts-mobility-swings-endgame-beats--maintained-registry)'s
   events registry, and the edit-guard hook all make alignment mechanical — and this entry
   applies that idiom to the variant split. The failure it prevents is the one
-  [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo) documents:
+  [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo) documents:
   code reading the wrong board size stays green through vitest, typecheck **and** lint
   while the bot plays a corrupted game.
 - **Scope:**
