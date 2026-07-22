@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { EVENT_IDS, EVENT_THRESHOLDS } from '../src/client/drama';
+import { EVENT_IDS, EVENT_THRESHOLDS, DUO_EVENT_THRESHOLDS } from '../src/client/drama';
 
 /**
  * Registry alignment test (P32, in the spirit of P21's backlog-schema test): the
@@ -13,6 +13,19 @@ import { EVENT_IDS, EVENT_THRESHOLDS } from '../src/client/drama';
 
 const doc = readFileSync(fileURLToPath(new URL('../docs/EVENTS.md', import.meta.url)), 'utf8');
 
+/**
+ * The Classic vocabulary table and the Duo delta table are both `|`-tables keyed by
+ * event id, so they're split by heading rather than by shape — otherwise the delta
+ * rows read as duplicate vocabulary rows. Duo values are written `DUO_<KEY>=<v>` in
+ * the doc for the same reason: the prefix keeps the two tables' thresholds distinct.
+ */
+const DUO_HEADING = '### Duo deltas';
+const [classicDoc, duoDoc] = ((): [string, string] => {
+  const at = doc.indexOf(DUO_HEADING);
+  if (at < 0) throw new Error('EVENTS.md lost its "Duo deltas" section');
+  return [doc.slice(0, at), doc.slice(at)];
+})();
+
 /** Rows of the vocabulary table: `| `id` | text | trigger | thresholds | consumers |`. */
 interface Row {
   id: string;
@@ -21,7 +34,7 @@ interface Row {
 
 function vocabularyRows(): Row[] {
   const rows: Row[] = [];
-  for (const line of doc.split('\n')) {
+  for (const line of classicDoc.split('\n')) {
     if (!line.startsWith('|')) continue;
     const cells = line
       .split('|')
@@ -64,5 +77,37 @@ describe('docs/EVENTS.md ↔ drama.ts', () => {
       for (const [, key] of row.thresholds.matchAll(/([A-Z][A-Z_]+)=/g)) documented.add(key);
     }
     expect([...documented].sort()).toEqual(Object.keys(EVENT_THRESHOLDS).sort());
+  });
+});
+
+describe('docs/EVENTS.md Duo deltas ↔ DUO_EVENT_THRESHOLDS', () => {
+  /** `DUO_<KEY>=<value>` occurrences in the delta section, prefix stripped. */
+  const documented = new Map<string, number>(
+    [...duoDoc.matchAll(/DUO_([A-Z][A-Z_]+)=([\d.]+)/g)].map(([, key, v]) => [key, Number(v)]),
+  );
+
+  it('documents exactly the deltas the code defines, and invents none', () => {
+    expect([...documented.keys()].sort()).toEqual(Object.keys(DUO_EVENT_THRESHOLDS).sort());
+  });
+
+  it('quotes every delta at the value the code actually uses', () => {
+    for (const [key, value] of documented) {
+      expect(
+        value,
+        `EVENTS.md says DUO_${key}=${value}, code says ${
+          DUO_EVENT_THRESHOLDS[key as keyof typeof DUO_EVENT_THRESHOLDS]
+        }`,
+      ).toBe(DUO_EVENT_THRESHOLDS[key as keyof typeof DUO_EVENT_THRESHOLDS]);
+    }
+  });
+
+  it('only overrides thresholds that exist, and only where they actually differ', () => {
+    for (const [key, value] of Object.entries(DUO_EVENT_THRESHOLDS)) {
+      expect(EVENT_THRESHOLDS, `Duo overrides unknown threshold ${key}`).toHaveProperty(key);
+      // A "delta" equal to the Classic value is dead weight pretending to be a rule.
+      expect(value, `DUO ${key} restates the Classic value`).not.toBe(
+        EVENT_THRESHOLDS[key as keyof typeof EVENT_THRESHOLDS],
+      );
+    }
   });
 });

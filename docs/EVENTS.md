@@ -44,7 +44,24 @@ id, so an id is a small contract: don't rename one without updating its consumer
 **Frontier** = `attachCells(G, color)` ([`src/game/ai/alphabeta.ts`](../src/game/ai/alphabeta.ts)):
 empty cells diagonally adjacent to the color and not orthogonally adjacent to it — i.e.
 where the color could still legally attach. It's the same cheap mobility proxy the AI
-evaluates with, so "room" means the same thing to the bots and to the drama layer.
+evaluates with, so "room" means the same thing to the bots and to the drama layer. It is
+board-size aware, so the *definition* is variant-independent — but the **magnitudes are
+not**, which is what the Duo deltas below are about.
+
+### Duo deltas
+
+The table above is Classic. Duo changes one bar, and the file states only what changes —
+same delta discipline as [GAME_SPEC_DUO.md](GAME_SPEC_DUO.md). Live in
+`DUO_EVENT_THRESHOLDS`; the registry test holds these values to the code too.
+
+| id | threshold | Classic | Duo | why |
+|----|-----------|---------|-----|-----|
+| `cut` | `CUT_MIN_LOSS` | 2 | `DUO_CUT_MIN_LOSS=3` | Duo's frontier runs ~11 wide against Classic's ~13, so the same 2-cell loss clears `CUT_MIN_SHARE` where a Classic frontier would have absorbed it. With one opponent instead of three on half the area, colors interlock far more: at the Classic bars, cuts fired **7.4 per Duo game** against Classic's 3.5, in games *half as long*. Requiring 3 brings it to **2.7** — back at the ~2.8 the vocabulary was tuned for. |
+
+`CRAMPED_MAX` deliberately has **no** Duo delta: it sits at the 10th percentile of the
+frontier in both variants and fires ~0.4 times per game either way. Piece counts don't
+vary by variant, so `ENDGAME_PIECES_LEFT` doesn't either. Re-measured over 20 heuristic
+self-play games per variant (P54) — re-measure before retuning, on the variant you mean.
 
 ## Consumers
 
