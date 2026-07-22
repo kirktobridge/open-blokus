@@ -376,10 +376,23 @@ this epic owns the user-facing feature + its UX.
   - **Explicitly not here:** *tuning* for Duo (weights, beams, reward). Those are
     measurable and belong to research (AE29–AE31). This entry only makes the code
     correct and the harness capable.
+  - **Closing step — make `size` required.** Once the above lands, flip `size` from
+    optional to a **required** argument of `idx`/`xy`/`inBounds` in
+    [../../src/game/board.ts](../../src/game/board.ts). M2a made it optional (defaulting
+    to Classic) to keep that refactor small, and that default is precisely what lets a
+    variant-unaware caller corrupt silently. The blast radius is small — **25 call sites
+    across 5 files** (`placement.ts` 5, `moves.ts` 3, `alphabeta.ts` 7, `heuristic.ts` 6,
+    `legalMoves.ts` 4) — and this entry already rewrites three of them, so by this point
+    nearly every caller passes `size` explicitly and the flip is close to free. It
+    converts the whole bug class from silent corruption into a **typecheck error**: the
+    single highest-value guard in the Duo work, which is why it lives here rather than in
+    [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged).
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`config.playColors`,
   `black`/`white` in the `Color` union). **Blocks** research AE29–AE31
   ([ai-engine.md](../research/backlog/ai-engine.md)) — none of them can run until the
-  arena can play a Duo game.
+  arena can play a Duo game. Also **blocks
+  [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)**,
+  which guards the constant-import path once this entry has fixed the callers.
 
 ---
 
@@ -1172,6 +1185,9 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     with no size argument, so on a 196-cell board it would index as if 400, read
     `undefined`, and `undefined !== null` makes out-of-range cells read as *occupied*.
     Silent corruption with nothing red — grep the call sites, don't trust the suite.
+    The sweep is bounded and small: **25 call sites across 5 files** (`placement.ts` 5,
+    `moves.ts` 3, `alphabeta.ts` 7, `heuristic.ts` 6, `legalMoves.ts` 4) — the rules-core
+    two are already size-aware from M2a, so M2b's own share is the client callers.
     The AI/advisor half of that sweep is its own entry —
     [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo), which
     M2b unblocks; M2b itself only owes the rules-core and client call sites.
@@ -1317,3 +1333,45 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
 - **Depends on:** nothing to add the blocks; the mechanical staleness check lands
   with/after P21. Initial rankings are the human's call (implementer proposes,
   user confirms).
+
+### P55 — Mechanical Classic/Duo separation (make variant drift impossible, not discouraged)
+- **Status:** proposed
+- **Value:** Duo's arrival turned every board-size and colour-set assumption into a
+  correctness question, and today the answer is *convention*: research M6 and the
+  `(Classic)` finding tags ask future sessions to remember, and GAME_SPEC_DUO.md's delta
+  discipline asks them not to restate. Conventions are exactly what fails silently under
+  agentic edits across parallel sessions. This repo already knows the better answer —
+  [P21](#p21--backlog-schema-test-docs-as-reliable-data)'s schema test,
+  [P32](#p32--in-game-event-vocabulary-cuts-mobility-swings-endgame-beats--maintained-registry)'s
+  events registry, and the edit-guard hook all make alignment mechanical — and this entry
+  applies that idiom to the variant split. The failure it prevents is the one
+  [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo) documents:
+  code reading the wrong board size stays green through vitest, typecheck **and** lint
+  while the bot plays a corrupted game.
+- **Scope:**
+  - **Variant registry + both-ways test** (the
+    [tests/events-registry.test.ts](../../tests/events-registry.test.ts) pattern): a
+    single source-of-truth registry of variants in code, and a test asserting it agrees
+    with [../GAME_SPEC_DUO.md](../GAME_SPEC_DUO.md) in **both** directions — board size,
+    start cells, colour set, scoring rule. No variant in code the doc doesn't describe;
+    no value in the doc the code contradicts.
+    **Known limit, stated so nobody over-trusts it:** this pins *values*, not prose. It
+    cannot detect a shared rule restated in the delta doc — that stays convention.
+  - **Scoped lint rule:** `no-restricted-imports` on `BOARD_SIZE` / `COLOR_ORDER` within
+    variant-sensitive paths (`src/game/ai/**`, `src/client/board/**`,
+    `src/client/advisor/**`), so reaching for a Classic constant from code that must be
+    variant-aware is a lint error. `eslint.config.js` already scopes rules per `files`
+    block, so this drops in. Guards the **constant-import** path; P54's required-`size`
+    param guards the **function-call** path — different holes, both needed.
+  - **Agentic-layer guard:** add `docs/GAME_SPEC_DUO.md` to `.claude/edit-blocklist` once
+    its §7 open questions settle, and propose a CLAUDE.md **Invariant** line naming the
+    variant split. **Blocker:** CLAUDE.md is currently gitignored, so an invariant written
+    there reaches neither parallel sessions nor a fresh clone — un-ignoring it is a
+    prerequisite for this bullet, and a human call.
+  - **Explicitly not here:** making `size` a required argument of `idx`/`xy`/`inBounds` —
+    that is P54's closing step, since P54 already rewrites three of the five files
+    involved and splitting it would touch them twice. It is also the highest-value guard
+    of the lot, so it must not wait on P55.
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b + P54 — the registry needs a
+  real second variant to hold, and the lint rule would fire on code P54 is already fixing.
+  Don't start before them: a registry with one variant in it enforces nothing.
