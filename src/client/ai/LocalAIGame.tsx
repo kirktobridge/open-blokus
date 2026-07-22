@@ -11,6 +11,7 @@ import {
   colorStateOf,
   createInitialState,
   ownersFor,
+  variantOf,
   playColorsOf,
   scoringFor,
 } from '../../game/modes';
@@ -230,6 +231,7 @@ export function LocalAIGame({
         won: gameover.winners.includes(you),
         score: gameover.players[you] ?? 0,
         scoring: G.config.scoring,
+        variant: variantOf(G),
         hardestTier: hardestTier(tiers),
         perfectClear:
           yourColors.length > 0 &&

@@ -1,6 +1,14 @@
 import { DIFFICULTIES } from '../ai/difficulty';
 import { FONT_MONO, PANEL, WELL_ROW } from '../theme';
-import { bestScoreTile, useProgression, winRate } from './progression';
+import {
+  VARIANT_KEYS,
+  VARIANT_LABEL,
+  bestScoreTile,
+  hasGames,
+  useProgression,
+  winRate,
+} from './progression';
+import type { Variant } from '../../game/types';
 import { useState } from 'react';
 import { GameHistory } from './GameHistory';
 import { loadHistory, type HistoryGame } from '../log/history';
@@ -52,7 +60,12 @@ export function ProgressionPanel({
   onReviewGame?: (game: HistoryGame) => void;
 } = {}) {
   const p = useProgression();
-  const best = bestScoreTile(p);
+  // Classic and Duo are different games, so their tier records and best scores are
+  // separate stores (P56) — and separate readouts. The switch appears only once
+  // there is a second variant to switch to.
+  const [variant, setVariant] = useState<Variant>('classic');
+  const playedVariants = VARIANT_KEYS.filter((v) => hasGames(p, v));
+  const best = bestScoreTile(p, variant);
   // Read once on mount: the stats modal remounts each time it opens, and nothing
   // can finish a game while you're looking at it.
   const [games] = useState<HistoryGame[]>(() => loadHistory());
@@ -75,6 +88,35 @@ export function ProgressionPanel({
         </p>
       ) : (
         <>
+          {playedVariants.length > 1 && (
+            <div
+              data-testid="progression-variant-switch"
+              role="tablist"
+              style={{ display: 'flex', gap: 6, margin: '0 0 12px' }}
+            >
+              {playedVariants.map((v) => (
+                <button
+                  key={v}
+                  role="tab"
+                  aria-selected={v === variant}
+                  data-testid={`progression-variant-${v}`}
+                  onClick={() => setVariant(v)}
+                  style={{
+                    ...WELL_ROW,
+                    padding: '4px 11px',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border:
+                      v === variant ? '1px solid var(--brass)' : '1px solid transparent',
+                    color: v === variant ? 'var(--ink)' : 'var(--mut)',
+                  }}
+                >
+                  {VARIANT_LABEL[v]}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Three headline tiles + a one-line streak read: five equal tiles wrapped
               to an orphaned second row and buried the lead (P28). */}
           <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginBottom: 10 }}>
@@ -101,8 +143,8 @@ export function ProgressionPanel({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {DIFFICULTIES.map((d) => {
-              const t = p.perTier[d];
-              const beaten = p.firstWinTiers.includes(d);
+              const t = p.perTier[variant][d];
+              const beaten = p.firstWinTiers[variant].includes(d);
               return (
                 <div key={d} data-testid={`tier-stat-${d}`} style={{ ...WELL_ROW, fontSize: 13 }}>
                   <span style={{ minWidth: 78, fontWeight: 600 }}>{cap(d)}</span>
@@ -133,9 +175,9 @@ export function ProgressionPanel({
             })}
           </div>
 
-          {p.perfectClears > 0 && (
+          {p.perfectClears[variant] > 0 && (
             <p data-testid="stat-perfect-clears" style={{ margin: '12px 0 0', color: 'var(--mut)', fontSize: 13 }}>
-              Perfect clears: <strong style={{ color: 'var(--ink)' }}>{p.perfectClears}</strong>
+              Perfect clears: <strong style={{ color: 'var(--ink)' }}>{p.perfectClears[variant]}</strong>
             </p>
           )}
         </>

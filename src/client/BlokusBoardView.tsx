@@ -274,7 +274,7 @@ export function BlokusBoardView({
       out[c] = show ? new Set(unplayablePieces(G, c)) : new Set();
     }
     return out;
-  }, [unplayableSelfOn, unplayableOppOn, G, playerID]);
+  }, [unplayableSelfOn, unplayableOppOn, G, playColors, playerID]);
 
   const canSubmit = sel.staged && legal;
 
