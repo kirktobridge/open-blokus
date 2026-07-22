@@ -1,6 +1,6 @@
 import { pieceSize } from './pieces';
-import type { Color, ColorState, GameState } from './types';
-import { COLOR_ORDER } from './types';
+import { colorStateOf, ownerOf, playColorsOf } from './modes';
+import type { ByColor, Color, ColorState, GameState } from './types';
 
 /** Sum of square-counts of a color's unplaced pieces (GAME_SPEC §6). */
 export const remainingSquares = (cs: ColorState): number =>
@@ -13,7 +13,7 @@ export const remainingSquares = (cs: ColorState): number =>
  *   (higher is better)
  */
 export function scoreColor(G: GameState, color: Color): number {
-  const cs = G.colors[color];
+  const cs = colorStateOf(G, color);
   const rem = remainingSquares(cs);
   if (G.config.scoring === 'basic') return rem;
   if (cs.remaining.length > 0) return -rem;
@@ -26,8 +26,8 @@ export function scoreColor(G: GameState, color: Color): number {
  */
 export function scorePlayers(G: GameState): Record<string, number> {
   const totals: Record<string, number> = {};
-  for (const color of COLOR_ORDER) {
-    const owner = G.config.owners[color];
+  for (const color of playColorsOf(G)) {
+    const owner = ownerOf(G, color);
     if (owner === 'shared') continue;
     totals[owner] = (totals[owner] ?? 0) + scoreColor(G, color);
   }
@@ -48,11 +48,11 @@ export function determineWinners(G: GameState): string[] {
 
 /** Per-color scores, per-player totals, and winners — for the game-over payload. */
 export function finalScores(G: GameState): {
-  colors: Record<Color, number>;
+  colors: ByColor<number>;
   players: Record<string, number>;
   winners: string[];
 } {
-  const colors = {} as Record<Color, number>;
-  for (const color of COLOR_ORDER) colors[color] = scoreColor(G, color);
+  const colors: ByColor<number> = {};
+  for (const color of playColorsOf(G)) colors[color] = scoreColor(G, color);
   return { colors, players: scorePlayers(G), winners: determineWinners(G) };
 }

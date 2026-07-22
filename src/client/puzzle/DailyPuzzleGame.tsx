@@ -4,6 +4,7 @@ import type { Color, GameState } from '../../game/types';
 import { resolveCells } from '../../game/pieces';
 import { isLegalPlacement, applyPlacement } from '../../game/placement';
 import { hasAnyMove } from '../../game/moves';
+import { colorStateOf } from '../../game/modes';
 import { mulberry32 } from '../../game/ai/arena';
 import {
   cellsPlaced,
@@ -184,7 +185,7 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
     setBoard(next);
     // Your move lands first; the three opponents then answer one at a time (paced
     // by the reply effect) — unless you just placed your last piece (puzzle over).
-    if (next.colors[color].remaining.length > 0) {
+    if (colorStateOf(next, color).remaining.length > 0) {
       setReplying(opponentOrder(color));
     }
     sel.reset();
@@ -444,7 +445,7 @@ export function DailyPuzzleGame({ onLeave }: { onLeave: () => void }) {
         <RailColumn>
           <HandTray
             color={color}
-            state={board.colors[color]}
+            state={colorStateOf(board, color)}
             interactive={canPlay}
             selectedId={sel.pieceId}
             onSelect={sel.selectPiece}

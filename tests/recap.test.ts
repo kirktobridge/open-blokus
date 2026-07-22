@@ -7,6 +7,7 @@ import { playRecordedGame, replayGame, type GameRecord } from '../src/game/ai/se
 import { finalScores, remainingSquares } from '../src/game/scoring';
 import { attachPoints } from '../src/game/ai/alphabeta';
 import { buildRecap } from '../src/game/recap';
+import { colorStateOf } from '../src/game/modes';
 
 function seededRecord(seed: number): GameRecord {
   const pool: Strategy[] = [
@@ -56,7 +57,7 @@ describe('buildRecap', () => {
     // Monotonic non-decreasing per color.
     for (let i = 1; i < frames.length; i++) {
       for (const c of COLOR_ORDER) {
-        expect(frames[i].placed[c]).toBeGreaterThanOrEqual(frames[i - 1].placed[c]);
+        expect(frames[i].placed[c] ?? 0).toBeGreaterThanOrEqual(frames[i - 1].placed[c] ?? 0);
       }
     }
 
@@ -64,7 +65,7 @@ describe('buildRecap', () => {
     const finalG = replayGame(record.moves, undefined, record.mode, record.scoring);
     const last = frames[frames.length - 1];
     for (const c of COLOR_ORDER) {
-      expect(last.placed[c]).toBe(89 - remainingSquares(finalG.colors[c]));
+      expect(last.placed[c]).toBe(89 - remainingSquares(colorStateOf(finalG, c)));
     }
   });
 
@@ -99,7 +100,7 @@ describe('buildRecap', () => {
     // which is the whole point of the P34 chart. At least one color must dip.
     const frames = buildRecap(seededRecord(13));
     const dips = COLOR_ORDER.some((c) =>
-      frames.some((f, i) => i > 0 && f.mobility[c] < frames[i - 1].mobility[c]),
+      frames.some((f, i) => i > 0 && (f.mobility[c] ?? 0) < (frames[i - 1].mobility[c] ?? 0)),
     );
     expect(dips).toBe(true);
   });
@@ -110,9 +111,9 @@ describe('buildRecap', () => {
 
     // Ply 0: no color has started; full 21-piece inventory, no last-placed.
     for (const c of COLOR_ORDER) {
-      expect(frames[0].colors[c].hasStarted).toBe(false);
-      expect(frames[0].colors[c].lastPlaced).toBeNull();
-      expect(frames[0].colors[c].remaining).toHaveLength(21);
+      expect(frames[0].colors[c]!.hasStarted).toBe(false);
+      expect(frames[0].colors[c]!.lastPlaced).toBeNull();
+      expect(frames[0].colors[c]!.remaining).toHaveLength(21);
     }
 
     // A frame's snapshot is an independent clone — the replay mutates one G in
@@ -123,21 +124,21 @@ describe('buildRecap', () => {
     // it just played as `lastPlaced`; every other color is unchanged that ply.
     for (let i = 1; i < frames.length; i++) {
       const m = frames[i].move!;
-      expect(frames[i].colors[m.color].lastPlaced).toBe(m.pieceId);
-      expect(frames[i].colors[m.color].remaining).not.toContain(m.pieceId);
-      expect(frames[i].colors[m.color].remaining).toHaveLength(
-        frames[i - 1].colors[m.color].remaining.length - 1,
+      expect(frames[i].colors[m.color]!.lastPlaced).toBe(m.pieceId);
+      expect(frames[i].colors[m.color]!.remaining).not.toContain(m.pieceId);
+      expect(frames[i].colors[m.color]!.remaining).toHaveLength(
+        frames[i - 1].colors[m.color]!.remaining.length - 1,
       );
       for (const c of COLOR_ORDER) {
         if (c === m.color) continue;
-        expect(frames[i].colors[c].remaining).toEqual(frames[i - 1].colors[c].remaining);
+        expect(frames[i].colors[c]!.remaining).toEqual(frames[i - 1].colors[c]!.remaining);
       }
     }
 
     // Final inventory matches a full independent replay (never drifts from truth).
     const finalG = replayGame(record.moves, undefined, record.mode, record.scoring);
     for (const c of COLOR_ORDER) {
-      expect(frames[frames.length - 1].colors[c].remaining).toEqual(finalG.colors[c].remaining);
+      expect(frames[frames.length - 1].colors[c]!.remaining).toEqual(colorStateOf(finalG, c).remaining);
     }
   });
 

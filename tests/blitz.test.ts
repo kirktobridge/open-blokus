@@ -11,6 +11,7 @@ import { generateLegalMoves } from '../src/game/moves';
 import { applyPlacement } from '../src/game/placement';
 import { resolveCells } from '../src/game/pieces';
 import { COLOR_ORDER } from '../src/game/types';
+import { colorStateOf } from '../src/game/modes';
 
 const freshGame = () => createInitialState(4, 'basic');
 
@@ -90,8 +91,8 @@ describe('pickRandomMove', () => {
   it('returns null for a color with no legal move (a stuck seat is auto-skipped)', () => {
     const G = freshGame();
     // A color that has started but owns no pieces has nothing legal to play.
-    G.colors.blue.hasStarted = true;
-    G.colors.blue.remaining = [];
+    colorStateOf(G, 'blue').hasStarted = true;
+    colorStateOf(G, 'blue').remaining = [];
     expect(pickRandomMove(G, 'blue', () => 0)).toBeNull();
   });
 });

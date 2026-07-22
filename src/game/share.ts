@@ -10,34 +10,48 @@
  * Pure module — lives in the rules core so the puzzle (also core-only) can reach
  * it without importing from `src/client/`.
  */
-import { BOARD_SIZE } from '../shared/constants';
+import { boardSizeOf } from './modes';
 import type { Color, GameState } from './types';
 
-/** Square glyph per color; empty cells render as a white square. */
+/**
+ * Square glyph per color; empty cells render as a white square. Duo's black and
+ * white take the black/white squares — the one place in the app where those two
+ * colors already have an exact, theme-free rendering.
+ */
 export const COLOR_EMOJI: Record<Color, string> = {
   blue: '🟦',
   yellow: '🟨',
   red: '🟥',
   green: '🟩',
+  black: '⬛',
+  white: '⬜',
 };
 
-/** Glyph for an unplayed cell. */
+/**
+ * Glyph for an unplayed cell. Duo's `white` piece takes the same square, so a Duo
+ * share uses the dotted variant for empty to keep the two readable apart.
+ */
 export const EMPTY_EMOJI = '⬜';
+const EMPTY_EMOJI_DUO = '🔲';
 
 /**
- * The full 20×20 board as emoji squares, one line per row, top row first.
+ * The full board as emoji squares, one line per row, top row first — 20 wide for
+ * Classic, 14 for Duo.
  *
  * Full fidelity rather than a downscaled block grid: at 20 glyphs a row it still
  * fits a typical chat column, and downscaling would blur exactly the thing worth
  * sharing (who owned which corner). Revisit if it wraps badly where people paste.
  */
 export function emojiBoard(G: GameState): string {
+  const size = boardSizeOf(G);
+  // `white` and the empty glyph would otherwise be the same square in Duo.
+  const empty = G.config.playColors?.includes('white') ? EMPTY_EMOJI_DUO : EMPTY_EMOJI;
   const rows: string[] = [];
-  for (let y = 0; y < BOARD_SIZE; y++) {
+  for (let y = 0; y < size; y++) {
     let row = '';
-    for (let x = 0; x < BOARD_SIZE; x++) {
-      const cell = G.board[y * BOARD_SIZE + x];
-      row += cell === null ? EMPTY_EMOJI : COLOR_EMOJI[cell];
+    for (let x = 0; x < size; x++) {
+      const cell = G.board[y * size + x];
+      row += cell === null ? empty : COLOR_EMOJI[cell];
     }
     rows.push(row);
   }

@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { Client } from 'boardgame.io/client';
 import { BlokusGame } from '../src/bgio/BlokusGame';
 import { COLOR_ORDER } from '../src/game/types';
-import type { Color, GameState } from '../src/game/types';
+import type { ByColor, Color, GameState } from '../src/game/types';
 import { generateLegalMoves } from '../src/game/moves';
 import { finalScores } from '../src/game/scoring';
 import { replayGame, type GameRecord } from '../src/game/ai/selfplay';
 import { attachRecorder, buildAppRecord, type RecorderClient } from '../src/client/log/recorder';
 
-const SEATS: Record<Color, string> = { blue: 'human', yellow: 'hard', red: 'hard', green: 'hard' };
+const SEATS: ByColor<string> = { blue: 'human', yellow: 'hard', red: 'hard', green: 'hard' };
 
 /** Drive a local client to game-over by playing the first legal move each turn. */
 function playToEnd(client: ReturnType<typeof Client>): void {
@@ -93,7 +93,7 @@ describe('game-log capture (product P1)', () => {
     });
     expect(rebuilt.winners.length).toBeGreaterThan(0);
     // Winners are the colors with the best (lowest, basic) score.
-    const best = Math.min(...COLOR_ORDER.map((c) => rebuilt.scores[c]));
-    for (const c of rebuilt.winners) expect(rebuilt.scores[c]).toBe(best);
+    const best = Math.min(...COLOR_ORDER.map((c) => rebuilt.scores[c] ?? 0));
+    for (const c of rebuilt.winners) expect(rebuilt.scores[c] ?? 0).toBe(best);
   });
 });

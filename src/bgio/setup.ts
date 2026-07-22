@@ -1,10 +1,12 @@
 import type { Game } from 'boardgame.io';
-import type { GameMode, GameState, ScoringVariant } from '../game/types';
-import { createInitialState } from '../game/modes';
+import type { GameMode, GameState, ScoringVariant, Variant } from '../game/types';
+import { VARIANTS, createInitialState } from '../game/modes';
 
 export interface BlokusSetupData {
   mode: GameMode;
   scoring: ScoringVariant;
+  /** Rule set; absent = Classic (every match created before variants existed). */
+  variant?: Variant;
 }
 
 type SetupFn = NonNullable<Game<GameState>['setup']>;
@@ -15,7 +17,7 @@ export const setup: SetupFn = ({ ctx }, setupData) => {
   const data = setupData as Partial<BlokusSetupData> | undefined;
   const mode = (data?.mode ?? ctx.numPlayers) as GameMode;
   const scoring: ScoringVariant = data?.scoring ?? 'basic';
-  return createInitialState(mode, scoring);
+  return createInitialState(mode, scoring, data?.variant ?? 'classic');
 };
 
 /** Reject invalid setupData before a match is created (GAME_SPEC §7). */
@@ -26,5 +28,10 @@ export const validateSetupData: ValidateFn = (setupData, numPlayers) => {
   if (mode !== numPlayers) return 'mode must equal numPlayers';
   if (data?.scoring && !['basic', 'advanced'].includes(data.scoring))
     return 'invalid scoring variant';
+  if (data?.variant !== undefined) {
+    const spec = VARIANTS[data.variant];
+    if (!spec) return 'unknown variant';
+    if (!spec.modes.includes(mode as GameMode)) return `${data.variant} does not support ${mode} players`;
+  }
   return undefined;
 };

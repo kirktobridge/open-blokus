@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { COLOR_ORDER } from '../../game/types';
+import type { Color } from '../../game/types';
 import type { RecapFrame } from '../../game/recap';
 import { FONT_MONO, PIECE_VAR } from '../theme';
 
@@ -31,14 +31,19 @@ export function MobilityTimeline({
   const lastPly = frames.length - 1;
 
   // Colors that actually took part (skip the unused 4th color in 2/3p games).
+  // The frame's own key set *is* the variant's color list — no COLOR_ORDER walk,
+  // which would plot four empty Classic lines for a Duo game.
   const activeColors = useMemo(
-    () => COLOR_ORDER.filter((c) => frames[lastPly].placed[c] > 0),
+    () =>
+      (Object.keys(frames[lastPly].placed) as Color[]).filter(
+        (c) => (frames[lastPly].placed[c] ?? 0) > 0,
+      ),
     [frames, lastPly],
   );
 
   // Peak mobility across the *whole* game, not just the final frame.
   const yMax = useMemo(
-    () => Math.max(1, ...frames.flatMap((f) => activeColors.map((c) => f.mobility[c]))),
+    () => Math.max(1, ...frames.flatMap((f) => activeColors.map((c) => f.mobility[c] ?? 0))),
     [frames, activeColors],
   );
 
@@ -49,7 +54,7 @@ export function MobilityTimeline({
     () =>
       activeColors.map((c) => ({
         color: c,
-        d: frames.map((f, i) => `${i === 0 ? 'M' : 'L'}${px(f.ply)},${py(f.mobility[c])}`).join(' '),
+        d: frames.map((f, i) => `${i === 0 ? 'M' : 'L'}${px(f.ply)},${py(f.mobility[c] ?? 0)}`).join(' '),
       })),
     // px/py are pure fns of frames/lastPly/yMax; recompute with those.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,7 +121,7 @@ export function MobilityTimeline({
 
       {/* Dot on each line at the current ply. */}
       {activeColors.map((c) => (
-        <circle key={c} cx={px(ply)} cy={py(frames[ply].mobility[c])} r={2.6} fill={PIECE_VAR[c]} />
+        <circle key={c} cx={px(ply)} cy={py(frames[ply].mobility[c] ?? 0)} r={2.6} fill={PIECE_VAR[c]} />
       ))}
 
       {/* Axis caption — names the metric so it's not confused with the score plot. */}

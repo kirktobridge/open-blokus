@@ -9,6 +9,7 @@
  */
 import { COLOR_ORDER } from '../types';
 import type {
+  ByColor,
   Color,
   GameMode,
   GameState,
@@ -16,8 +17,9 @@ import type {
   Placement,
   Rotation,
   ScoringVariant,
+  Variant,
 } from '../types';
-import { createInitialState } from '../modes';
+import { VARIANTS, createInitialState } from '../modes';
 import { resolveCells } from '../pieces';
 import { applyPlacement, isLegalPlacement } from '../placement';
 import { generateLegalMoves } from '../moves';
@@ -46,12 +48,18 @@ export interface GameRecord {
   mode: GameMode;
   /** Scoring variant the game was played under. */
   scoring: ScoringVariant;
+  /**
+   * Which rule set the game was played under. Required, not optional: `mode: 2`
+   * already means Classic-two-humans, so without this a Duo record is
+   * indistinguishable from a Classic one and replays onto the wrong board.
+   */
+  variant: Variant;
   /** Strategy/owner label per color (provenance, e.g. "heur-e10", "human", "hard"). */
-  seats: Record<Color, string>;
+  seats: ByColor<string>;
   /** Every accepted move, in play order. */
   moves: LoggedMove[];
   /** Final per-color score (basic scoring: remaining squares, lower wins). */
-  scores: Record<Color, number>;
+  scores: ByColor<number>;
   /** Winning color(s); ties keep all co-winners. */
   winners: Color[];
   /** Optional app-capture provenance; absent for self-play records. */
@@ -60,8 +68,8 @@ export interface GameRecord {
 
 /** Play one seeded 4p game (basic scoring) and capture its record. */
 export function playRecordedGame(
-  byColor: Record<Color, Strategy>,
-  seats: Record<Color, string>,
+  byColor: ByColor<Strategy>,
+  seats: ByColor<string>,
   seed: number,
   rng: () => number,
 ): GameRecord {
@@ -74,7 +82,7 @@ export function playRecordedGame(
   const winners = COLOR_ORDER.filter((c) =>
     result.winners.includes(String(COLOR_ORDER.indexOf(c))),
   );
-  return { seed, mode: 4, scoring: 'basic', seats, moves, scores: result.colors, winners };
+  return { seed, mode: 4, scoring: 'basic', variant: 'classic', seats, moves, scores: result.colors, winners };
 }
 
 /**
@@ -88,8 +96,9 @@ export function replayGame(
   onPosition?: (G: GameState, next: LoggedMove, ply: number) => void,
   mode: GameMode = 4,
   scoring: ScoringVariant = 'basic',
+  variant: Variant = 'classic',
 ): GameState {
-  const G = createInitialState(mode, scoring);
+  const G = createInitialState(mode, scoring, variant);
   moves.forEach((m, ply) => {
     const cells = resolveCells(m);
     if (!isLegalPlacement(G, m.color, m.pieceId, cells)) {
@@ -120,24 +129,29 @@ export function epsilonStrategy(base: Strategy, eps: number): Strategy {
 
 // --- JSONL serialization ----------------------------------------------------
 
-/** [colorIdx, pieceId, rotation, reflected(0|1), x, y] */
+/** [colorIdx, pieceId, rotation, reflected(0|1), x, y] — colorIdx indexes the
+ * record's variant play-color list (`VARIANTS[variant].playColors`). */
 export type MoveTuple = [number, PieceId, Rotation, 0 | 1, number, number];
 
 /**
- * One JSONL line. Arrays are indexed by COLOR_ORDER position.
+ * One JSONL line. Arrays are indexed by the variant's play-color position — for
+ * Classic that is COLOR_ORDER, so v3 Classic lines are byte-identical to v2.
  *
  * v1 (legacy self-play dumps) has no `mode`/`scoring`/`meta` — those games are
  * all 4-player basic, so deserialize fills those defaults. v2 carries the game
  * header (mode + scoring), letting one format hold self-play *and* real app
- * games (2/3/4-player, either scoring).
+ * games (2/3/4-player, either scoring). v3 adds `variant`: v1/v2 read as
+ * `classic`, which they all are by construction.
  */
 export interface SerializedRecord {
-  v: 1 | 2;
+  v: 1 | 2 | 3;
   seed: number;
-  /** v2 only; v1 implies 4. */
+  /** v2+ only; v1 implies 4. */
   mode?: GameMode;
-  /** v2 only; v1 implies 'basic'. */
+  /** v2+ only; v1 implies 'basic'. */
   scoring?: ScoringVariant;
+  /** v3 only; v1/v2 imply 'classic'. */
+  variant?: Variant;
   seats: string[];
   moves: MoveTuple[];
   scores: number[];
@@ -147,37 +161,42 @@ export interface SerializedRecord {
 }
 
 export function serializeRecord(r: GameRecord): SerializedRecord {
+  const play = VARIANTS[r.variant].playColors;
   return {
-    v: 2,
+    v: 3,
     seed: r.seed,
     mode: r.mode,
     scoring: r.scoring,
-    seats: COLOR_ORDER.map((c) => r.seats[c]),
+    variant: r.variant,
+    seats: play.map((c) => r.seats[c] ?? ''),
     moves: r.moves.map((m) => [
-      COLOR_ORDER.indexOf(m.color),
+      play.indexOf(m.color),
       m.pieceId,
       m.rotation,
       m.reflected ? 1 : 0,
       m.x,
       m.y,
     ]),
-    scores: COLOR_ORDER.map((c) => r.scores[c]),
-    winners: r.winners.map((c) => COLOR_ORDER.indexOf(c)),
+    scores: play.map((c) => r.scores[c] ?? 0),
+    winners: r.winners.map((c) => play.indexOf(c)),
     ...(r.meta ? { meta: r.meta } : {}),
   };
 }
 
 export function deserializeRecord(s: SerializedRecord): GameRecord {
-  if (s.v !== 1 && s.v !== 2) throw new Error(`unknown record version ${s.v}`);
-  const byColor = <T>(xs: T[]): Record<Color, T> =>
-    Object.fromEntries(COLOR_ORDER.map((c, i) => [c, xs[i]])) as Record<Color, T>;
+  if (s.v !== 1 && s.v !== 2 && s.v !== 3) throw new Error(`unknown record version ${s.v}`);
+  const variant: Variant = s.variant ?? 'classic';
+  const play = VARIANTS[variant].playColors;
+  const byColor = <T>(xs: T[]): ByColor<T> =>
+    Object.fromEntries(play.map((c, i) => [c, xs[i]])) as ByColor<T>;
   return {
     seed: s.seed,
     mode: s.mode ?? 4,
     scoring: s.scoring ?? 'basic',
+    variant,
     seats: byColor(s.seats),
     moves: s.moves.map(([ci, pieceId, rotation, refl, x, y]) => ({
-      color: COLOR_ORDER[ci],
+      color: play[ci],
       pieceId,
       rotation,
       reflected: refl === 1,
@@ -185,7 +204,7 @@ export function deserializeRecord(s: SerializedRecord): GameRecord {
       y,
     })),
     scores: byColor(s.scores),
-    winners: s.winners.map((i) => COLOR_ORDER[i]),
+    winners: s.winners.map((i) => play[i]),
     ...(s.meta ? { meta: s.meta } : {}),
   };
 }

@@ -1,9 +1,9 @@
-import { BOARD_SIZE, idx, inBounds, diagNeighbors, orthoNeighbors } from '../../game/board';
+import { idx, inBounds, diagNeighbors, orthoNeighbors } from '../../game/board';
 import { anchorCells, generateLegalMoves } from '../../game/moves';
 import { applyPlacement } from '../../game/placement';
 import { resolveCells } from '../../game/pieces';
 import { attachPoints } from '../../game/ai/alphabeta';
-import { COLOR_ORDER } from '../../game/types';
+import { boardSizeOf, colorStateOf, playColorsOf } from '../../game/modes';
 import type { Color, GameState, PieceId, Placement } from '../../game/types';
 
 /**
@@ -19,9 +19,10 @@ export interface LegalOption {
   cells: number[];
 }
 
-/** Absolute board indices a placement covers. */
-export function placementCells(placement: Placement): number[] {
-  return resolveCells(placement).map((c) => idx(c.x, c.y));
+/** Absolute board indices a placement covers, on `G`'s board. */
+export function placementCells(G: GameState, placement: Placement): number[] {
+  const size = boardSizeOf(G);
+  return resolveCells(placement).map((c) => idx(c.x, c.y, size));
 }
 
 /** Legal placements for `color`, optionally limited to a single piece. */
@@ -32,7 +33,7 @@ export function legalMovesForPiece(
 ): LegalOption[] {
   return generateLegalMoves(G, color)
     .filter((p) => pieceId == null || p.pieceId === pieceId)
-    .map((placement) => ({ placement, cells: placementCells(placement) }));
+    .map((placement) => ({ placement, cells: placementCells(G, placement) }));
 }
 
 /**
@@ -92,7 +93,7 @@ export function moveOptionCells(
  * pieces — every one is unplayable — so the whole inventory shades.
  */
 export function unplayablePieces(G: GameState, color: Color): PieceId[] {
-  const remaining = G.colors[color].remaining;
+  const remaining = colorStateOf(G, color).remaining;
   if (remaining.length === 0) return [];
   const alive = new Set<PieceId>();
   for (const p of generateLegalMoves(G, color)) alive.add(p.pieceId);
@@ -108,15 +109,20 @@ export function unplayablePieces(G: GameState, color: Color): PieceId[] {
  */
 export function expansionAnchors(G: GameState, color: Color): number[] {
   const anchors = new Set<number>();
+  const size = boardSizeOf(G);
   for (let i = 0; i < G.board.length; i++) {
     if (G.board[i] !== color) continue;
-    const x = i % BOARD_SIZE;
-    const y = (i / BOARD_SIZE) | 0;
+    const x = i % size;
+    const y = (i / size) | 0;
     for (const d of diagNeighbors({ x, y })) {
-      if (!inBounds(d.x, d.y)) continue;
-      const di = idx(d.x, d.y);
+      if (!inBounds(d.x, d.y, size)) continue;
+      const di = idx(d.x, d.y, size);
       if (G.board[di] !== null) continue;
-      if (orthoNeighbors(d).some((n) => inBounds(n.x, n.y) && G.board[idx(n.x, n.y)] === color)) {
+      if (
+        orthoNeighbors(d).some(
+          (n) => inBounds(n.x, n.y, size) && G.board[idx(n.x, n.y, size)] === color,
+        )
+      ) {
         continue;
       }
       anchors.add(di);
@@ -151,7 +157,9 @@ export interface RoomEntry {
  * color's first move its lone starting corner counts as 1 (matching M1's ply-0).
  */
 export function roomReadout(G: GameState): RoomEntry[] {
-  return COLOR_ORDER.map((color) => ({ color, room: attachPoints(G, color) })).sort(
+  return playColorsOf(G)
+    .map((color) => ({ color, room: attachPoints(G, color) }))
+    .sort(
     (a, b) => b.room - a.room,
   );
 }

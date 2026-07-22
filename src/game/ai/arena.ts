@@ -6,8 +6,8 @@
  * Everything is seeded, so results are reproducible.
  */
 import { COLOR_ORDER } from '../types';
-import type { Color, GameMode, GameState, Placement, ScoringVariant } from '../types';
-import { createInitialState } from '../modes';
+import type { ByColor, Color, GameMode, GameState, Placement, ScoringVariant } from '../types';
+import { colorStateOf, createInitialState } from '../modes';
 import { resolveCells, pieceSize } from '../pieces';
 import { applyPlacement } from '../placement';
 import { generateLegalMoves } from '../moves';
@@ -68,11 +68,15 @@ export function heuristicStrategy(weights: Weights = WEIGHTS): Strategy {
 
 // --- Game driver ----------------------------------------------------------
 
-/** Advance to the next non-stuck color (mirrors BlokusGame.advanceActiveColor). */
+/**
+ * Advance to the next non-stuck color (mirrors BlokusGame.advanceActiveColor).
+ * The arena is a Classic-only research harness — running it on other variants is
+ * P54's job, so this walks COLOR_ORDER directly.
+ */
 function advanceActiveColor(G: GameState): void {
   for (let step = 1; step <= COLOR_ORDER.length; step++) {
     const i = (G.activeColorIndex + step) % COLOR_ORDER.length;
-    if (!G.colors[COLOR_ORDER[i]].stuck) {
+    if (!colorStateOf(G, COLOR_ORDER[i]).stuck) {
       G.activeColorIndex = i;
       return;
     }
@@ -84,7 +88,7 @@ function advanceActiveColor(G: GameState): void {
  * final-scores payload (per-color scores, per-player totals, winners).
  */
 export function playGame(
-  byColor: Record<Color, Strategy>,
+  byColor: ByColor<Strategy>,
   opts: {
     mode?: GameMode;
     scoring?: ScoringVariant;
@@ -107,12 +111,14 @@ export function playGame(
   let live = COLOR_ORDER.length; // colors not yet known-stuck
   while (live > 0) {
     const color = COLOR_ORDER[G.activeColorIndex];
-    const move = byColor[color](G, color, rng);
+    const strategy = byColor[color];
+    if (!strategy) throw new Error(`no strategy seated for ${color}`);
+    const move = strategy(G, color, rng);
     if (move) {
       onMove?.(color, move);
       applyPlacement(G, color, move.pieceId, resolveCells(move));
     } else {
-      G.colors[color].stuck = true;
+      colorStateOf(G, color).stuck = true;
       live--;
     }
     advanceActiveColor(G);
@@ -177,7 +183,7 @@ export function runTournament(
   for (let g = 0; g < games; g++) {
     // Rotate which color each contestant occupies.
     const seatName: Record<Color, string> = {} as Record<Color, string>;
-    const byColor: Record<Color, Strategy> = {} as Record<Color, Strategy>;
+    const byColor: ByColor<Strategy> = {};
     contestants.forEach((c, i) => {
       const color = COLOR_ORDER[(i + g) % n];
       seatName[color] = c.name;
@@ -199,7 +205,7 @@ export function runTournament(
     // colors[color] = remaining squares, so placed = 89 − remaining and lower
     // remaining ranks better. Ties averaged: rank = 1 + strictly-better +
     // (tied − 1)/2, matching the winner ordering above.
-    const placed = COLOR_ORDER.map((color) => TOTAL_SQUARES - colors[color]);
+    const placed = COLOR_ORDER.map((color) => TOTAL_SQUARES - (colors[color] ?? 0));
     COLOR_ORDER.forEach((color, i) => {
       let better = 0;
       let tied = 0;

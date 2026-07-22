@@ -12,7 +12,7 @@
  */
 import { COLOR_ORDER } from '../../types';
 import type { Color, GameState } from '../../types';
-import { createInitialState } from '../../modes';
+import { colorStateOf, createInitialState } from '../../modes';
 import { resolveCells } from '../../pieces';
 import { applyPlacement } from '../../placement';
 import { generateLegalMoves } from '../../moves';
@@ -31,7 +31,7 @@ export type Seat =
 function advanceActiveColor(G: GameState): void {
   for (let step = 1; step <= COLOR_ORDER.length; step++) {
     const i = (G.activeColorIndex + step) % COLOR_ORDER.length;
-    if (!G.colors[COLOR_ORDER[i]].stuck) {
+    if (!colorStateOf(G, COLOR_ORDER[i]).stuck) {
       G.activeColorIndex = i;
       return;
     }
@@ -82,7 +82,7 @@ export async function playGameVsPentobi(
     if (placement) {
       applyPlacement(G, color, placement.pieceId, resolveCells(placement));
     } else {
-      G.colors[color].stuck = true;
+      colorStateOf(G, color).stuck = true;
       live--;
     }
     advanceActiveColor(G);

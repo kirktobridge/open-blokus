@@ -1,5 +1,5 @@
 import { idx, inBounds, diagNeighbors } from './board';
-import { boardSizeOf, startCellOf } from './modes';
+import { boardSizeOf, colorStateOf, startCellOf } from './modes';
 import { resolveCells, cellsKey } from './pieces';
 import { buildBitBoards, bbLegal } from './bitboard';
 import type { Cell, Color, GameState, PieceId, Placement, Rotation } from './types';
@@ -52,7 +52,7 @@ function transformsFor(pieceId: PieceId): Transform[] {
  */
 export function anchorCells(G: GameState, color: Color): number[] {
   const N = boardSizeOf(G);
-  if (!G.colors[color].hasStarted) {
+  if (!colorStateOf(G, color).hasStarted) {
     const start = startCellOf(G, color);
     const ci = idx(start.x, start.y, N);
     return G.board[ci] === null ? [ci] : [];
@@ -86,7 +86,7 @@ function eachCandidate(
   const N = boardSizeOf(G);
   const anchors = anchorCells(G, color);
   if (anchors.length === 0) return;
-  for (const pieceId of G.colors[color].remaining) {
+  for (const pieceId of colorStateOf(G, color).remaining) {
     for (const t of transformsFor(pieceId)) {
       const seen = new Set<number>();
       for (const anchorIdx of anchors) {
@@ -119,9 +119,9 @@ export function generateLegalMoves(G: GameState, color: Color): Placement[] {
   // Build bitboards once and amortize the fast legality test over every candidate
   // (AE9) — same output as the isLegalPlacement scan, no per-cell allocation.
   const bb = buildBitBoards(G);
-  const hasStarted = G.colors[color].hasStarted;
+  const hasStarted = colorStateOf(G, color).hasStarted;
   const start = startCellOf(G, color);
-  for (const pieceId of G.colors[color].remaining) {
+  for (const pieceId of colorStateOf(G, color).remaining) {
     for (const t of transformsFor(pieceId)) {
       const offsets: Cell[] = [];
       const seen = new Set<number>();
@@ -152,7 +152,7 @@ export function generateLegalMoves(G: GameState, color: Color): Placement[] {
 /** Whether `color` has at least one legal placement (short-circuits). */
 export function hasAnyMove(G: GameState, color: Color): boolean {
   const bb = buildBitBoards(G);
-  const hasStarted = G.colors[color].hasStarted;
+  const hasStarted = colorStateOf(G, color).hasStarted;
   const start = startCellOf(G, color);
   let found = false;
   eachCandidate(G, color, (_pieceId, t, ox, oy) => {

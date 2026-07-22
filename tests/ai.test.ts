@@ -9,6 +9,7 @@ import { COLOR_ORDER } from '../src/game/types';
 import { HeuristicBot } from '../src/bgio/bots/HeuristicBot';
 import { chooseMove } from '../src/game/ai/heuristic';
 import { pieceSize } from '../src/game/pieces';
+import { colorStateOf } from '../src/game/modes';
 
 describe('ai.enumerate', () => {
   it('matches generateLegalMoves for the active color and yields placePiece moves', () => {
@@ -31,7 +32,7 @@ describe('RandomBot self-play', () => {
       await Step(client, bot);
     }
     expect(client.getState()!.ctx.gameover).toBeDefined();
-    expect(COLOR_ORDER.every((c) => client.getState()!.G.colors[c].stuck)).toBe(true);
+    expect(COLOR_ORDER.every((c) => colorStateOf(client.getState()!.G, c).stuck)).toBe(true);
   });
 });
 

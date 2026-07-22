@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../src/game/modes';
 import { generateLegalMoves, hasAnyMove } from '../src/game/moves';
 import { resolveCells } from '../src/game/pieces';
+import { colorStateOf } from '../src/game/modes';
 
 describe('generateLegalMoves / hasAnyMove', () => {
   it('on an empty board, blue first moves all cover the corner (0,0)', () => {
@@ -31,8 +32,8 @@ describe('generateLegalMoves / hasAnyMove', () => {
 
   it('reports no moves when a color has no pieces left', () => {
     const G = createInitialState(4);
-    G.colors.blue.remaining = [];
-    G.colors.blue.hasStarted = true;
+    colorStateOf(G, 'blue').remaining = [];
+    colorStateOf(G, 'blue').hasStarted = true;
     expect(hasAnyMove(G, 'blue')).toBe(false);
   });
 });

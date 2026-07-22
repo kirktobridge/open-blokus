@@ -15,13 +15,12 @@ import { resolveCells } from '../pieces';
 import { generateLegalMoves } from '../moves';
 import { applyPlacement } from '../placement';
 import { remainingSquares } from '../scoring';
-import { COLOR_ORDER } from '../types';
 import type { Cell, Color, ColorState, GameState, Placement } from '../types';
 import { scorePlacement, WEIGHTS } from './heuristic';
 import type { Weights } from './heuristic';
 import type { Strategy } from './arena';
 import { cloneState, applyAndAdvance } from './simstate';
-import { CORNERS } from '../modes';
+import { boardSizeOf, colorStateOf, playColorsOf, startCellOf } from '../modes';
 
 /** Total squares one color owns across all 21 pieces (sum of sizes). */
 const TOTAL_SQUARES = 89;
@@ -71,27 +70,28 @@ export function placedSquares(cs: ColorState): number {
  * if it's diagonally adjacent to the color and not orthogonally adjacent to it.
  * Before the color's first move, only its assigned corner counts.
  */
-function isAttachCell(G: GameState, color: Color, cell: Cell): boolean {
-  if (G.board[idx(cell.x, cell.y)] !== null) return false;
+function isAttachCell(G: GameState, color: Color, cell: Cell, size: number): boolean {
+  if (G.board[idx(cell.x, cell.y, size)] !== null) return false;
   const diagOwn = diagNeighbors(cell).some(
-    (d) => inBounds(d.x, d.y) && G.board[idx(d.x, d.y)] === color,
+    (d) => inBounds(d.x, d.y, size) && G.board[idx(d.x, d.y, size)] === color,
   );
   if (!diagOwn) return false;
   return !orthoNeighbors(cell).some(
-    (o) => inBounds(o.x, o.y) && G.board[idx(o.x, o.y)] === color,
+    (o) => inBounds(o.x, o.y, size) && G.board[idx(o.x, o.y, size)] === color,
   );
 }
 
 export function attachPoints(G: GameState, color: Color): number {
-  if (!G.colors[color].hasStarted) {
-    const corner = CORNERS[color];
-    return G.board[idx(corner.x, corner.y)] === null ? 1 : 0;
+  const size = boardSizeOf(G);
+  if (!colorStateOf(G, color).hasStarted) {
+    const start = startCellOf(G, color);
+    return G.board[idx(start.x, start.y, size)] === null ? 1 : 0;
   }
   let n = 0;
-  for (let y = 0; y < 20; y++) {
-    for (let x = 0; x < 20; x++) {
-      if (G.board[idx(x, y)] !== null) continue; // cheap reject before allocating a Cell
-      if (isAttachCell(G, color, { x, y })) n++;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (G.board[idx(x, y, size)] !== null) continue; // cheap reject before allocating a Cell
+      if (isAttachCell(G, color, { x, y }, size)) n++;
     }
   }
   return n;
@@ -103,24 +103,24 @@ export function attachPoints(G: GameState, color: Color): number {
  * placement killed, not just how many).
  */
 export function attachCells(G: GameState, color: Color): Cell[] {
-  if (!G.colors[color].hasStarted) {
-    const corner = CORNERS[color];
-    return G.board[idx(corner.x, corner.y)] === null ? [corner] : [];
+  const size = boardSizeOf(G);
+  if (!colorStateOf(G, color).hasStarted) {
+    const start = startCellOf(G, color);
+    return G.board[idx(start.x, start.y, size)] === null ? [start] : [];
   }
   const cells: Cell[] = [];
-  for (let y = 0; y < 20; y++) {
-    for (let x = 0; x < 20; x++) {
-      if (G.board[idx(x, y)] !== null) continue;
-      if (isAttachCell(G, color, { x, y })) cells.push({ x, y });
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (G.board[idx(x, y, size)] !== null) continue;
+      if (isAttachCell(G, color, { x, y }, size)) cells.push({ x, y });
     }
   }
   return cells;
 }
 
-const SIZE = 20;
-const COLOR_IDX: Record<Color, number> = Object.fromEntries(
-  COLOR_ORDER.map((c, i) => [c, i]),
-) as Record<Color, number>;
+/** Turn-order position of each color in *this* game — the territory BFS's owner ids. */
+const colorIndexOf = (G: GameState): Map<Color, number> =>
+  new Map(playColorsOf(G).map((c, i) => [c, i]));
 const CONTESTED = -2;
 
 /**
@@ -131,13 +131,15 @@ const CONTESTED = -2;
  * empty-cell count — a measure of open space it is positioned to reach first.
  */
 export function territoryControl(G: GameState): number[] {
+  const SIZE = boardSizeOf(G);
+  const index = colorIndexOf(G);
   const owner = new Int8Array(SIZE * SIZE).fill(-1);
   const dist = new Int16Array(SIZE * SIZE).fill(-1);
   const queue: number[] = [];
   for (let i = 0; i < G.board.length; i++) {
     const cell = G.board[i];
     if (cell !== null) {
-      owner[i] = COLOR_IDX[cell];
+      owner[i] = index.get(cell) ?? -1;
       dist[i] = 0;
       queue.push(i);
     }
@@ -165,7 +167,7 @@ export function territoryControl(G: GameState): number[] {
       }
     }
   }
-  const counts = new Array(COLOR_ORDER.length).fill(0);
+  const counts = new Array(playColorsOf(G).length).fill(0);
   for (let i = 0; i < owner.length; i++) {
     if (G.board[i] === null && owner[i] >= 0) counts[owner[i]]++;
   }
@@ -175,14 +177,15 @@ export function territoryControl(G: GameState): number[] {
 /** State value from `me`'s perspective: my standing minus the opponents' mean. */
 function evalState(G: GameState, me: Color, cfg: AlphaBetaConfig): number {
   const territory = cfg.territoryWeight !== 0 ? territoryControl(G) : null;
+  const index = colorIndexOf(G);
   let mine = 0;
   let oppSum = 0;
   let oppCount = 0;
-  for (const c of COLOR_ORDER) {
+  for (const c of playColorsOf(G)) {
     const v =
-      placedSquares(G.colors[c]) * cfg.placedWeight +
+      placedSquares(colorStateOf(G, c)) * cfg.placedWeight +
       attachPoints(G, c) * cfg.mobilityWeight +
-      (territory ? territory[COLOR_IDX[c]] * cfg.territoryWeight : 0);
+      (territory ? territory[index.get(c) ?? 0] * cfg.territoryWeight : 0);
     if (c === me) mine = v;
     else {
       oppSum += v;
@@ -206,14 +209,14 @@ function evalAfterMove(
   cfg: AlphaBetaConfig,
 ): number {
   const G2 = cloneState(G);
-  const color = COLOR_ORDER[colorIdx];
+  const color = playColorsOf(G)[colorIdx];
   applyPlacement(G2, color, move.pieceId, resolveCells(move));
   return evalState(G2, color, cfg);
 }
 
 /** Top-`beam` legal moves for the active color, ordered by `cfg.ordering` (desc). */
 function orderedMoves(G: GameState, colorIdx: number, cfg: AlphaBetaConfig): Placement[] {
-  const color = COLOR_ORDER[colorIdx];
+  const color = playColorsOf(G)[colorIdx];
   const moves = generateLegalMoves(G, color);
   const key =
     cfg.ordering === 'eval'
@@ -231,11 +234,11 @@ function search(
   beta: number,
   cfg: AlphaBetaConfig,
 ): number {
-  if (depth === 0 || COLOR_ORDER.every((c) => G.colors[c].stuck)) {
+  if (depth === 0 || playColorsOf(G).every((c) => colorStateOf(G, c).stuck)) {
     return evalState(G, me, cfg);
   }
   const colorIdx = G.activeColorIndex;
-  const color = COLOR_ORDER[colorIdx];
+  const color = playColorsOf(G)[colorIdx];
   const maximizing = color === me;
   const moves = orderedMoves(G, colorIdx, cfg);
 
@@ -262,7 +265,7 @@ function search(
 export function alphaBetaStrategy(config: Partial<AlphaBetaConfig> = {}): Strategy {
   const cfg: AlphaBetaConfig = { ...DEFAULTS, ...config };
   return (G, color, rng) => {
-    const idxOf = COLOR_ORDER.indexOf(color);
+    const idxOf = playColorsOf(G).indexOf(color);
     const moves = orderedMoves(G, idxOf, cfg);
     if (moves.length === 0) return null;
 

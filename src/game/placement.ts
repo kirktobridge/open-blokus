@@ -1,5 +1,5 @@
 import { idx, inBounds, orthoNeighbors, diagNeighbors } from './board';
-import { boardSizeOf, startCellOf } from './modes';
+import { boardSizeOf, colorStateOf, startCellOf } from './modes';
 import type { Cell, Color, GameState, PieceId } from './types';
 
 /**
@@ -13,7 +13,7 @@ export function isLegalPlacement(
   pieceId: PieceId,
   cells: Cell[],
 ): boolean {
-  const cs = G.colors[color];
+  const cs = colorStateOf(G, color);
   const N = boardSizeOf(G);
 
   // 1. Available.
@@ -59,7 +59,7 @@ export function applyPlacement(
   const indices = cells.map((c) => idx(c.x, c.y, boardSizeOf(G)));
   for (const i of indices) G.board[i] = color;
   G.lastMove = indices;
-  const cs = G.colors[color];
+  const cs = colorStateOf(G, color);
   cs.remaining = cs.remaining.filter((p) => p !== pieceId);
   cs.lastPlaced = pieceId;
   cs.hasStarted = true;

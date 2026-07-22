@@ -1,4 +1,3 @@
-import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 
 /** Visual tone of a placement hint. */
@@ -58,10 +57,13 @@ function hintStyle(h: Hint): { fill: string; ring: string } {
  */
 export function LegalMoveHints({
   hints,
+  cells,
   onPick,
   pulse = false,
 }: {
   hints: Hint[];
+  /** The board's side length — hint indices are `y * cells + x`. */
+  cells: number;
   onPick?: (id: string) => void;
   /** Gently pulse the markers to draw the eye (used for the tutorial). */
   pulse?: boolean;
@@ -70,8 +72,8 @@ export function LegalMoveHints({
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} aria-hidden="true">
       {hints.map((h) =>
         h.cells.map((ci) => {
-          const x = ci % BOARD_SIZE;
-          const y = (ci / BOARD_SIZE) | 0;
+          const x = ci % cells;
+          const y = (ci / cells) | 0;
           const t = hintStyle(h);
           const pip = h.mark === 'pip';
           const size = pip ? Math.round(CELL_PX * PIP_SCALE) : CELL_PX;

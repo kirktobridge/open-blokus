@@ -7,6 +7,8 @@ import { idx } from '../src/game/board';
 import { attachPoints } from '../src/game/ai/alphabeta';
 import { COLOR_ORDER } from '../src/game/types';
 import { PIECE_IDS } from '../src/game/types';
+import { colorStateOf } from '../src/game/modes';
+import { BOARD_SIZE } from '../src/shared/constants';
 import {
   unplayablePieces,
   legalTargetCells,
@@ -21,7 +23,7 @@ describe('legalTargetCells (P3 R1 advisor overlay)', () => {
     // Blue's first move must cover (0,0); an I2 fits horizontally or vertically,
     // so the reachable cells are exactly (0,0), (1,0), (0,1).
     const cells = new Set(legalTargetCells(G, 'blue', 'I2'));
-    expect(cells).toEqual(new Set([idx(0, 0), idx(1, 0), idx(0, 1)]));
+    expect(cells).toEqual(new Set([idx(0, 0, BOARD_SIZE), idx(1, 0, BOARD_SIZE), idx(0, 1, BOARD_SIZE)]));
   });
 
   it('equals the union of every legal placement of the piece (matches the engine)', () => {
@@ -31,7 +33,7 @@ describe('legalTargetCells (P3 R1 advisor overlay)', () => {
     const union = new Set<number>();
     for (const p of generateLegalMoves(G, 'blue')) {
       if (p.pieceId !== 'I3') continue;
-      for (const c of resolveCells(p)) union.add(idx(c.x, c.y));
+      for (const c of resolveCells(p)) union.add(idx(c.x, c.y, BOARD_SIZE));
     }
     expect(new Set(legalTargetCells(G, 'blue', 'I3'))).toEqual(union);
   });
@@ -59,9 +61,9 @@ describe('moveOptionCells anchors (P50 anchor marks)', () => {
   it('first move: the only anchor is the start corner', () => {
     const G = createInitialState(4);
     const { targets, anchors } = moveOptionCells(G, 'blue', 'I2');
-    expect(anchors).toEqual([idx(0, 0)]);
+    expect(anchors).toEqual([idx(0, 0, BOARD_SIZE)]);
     // The corner is one of three reachable cells — anchors are strictly sparser.
-    expect(new Set(targets)).toEqual(new Set([idx(0, 0), idx(1, 0), idx(0, 1)]));
+    expect(new Set(targets)).toEqual(new Set([idx(0, 0, BOARD_SIZE), idx(1, 0, BOARD_SIZE), idx(0, 1, BOARD_SIZE)]));
   });
 
   it('anchors are the open corners the piece can hook, and a subset of its reach', () => {
@@ -79,12 +81,12 @@ describe('moveOptionCells anchors (P50 anchor marks)', () => {
       const diag = [[-1, -1], [1, -1], [-1, 1], [1, 1]].some(
         ([dx, dy]) =>
           x + dx >= 0 && x + dx < 20 && y + dy >= 0 && y + dy < 20 &&
-          G.board[idx(x + dx, y + dy)] === 'blue',
+          G.board[idx(x + dx, y + dy, BOARD_SIZE)] === 'blue',
       );
       const ortho = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(
         ([dx, dy]) =>
           x + dx >= 0 && x + dx < 20 && y + dy >= 0 && y + dy < 20 &&
-          G.board[idx(x + dx, y + dy)] === 'blue',
+          G.board[idx(x + dx, y + dy, BOARD_SIZE)] === 'blue',
       );
       expect(diag, `anchor ${a} should touch blue diagonally`).toBe(true);
       expect(ortho, `anchor ${a} should not touch blue orthogonally`).toBe(false);
@@ -124,7 +126,7 @@ describe('unplayablePieces (P39 unplayable-piece shading)', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
     const playable = new Set(generateLegalMoves(G, 'blue').map((p) => p.pieceId));
-    const expected = G.colors.blue.remaining.filter((id) => !playable.has(id));
+    const expected = colorStateOf(G, 'blue').remaining.filter((id) => !playable.has(id));
     expect(new Set(unplayablePieces(G, 'blue'))).toEqual(new Set(expected));
   });
 

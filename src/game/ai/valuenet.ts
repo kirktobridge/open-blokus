@@ -9,6 +9,7 @@
  */
 import { COLOR_ORDER } from '../types';
 import type { Color, GameState } from '../types';
+import { colorStateOf } from '../modes';
 import { pieceSize } from '../pieces';
 import { placedSquares, attachPoints, territoryControl } from './alphabeta';
 
@@ -26,7 +27,7 @@ export function extractFeatures(G: GameState, toMove: Color): Float64Array {
   const terr = territoryControl(G);
   const out = new Float64Array(COLOR_ORDER.length * FEATURES_PER_COLOR);
   COLOR_ORDER.forEach((c, i) => {
-    const cs = G.colors[c];
+    const cs = colorStateOf(G, c);
     let maxRem = 0;
     for (const p of cs.remaining) maxRem = Math.max(maxRem, pieceSize(p));
     const o = i * FEATURES_PER_COLOR;

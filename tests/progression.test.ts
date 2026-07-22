@@ -15,6 +15,7 @@ const win = (over: Partial<GameResult> = {}): GameResult => ({
   hardestTier: 'easy',
   perfectClear: false,
   scoring: 'basic',
+  variant: 'classic',
   ...over,
 });
 const loss = (over: Partial<GameResult> = {}): GameResult => win({ won: false, ...over });
@@ -26,10 +27,10 @@ describe('applyResult — counters', () => {
     expect(state.wins).toBe(1);
     expect(state.currentStreak).toBe(1);
     expect(state.bestStreak).toBe(1);
-    expect(state.bestScores.basic).toBe(42);
-    expect(state.perTier.easy).toEqual({ played: 1, won: 1 });
-    expect(state.firstWinTiers).toEqual(['easy']);
-    expect(unlocked.map((m) => m.id)).toEqual(['first-win-easy']);
+    expect(state.bestScores.classic.basic).toBe(42);
+    expect(state.perTier.classic.easy).toEqual({ played: 1, won: 1 });
+    expect(state.firstWinTiers.classic).toEqual(['easy']);
+    expect(unlocked.map((m) => m.id)).toEqual(['first-win-classic-easy']);
   });
 
   it('a loss records the game and resets the current streak but keeps best streak', () => {
@@ -48,26 +49,26 @@ describe('applyResult — counters', () => {
   // reported your worst game.
   it('best score under basic takes the min and seeds from null', () => {
     let s = applyResult(emptyProgression(), loss({ score: 43, scoring: 'basic' })).state;
-    expect(s.bestScores.basic).toBe(43);
+    expect(s.bestScores.classic.basic).toBe(43);
     s = applyResult(s, win({ score: 32, scoring: 'basic' })).state;
-    expect(s.bestScores.basic).toBe(32);
+    expect(s.bestScores.classic.basic).toBe(32);
     s = applyResult(s, win({ score: 37, scoring: 'basic' })).state;
-    expect(s.bestScores.basic).toBe(32);
+    expect(s.bestScores.classic.basic).toBe(32);
   });
 
   it('best score under advanced takes the max and seeds from null (negatives included)', () => {
     let s = applyResult(emptyProgression(), loss({ score: -3, scoring: 'advanced' })).state;
-    expect(s.bestScores.advanced).toBe(-3);
+    expect(s.bestScores.classic.advanced).toBe(-3);
     s = applyResult(s, win({ score: 10, scoring: 'advanced' })).state;
-    expect(s.bestScores.advanced).toBe(10);
+    expect(s.bestScores.classic.advanced).toBe(10);
     s = applyResult(s, win({ score: 7, scoring: 'advanced' })).state;
-    expect(s.bestScores.advanced).toBe(10);
+    expect(s.bestScores.classic.advanced).toBe(10);
   });
 
   it('the two variants are tracked apart — points never beat squares-left', () => {
     let s = applyResult(emptyProgression(), win({ score: 5, scoring: 'basic' })).state;
     s = applyResult(s, win({ score: 20, scoring: 'advanced' })).state;
-    expect(s.bestScores).toEqual({ basic: 5, advanced: 20 });
+    expect(s.bestScores.classic).toEqual({ basic: 5, advanced: 20 });
   });
 });
 
@@ -97,32 +98,32 @@ describe('applyResult — milestones fire once', () => {
   it('first-win-vs-tier unlocks only on the first win at that tier', () => {
     let s = emptyProgression();
     const a = applyResult(s, win({ hardestTier: 'extreme' }));
-    expect(a.unlocked.map((m) => m.id)).toEqual(['first-win-extreme']);
+    expect(a.unlocked.map((m) => m.id)).toEqual(['first-win-classic-extreme']);
     s = a.state;
     // easy stays untouched; extreme recorded
-    expect(s.perTier.extreme).toEqual({ played: 1, won: 1 });
-    expect(s.perTier.easy).toEqual({ played: 0, won: 0 });
+    expect(s.perTier.classic.extreme).toEqual({ played: 1, won: 1 });
+    expect(s.perTier.classic.easy).toEqual({ played: 0, won: 0 });
     const b = applyResult(s, win({ hardestTier: 'extreme' }));
     expect(b.unlocked).toEqual([]);
-    expect(b.state.perTier.extreme).toEqual({ played: 2, won: 2 });
+    expect(b.state.perTier.classic.extreme).toEqual({ played: 2, won: 2 });
   });
 
   it('a loss at a tier does not unlock first-win', () => {
     const { state, unlocked } = applyResult(emptyProgression(), loss({ hardestTier: 'hard' }));
     expect(unlocked).toEqual([]);
-    expect(state.perTier.hard).toEqual({ played: 1, won: 0 });
-    expect(state.firstWinTiers).toEqual([]);
+    expect(state.perTier.classic.hard).toEqual({ played: 1, won: 0 });
+    expect(state.firstWinTiers.classic).toEqual([]);
   });
 
   it('perfect-clear unlocks once, then only increments the counter', () => {
     let s = emptyProgression();
     const a = applyResult(s, win({ perfectClear: true }));
-    expect(a.unlocked.map((m) => m.id)).toContain('perfect-clear');
-    expect(a.state.perfectClears).toBe(1);
+    expect(a.unlocked.map((m) => m.id)).toContain('perfect-clear-classic');
+    expect(a.state.perfectClears.classic).toBe(1);
     s = a.state;
     const b = applyResult(s, win({ perfectClear: true }));
-    expect(b.unlocked.map((m) => m.id)).not.toContain('perfect-clear');
-    expect(b.state.perfectClears).toBe(2);
+    expect(b.unlocked.map((m) => m.id)).not.toContain('perfect-clear-classic');
+    expect(b.state.perfectClears.classic).toBe(2);
   });
 });
 
@@ -134,7 +135,7 @@ describe('applyResult — no-AI games', () => {
     expect(state.currentStreak).toBe(1);
     expect(unlocked).toEqual([]); // no tier → no first-win milestone
     for (const d of ['easy', 'medium', 'hard', 'extreme'] as const) {
-      expect(state.perTier[d]).toEqual({ played: 0, won: 0 });
+      expect(state.perTier.classic[d]).toEqual({ played: 0, won: 0 });
     }
   });
 });
@@ -153,20 +154,56 @@ describe('sanitize — stored blobs', () => {
     } as unknown as Partial<ReturnType<typeof emptyProgression>>;
 
     const s = sanitize(legacy);
-    expect(s.bestScores).toEqual({ basic: null, advanced: null });
+    expect(s.bestScores.classic).toEqual({ basic: null, advanced: null });
     expect(bestScoreTile(s)).toBeNull();
     expect(s.gamesPlayed).toBe(10);
     expect(s.wins).toBe(4);
     expect(s.bestStreak).toBe(3);
-    expect(s.perTier.easy).toEqual({ played: 10, won: 4 });
-    expect(s.firstWinTiers).toEqual(['easy']);
+    expect(s.perTier.classic.easy).toEqual({ played: 10, won: 4 });
+    expect(s.firstWinTiers.classic).toEqual(['easy']);
   });
 
-  it('round-trips per-variant bests and rejects junk', () => {
+  it('round-trips per-scoring bests and rejects junk', () => {
     const s = sanitize({
       bestScores: { basic: 32, advanced: 'nope' },
     } as unknown as Partial<ReturnType<typeof emptyProgression>>);
-    expect(s.bestScores).toEqual({ basic: 32, advanced: null });
+    expect(s.bestScores.classic).toEqual({ basic: 32, advanced: null });
+  });
+
+  it('attributes a pre-variant blob to Classic and leaves Duo empty (P56)', () => {
+    // Every game stored before variants existed was Classic — that is a fact about
+    // when it was written, not a guess, so it is attributed rather than dropped.
+    const s = sanitize({
+      gamesPlayed: 3,
+      perTier: { hard: { played: 3, won: 2 } },
+      firstWinTiers: ['hard'],
+      perfectClears: 1,
+      bestScores: { advanced: 20 },
+    } as unknown as Partial<ReturnType<typeof emptyProgression>>);
+
+    expect(s.perTier.classic.hard).toEqual({ played: 3, won: 2 });
+    expect(s.firstWinTiers.classic).toEqual(['hard']);
+    expect(s.perfectClears.classic).toBe(1);
+    expect(s.bestScores.classic.advanced).toBe(20);
+
+    expect(s.perTier.duo.hard).toEqual({ played: 0, won: 0 });
+    expect(s.firstWinTiers.duo).toEqual([]);
+    expect(s.perfectClears.duo).toBe(0);
+    expect(s.bestScores.duo).toEqual({ basic: null, advanced: null });
+  });
+
+  it('keeps Classic and Duo results in separate buckets (P56)', () => {
+    let s = applyResult(emptyProgression(), win({ score: 10, scoring: 'advanced' })).state;
+    const duo = applyResult(s, win({ score: 20, scoring: 'advanced', variant: 'duo', hardestTier: 'hard' }));
+    s = duo.state;
+
+    expect(s.gamesPlayed).toBe(2); // the lifetime headline still counts both
+    expect(s.bestScores.classic.advanced).toBe(10);
+    expect(s.bestScores.duo.advanced).toBe(20);
+    expect(s.perTier.classic.hard).toEqual({ played: 0, won: 0 });
+    expect(s.perTier.duo.hard).toEqual({ played: 1, won: 1 });
+    // A tier already beaten in Classic is still unbeaten in Duo — different game.
+    expect(duo.unlocked.map((m) => m.id)).toContain('first-win-duo-hard');
   });
 });
 

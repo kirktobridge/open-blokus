@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { GameMode } from '../../game/types';
+import type { GameMode, Variant } from '../../game/types';
 import { DIFFICULTIES, resolveExtremeForBlitz, type Difficulty } from '../ai/difficulty';
 import { BLITZ_OPTIONS } from '../blitz/blitz';
 import { FIELD, FONT_UI, GHOST_BTN, PANEL, PRIMARY_BTN, WELL_ROW } from '../theme';
@@ -7,6 +7,7 @@ import {
   botSeatLabels,
   launchSetup,
   loadSetup,
+  normalizeSetup,
   pinSetup,
   setupKey,
   setupSummary,
@@ -28,8 +29,11 @@ export function CustomGameScreen({
   onBack: () => void;
 }) {
   const [setup, setSetup] = useState<AiSetup>(() => loadSetup());
-  const { mode, aiCount, botDifficulties, blitzSeconds } = setup;
-  const botSeats = useMemo(() => botSeatLabels(mode, aiCount), [mode, aiCount]);
+  const { mode, aiCount, botDifficulties, blitzSeconds, variant } = setup;
+  const botSeats = useMemo(
+    () => botSeatLabels(mode, aiCount, variant),
+    [mode, aiCount, variant],
+  );
 
   // What Quick Play would start right now. Starting a game no longer touches this
   // (P46) — only pinning does — so the screen tracks it separately from the setup
@@ -57,11 +61,43 @@ export function CustomGameScreen({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              <label
+                style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
+                title="Classic is the 20×20 four-colour game. Duo is the two-player 14×14 game: black and white, interior starting points, advanced scoring."
+              >
+                Game:{' '}
+                <select
+                  data-testid="variant-select"
+                  value={variant}
+                  onChange={(e) => {
+                    // normalizeSetup pins the seat count and scoring a variant
+                    // requires, so a switch can never leave an unstartable form.
+                    const v = e.target.value as Variant;
+                    setSetup((s) => {
+                      // Carry the human seats across, not the bot count: pinning Duo
+                      // to 2 seats while keeping "3 bots" would silently turn your
+                      // game into a watch game.
+                      const humans = s.mode - s.aiCount;
+                      const next = normalizeSetup({ ...s, variant: v });
+                      return normalizeSetup({
+                        ...next,
+                        aiCount: Math.max(0, next.mode - Math.min(humans, next.mode)),
+                      });
+                    });
+                  }}
+                  style={FIELD}
+                >
+                  <option value="classic">Classic</option>
+                  <option value="duo">Duo</option>
+                </select>
+              </label>
               <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
                 Players:{' '}
                 <select
                   data-testid="ai-mode-select"
                   value={mode}
+                  // Duo is exactly two seats (GAME_SPEC_DUO §5) — nothing to choose.
+                  disabled={variant === 'duo'}
                   onChange={(e) => {
                     const m = Number(e.target.value) as GameMode;
                     // Clamping the bot count here keeps "4 bots" from surviving a

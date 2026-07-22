@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ScoringVariant } from '../../game/types';
+import type { ScoringVariant, Variant } from '../../game/types';
 import { DIFFICULTIES, type Difficulty } from '../ai/difficulty';
 
 /**
@@ -26,6 +26,13 @@ export interface GameResult {
    * `max` is what made the tile report your worst game (P51).
    */
   scoring: ScoringVariant;
+  /**
+   * Which game it was. Classic and Duo are different games — a tier's strength,
+   * a "perfect clear", and an advanced-scoring total all mean something different
+   * on 14×14 with two colors — so every per-variant bucket below is keyed by this
+   * rather than blended (P56).
+   */
+  variant: Variant;
   /** Hardest AI opponent tier faced, or null if the game had no AI opponent. */
   hardestTier: Difficulty | null;
   /** You placed all 21 of your pieces. */
@@ -47,12 +54,31 @@ export interface ProgressionState {
    * that variant. Kept apart because the two aren't the same quantity — 32 squares
    * left and 32 points share no scale, so one slot could only ever mix units.
    */
-  bestScores: Record<ScoringVariant, number | null>;
-  perTier: Record<Difficulty, TierStat>;
-  /** Tiers a first-win milestone already fired for (so the toast fires once). */
-  firstWinTiers: Difficulty[];
-  perfectClears: number;
+  bestScores: Record<Variant, Record<ScoringVariant, number | null>>;
+  perTier: Record<Variant, Record<Difficulty, TierStat>>;
+  /** Tiers a first-win milestone already fired for, per variant (toast fires once each). */
+  firstWinTiers: Record<Variant, Difficulty[]>;
+  perfectClears: Record<Variant, number>;
 }
+
+/** Every variant a bucket exists for. Order = display order. */
+export const VARIANT_KEYS: readonly Variant[] = ['classic', 'duo'];
+
+/** Human name for a variant, for milestone copy and panel headings. */
+export const VARIANT_LABEL: Record<Variant, string> = { classic: 'Classic', duo: 'Duo' };
+
+/** Whether any finished game has been folded in under `v` (every game sets a best). */
+export const hasGames = (p: ProgressionState, v: Variant): boolean =>
+  Object.values(p.bestScores[v]).some((x) => x != null);
+
+const emptyTiers = (): Record<Difficulty, TierStat> => {
+  const perTier = {} as Record<Difficulty, TierStat>;
+  for (const d of DIFFICULTIES) perTier[d] = { played: 0, won: 0 };
+  return perTier;
+};
+
+const byVariant = <T>(make: () => T): Record<Variant, T> =>
+  Object.fromEntries(VARIANT_KEYS.map((v) => [v, make()])) as Record<Variant, T>;
 
 /** A newly-unlocked achievement, surfaced as a transient toast. */
 export interface Milestone {
@@ -62,17 +88,15 @@ export interface Milestone {
 }
 
 export function emptyProgression(): ProgressionState {
-  const perTier = {} as Record<Difficulty, TierStat>;
-  for (const d of DIFFICULTIES) perTier[d] = { played: 0, won: 0 };
   return {
     gamesPlayed: 0,
     wins: 0,
     currentStreak: 0,
     bestStreak: 0,
-    bestScores: { basic: null, advanced: null },
-    perTier,
-    firstWinTiers: [],
-    perfectClears: 0,
+    bestScores: byVariant(() => ({ basic: null, advanced: null })),
+    perTier: byVariant(emptyTiers),
+    firstWinTiers: byVariant<Difficulty[]>(() => []),
+    perfectClears: byVariant(() => 0),
   };
 }
 
@@ -103,16 +127,20 @@ const UNIT: Record<ScoringVariant, string> = { basic: 'left', advanced: 'pts' };
  * `advanced`. The unit travels with the number — a bare "32" reads as points
  * earned, which is the opposite of what basic counts (P51).
  */
-export function bestScoreTile(p: ProgressionState): { value: string; title: string } | null {
-  const variant: ScoringVariant | null =
-    p.bestScores.basic != null ? 'basic' : p.bestScores.advanced != null ? 'advanced' : null;
-  if (!variant) return null;
-  const score = p.bestScores[variant] as number;
-  const other = variant === 'basic' ? p.bestScores.advanced : null;
+export function bestScoreTile(
+  p: ProgressionState,
+  variant: Variant = 'classic',
+): { value: string; title: string } | null {
+  const bests = p.bestScores[variant];
+  const scoring: ScoringVariant | null =
+    bests.basic != null ? 'basic' : bests.advanced != null ? 'advanced' : null;
+  if (!scoring) return null;
+  const score = bests[scoring] as number;
+  const other = scoring === 'basic' ? bests.advanced : null;
   return {
-    value: `${score} ${UNIT[variant]}`,
+    value: `${score} ${UNIT[scoring]}`,
     title:
-      (variant === 'basic'
+      (scoring === 'basic'
         ? `${score} squares left — lower is better`
         : `${score} points — higher is better`) +
       (other != null ? ` · best under advanced scoring: ${other} pts` : ''),
@@ -129,24 +157,30 @@ export function applyResult(
   r: GameResult,
 ): { state: ProgressionState; unlocked: Milestone[] } {
   const unlocked: Milestone[] = [];
+  const v = r.variant;
+  const label = VARIANT_LABEL[v];
 
-  const perTier = { ...prev.perTier };
-  const firstWinTiers = [...prev.firstWinTiers];
+  const tiers = { ...prev.perTier[v] };
+  const firstWins = [...prev.firstWinTiers[v]];
   if (r.hardestTier) {
-    const t = perTier[r.hardestTier];
-    perTier[r.hardestTier] = { played: t.played + 1, won: t.won + (r.won ? 1 : 0) };
-    if (r.won && !firstWinTiers.includes(r.hardestTier)) {
-      firstWinTiers.push(r.hardestTier);
+    const t = tiers[r.hardestTier];
+    tiers[r.hardestTier] = { played: t.played + 1, won: t.won + (r.won ? 1 : 0) };
+    if (r.won && !firstWins.includes(r.hardestTier)) {
+      firstWins.push(r.hardestTier);
       unlocked.push({
-        id: `first-win-${r.hardestTier}`,
-        label: `First win vs ${cap(r.hardestTier)}`,
+        id: `first-win-${v}-${r.hardestTier}`,
+        label: `First ${label} win vs ${cap(r.hardestTier)}`,
         detail: 'Your first victory at this tier',
       });
     }
   }
 
-  if (r.perfectClear && prev.perfectClears === 0) {
-    unlocked.push({ id: 'perfect-clear', label: 'Perfect clear!', detail: 'You placed all 21 pieces' });
+  if (r.perfectClear && prev.perfectClears[v] === 0) {
+    unlocked.push({
+      id: `perfect-clear-${v}`,
+      label: 'Perfect clear!',
+      detail: `You placed all 21 pieces in ${label}`,
+    });
   }
 
   const currentStreak = r.won ? prev.currentStreak + 1 : 0;
@@ -155,10 +189,13 @@ export function applyResult(
     wins: prev.wins + (r.won ? 1 : 0),
     currentStreak,
     bestStreak: Math.max(prev.bestStreak, currentStreak),
-    bestScores: { ...prev.bestScores, [r.scoring]: bestOf(prev.bestScores[r.scoring], r) },
-    perTier,
-    firstWinTiers,
-    perfectClears: prev.perfectClears + (r.perfectClear ? 1 : 0),
+    bestScores: {
+      ...prev.bestScores,
+      [v]: { ...prev.bestScores[v], [r.scoring]: bestOf(prev.bestScores[v][r.scoring], r) },
+    },
+    perTier: { ...prev.perTier, [v]: tiers },
+    firstWinTiers: { ...prev.firstWinTiers, [v]: firstWins },
+    perfectClears: { ...prev.perfectClears, [v]: prev.perfectClears[v] + (r.perfectClear ? 1 : 0) },
   };
 
   return { state, unlocked };
@@ -182,34 +219,58 @@ function sanitizeBests(parsed: unknown): Record<ScoringVariant, number | null> {
   return { basic: one(p.basic), advanced: one(p.advanced) };
 }
 
-/** Overlay a parsed blob onto a fresh state, keeping only well-typed fields. */
-export function sanitize(parsed: Partial<ProgressionState>): ProgressionState {
-  const base = emptyProgression();
-  const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
-  if (parsed.perTier && typeof parsed.perTier === 'object') {
+const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+
+function sanitizeTiers(parsed: unknown): Record<Difficulty, TierStat> {
+  const out = emptyTiers();
+  if (parsed && typeof parsed === 'object') {
     for (const d of DIFFICULTIES) {
-      const t = (parsed.perTier as Record<string, unknown>)[d] as Partial<TierStat> | undefined;
-      if (t && typeof t === 'object') {
-        base.perTier[d] = { played: num(t.played, 0), won: num(t.won, 0) };
-      }
+      const t = (parsed as Record<string, unknown>)[d] as Partial<TierStat> | undefined;
+      if (t && typeof t === 'object') out[d] = { played: num(t.played, 0), won: num(t.won, 0) };
     }
   }
+  return out;
+}
+
+const sanitizeTierList = (parsed: unknown): Difficulty[] =>
+  Array.isArray(parsed)
+    ? parsed.filter((t): t is Difficulty => DIFFICULTIES.includes(t as Difficulty))
+    : [];
+
+/**
+ * A stored bucket keyed by variant, tolerating the pre-variant shape.
+ *
+ * Every blob written before P56 holds one un-keyed bucket, and every game in it
+ * was Classic (Duo did not exist), so it is *attributed* to `classic` rather than
+ * dropped — the P51 rule is attribute-or-drop, and here the attribution is a fact
+ * about when the data was written, not a guess.
+ */
+function sanitizeByVariant<T>(parsed: unknown, one: (raw: unknown) => T): Record<Variant, T> {
+  const out = byVariant(() => one(undefined));
+  const rec = parsed as Record<string, unknown> | null | undefined;
+  const keyed =
+    !!rec && typeof rec === 'object' && !Array.isArray(rec) && VARIANT_KEYS.some((v) => v in rec);
+  if (!keyed) return { ...out, classic: one(parsed) };
+  for (const v of VARIANT_KEYS) out[v] = one(rec[v]);
+  return out;
+}
+
+/** Overlay a parsed blob onto a fresh state, keeping only well-typed fields. */
+export function sanitize(parsed: Partial<ProgressionState>): ProgressionState {
   return {
     gamesPlayed: num(parsed.gamesPlayed, 0),
     wins: num(parsed.wins, 0),
     currentStreak: num(parsed.currentStreak, 0),
     bestStreak: num(parsed.bestStreak, 0),
     // A pre-P51 blob carries a single `bestScore` that is a max-fold across
-    // variants: under `basic` that's the *worst* game, and nothing stored says
-    // which variant it came from, so it can't be repaired — only dropped. The
+    // scoring systems: under `basic` that's the *worst* game, and nothing stored
+    // says which system it came from, so it can't be repaired — only dropped. The
     // tile reads "—" until your next game, then it's right. Everything else in
     // the blob (games, wins, streaks, tiers) was never wrong and survives.
-    bestScores: sanitizeBests(parsed.bestScores),
-    perTier: base.perTier,
-    firstWinTiers: Array.isArray(parsed.firstWinTiers)
-      ? parsed.firstWinTiers.filter((t): t is Difficulty => DIFFICULTIES.includes(t as Difficulty))
-      : [],
-    perfectClears: num(parsed.perfectClears, 0),
+    bestScores: sanitizeByVariant(parsed.bestScores, sanitizeBests),
+    perTier: sanitizeByVariant(parsed.perTier, sanitizeTiers),
+    firstWinTiers: sanitizeByVariant(parsed.firstWinTiers, sanitizeTierList),
+    perfectClears: sanitizeByVariant(parsed.perfectClears, (v) => num(v, 0)),
   };
 }
 

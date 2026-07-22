@@ -6,19 +6,22 @@ export { BOARD_SIZE };
 /**
  * Flat-array index for a cell. Index = y * size + x.
  *
- * `size` defaults to Classic so the ~70 existing Classic-only call sites stay
- * unchanged; variant-aware callers (the rules core) pass `boardSizeOf(G)`.
+ * `size` is **required**: it defaulted to Classic until P20 M2b, and a Duo-aware
+ * caller that omitted it indexed a 196-cell board as if it were 400 — reading
+ * `undefined`, which `!== null`, so out-of-range cells reported as *occupied*.
+ * Nothing goes red for that; making the argument mandatory is what makes it
+ * impossible. Pass `boardSizeOf(G)`.
  */
-export const idx = (x: number, y: number, size: number = BOARD_SIZE): number => y * size + x;
+export const idx = (x: number, y: number, size: number): number => y * size + x;
 
-/** Inverse of idx(): flat index → cell. */
-export const xy = (i: number, size: number = BOARD_SIZE): Cell => ({
+/** Inverse of idx(): flat index → cell. `size` is required, as for `idx`. */
+export const xy = (i: number, size: number): Cell => ({
   x: i % size,
   y: Math.floor(i / size),
 });
 
-/** True if (x, y) is on the board. */
-export const inBounds = (x: number, y: number, size: number = BOARD_SIZE): boolean =>
+/** True if (x, y) is on the board. `size` is required, as for `idx`. */
+export const inBounds = (x: number, y: number, size: number): boolean =>
   x >= 0 && x < size && y >= 0 && y < size;
 
 /** The four edge-sharing (orthogonal) neighbors of a cell. */

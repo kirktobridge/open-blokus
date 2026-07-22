@@ -7,6 +7,7 @@ import { COLOR_ORDER } from '../src/game/types';
 import type { Cell, Color, GameState } from '../src/game/types';
 import { mulberry32 } from '../src/game/ai/arena';
 import { buildBitBoards, bbLegal, bbApply, cloneBitBoards } from '../src/game/bitboard';
+import { colorStateOf } from '../src/game/modes';
 
 /**
  * AE9 differential test (pre-registered hard gate): the bitboard legality path
@@ -23,7 +24,7 @@ interface OracleMove {
 /** Full-board scan of all candidate placements (legal or not) for a color. */
 function allCandidates(G: GameState, color: Color): OracleMove[] {
   const out: OracleMove[] = [];
-  for (const pieceId of G.colors[color].remaining) {
+  for (const pieceId of colorStateOf(G, color).remaining) {
     for (const base of getOrientations(pieceId)) {
       let maxX = 0;
       let maxY = 0;
@@ -66,8 +67,8 @@ describe('bitboard legality (AE9) vs isLegalPlacement reference', () => {
         const G = randomPosition(seed, plies);
         const bb = buildBitBoards(G);
         for (const color of COLOR_ORDER) {
-          const hasStarted = G.colors[color].hasStarted;
-          const corner = CORNERS[color];
+          const hasStarted = colorStateOf(G, color).hasStarted;
+          const corner = CORNERS[color]!;
           for (const m of allCandidates(G, color)) {
             const ref = isLegalPlacement(G, color, m.pieceId, m.cells);
             const fast = bbLegal(bb, color, m.cells, hasStarted, corner);
@@ -97,8 +98,8 @@ describe('bitboard legality (AE9) vs isLegalPlacement reference', () => {
       for (let p = 0; p < 16; p++) {
         const color = COLOR_ORDER[p % COLOR_ORDER.length];
         // Verify incremental bb against reference for a sample of candidates.
-        const hasStarted = G.colors[color].hasStarted;
-        const corner = CORNERS[color];
+        const hasStarted = colorStateOf(G, color).hasStarted;
+        const corner = CORNERS[color]!;
         const cands = allCandidates(G, color);
         for (let k = 0; k < cands.length; k += 7) {
           const m = cands[k];
@@ -114,7 +115,7 @@ describe('bitboard legality (AE9) vs isLegalPlacement reference', () => {
         // Incremental board must match a from-scratch rebuild, occ + own bits.
         const fresh = buildBitBoards(G);
         for (const c of COLOR_ORDER) {
-          expect(Array.from(bb.own[c])).toEqual(Array.from(fresh.own[c]));
+          expect(Array.from(bb.own[c]!)).toEqual(Array.from(fresh.own[c]!));
         }
         expect(Array.from(bb.occ)).toEqual(Array.from(fresh.occ));
       }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GameMode, ScoringVariant } from '../game/types';
+import type { GameMode, ScoringVariant, Variant } from '../game/types';
 import { dailyDateKey } from '../game/puzzle/daily';
 import { useLobby } from './lobby/useLobby';
 import {
@@ -101,8 +101,8 @@ export function App() {
   }, []);
 
   const onCreate = useCallback(
-    async (mode: GameMode, scoring: ScoringVariant) => {
-      const matchID = await lobby.createMatch(mode, scoring);
+    async (mode: GameMode, scoring: ScoringVariant, variant: Variant = 'classic') => {
+      const matchID = await lobby.createMatch(mode, scoring, variant);
       enter(await lobby.join(matchID, nicknameRef.current));
     },
     [lobby],
@@ -143,6 +143,7 @@ export function App() {
         aiCount={aiConfig.aiCount}
         botDifficulties={aiConfig.botDifficulties}
         blitzSeconds={aiConfig.blitzSeconds}
+        variant={aiConfig.variant}
         onLeave={() => setAiConfig(null)}
       />
     );

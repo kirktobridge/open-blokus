@@ -12,15 +12,14 @@
  * set is pruned to the heuristic's top-`beam` (a heuristic prior). Randomness all
  * comes from the passed-in `rng`, keeping tournaments reproducible.
  */
-import { BOARD_SIZE } from '../board';
-import { CORNERS } from '../modes';
+import { boardSizeOf, colorStateOf, playColorsOf, startCellOf } from '../modes';
 import { generateLegalMoves } from '../moves';
 import { applyPlacement } from '../placement';
 import { buildBitBoards, bbApply, bbLegal } from '../bitboard';
 import type { BitBoards } from '../bitboard';
 import { resolveCells, getOrientations } from '../pieces';
 import { remainingSquares } from '../scoring';
-import { COLOR_ORDER } from '../types';
+
 import type { Cell, Color, GameState, PieceId, Placement } from '../types';
 import { cloneState, recomputeStuck, applyAndAdvance } from './simstate';
 import { chooseMove, scoreCells, scorePlacement, WEIGHTS } from './heuristic';
@@ -151,13 +150,17 @@ function pick<T>(arr: T[], rng: () => number): T {
 }
 
 function isTerminal(G: GameState): boolean {
-  return COLOR_ORDER.every((c) => G.colors[c].stuck);
+  return playColorsOf(G).every((c) => colorStateOf(G, c).stuck);
 }
 
-/** Cell-set key: sorted board indices of the occupied cells (order-independent). */
-function moveKey(cells: Cell[]): string {
+/**
+ * Cell-set key: sorted board indices of the occupied cells (order-independent).
+ * `size` is the board's side length — a key is only ever compared against other
+ * keys from the same tree, so the stride just has to be consistent within one.
+ */
+function moveKey(cells: Cell[], size: number): string {
   return cells
-    .map((c) => c.y * BOARD_SIZE + c.x)
+    .map((c) => c.y * size + c.x)
     .sort((a, b) => a - b)
     .join(',');
 }
@@ -172,10 +175,10 @@ function makeNode(G: GameState, parent?: Node, move?: Placement, rave = false): 
     untried: null,
     children: [],
     N: 0,
-    W: new Float64Array(COLOR_ORDER.length),
+    W: new Float64Array(playColorsOf(G).length),
     N_amaf: 0,
-    W_amaf: new Float64Array(COLOR_ORDER.length),
-    key: rave && move ? moveKey(resolveCells(move)) : undefined,
+    W_amaf: new Float64Array(playColorsOf(G).length),
+    key: rave && move ? moveKey(resolveCells(move), boardSizeOf(G)) : undefined,
   };
 }
 
@@ -183,7 +186,7 @@ function makeNode(G: GameState, parent?: Node, move?: Placement, rave = false): 
 function untriedMoves(node: Node, cfg: MctsConfig): Placement[] {
   if (node.untried !== null) return node.untried;
   if (node.terminal) return (node.untried = []);
-  const color = COLOR_ORDER[node.moverIdx];
+  const color = playColorsOf(node.G)[node.moverIdx];
   let moves = generateLegalMoves(node.G, color);
   if (cfg.beam > 0 && moves.length > cfg.beam) {
     moves = moves
@@ -204,12 +207,13 @@ function untriedMoves(node: Node, cfg: MctsConfig): Placement[] {
  * At w=0 this is byte-identical to the pre-AE15 winner-take-all vector.
  */
 export function rewardVector(G: GameState, cfg: MctsConfig): Float64Array {
-  const placed = COLOR_ORDER.map((c) => TOTAL_SQUARES - remainingSquares(G.colors[c]));
+  const play = playColorsOf(G);
+  const placed = play.map((c) => TOTAL_SQUARES - remainingSquares(colorStateOf(G, c)));
   const max = Math.max(...placed);
   const leaders = placed.filter((p) => p === max).length;
-  const r = new Float64Array(COLOR_ORDER.length);
+  const r = new Float64Array(play.length);
   const w = cfg.rankRewardWeight;
-  const n = COLOR_ORDER.length;
+  const n = play.length;
   for (let i = 0; i < placed.length; i++) {
     const winner = placed[i] === max ? 1 / leaders : 0;
     if (w <= 0) {
@@ -329,10 +333,12 @@ function sampleLegalMove(
   rng: () => number,
   bb: BitBoards,
 ): SampledMove | null {
-  const remaining = G.colors[color].remaining;
+  const cs = colorStateOf(G, color);
+  const remaining = cs.remaining;
   if (remaining.length === 0) return null;
-  const hasStarted = G.colors[color].hasStarted;
-  const corner = CORNERS[color];
+  const hasStarted = cs.hasStarted;
+  const start = startCellOf(G, color);
+  const size = boardSizeOf(G);
   for (let a = 0; a < ROLLOUT_ATTEMPTS; a++) {
     const pieceId = remaining[(rng() * remaining.length) | 0];
     const orients = getOrientations(pieceId);
@@ -343,10 +349,10 @@ function sampleLegalMove(
       if (c.x > maxX) maxX = c.x;
       if (c.y > maxY) maxY = c.y;
     }
-    const ox = (rng() * (BOARD_SIZE - maxX)) | 0;
-    const oy = (rng() * (BOARD_SIZE - maxY)) | 0;
+    const ox = (rng() * (size - maxX)) | 0;
+    const oy = (rng() * (size - maxY)) | 0;
     const cells = base.map((c) => ({ x: c.x + ox, y: c.y + oy }));
-    if (bbLegal(bb, color, cells, hasStarted, corner)) return { pieceId, cells };
+    if (bbLegal(bb, color, cells, hasStarted, start)) return { pieceId, cells };
   }
   return null;
 }
@@ -360,10 +366,10 @@ function fallbackMove(G: GameState, color: Color, rng: () => number): SampledMov
 }
 
 /** Record one rollout draw (P37 instrumentation; a no-op when stats are off). */
-function statSample(s: SampledMove | null, keys: Set<string> | null): void {
+function statSample(s: SampledMove | null, keys: Set<string> | null, size: number): void {
   if (!rolloutStats) return;
   rolloutStats.samples++;
-  if (s) keys!.add(moveKey(s.cells));
+  if (s) keys!.add(moveKey(s.cells, size));
   else rolloutStats.nullSamples++;
 }
 
@@ -395,7 +401,7 @@ function rolloutMove(
     let best: SampledMove | null = null;
     for (let k = 0; k < n; k++) {
       const s = sampleLegalMove(G, color, rng, bb);
-      statSample(s, keys);
+      statSample(s, keys, boardSizeOf(G));
       if (s && (!best || s.cells.length > best.cells.length)) best = s;
     }
     statMove(keys, best === null);
@@ -411,7 +417,7 @@ function rolloutMove(
   let bestScore = -Infinity;
   for (let k = 0; k < n; k++) {
     const s = sampleLegalMove(G, color, rng, bb);
-    statSample(s, keys);
+    statSample(s, keys, boardSizeOf(G));
     if (!s) continue;
     const v = scoreCells(G, color, s.cells, WEIGHTS);
     cands.push(s);
@@ -453,19 +459,20 @@ function rollout(G: GameState, cfg: MctsConfig, rng: () => number): Float64Array
   const bb = buildBitBoards(g);
   let depth = 0;
   let passStreak = 0;
+  const play = playColorsOf(g);
   let idx = g.activeColorIndex;
   while (cfg.rolloutDepth === 0 || depth < cfg.rolloutDepth) {
-    const color = COLOR_ORDER[idx];
+    const color = play[idx];
     const move = rolloutMove(g, color, cfg, rng, bb);
     if (move) {
       applyPlacement(g, color, move.pieceId, move.cells);
       bbApply(bb, color, move.cells);
       passStreak = 0;
       depth++;
-    } else if (++passStreak >= COLOR_ORDER.length) {
-      break; // all four colors stuck → terminal
+    } else if (++passStreak >= play.length) {
+      break; // every color stuck → terminal
     }
-    idx = (idx + 1) % COLOR_ORDER.length;
+    idx = (idx + 1) % play.length;
   }
   return rewardVector(g, cfg);
 }
@@ -492,20 +499,22 @@ function rolloutRave(
   const bb = buildBitBoards(g);
   let depth = 0;
   let passStreak = 0;
+  const play = playColorsOf(g);
+  const size = boardSizeOf(g);
   let idx = g.activeColorIndex;
   while (cfg.rolloutDepth === 0 || depth < cfg.rolloutDepth) {
-    const color = COLOR_ORDER[idx];
+    const color = play[idx];
     const move = rolloutMove(g, color, cfg, rng, bb);
     if (move) {
       applyPlacement(g, color, move.pieceId, move.cells);
       bbApply(bb, color, move.cells);
-      played[idx].add(moveKey(move.cells));
+      played[idx].add(moveKey(move.cells, size));
       passStreak = 0;
       depth++;
-    } else if (++passStreak >= COLOR_ORDER.length) {
+    } else if (++passStreak >= play.length) {
       break;
     }
-    idx = (idx + 1) % COLOR_ORDER.length;
+    idx = (idx + 1) % play.length;
   }
   return rewardVector(g, cfg);
 }
@@ -557,7 +566,7 @@ function sameBoard(a: (Color | null)[], b: (Color | null)[]): boolean {
  */
 function reRoot(prior: Node, G: GameState): Node | null {
   let frontier = prior.children;
-  for (let depth = 1; depth <= COLOR_ORDER.length; depth++) {
+  for (let depth = 1; depth <= playColorsOf(G).length; depth++) {
     const next: Node[] = [];
     for (const node of frontier) {
       if (node.moverIdx === G.activeColorIndex && sameBoard(node.G.board, G.board)) {
@@ -608,7 +617,7 @@ export function mctsSearch(
   while (timed ? Date.now() < deadline : iters < cfg.iterations) {
     const leaf = treePolicy(root, cfg, rng);
     if (cfg.rave) {
-      const played = COLOR_ORDER.map(() => new Set<string>());
+      const played = playColorsOf(root.G).map(() => new Set<string>());
       const reward = leaf.terminal ? rewardVector(leaf.G, cfg) : rolloutRave(leaf.G, cfg, rng, played);
       backpropRave(leaf, reward, played);
     } else {

@@ -1,6 +1,6 @@
 import { pieceSize } from '../../game/pieces';
 import { generateLegalMoves } from '../../game/moves';
-import { COLOR_ORDER } from '../../game/types';
+import { colorStateOf, playColorsOf } from '../../game/modes';
 import type { Color, GameState } from '../../game/types';
 import { expansionAnchors, placementCells } from './legalMoves';
 
@@ -49,12 +49,12 @@ export function incursionCorners(G: GameState, forColor: Color): number[] {
   if (anchors.size === 0) return [];
 
   const atRisk = new Set<number>();
-  for (const opp of COLOR_ORDER) {
+  for (const opp of playColorsOf(G)) {
     if (opp === forColor || sameOwner(G, opp, forColor)) continue;
-    if (G.colors[opp].stuck) continue;
+    if (colorStateOf(G, opp).stuck) continue;
     for (const placement of generateLegalMoves(G, opp)) {
       if (pieceSize(placement.pieceId) < INCURSION_MIN_PIECE) continue;
-      for (const cell of placementCells(placement)) {
+      for (const cell of placementCells(G, placement)) {
         if (anchors.has(cell)) atRisk.add(cell);
       }
     }

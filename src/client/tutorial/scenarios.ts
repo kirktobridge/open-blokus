@@ -78,7 +78,7 @@ function step1Start(): TutStep {
     hints: [
       {
         id: 'corner',
-        cells: placementCells(corner),
+        cells: placementCells(G, corner),
         tone: 'legal',
         advances: true,
         placement: corner,
@@ -86,7 +86,7 @@ function step1Start(): TutStep {
       },
       {
         id: 'center',
-        cells: placementCells(center),
+        cells: placementCells(G, center),
         tone: 'illegal',
         advances: false,
         feedback: 'Not there — your very first piece has to touch your own corner.',
@@ -110,14 +110,14 @@ function step2Edges(): TutStep {
     hints: [
       {
         id: 'edge',
-        cells: placementCells(edge),
+        cells: placementCells(G, edge),
         tone: 'illegal',
         advances: false,
         feedback: 'Rejected — that lies edge-to-edge with your corner piece. Same-color pieces may only meet at corners.',
       },
       {
         id: 'diagonal',
-        cells: placementCells(diagonal),
+        cells: placementCells(G, diagonal),
         tone: 'legal',
         advances: true,
         placement: diagonal,
@@ -174,14 +174,14 @@ function step4Growth(): TutStep {
     hints: [
       {
         id: 'cramped',
-        cells: placementCells(cramped),
+        cells: placementCells(G, cramped),
         tone: 'suboptimal',
         advances: false,
         feedback: `Legal, but it hugs the top edge — you'd keep only ${crampedRoom} open corners.`,
       },
       {
         id: 'open',
-        cells: placementCells(open),
+        cells: placementCells(G, open),
         tone: 'legal',
         advances: true,
         placement: open,

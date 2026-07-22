@@ -1,5 +1,5 @@
 import type { GameState } from '../../game/types';
-import { COLOR_ORDER } from '../../game/types';
+import { colorStateOf, playColorsOf } from '../../game/modes';
 import { remainingSquares } from '../../game/scoring';
 import { FONT_MONO, PIECE_VAR } from '../theme';
 import { CountUp } from './CountUp';
@@ -18,10 +18,10 @@ export function Standings({
   /** Rule above the header — off when nothing sits above it in the panel (P48). */
   divider?: boolean;
 }) {
-  const ranked = [...COLOR_ORDER].sort(
-    (a, b) => remainingSquares(G.colors[a]) - remainingSquares(G.colors[b]),
+  const ranked = [...playColorsOf(G)].sort(
+    (a, b) => remainingSquares(colorStateOf(G, a)) - remainingSquares(colorStateOf(G, b)),
   );
-  const best = remainingSquares(G.colors[ranked[0]]);
+  const best = remainingSquares(colorStateOf(G, ranked[0]));
 
   return (
     <div>
@@ -41,7 +41,7 @@ export function Standings({
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
         {ranked.map((c) => {
-          const rem = remainingSquares(G.colors[c]);
+          const rem = remainingSquares(colorStateOf(G, c));
           const leader = showLeader && rem === best;
           return (
             <div

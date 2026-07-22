@@ -1,24 +1,23 @@
 import { useEffect, useState } from 'react';
 import type { Color, GameState } from '../../game/types';
-import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX, FONT_MONO, FONT_UI, PIECE_VAR, SECONDARY_BTN } from '../theme';
 import { useSessionActions } from '../lobby/sessionContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Board } from '../board/Board';
 import { CountUp } from './CountUp';
 import { revealRows, resultSummary } from '../drama';
+import type { ByColor } from '../../game/types';
 import type { GameRecord } from '../../game/ai/selfplay';
 
 export interface GameOverPayload {
-  colors: Record<Color, number>;
+  colors: ByColor<number>;
   players: Record<string, number>;
   winners: string[];
 }
 
 const cap = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
 
-/** Board pixel size and the mosaic's shrink factor for the reveal. */
-const BOARD_PX = BOARD_SIZE * CELL_PX;
+/** The mosaic's shrink factor for the reveal; the board's own size sets the rest. */
 const MOSAIC_SCALE = 0.42;
 
 /**
@@ -47,6 +46,8 @@ export function GameOverModal({
   const reduce = useReducedMotion();
 
   const rows = revealRows(G, gameover);
+  // The mosaic frames whichever board was played — 20×20 Classic, 14×14 Duo.
+  const boardPx = Math.round(Math.sqrt(G.board.length)) * CELL_PX;
   const maxPlaced = Math.max(1, ...rows.map((r) => r.placed));
   const winnerNames = rows.filter((r) => r.isWinner).map((r) => cap(r.color));
 
@@ -134,8 +135,8 @@ export function GameOverModal({
           >
             <div
               style={{
-                width: BOARD_PX * MOSAIC_SCALE,
-                height: BOARD_PX * MOSAIC_SCALE,
+                width: boardPx * MOSAIC_SCALE,
+                height: boardPx * MOSAIC_SCALE,
                 overflow: 'hidden',
                 borderRadius: 5,
               }}
@@ -144,8 +145,8 @@ export function GameOverModal({
                 style={{
                   transform: `scale(${MOSAIC_SCALE})`,
                   transformOrigin: 'top left',
-                  width: BOARD_PX,
-                  height: BOARD_PX,
+                  width: boardPx,
+                  height: boardPx,
                 }}
               >
                 <Board board={G.board} activeColor={rows[0].color} glowColors={winnerColors} />

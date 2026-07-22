@@ -7,6 +7,7 @@ import { idx, BOARD_SIZE } from '../src/game/board';
 import { COLOR_ORDER } from '../src/game/types';
 import type { Cell, Color, GameState } from '../src/game/types';
 import { mulberry32 } from '../src/game/ai/arena';
+import { colorStateOf } from '../src/game/modes';
 
 /**
  * Independent brute-force oracle: the straightforward full-board scan (every
@@ -15,7 +16,7 @@ import { mulberry32 } from '../src/game/ai/arena';
  */
 function oracleMoves(G: GameState, color: Color): { pieceId: import('../src/game/types').PieceId; cells: Cell[] }[] {
   const out: { pieceId: import('../src/game/types').PieceId; cells: Cell[] }[] = [];
-  for (const pieceId of G.colors[color].remaining) {
+  for (const pieceId of colorStateOf(G, color).remaining) {
     for (const base of getOrientations(pieceId)) {
       let maxX = 0;
       let maxY = 0;
@@ -36,7 +37,7 @@ function oracleMoves(G: GameState, color: Color): { pieceId: import('../src/game
 
 /** Canonical, orientation-label-independent key: piece + sorted absolute cells. */
 function cellKey(pieceId: string, cells: Cell[]): string {
-  return pieceId + ':' + cells.map((c) => idx(c.x, c.y)).sort((a, b) => a - b).join(',');
+  return pieceId + ':' + cells.map((c) => idx(c.x, c.y, BOARD_SIZE)).sort((a, b) => a - b).join(',');
 }
 
 function keysFromOracle(G: GameState, color: Color): Set<string> {

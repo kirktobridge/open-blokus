@@ -1,9 +1,9 @@
+import { ownerOf, playColorsOf } from '../game/modes';
 import type { GameState } from '../game/types';
-import { COLOR_ORDER } from '../game/types';
 
 /** The human playerID that owns the color at `colorIndex` right now. */
 function humanForColor(G: GameState, colorIndex: number): string {
-  const owner = G.config.owners[COLOR_ORDER[colorIndex]];
+  const owner = ownerOf(G, playColorsOf(G)[colorIndex]);
   return owner === 'shared' ? String(G.sharedRotation) : owner;
 }
 

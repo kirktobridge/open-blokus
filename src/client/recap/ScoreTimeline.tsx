@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { COLOR_ORDER } from '../../game/types';
+import type { Color } from '../../game/types';
 import type { RecapFrame } from '../../game/recap';
 import { FONT_MONO, PIECE_VAR } from '../theme';
 
@@ -26,22 +26,28 @@ export function ScoreTimeline({
   onSeek?: (ply: number) => void;
 }) {
   const lastPly = frames.length - 1;
-  const yMax = useMemo(
-    () => Math.max(1, ...COLOR_ORDER.map((c) => frames[lastPly].placed[c])),
+  // The frame's own key set *is* the variant's color list — no COLOR_ORDER walk,
+  // which would plot four empty Classic lines for a Duo game.
+  const frameColors = useMemo(
+    () => Object.keys(frames[lastPly].placed) as Color[],
     [frames, lastPly],
+  );
+  const yMax = useMemo(
+    () => Math.max(1, ...frameColors.map((c) => frames[lastPly].placed[c] ?? 0)),
+    [frames, lastPly, frameColors],
   );
 
   const px = (p: number) => PAD.left + (lastPly === 0 ? 0 : (p / lastPly) * PLOT_W);
   const py = (v: number) => PAD.top + PLOT_H - (v / yMax) * PLOT_H;
 
   // Colors that actually took part (skip the unused 4th color in 2/3p games).
-  const activeColors = COLOR_ORDER.filter((c) => frames[lastPly].placed[c] > 0);
+  const activeColors = frameColors.filter((c) => (frames[lastPly].placed[c] ?? 0) > 0);
 
   const paths = useMemo(
     () =>
       activeColors.map((c) => ({
         color: c,
-        d: frames.map((f, i) => `${i === 0 ? 'M' : 'L'}${px(f.ply)},${py(f.placed[c])}`).join(' '),
+        d: frames.map((f, i) => `${i === 0 ? 'M' : 'L'}${px(f.ply)},${py(f.placed[c] ?? 0)}`).join(' '),
       })),
     // px/py are pure fns of frames/lastPly/yMax; recompute with those.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,7 +114,7 @@ export function ScoreTimeline({
 
       {/* Dot on each line at the current ply. */}
       {activeColors.map((c) => (
-        <circle key={c} cx={px(ply)} cy={py(frames[ply].placed[c])} r={2.6} fill={PIECE_VAR[c]} />
+        <circle key={c} cx={px(ply)} cy={py(frames[ply].placed[c] ?? 0)} r={2.6} fill={PIECE_VAR[c]} />
       ))}
 
       {/* X-axis caption. */}
