@@ -32,10 +32,7 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    sweep of size-defaulting call sites that M2a's Classic fallbacks left silent.
    **Co-lands with P56** (record/stats variant identity) — without it the recorder
    silently drops every finished Duo game.
-2. **P57** — variant scope as schema in the research layer. Dependency-free and cheap
-   (a schema-test field + skill-gate lines); closes the gap where FINDINGS M6 claims an
-   enforcement that doesn't exist, before more variant-silent entries accumulate.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; listed because the rest of the tail (P54, P55,
    P56, P58) is blocked behind P20 M2b, so the queue is genuinely short until Duo is playable.
 
@@ -1515,8 +1512,15 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
   real second variant to hold, and the lint rule would fire on code P54 is already fixing.
   Don't start before them: a registry with one variant in it enforces nothing.
 
-### P57 — Variant scope as schema in the research layer (make M6 true)
-- **Status:** in-progress
+### P57 — Variant scope as schema in the research layer (make M6 true) — SHIPPED
+- **Status:** shipped — every Scope item landed, including the optional findings tag:
+  open AE/AD entries now carry a `Variant:` line checked against a vocabulary the test
+  *reads from* FRAMEWORK.md's `## Variant scope` (so the doc stays the definition and
+  no second source of truth can drift), findings from F19 on must carry a variant tag
+  (F1–F18 grandfathered, as FINDINGS' preamble already drew it), the gate text sits in
+  /triage and /research Phase P where M6 claimed it, and all 22 open entries — not only
+  the AD2–AD4 the entry named — were brought into compliance. `difficulty.ts`'s tier
+  comment now scopes F8/F15/F18 to Classic and names the known non-transfers.
 - **Value:** [../research/FINDINGS.md](../research/FINDINGS.md)'s M6 closes with
   "Enforced at /triage (classification) and /research Phase P (entry gate)" — and
   neither skill contains the gate. Both carry M5's new-track check; neither mentions
