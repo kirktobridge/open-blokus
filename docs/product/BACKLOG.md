@@ -31,9 +31,14 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    green through vitest, typecheck **and** lint. Scoped smaller than drafted: the lint
    rule wants an exemption list for the Classic-by-design callers, not a sweep.
 2. **P58** — variant-scoped onboarding & feel. Fully dependency-ready now that P20 M2c
-   closed the Duo build-out; it's the remaining Duo gap that only a human can see, and
+   closed the Duo build-out; it's the Duo *content* gap that only a human can see (P59 is
+   the rendering one), and
    its Classic-by-design sites want writing at the same time as P55's exemptions.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+3. **P59** — achromatic tray & thumbnail finish. A live legibility defect in a shipped
+   variant, not a gap: one Duo seat's inventory is near-illegible on all three themes, seen
+   during M2c's eyes-on pass. Small (tokenize four constants) and dependency-free, and it
+   reuses the vocabulary M2c just landed while that is still fresh.
+4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
 
@@ -1059,6 +1064,39 @@ four classic colors as accents, shapes as the star.
   out of view, `‹ Back` stays hidden regardless. Build P52 first or together. Succeeds P15 M2
   (shipped). Surfaces: `App.tsx`, `LocalAIGame.tsx`, `ReviewTable.tsx`.
 
+### P59 — Achromatic tray & thumbnail finish (the low-contrast seat's inventory)
+- **Drafted:** 2026-07-22
+- **Status:** proposed
+- **Value:** in Duo one seat's 21-piece inventory strip is near-illegible on every theme —
+  White's glyphs on the pale seat card in Linen/Walnut, Black's on the dark card in
+  Lamplight. **Verified** by eye on all three during
+  [P20](#p20--variety-blokus-duo--blitz--shipped) M2c's eyes-on pass. The cause is not Duo:
+  [../../src/client/tray/PieceThumb.tsx](../../src/client/tray/PieceThumb.tsx) paints its
+  mold, glint, placed-dash and micro-mode border from hardcoded constants, so
+  [P40](#p40--theme-proof-the-piece-finish-audit-placedlayers-constants)'s
+  theme-proofing audit never reached this file and M2c's value-class fork has no
+  counterpart here. Duo is just the first color pair extreme enough to make the existing
+  hardcoding *visible* — a fixed dark hairline is all that defines a white glyph, and on a
+  near-white panel that isn't enough.
+- **Scope:**
+  - Tokenize those constants and resolve them through `tileVar` / `TILE_FINISH`
+    ([../../src/client/theme.ts](../../src/client/theme.ts)), so a thumb's molding forks by
+    value class the way the board's does.
+  - **Respect why the tray isn't SVG.** The board's per-cell pattern machinery was
+    deliberately rejected at 13px × 21 thumbs per hand. `tileVar` returns a `var()` string,
+    so it drops into `box-shadow` / `border` unchanged — this is a token change, not a
+    rewrite, and a rewrite would be the wrong answer.
+  - Micro mode carries it worst (only a border, no mold). Check the full-size hand tray at
+    the same time — **asserted, not observed**: only the seat-card micro strip was seen.
+  - Hold it with a contrast floor in
+    [../../tests/tileFinish.test.ts](../../tests/tileFinish.test.ts)'s idiom rather than by
+    eye alone. Unlike the board finish, this one *does* reduce to "the glyph is not its
+    background," so it need not stay eyes-only.
+- **Adjacent, explicitly unverified — check while you're in there, don't inherit as a
+  claim:** legal-move hints render as the translucent active color, which on cream is a
+  readable grey for Black. Whether White's survive the same treatment was never observed.
+- **Depends on:** nothing. P20 M2c shipped the token vocabulary this reuses.
+
 ---
 
 ## Epic: Engagement & retention
@@ -1238,10 +1276,10 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     lint — the only detector is looking at each theme, so it needs its own eyes-on pass.
 - **Depends on:** M1: nothing (shipped). M2a: nothing — the spec now exists. M2b: M2a.
   M2c: M2b.
-- **Human-owned follow-ups (outstanding):** [../GAME_SPEC.md](../GAME_SPEC.md) needs a
-  pointer to `GAME_SPEC_DUO.md` (edit-guard blocks it); and `GAME_SPEC_DUO.md` should be
-  added to `.claude/edit-blocklist` once its §7 open questions (first-player choice)
-  settle.
+- **Human-owned follow-up (outstanding):** [../GAME_SPEC.md](../GAME_SPEC.md) needs a
+  pointer to `GAME_SPEC_DUO.md` (edit-guard blocks it), claimed by the human 2026-07-22.
+  The other half of this line — adding `GAME_SPEC_DUO.md` to `.claude/edit-blocklist` — was
+  already done and is dropped; **verified** by reading the file, which lists it.
 
 ### P24 — Blitz clock legibility (put the countdown where the eyes are) — SHIPPED
 - **Status:** shipped — a board-side countdown bar (mono readout + depleting fill,
