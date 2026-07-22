@@ -1503,7 +1503,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
 
 ### P55 — Mechanical Classic/Duo separation (make variant drift impossible, not discouraged)
 - **Drafted:** 2026-07-22
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** Duo's arrival turned every board-size and colour-set assumption into a
   correctness question, and today the answer is *convention*: research M6 and the
   `(Classic)` finding tags ask future sessions to remember, and GAME_SPEC_DUO.md's delta
@@ -1564,11 +1564,14 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     and the client palette UI (`Wordmark`, `AmbientBoard`, appearance, `PalettePicker`).
     Guards the **constant-import** path; P54's required-`size`
     param guards the **function-call** path — different holes, both needed.
-  - **Agentic-layer guard:** add `docs/GAME_SPEC_DUO.md` to `.claude/edit-blocklist` once
-    its §7 open questions settle, and propose a CLAUDE.md **Invariant** line naming the
-    variant split. The former blocker is gone — CLAUDE.md has been tracked since
-    `7aa4017`, so an invariant written there reaches parallel sessions and fresh clones;
-    the line is proposable now, with human sign-off (CLAUDE.md stays human-owned).
+  - **Agentic-layer guard:** propose a CLAUDE.md **Invariant** line naming the variant
+    split. The former blocker is gone — CLAUDE.md has been tracked since `7aa4017`, so an
+    invariant written there reaches parallel sessions and fresh clones; the line is
+    proposable now, with human sign-off (CLAUDE.md stays human-owned).
+    **Half of this bullet is already done** (verified at P55's claim gate, 2026-07-22):
+    it also asked to add `docs/GAME_SPEC_DUO.md` to `.claude/edit-blocklist` once §7's
+    open questions settled — `905c325` added it ahead of that, and §7 is still open, so
+    the doc is guarded *earlier* than drafted, not later. Only the CLAUDE.md line remains.
   - **Explicitly not here:** making `size` a required argument of `idx`/`xy`/`inBounds` —
     that is P54's closing step, since P54 already rewrites three of the five files
     involved and splitting it would touch them twice. It is also the highest-value guard
