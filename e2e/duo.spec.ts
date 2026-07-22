@@ -111,3 +111,24 @@ test('Duo advisor hints key off 14-wide indices (P20 M2b)', async ({ page }) => 
   await page.getByTestId('cell-4-4').hover();
   await expect(page.getByTestId('hint-legal')).toHaveCount(0);
 });
+
+test('an online Duo match is dealt as Duo (P20 M2b)', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('open-friends').click();
+
+  // Duo pins both seats and scoring, so those controls have nothing left to offer.
+  await page.getByTestId('variant-select-online').selectOption('duo');
+  await expect(page.getByTestId('mode-select')).toHaveValue('2');
+  await expect(page.getByTestId('mode-select')).toBeDisabled();
+  await expect(page.getByTestId('scoring-select')).toHaveValue('advanced');
+  await expect(page.getByTestId('scoring-select')).toBeDisabled();
+
+  await page.getByTestId('create-match').click();
+  await expect(page.getByTestId('match-id')).toBeVisible();
+
+  // The server built the state from setupData, so the seated player gets Duo's
+  // board — not a Classic one that merely happens to have two humans.
+  await expect(page.getByTestId('cell-13-13')).toBeVisible();
+  await expect(page.getByTestId('cell-14-0')).toHaveCount(0);
+  await expect(page.getByText(/active black/)).toBeVisible();
+});

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { LobbyClient } from 'boardgame.io/client';
 import { GAME_NAME } from '../../shared/constants';
-import type { GameMode, ScoringVariant } from '../../game/types';
+import type { GameMode, ScoringVariant, Variant } from '../../game/types';
+import { scoringFor } from '../../game/modes';
 import { SERVER_URL, type MatchInfo, type Session } from './config';
 
 /** Thin wrapper around boardgame.io's LobbyClient for OpenBlokus matches. */
@@ -10,10 +11,16 @@ export function useLobby() {
 
   return useMemo(
     () => ({
-      async createMatch(mode: GameMode, scoring: ScoringVariant): Promise<string> {
+      async createMatch(
+        mode: GameMode,
+        scoring: ScoringVariant,
+        variant: Variant = 'classic',
+      ): Promise<string> {
         const { matchID } = await client.createMatch(GAME_NAME, {
           numPlayers: mode,
-          setupData: { mode, scoring },
+          // Duo pins its own scoring (GAME_SPEC_DUO §4), so resolve it here rather
+          // than trusting whatever the form last had selected.
+          setupData: { mode, scoring: scoringFor(variant, scoring), variant },
         });
         return matchID;
       },
