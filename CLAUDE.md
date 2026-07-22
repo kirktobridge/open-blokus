@@ -17,8 +17,9 @@ runs unit (vitest) + e2e (Playwright). `npm run typecheck` / `npm run lint` for 
 | [docs/product/BACKLOG.md](docs/product/BACKLOG.md) | **Product/feature backlog** — pool of shippable features + UX (advisor, UI, sound). Curated counterpart to [docs/dev_notes/](docs/dev_notes/); distinct from research experiments and from the BUILD_ORDER *plan*. |
 
 `GAME_SPEC.md` and `ARCHITECTURE.md` are kept consistent — if you change game state,
-moves, or rules in one, update the other. `GAME_SPEC_DUO.md` overrides `GAME_SPEC.md`
-only where it explicitly says so; if a fact appears in both, `GAME_SPEC.md` wins.
+moves, or rules in one, update the other. `GAME_SPEC_DUO.md` governs wherever it states
+a Duo value and inherits everything else from `GAME_SPEC.md` unchanged; a rule restated
+there without being changed is a bug in `GAME_SPEC_DUO.md`.
 
 ## Doc discipline (avoid the re-align treadmill)
 

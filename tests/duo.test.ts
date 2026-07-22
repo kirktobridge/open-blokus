@@ -45,6 +45,25 @@ describe('Duo start cells (GAME_SPEC_DUO §3)', () => {
     expect(DUO_START_CELLS.white).toEqual({ x: 9, y: 9 });
   });
 
+  /**
+   * The literals above pin the *values*; this pins the **derivation** that produced
+   * them. Both docs and code agreeing proves only that they were copied from each
+   * other — the pair's correctness rests on FWG43's diagram, which isn't in the repo.
+   * Encoding the notation conversion means a future session that "fixes" the pair to
+   * the anti-diagonal has to argue with the rule (GAME_SPEC_DUO §3), not just swap
+   * two numbers and watch the suite stay green.
+   */
+  it('D5: the retail 1-indexed notation converts to exactly the pair in use', () => {
+    const size = VARIANTS.duo.boardSize;
+    // FWG43 prints start points as (column, row-counted-from-bottom), 1-indexed.
+    const fromRetail = (col: number, rowFromBottom: number) => ({
+      x: col - 1,
+      y: size - rowFromBottom,
+    });
+    expect(fromRetail(5, 10)).toEqual(DUO_START_CELLS.black);
+    expect(fromRetail(10, 5)).toEqual(DUO_START_CELLS.white);
+  });
+
   it('start cells are interior — neither is a board corner', () => {
     const max = VARIANTS.duo.boardSize - 1;
     for (const cell of [DUO_START_CELLS.black!, DUO_START_CELLS.white!]) {

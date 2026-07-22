@@ -9,7 +9,15 @@ resolved here and marked **[RULING]**.
 > **This is a delta document.** It states *only* what Duo changes. Pieces, the
 > placement rules, adjacency helpers, turn flow, and the scoring formulas are
 > **not** restated here — they are identical to Classic and owned by GAME_SPEC.md.
-> If a fact appears in both files, GAME_SPEC.md wins and this file has a bug.
+>
+> **Precedence.** This file governs wherever it states a Duo value; everything it
+> does not state is inherited from GAME_SPEC.md unchanged. A rule restated here
+> *without* changing it is a bug in **this** file — delete the restatement, don't
+> reconcile the two copies.
+>
+> **Cross-references.** `GAME_SPEC §N` always means that document; a bare `§N` is a
+> section of this one. [tests/spec-linkage.test.ts](../tests/spec-linkage.test.ts)
+> fails if either kind points at a section that doesn't exist.
 
 ---
 
@@ -26,8 +34,8 @@ resolved here and marked **[RULING]**.
 | Scoring | basic *or* advanced | **advanced only** (§4) |
 
 Everything else — the 21 shapes and their coordinates (GAME_SPEC §2), the five
-placement rules (§4), adjacency helpers (§4), turn flow / passing / game end
-(§5) — is **unchanged**.
+placement rules and adjacency helpers (GAME_SPEC §4), turn flow / passing / game end
+(GAME_SPEC §5) — is **unchanged**.
 
 ---
 
@@ -92,12 +100,9 @@ GAME_SPEC §4 applies verbatim with two substitutions:
 
 ## 4. Scoring
 
-Duo uses **advanced scoring only** — the system in GAME_SPEC §6.2:
-
-- −1 point per unit square remaining in unplaced pieces
-- **+15** if all 21 pieces were placed
-- **+5** more if the one-square piece (`I1`) was placed last
-- **Highest** total wins
+Duo uses **advanced scoring only** — the system in GAME_SPEC §6.2, formula and bonuses
+unchanged. Duo's delta is the *choice*, not the arithmetic: Classic offers basic or
+advanced, Duo offers only advanced.
 
 > **[RULING]** The basic / lowest-remaining-wins variant (GAME_SPEC §6.1) does
 > **not** apply to Duo and must not be offered for it. FWG43 defines exactly one
@@ -121,7 +126,7 @@ White wins.
   game** — not merely unowned. They have no pieces, no start cell, and never take a turn.
 - Turn order alternates `P0, P1`.
 - Player score = their single color's score (§4). There is no shared color and no
-  multi-color ownership, so GAME_SPEC §7.2 / §7.3 do not apply.
+  multi-color ownership, so GAME_SPEC §7.2 and GAME_SPEC §7.3 do not apply.
 - Passing and game end follow GAME_SPEC §5 unchanged: a player who cannot place any
   remaining piece passes, and the game ends when both players are blocked. The sheet
   states this directly: *"When a player is unable to place one of their remaining
