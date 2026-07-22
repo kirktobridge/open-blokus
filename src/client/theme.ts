@@ -10,6 +10,8 @@ export const PIECE_TOKEN: Record<Color, string> = {
   yellow: '--piece-yellow',
   red: '--piece-red',
   green: '--piece-green',
+  black: '--piece-black',
+  white: '--piece-white',
 };
 
 /** How every piece is painted: `var(--piece-blue)` &c. Drop-in for a hex. */
@@ -18,6 +20,8 @@ export const PIECE_VAR: Record<Color, string> = {
   yellow: 'var(--piece-yellow)',
   red: 'var(--piece-red)',
   green: 'var(--piece-green)',
+  black: 'var(--piece-black)',
+  white: 'var(--piece-white)',
 };
 
 // Neutral UI surfaces resolve from CSS vars (see theme.css) so dark mode flips

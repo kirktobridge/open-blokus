@@ -1,4 +1,3 @@
-import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 
 const C = CELL_PX;
@@ -12,10 +11,14 @@ const C = CELL_PX;
  * as five boxes instead of one object. Same technique the skeuomorphic bevel already
  * uses per region (`buildRegions`), factored out here so the last-move ring can share it.
  *
- * Pure geometry: no React, no color, no rules — takes board indices (y * 20 + x).
+ * Pure geometry: no React, no color, no rules — takes board indices (y * size + x)
+ * and the board's side length (20 Classic, 14 Duo).
  */
-export function cellOutline(cells: readonly number[]): { outlineD: string; fillD: string } {
-  const n = BOARD_SIZE;
+export function cellOutline(
+  cells: readonly number[],
+  size: number,
+): { outlineD: string; fillD: string } {
+  const n = size;
   const set = new Set(cells);
   let outlineD = '';
   let fillD = '';

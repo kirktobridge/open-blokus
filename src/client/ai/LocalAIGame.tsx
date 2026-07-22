@@ -5,9 +5,15 @@ import type { Bot } from 'boardgame.io/ai';
 import { BlokusGame, enumerate } from '../../bgio/BlokusGame';
 import { HeuristicBot } from '../../bgio/bots/HeuristicBot';
 import { MctsBot } from '../../bgio/bots/MctsBot';
-import type { Color, GameMode, GameState } from '../../game/types';
-import { COLOR_ORDER } from '../../game/types';
-import { ownersFor } from '../../game/modes';
+import type { ByColor, GameMode, GameState, Variant } from '../../game/types';
+import {
+  VARIANTS,
+  colorStateOf,
+  createInitialState,
+  ownersFor,
+  playColorsOf,
+  scoringFor,
+} from '../../game/modes';
 import { remainingSquares } from '../../game/scoring';
 import { BlokusBoardView } from '../BlokusBoardView';
 import { ReviewTable } from '../recap/ReviewTable';
@@ -49,6 +55,7 @@ export function LocalAIGame({
   aiCount,
   botDifficulties,
   blitzSeconds = null,
+  variant = 'classic',
   onLeave,
 }: {
   mode: GameMode;
@@ -57,12 +64,25 @@ export function LocalAIGame({
   botDifficulties: Record<string, Difficulty>;
   /** Blitz per-move limit for human seats; null = untimed (P20 M1). */
   blitzSeconds?: BlitzSeconds;
+  /** Rule set to play. Duo pins its own board, colors and scoring (P20 M2b). */
+  variant?: Variant;
   onLeave: () => void;
 }) {
   // debug:false so the redesigned table owns the full width (no bgio panel).
+  // A local client has no lobby to carry setupData, so the variant is baked into
+  // the game definition's `setup` instead — same initial state the server builds
+  // from setupData, just chosen here.
   const client = useMemo(
-    () => Client({ game: BlokusGame, numPlayers: mode, debug: false }),
-    [mode],
+    () =>
+      Client({
+        game: {
+          ...BlokusGame,
+          setup: () => createInitialState(mode, scoringFor(variant, 'basic'), variant),
+        },
+        numPlayers: mode,
+        debug: false,
+      }),
+    [mode, variant],
   );
 
   const humanCount = Math.max(0, mode - aiCount);
@@ -159,17 +179,18 @@ export function LocalAIGame({
   // Seat provenance per color for the game log (product P1): "human", a bot tier,
   // or "shared" for the 3p rotating color. Read by useGameRecorder.
   const seats = useMemo(() => {
-    const owners = ownersFor(mode);
-    const out = {} as Record<Color, string>;
-    for (const c of COLOR_ORDER) {
+    const owners = ownersFor(mode, variant);
+    const out: ByColor<string> = {};
+    for (const c of VARIANTS[variant].playColors) {
       const owner = owners[c];
+      if (owner === undefined) continue;
       out[c] =
         owner === 'shared' ? 'shared' : humanSeats.has(owner) ? 'human' : botDifficulties[owner] ?? 'easy';
     }
     return out;
     // botDifficulties is read via the stable difficultyKey proxy (as elsewhere here).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, humanCount, difficultyKey]);
+  }, [mode, variant, humanCount, difficultyKey]);
   // The finished-game record, surfaced for the game-over "Review game" scrubber
   // (P2 R0). Cleared when a new game starts (client.reset via Play Again) so a
   // stale record never shows against a fresh board.
@@ -203,14 +224,16 @@ export function LocalAIGame({
       if (humanCount === 0) return null;
       const you = '0';
       const owners = G.config.owners;
-      const yourColors = COLOR_ORDER.filter((c) => owners[c] === you);
+      const yourColors = playColorsOf(G).filter((c) => owners[c] === you);
       const tiers = botSeats.map((s) => botDifficulties[s] ?? 'easy');
       return {
         won: gameover.winners.includes(you),
         score: gameover.players[you] ?? 0,
         scoring: G.config.scoring,
         hardestTier: hardestTier(tiers),
-        perfectClear: yourColors.length > 0 && yourColors.every((c) => remainingSquares(G.colors[c]) === 0),
+        perfectClear:
+          yourColors.length > 0 &&
+          yourColors.every((c) => remainingSquares(colorStateOf(G, c)) === 0),
       };
     },
   );
@@ -232,7 +255,7 @@ export function LocalAIGame({
     onExpire: () => {
       const s = client.getState();
       if (!s || s.ctx.gameover) return;
-      const move = pickRandomMove(s.G, COLOR_ORDER[s.G.activeColorIndex]);
+      const move = pickRandomMove(s.G, playColorsOf(s.G)[s.G.activeColorIndex]);
       if (move) client.moves.placePiece(move);
     },
   });

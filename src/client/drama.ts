@@ -1,5 +1,6 @@
 import type { Cell, Color, ColorState, GameState } from '../game/types';
-import { COLOR_ORDER, PIECE_IDS } from '../game/types';
+import { PIECE_IDS } from '../game/types';
+import { colorStateOf, ownerOf, playColorsOf } from '../game/modes';
 import { pieceSize } from '../game/pieces';
 import { remainingSquares } from '../game/scoring';
 import { attachCells } from '../game/ai/alphabeta';
@@ -31,7 +32,9 @@ export function placedSquares(cs: ColorState): number {
  * trigger for the "X is out of moves" beat. Empty when nothing changed.
  */
 export function newlyStuckColors(prev: GameState, cur: GameState): Color[] {
-  return COLOR_ORDER.filter((c) => !prev.colors[c].stuck && cur.colors[c].stuck);
+  return playColorsOf(cur).filter(
+    (c) => !colorStateOf(prev, c).stuck && colorStateOf(cur, c).stuck,
+  );
 }
 
 /** Human-readable "X is out of moves" beat text for a color. */
@@ -112,7 +115,9 @@ export function detectPlacement(prev: GameState, cur: GameState): Placement | nu
   return color === null ? null : { color, size: cur.lastMove.length };
 }
 
-const cellKey = (c: Cell) => c.y * 20 + c.x;
+/** Attach-cell identity within one comparison. Both sides come from the same
+ *  game, so any consistent stride works — this never indexes a board array. */
+const cellKey = (c: Cell) => c.y * 32 + c.x;
 
 /** Attach points present for `color` in `prev` but gone in `cur`. */
 function lostAttachCells(prev: GameState, cur: GameState, color: Color): Cell[] {
@@ -130,10 +135,10 @@ function cutText(by: Color, victim: Color): string {
 
 /** Every live color is down to its last few pieces — the "last rounds" crossing. */
 function inEndgame(G: GameState): boolean {
-  const live = COLOR_ORDER.filter((c) => !G.colors[c].stuck);
+  const live = playColorsOf(G).filter((c) => !colorStateOf(G, c).stuck);
   if (live.length === 0) return false; // game's over; that's the reveal's job, not a beat
   return live.every(
-    (c) => G.colors[c].remaining.length <= EVENT_THRESHOLDS.ENDGAME_PIECES_LEFT,
+    (c) => colorStateOf(G, c).remaining.length <= EVENT_THRESHOLDS.ENDGAME_PIECES_LEFT,
   );
 }
 
@@ -159,7 +164,7 @@ export function detectEvents(prev: GameState, cur: GameState): DramaEvent[] {
   const mover = placedThisUpdate(prev, cur) ? moverColor(cur) : null;
   const frontierBefore = {} as Record<Color, number>;
   const frontierAfter = {} as Record<Color, number>;
-  for (const color of COLOR_ORDER) {
+  for (const color of playColorsOf(cur)) {
     frontierBefore[color] = attachCells(prev, color).length;
     frontierAfter[color] = attachCells(cur, color).length;
   }
@@ -167,7 +172,7 @@ export function detectEvents(prev: GameState, cur: GameState): DramaEvent[] {
   if (mover) {
     let worst: DramaEvent | null = null;
     let worstLoss = 0;
-    for (const victim of COLOR_ORDER) {
+    for (const victim of playColorsOf(cur)) {
       if (victim === mover || spoken.has(victim)) continue;
       const before = frontierBefore[victim];
       const lost = before - frontierAfter[victim];
@@ -189,9 +194,9 @@ export function detectEvents(prev: GameState, cur: GameState): DramaEvent[] {
     }
   }
 
-  for (const color of COLOR_ORDER) {
+  for (const color of playColorsOf(cur)) {
     if (spoken.has(color)) continue;
-    const cs = cur.colors[color];
+    const cs = colorStateOf(cur, color);
     if (!cs.hasStarted || cs.stuck) continue;
     const crossed =
       frontierBefore[color] > EVENT_THRESHOLDS.CRAMPED_MAX &&
@@ -223,15 +228,15 @@ export interface RevealRow {
  */
 export function revealRows(G: GameState, gameover: GameOverPayload): RevealRow[] {
   const winnerColors = new Set(
-    COLOR_ORDER.filter((c) => {
-      const owner = G.config.owners[c];
+    playColorsOf(G).filter((c) => {
+      const owner = ownerOf(G, c);
       return owner !== 'shared' && gameover.winners.includes(owner);
     }),
   );
-  return COLOR_ORDER.map((color) => ({
+  return playColorsOf(G).map((color) => ({
     color,
-    score: gameover.colors[color],
-    placed: placedSquares(G.colors[color]),
+    score: gameover.colors[color] ?? 0,
+    placed: placedSquares(colorStateOf(G, color)),
     isWinner: winnerColors.has(color),
   })).sort((a, b) => {
     if (a.isWinner !== b.isWinner) return a.isWinner ? -1 : 1;

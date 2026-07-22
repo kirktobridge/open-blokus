@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { Cell as CellCoord, Color } from '../../game/types';
-import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 import { Cell } from './Cell';
 import { MatLayer } from './MatLayer';
@@ -18,7 +17,8 @@ export interface BoardPreview {
   staged: boolean;
 }
 
-/** 20×20 board. `board` is row-major (index = y * BOARD_SIZE + x). */
+/** The playing grid. `board` is row-major and square, so its length is the only
+ *  statement of the variant's size (400 Classic, 196 Duo) — nothing here defaults. */
 export function Board({
   board,
   activeColor,
@@ -63,6 +63,7 @@ export function Board({
   turns?: number;
 }) {
   const t = normTurns(turns);
+  const n = Math.round(Math.sqrt(board.length));
   const lastMoveSet = lastMove ? new Set(lastMove) : undefined;
   const ref = useRef<HTMLDivElement>(null);
 
@@ -72,21 +73,24 @@ export function Board({
     ? new Set(
         [...preview.cells].map((k) => {
           const [x, y] = k.split(',').map(Number);
-          return toScreenIndex(y * BOARD_SIZE + x, t);
+          return toScreenIndex(y * n + x, t, n);
         }),
       )
     : undefined;
 
   // The index-positioned layers (piece finish, hints, cut marks) draw straight
   // into the grid, so they get screen-space copies of their board-space inputs.
-  const screenBoard = useMemo(() => toScreenBoard(board, t), [board, t]);
+  const screenBoard = useMemo(() => toScreenBoard(board, t, n), [board, t, n]);
   const screenLastMove = useMemo(
-    () => (t === 0 ? lastMove : lastMove?.map((i) => toScreenIndex(i, t))),
-    [lastMove, t],
+    () => (t === 0 ? lastMove : lastMove?.map((i) => toScreenIndex(i, t, n))),
+    [lastMove, t, n],
   );
   const screenHints = useMemo(
-    () => (t === 0 ? hints : hints?.map((h) => ({ ...h, cells: h.cells.map((i) => toScreenIndex(i, t)) }))),
-    [hints, t],
+    () =>
+      t === 0
+        ? hints
+        : hints?.map((h) => ({ ...h, cells: h.cells.map((i) => toScreenIndex(i, t, n)) })),
+    [hints, t, n],
   );
   const screenCutMarks = useMemo(
     () =>
@@ -95,11 +99,11 @@ export function Board({
         : cutMarks?.map((m) => ({
             ...m,
             cells: m.cells.map((c) => {
-              const [x, y] = toScreenXY(c.x, c.y, t);
+              const [x, y] = toScreenXY(c.x, c.y, t, n);
               return { x, y };
             }),
           })),
-    [cutMarks, t],
+    [cutMarks, t, n],
   );
 
   // React attaches wheel listeners as passive, so preventDefault (to stop the
@@ -134,18 +138,18 @@ export function Board({
         // cells but can't escape below the board frame behind us.
         isolation: 'isolate',
         display: 'grid',
-        gridTemplateColumns: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
-        gridTemplateRows: `repeat(${BOARD_SIZE}, ${CELL_PX}px)`,
-        width: BOARD_SIZE * CELL_PX,
+        gridTemplateColumns: `repeat(${n}, ${CELL_PX}px)`,
+        gridTemplateRows: `repeat(${n}, ${CELL_PX}px)`,
+        width: n * CELL_PX,
       }}
     >
-      <MatLayer />
+      <MatLayer cells={n} />
       {/* Laid out in screen order (so the DOM never reshuffles on a view turn),
           but every cell keeps the identity — value, test id, callbacks — of the
           board cell it shows. */}
       {board.map((_, si) => {
-        const [x, y] = toBoardXY(si % BOARD_SIZE, Math.floor(si / BOARD_SIZE), t);
-        const i = y * BOARD_SIZE + x;
+        const [x, y] = toBoardXY(si % n, Math.floor(si / n), t, n);
+        const i = y * n + x;
         const value = board[i];
         const inPreview = preview?.cells.has(`${x},${y}`) ?? false;
         const state = inPreview ? (preview!.legal ? 'legal' : 'illegal') : 'none';
@@ -172,7 +176,7 @@ export function Board({
         glowColors={glowColors}
         settleId={lastMove?.join(',')}
       />
-      {screenHints && screenHints.length > 0 && <LegalMoveHints hints={screenHints} />}
+      {screenHints && screenHints.length > 0 && <LegalMoveHints hints={screenHints} cells={n} />}
       {screenCutMarks && screenCutMarks.length > 0 && <CutMarks marks={screenCutMarks} />}
     </div>
   );

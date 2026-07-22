@@ -16,8 +16,8 @@ import {
   type GameRecord,
   type SerializedRecord,
 } from '../../game/ai/selfplay';
-import type { Color } from '../../game/types';
-import { COLOR_ORDER } from '../../game/types';
+import type { ByColor, Color } from '../../game/types';
+import { VARIANTS } from '../../game/modes';
 
 const KEY = 'openblokus.gameHistory';
 
@@ -103,16 +103,22 @@ export interface HistorySummary {
 }
 
 /** The colors a seat label owns — 'human' can hold two of them in a 2p game. */
-const colorsLabelled = (seats: Record<Color, string>, label: string): Color[] =>
-  COLOR_ORDER.filter((c) => seats[c] === label);
+const colorsLabelled = (
+  seats: ByColor<string>,
+  play: readonly Color[],
+  label: string,
+): Color[] => play.filter((c) => seats[c] === label);
 
 export function summarize({ record }: HistoryGame): HistorySummary {
-  const yours = colorsLabelled(record.seats, 'human');
+  // Seats are keyed by the record's *own* colors — filtering COLOR_ORDER would
+  // find no human in a Duo game and summarize every one of them as `watched`.
+  const play = VARIANTS[record.variant].playColors;
+  const yours = colorsLabelled(record.seats, play, 'human');
   // Bot tiers, in seat order. 'shared' is the 3p rotating color — nobody's seat,
   // so it names no opponent.
-  const tiers = COLOR_ORDER.filter(
-    (c) => record.seats[c] !== 'human' && record.seats[c] !== 'shared',
-  ).map((c) => record.seats[c]);
+  const tiers = play
+    .filter((c) => record.seats[c] !== 'human' && record.seats[c] !== 'shared')
+    .map((c) => record.seats[c] ?? '');
   const uniform = tiers.length > 1 && tiers.every((t) => t === tiers[0]);
 
   return {

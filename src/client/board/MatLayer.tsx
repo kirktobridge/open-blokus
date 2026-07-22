@@ -1,8 +1,6 @@
-import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX } from '../theme';
 
 const C = CELL_PX;
-const SIZE = BOARD_SIZE * C;
 
 /** Stud radius, from the theme. `r` is a real CSS property on SVG geometry, so
  *  this stays a token like every other part of the finish — retunable in
@@ -35,7 +33,8 @@ const STUD_CORNERS: [number, number][] = [
  * Lit from the top-left, matching PlacedLayer: each ridge shows a lit near flank
  * and a shadowed far flank, and each well is dark under its top-left wall.
  */
-export function MatLayer() {
+export function MatLayer({ cells }: { cells: number }) {
+  const SIZE = cells * C;
   return (
     <svg
       width={SIZE}

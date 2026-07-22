@@ -10,9 +10,8 @@
  * via `bbApply`; the pure `isLegalPlacement` stays the reference the differential
  * test in `bitboard.test.ts` validates this against, byte-identical.
  */
-import { COLOR_ORDER } from './types';
-import { boardSizeOf } from './modes';
-import type { Cell, Color, GameState } from './types';
+import { boardSizeOf, playColorsOf } from './modes';
+import type { ByColor, Cell, Color, GameState } from './types';
 
 /**
  * Per-row occupancy words plus, per color, that color's own cells and the lazily
@@ -26,14 +25,28 @@ export interface BitBoards {
   mask: number;
   /** Any-color occupancy, one `size`-bit word per row. */
   occ: Uint32Array;
-  /** Per-color own cells. */
-  own: Record<Color, Uint32Array>;
+  /** Per-color own cells. Keyed by the variant's play colors only. */
+  own: ByColor<Uint32Array>;
   /** Cells orthogonally adjacent to own[c] (forbidden by rule 5). Lazy. */
-  edgeDil: Record<Color, Uint32Array>;
+  edgeDil: ByColor<Uint32Array>;
   /** Cells diagonally adjacent to own[c] (the rule-4 attach frontier). Lazy. */
-  diagDil: Record<Color, Uint32Array>;
+  diagDil: ByColor<Uint32Array>;
   /** Whether edgeDil/diagDil for a color need recomputing from own. */
-  dirty: Record<Color, boolean>;
+  dirty: ByColor<boolean>;
+}
+
+/**
+ * The three row-arrays for a color, asserted present. Every caller has already
+ * established the color is in play (it came from `playColorsOf` or from a board
+ * cell), so a miss is a bug — and the alternative, `?? emptyRows`, would silently
+ * report every placement legal.
+ */
+function rowsFor(bb: BitBoards, color: Color): [Uint32Array, Uint32Array, Uint32Array] {
+  const own = bb.own[color];
+  const edge = bb.edgeDil[color];
+  const diag = bb.diagDil[color];
+  if (!own || !edge || !diag) throw new Error(`bitboards hold no rows for ${color}`);
+  return [own, edge, diag];
 }
 
 function emptyRows(size: number): Uint32Array {
@@ -46,11 +59,11 @@ export function buildBitBoards(G: GameState): BitBoards {
   const mask = (1 << SIZE) - 1; // safe for every supported board size (SIZE < 32)
   const emptyRowsN = () => emptyRows(SIZE);
   const occ = emptyRowsN();
-  const own = {} as Record<Color, Uint32Array>;
-  const edgeDil = {} as Record<Color, Uint32Array>;
-  const diagDil = {} as Record<Color, Uint32Array>;
-  const dirty = {} as Record<Color, boolean>;
-  for (const c of COLOR_ORDER) {
+  const own: ByColor<Uint32Array> = {};
+  const edgeDil: ByColor<Uint32Array> = {};
+  const diagDil: ByColor<Uint32Array> = {};
+  const dirty: ByColor<boolean> = {};
+  for (const c of playColorsOf(G)) {
     own[c] = emptyRowsN();
     edgeDil[c] = emptyRowsN();
     diagDil[c] = emptyRowsN();
@@ -63,7 +76,9 @@ export function buildBitBoards(G: GameState): BitBoards {
     const y = (i / SIZE) | 0;
     const bit = 1 << (i - y * SIZE);
     occ[y] |= bit;
-    own[v as Color][y] |= bit;
+    const rows = own[v];
+    if (!rows) throw new Error(`board holds ${v}, which is not in play`);
+    rows[y] |= bit;
   }
   return { size: SIZE, mask, occ, own, edgeDil, diagDil, dirty };
 }
@@ -72,9 +87,7 @@ export function buildBitBoards(G: GameState): BitBoards {
 function ensureDil(bb: BitBoards, color: Color): void {
   if (!bb.dirty[color]) return;
   const { size: SIZE, mask: MASK } = bb;
-  const own = bb.own[color];
-  const edge = bb.edgeDil[color];
-  const diag = bb.diagDil[color];
+  const [own, edge, diag] = rowsFor(bb, color);
   for (let y = 0; y < SIZE; y++) {
     const row = own[y];
     const up = y > 0 ? own[y - 1] : 0;
@@ -103,8 +116,7 @@ export function bbLegal(
   ensureDil(bb, color);
   const SIZE = bb.size;
   const occ = bb.occ;
-  const edge = bb.edgeDil[color];
-  const diag = bb.diagDil[color];
+  const [, edge, diag] = rowsFor(bb, color);
   let attach = false;
   let coversStart = false;
   for (const c of cells) {
@@ -123,7 +135,7 @@ export function bbLegal(
 /** Apply a placement to the bitboards (mirrors applyPlacement's board writes). */
 export function bbApply(bb: BitBoards, color: Color, cells: Cell[]): void {
   const occ = bb.occ;
-  const own = bb.own[color];
+  const [own] = rowsFor(bb, color);
   for (const c of cells) {
     const bit = 1 << c.x;
     occ[c.y] |= bit;
@@ -134,14 +146,15 @@ export function bbApply(bb: BitBoards, color: Color, cells: Cell[]): void {
 
 /** Deep clone (for search states that fork). */
 export function cloneBitBoards(bb: BitBoards): BitBoards {
-  const own = {} as Record<Color, Uint32Array>;
-  const edgeDil = {} as Record<Color, Uint32Array>;
-  const diagDil = {} as Record<Color, Uint32Array>;
-  const dirty = {} as Record<Color, boolean>;
-  for (const c of COLOR_ORDER) {
-    own[c] = bb.own[c].slice();
-    edgeDil[c] = bb.edgeDil[c].slice();
-    diagDil[c] = bb.diagDil[c].slice();
+  const own: ByColor<Uint32Array> = {};
+  const edgeDil: ByColor<Uint32Array> = {};
+  const diagDil: ByColor<Uint32Array> = {};
+  const dirty: ByColor<boolean> = {};
+  for (const c of Object.keys(bb.own) as Color[]) {
+    const [o, e, d] = rowsFor(bb, c);
+    own[c] = o.slice();
+    edgeDil[c] = e.slice();
+    diagDil[c] = d.slice();
     dirty[c] = bb.dirty[c];
   }
   return { size: bb.size, mask: bb.mask, occ: bb.occ.slice(), own, edgeDil, diagDil, dirty };

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import type { Color } from '../../game/types';
-import { COLOR_ORDER } from '../../game/types';
+import { VARIANTS } from '../../game/modes';
 import type { GameRecord } from '../../game/ai/selfplay';
 import { Board } from '../board/Board';
 import { BoardFrame } from '../board/BoardFrame';
@@ -54,6 +54,8 @@ export function ReviewTable({
   // so the frame and grid stay upright here too.
   const home = humanColor(record.seats);
   const boardTurns = home ? TURNS_TO_BOTTOM_RIGHT[home] : 0;
+  // The record's own colors — a Duo review has no blue card to draw.
+  const recordColors = VARIANTS[record.variant].playColors;
 
   // Arrow keys step; Home/End jump to the ends; Space toggles play; Esc back to results.
   useEffect(() => {
@@ -137,13 +139,15 @@ export function ReviewTable({
             that just moved lifts (active keyline); winners keep their WINNER pill.
             Same width/gap as the play table so cards don't shift between views. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250 }}>
-          {COLOR_ORDER.map((c) => {
+          {recordColors.map((c) => {
             const { nameSuffix, tag } = seatMeta(c);
+            const state = frame.colors[c];
+            if (!state) return null;
             return (
               <PlayerCard
                 key={c}
                 color={c}
-                state={frame.colors[c]}
+                state={state}
                 nameSuffix={nameSuffix}
                 tag={tag}
                 active={c === frame.move?.color}
@@ -199,8 +203,13 @@ export function ReviewTable({
               <MobilityTimeline frames={frames} ply={ply} onSeek={seekTo} />
             </div>
           </RailPanel>
-          {home && (
-            <HandTray color={home} state={frame.colors[home]} interactive={false} selectedId={null} />
+          {home && frame.colors[home] && (
+            <HandTray
+              color={home}
+              state={frame.colors[home]}
+              interactive={false}
+              selectedId={null}
+            />
           )}
         </RailColumn>
       </div>

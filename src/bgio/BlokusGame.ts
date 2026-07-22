@@ -1,8 +1,8 @@
 import type { Game, Move } from 'boardgame.io';
 import { INVALID_MOVE } from 'boardgame.io/core';
 import { GAME_NAME } from '../shared/constants';
-import { COLOR_ORDER } from '../game/types';
 import type { GameState, Placement } from '../game/types';
+import { colorStateOf, ownerOf, playColorsOf } from '../game/modes';
 import { resolveCells } from '../game/pieces';
 import { isLegalPlacement, applyPlacement } from '../game/placement';
 import { hasAnyMove, generateLegalMoves } from '../game/moves';
@@ -17,9 +17,10 @@ import { resolveOwner, seatPos } from './turnOrder';
  * deterministic and synchronous (vs. skipping inside turn.onBegin).
  */
 function advanceActiveColor(G: GameState): void {
-  for (let step = 1; step <= COLOR_ORDER.length; step++) {
-    const idx = (G.activeColorIndex + step) % COLOR_ORDER.length;
-    if (!G.colors[COLOR_ORDER[idx]].stuck) {
+  const play = playColorsOf(G);
+  for (let step = 1; step <= play.length; step++) {
+    const idx = (G.activeColorIndex + step) % play.length;
+    if (!colorStateOf(G, play[idx]).stuck) {
       G.activeColorIndex = idx;
       return;
     }
@@ -31,7 +32,7 @@ function advanceActiveColor(G: GameState): void {
  * x, y); the engine recomputes the absolute cells, so shapes can't be faked.
  */
 const placePiece: Move<GameState> = ({ G, ctx, playerID }, placement: Placement) => {
-  const color = COLOR_ORDER[G.activeColorIndex];
+  const color = playColorsOf(G)[G.activeColorIndex];
 
   // Authorization: only the human owning the active color may move it.
   if (playerID != null && playerID !== resolveOwner(G)) return INVALID_MOVE;
@@ -42,10 +43,10 @@ const placePiece: Move<GameState> = ({ G, ctx, playerID }, placement: Placement)
   applyPlacement(G, color, placement.pieceId, cells);
 
   // Recompute stuck status for every color (the board only ever fills further).
-  for (const c of COLOR_ORDER) G.colors[c].stuck = !hasAnyMove(G, c);
+  for (const c of playColorsOf(G)) colorStateOf(G, c).stuck = !hasAnyMove(G, c);
 
   // Advance the shared-color rotation only on an actual placement (GAME_SPEC §9).
-  if (G.config.owners[color] === 'shared') {
+  if (ownerOf(G, color) === 'shared') {
     G.sharedRotation = (G.sharedRotation + 1) % ctx.numPlayers;
   }
 
@@ -59,7 +60,7 @@ const placePiece: Move<GameState> = ({ G, ctx, playerID }, placement: Placement)
  * auto-skipped), so this is non-empty until the game is over.
  */
 export const enumerate: NonNullable<Game<GameState>['ai']>['enumerate'] = (G) =>
-  generateLegalMoves(G, COLOR_ORDER[G.activeColorIndex]).map((p) => ({
+  generateLegalMoves(G, playColorsOf(G)[G.activeColorIndex]).map((p) => ({
     move: 'placePiece',
     args: [p],
   }));
@@ -85,7 +86,7 @@ export const BlokusGame: Game<GameState> = {
   },
 
   endIf: ({ G }) =>
-    COLOR_ORDER.every((c) => G.colors[c].stuck) ? finalScores(G) : undefined,
+    playColorsOf(G).every((c) => colorStateOf(G, c).stuck) ? finalScores(G) : undefined,
 
   disableUndo: true,
   minPlayers: 2,

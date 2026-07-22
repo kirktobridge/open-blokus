@@ -16,7 +16,7 @@
 import { BOARD_SIZE } from '../../shared/constants';
 import type { Color, GameState } from '../types';
 import { COLOR_ORDER } from '../types';
-import { createInitialState } from '../modes';
+import { colorStateOf, createInitialState } from '../modes';
 import { resolveCells } from '../pieces';
 import { applyPlacement } from '../placement';
 import { remainingSquares } from '../scoring';
@@ -96,7 +96,7 @@ export function generateDailyPuzzle(dateKey: string = dailyDateKey()): DailyPuzz
     seed,
     playerColor: PUZZLE_COLOR,
     state,
-    ceiling: remainingSquares(state.colors[PUZZLE_COLOR]),
+    ceiling: remainingSquares(colorStateOf(state, PUZZLE_COLOR)),
   };
 }
 
@@ -145,13 +145,13 @@ export function advanceOpponents(
 
 /** Squares the player has fit since handoff = ceiling − current remaining. */
 export function cellsPlaced(puzzle: DailyPuzzle, current: GameState): number {
-  return puzzle.ceiling - remainingSquares(current.colors[puzzle.playerColor]);
+  return puzzle.ceiling - remainingSquares(colorStateOf(current, puzzle.playerColor));
 }
 
 /** Pieces the player has fit since handoff. */
 export function piecesPlaced(puzzle: DailyPuzzle, current: GameState): number {
-  const before = puzzle.state.colors[puzzle.playerColor].remaining.length;
-  return before - current.colors[puzzle.playerColor].remaining.length;
+  const before = colorStateOf(puzzle.state, puzzle.playerColor).remaining.length;
+  return before - colorStateOf(current, puzzle.playerColor).remaining.length;
 }
 
 /**

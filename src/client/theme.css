@@ -19,6 +19,12 @@
   --piece-red: #dc2626;
   --piece-green: #16a34a;
 
+  /* Duo's two colors (P20 M2b). Provisional and deliberately off the extremes:
+   * MatLayer/PlacedLayer shade tiles with *relative* modulations, so pure #000 /
+   * #fff clip their bevel and AO away at both ends. Per-theme tuning is M2c. */
+  --piece-black: #1f2328;
+  --piece-white: #f2ede3;
+
   /* Typography tokens — shared across schemes; retunable in Settings. */
   --font-ui: 'Nunito', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -119,6 +125,12 @@
   --piece-red: #dc2626;
   --piece-green: #16a34a;
 
+  /* Duo's two colors (P20 M2b). Provisional and deliberately off the extremes:
+   * MatLayer/PlacedLayer shade tiles with *relative* modulations, so pure #000 /
+   * #fff clip their bevel and AO away at both ends. Per-theme tuning is M2c. */
+  --piece-black: #1f2328;
+  --piece-white: #f2ede3;
+
   --bg: #0f1115;
   --fg: #e5e7eb;
   --fg-muted: #9ca3af;
@@ -189,6 +201,12 @@
   --piece-yellow: #eab308;
   --piece-red: #dc2626;
   --piece-green: #16a34a;
+
+  /* Duo's two colors (P20 M2b). Provisional and deliberately off the extremes:
+   * MatLayer/PlacedLayer shade tiles with *relative* modulations, so pure #000 /
+   * #fff clip their bevel and AO away at both ends. Per-theme tuning is M2c. */
+  --piece-black: #1f2328;
+  --piece-white: #f2ede3;
 
   --bg: #372f27;
   --fg: #efe6d4;

@@ -1,6 +1,5 @@
-import type { Color } from '../../game/types';
-import { COLOR_ORDER } from '../../game/types';
-import { BOARD_SIZE } from '../../shared/constants';
+import type { ByColor, Color } from '../../game/types';
+import { COLOR_ORDER, DUO_COLOR_ORDER } from '../../game/types';
 
 /**
  * Clockwise quarter-turns that bring each color's home corner to the bottom-right
@@ -8,15 +7,24 @@ import { BOARD_SIZE } from '../../shared/constants';
  * (BlokusBoardView), and the post-game replay scrubber reuses it so a reviewed
  * game shows in the same orientation the player actually saw.
  */
-export const TURNS_TO_BOTTOM_RIGHT: Record<Color, number> = { blue: 2, yellow: 1, red: 0, green: 3 };
+export const TURNS_TO_BOTTOM_RIGHT: Record<Color, number> = {
+  blue: 2,
+  yellow: 1,
+  red: 0,
+  green: 3,
+  // Duo's start cells are interior, so "home corner" is really "home half": black
+  // starts upper-left of centre (like blue), white lower-right (like red).
+  black: 2,
+  white: 0,
+};
 
 /**
  * The color the local human played, read from a record's seat labels ("human"),
  * or undefined for an all-AI watch game (no human seat → no preferred orientation).
  * Picks the first human color if several are flagged (hot-seat / multi-color seats).
  */
-export function humanColor(seats: Record<Color, string>): Color | undefined {
-  return COLOR_ORDER.find((c) => seats[c] === 'human');
+export function humanColor(seats: ByColor<string>): Color | undefined {
+  return [...COLOR_ORDER, ...DUO_COLOR_ORDER].find((c) => seats[c] === 'human');
 }
 
 /**
@@ -33,8 +41,8 @@ export function humanColor(seats: Record<Color, string>): Color | undefined {
 export const normTurns = (turns: number): number => ((turns % 4) + 4) % 4;
 
 /** Board cell → the screen cell it is drawn at. */
-export function toScreenXY(x: number, y: number, turns: number): [number, number] {
-  const n = BOARD_SIZE - 1;
+export function toScreenXY(x: number, y: number, turns: number, size: number): [number, number] {
+  const n = size - 1;
   switch (normTurns(turns)) {
     case 1:
       return [n - y, x];
@@ -48,8 +56,8 @@ export function toScreenXY(x: number, y: number, turns: number): [number, number
 }
 
 /** Screen cell → the board cell drawn there. Inverse of {@link toScreenXY}. */
-export function toBoardXY(sx: number, sy: number, turns: number): [number, number] {
-  const n = BOARD_SIZE - 1;
+export function toBoardXY(sx: number, sy: number, turns: number, size: number): [number, number] {
+  const n = size - 1;
   switch (normTurns(turns)) {
     case 1:
       return [sy, n - sx];
@@ -63,15 +71,15 @@ export function toBoardXY(sx: number, sy: number, turns: number): [number, numbe
 }
 
 /** Board index → screen index, for the layers that position by index. */
-export function toScreenIndex(i: number, turns: number): number {
-  const [sx, sy] = toScreenXY(i % BOARD_SIZE, Math.floor(i / BOARD_SIZE), turns);
-  return sy * BOARD_SIZE + sx;
+export function toScreenIndex(i: number, turns: number, size: number): number {
+  const [sx, sy] = toScreenXY(i % size, Math.floor(i / size), turns, size);
+  return sy * size + sx;
 }
 
 /** Re-index a board array into screen space (`out[screenIdx] = board[boardIdx]`). */
-export function toScreenBoard<T>(board: T[], turns: number): T[] {
+export function toScreenBoard<T>(board: T[], turns: number, size: number): T[] {
   if (normTurns(turns) === 0) return board;
   const out = new Array<T>(board.length);
-  for (let i = 0; i < board.length; i++) out[toScreenIndex(i, turns)] = board[i];
+  for (let i = 0; i < board.length; i++) out[toScreenIndex(i, turns, size)] = board[i];
   return out;
 }

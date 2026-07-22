@@ -11,7 +11,16 @@
  * reach the log (same discipline as the self-play dump).
  */
 import { COLOR_ORDER } from '../../game/types';
-import type { Color, GameMode, GameState, Placement, ScoringVariant } from '../../game/types';
+import type {
+  ByColor,
+  Color,
+  GameMode,
+  GameState,
+  Placement,
+  ScoringVariant,
+  Variant,
+} from '../../game/types';
+import { playColorsOf, variantOf } from '../../game/modes';
 import { finalScores, determineWinners } from '../../game/scoring';
 import { replayGame, type GameRecord, type LoggedMove } from '../../game/ai/selfplay';
 import { saveRecord } from './sink';
@@ -20,7 +29,7 @@ import { saveToHistory } from './history';
 /** Header the app supplies; mode/scoring are read from the live game state. */
 export interface RecorderHeader {
   /** Owner label per color: "human", a bot tier ("easy"/"hard"/…), or "shared". */
-  seats: Record<Color, string>;
+  seats: ByColor<string>;
   /** Provenance tag stored on the record, e.g. "vs-ai". */
   src: string;
 }
@@ -34,7 +43,7 @@ export interface RecorderClient {
 
 /** GameOver payload shape from BlokusGame.endIf (= finalScores). */
 interface GameOver {
-  colors: Record<Color, number>;
+  colors: ByColor<number>;
 }
 
 /**
@@ -45,24 +54,27 @@ interface GameOver {
 export function buildAppRecord(
   moves: LoggedMove[],
   opts: {
-    seats: Record<Color, string>;
+    seats: ByColor<string>;
     src: string;
     mode: GameMode;
     scoring: ScoringVariant;
+    variant?: Variant;
     endedAt?: number;
   },
 ): GameRecord {
-  const finalG = replayGame(moves, undefined, opts.mode, opts.scoring);
+  const variant = opts.variant ?? 'classic';
+  const finalG = replayGame(moves, undefined, opts.mode, opts.scoring, variant);
   const scores = finalScores(finalG).colors;
   const winnerPlayers = new Set(determineWinners(finalG));
   const owners = finalG.config.owners;
-  const winners = COLOR_ORDER.filter(
+  const winners = playColorsOf(finalG).filter(
     (c) => owners[c] !== 'shared' && winnerPlayers.has(owners[c] as string),
   );
   return {
     seed: 0, // app games aren't seed-reproducible; the move list is the source of truth
     mode: opts.mode,
     scoring: opts.scoring,
+    variant,
     seats: opts.seats,
     moves,
     scores,
@@ -101,7 +113,8 @@ export function attachRecorder(
   let moves: LoggedMove[] = [];
   const start = client.getState();
   // Color active *before* the pending move — advances one step behind the state.
-  let activeBefore: Color = start ? COLOR_ORDER[start.G.activeColorIndex] : COLOR_ORDER[0];
+  const colorAt = (G: GameState, i: number): Color => playColorsOf(G)[i];
+  let activeBefore: Color = start ? colorAt(start.G, start.G.activeColorIndex) : COLOR_ORDER[0];
 
   const handle = (state: { G: GameState; ctx: { gameover?: unknown } } | null) => {
     if (!state) return;
@@ -111,7 +124,7 @@ export function attachRecorder(
       consumed = 0;
       saved = false;
       moves = [];
-      activeBefore = COLOR_ORDER[state.G.activeColorIndex];
+      activeBefore = colorAt(state.G, state.G.activeColorIndex);
     }
     while (consumed < log.length) {
       const action = log[consumed++]?.action;
@@ -131,7 +144,7 @@ export function attachRecorder(
       // Each MAKE_MOVE advances the active color; the next move belongs to
       // whoever is active now. Local play dispatches one move per tick, so this
       // stays exact — and the score cross-check below catches any drift anyway.
-      activeBefore = COLOR_ORDER[state.G.activeColorIndex];
+      activeBefore = colorAt(state.G, state.G.activeColorIndex);
     }
 
     if (state.ctx.gameover && !saved && moves.length > 0) {
@@ -143,9 +156,12 @@ export function attachRecorder(
           src: header.src,
           mode,
           scoring,
+          variant: variantOf(state.G),
         });
         const live = state.ctx.gameover as GameOver;
-        const ok = COLOR_ORDER.every((c) => record.scores[c] === live.colors[c]);
+        // Cross-check over the *variant's* colors: walking COLOR_ORDER here would
+        // compare four undefineds in a Duo game and pass vacuously.
+        const ok = playColorsOf(state.G).every((c) => record.scores[c] === live.colors[c]);
         if (!ok) {
           // Replay disagrees with the live result → capture is corrupt; drop it.
           console.warn('[gamelog] replay/live score mismatch — record dropped');

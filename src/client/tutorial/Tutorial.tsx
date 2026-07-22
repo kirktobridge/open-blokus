@@ -136,7 +136,7 @@ export function Tutorial({ onExit, onComplete }: { onExit: () => void; onComplet
         >
           <div style={{ position: 'relative', width: BOARD_PX, height: BOARD_PX }}>
             <Board board={G.board} activeColor={step.color} lastMove={G.lastMove} />
-            <LegalMoveHints hints={hints} onPick={onPick} pulse />
+            <LegalMoveHints hints={hints} cells={BOARD_SIZE} onPick={onPick} pulse />
           </div>
         </div>
 

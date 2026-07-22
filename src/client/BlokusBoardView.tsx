@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { Color, GameState, PieceId } from '../game/types';
-import { COLOR_ORDER } from '../game/types';
+
 import { BOARD_SIZE } from '../shared/constants';
 import { resolveCells } from '../game/pieces';
 import { isLegalPlacement } from '../game/placement';
-import { CORNERS } from '../game/modes';
+import { colorStateOf, ownerOf, playColorsOf, startCellOf } from '../game/modes';
 import { Board } from './board/Board';
 import { BoardFrame } from './board/BoardFrame';
 import { unplayablePieces, moveOptionCells, type MoveOptionCells } from './advisor/legalMoves';
@@ -89,7 +89,8 @@ export function BlokusBoardView({
   onReview?: () => void;
 }) {
   const sel = useSelection();
-  const activeColor = COLOR_ORDER[G.activeColorIndex];
+  const playColors = playColorsOf(G);
+  const activeColor = playColors[G.activeColorIndex];
   // Single-player passes isActive=true for the current player; multiplayer gates it.
   const canPlay = isActive !== false && !ctx.gameover;
   const prefs = usePrefs();
@@ -159,7 +160,7 @@ export function BlokusBoardView({
   // invisible; what settles reoriented is the pieces, which is the only thing that
   // needed to move.
   const homeColor =
-    playerID != null ? COLOR_ORDER.find((c) => G.config.owners[c] === playerID) : undefined;
+    playerID != null ? playColors.find((c) => G.config.owners[c] === playerID) : undefined;
   const [boardTurns, setBoardTurns] = useState(
     homeColor ? TURNS_TO_BOTTOM_RIGHT[homeColor] : 0,
   );
@@ -267,7 +268,7 @@ export function BlokusBoardView({
   const unplayableOppOn = prefs.unplayableOpponents;
   const unplayableByColor = useMemo(() => {
     const out = {} as Record<Color, Set<PieceId>>;
-    for (const c of COLOR_ORDER) {
+    for (const c of playColors) {
       const self = playerID != null && G.config.owners[c] === playerID;
       const show = self ? unplayableSelfOn : unplayableOppOn;
       out[c] = show ? new Set(unplayablePieces(G, c)) : new Set();
@@ -304,7 +305,9 @@ export function BlokusBoardView({
 
   // Before your color's first move, mark its required opening corner.
   const startHint =
-    canPlay && !G.colors[activeColor].hasStarted ? CORNERS[activeColor] : undefined;
+    canPlay && !colorStateOf(G, activeColor).hasStarted
+      ? startCellOf(G, activeColor)
+      : undefined;
 
   /** Commit the staged placement to the engine. Returns whether a move was made. */
   function submitMove(): boolean {
@@ -405,9 +408,9 @@ export function BlokusBoardView({
 
   // Next non-stuck color after the active one — the "NEXT" seat.
   const onDeckColor: Color | undefined = (() => {
-    for (let i = 1; i <= COLOR_ORDER.length; i++) {
-      const c = COLOR_ORDER[(G.activeColorIndex + i) % COLOR_ORDER.length];
-      if (c !== activeColor && !G.colors[c].stuck) return c;
+    for (let i = 1; i <= playColors.length; i++) {
+      const c = playColors[(G.activeColorIndex + i) % playColors.length];
+      if (c !== activeColor && !colorStateOf(G, c).stuck) return c;
     }
     return undefined;
   })();
@@ -416,7 +419,7 @@ export function BlokusBoardView({
 
   /** Name suffix + state pill for a seat. */
   function seatMeta(c: Color): { nameSuffix: string | null; tag: SeatTag } {
-    const owner = G.config.owners[c];
+    const owner = ownerOf(G, c);
     const isYou = playerID != null && owner === playerID;
     const diff = owner !== 'shared' ? botDifficulties?.[owner] : undefined;
     const nick = owner !== 'shared' ? seatNames[owner] : undefined;
@@ -425,9 +428,9 @@ export function BlokusBoardView({
     let tag: SeatTag = null;
     if (ctx.gameover && owner !== 'shared' && winners.includes(owner)) tag = 'winner';
     else if (c === activeColor && !ctx.gameover) tag = 'active';
-    else if (G.colors[c].stuck) tag = 'noMoves';
+    else if (colorStateOf(G, c).stuck) tag = 'noMoves';
     else if (c === onDeckColor && !ctx.gameover) tag = 'onDeck';
-    else if (G.colors[c].lastPlaced != null) tag = 'played';
+    else if (colorStateOf(G, c).lastPlaced != null) tag = 'played';
     return { nameSuffix, tag };
   }
 
@@ -465,14 +468,14 @@ export function BlokusBoardView({
     >
       {/* Left column — players in turn order */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 250 }}>
-        {COLOR_ORDER.map((c) => {
+        {playColors.map((c) => {
           const { nameSuffix, tag } = seatMeta(c);
-          const owner = G.config.owners[c];
+          const owner = ownerOf(G, c);
           return (
             <PlayerCard
               key={c}
               color={c}
-              state={G.colors[c]}
+              state={colorStateOf(G, c)}
               nameSuffix={nameSuffix}
               tag={tag}
               active={c === activeColor && !ctx.gameover}
@@ -623,7 +626,7 @@ export function BlokusBoardView({
         {homeColor && (
           <HandTray
             color={homeColor}
-            state={G.colors[homeColor]}
+            state={colorStateOf(G, homeColor)}
             interactive={canPlay && homeColor === activeColor}
             selectedId={homeColor === activeColor ? sel.pieceId : null}
             onSelect={sel.selectPiece}
@@ -645,8 +648,8 @@ export function BlokusBoardView({
         <GameOverModal
           G={G}
           gameover={ctx.gameover as GameOverPayload}
-          winnerColors={COLOR_ORDER.filter((c) => {
-            const owner = G.config.owners[c];
+          winnerColors={playColors.filter((c) => {
+            const owner = ownerOf(G, c);
             return owner !== 'shared' && winners.includes(owner);
           })}
           gameRecord={gameRecord}

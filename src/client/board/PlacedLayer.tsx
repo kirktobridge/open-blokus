@@ -1,12 +1,10 @@
 import { useMemo } from 'react';
 import type { Color } from '../../game/types';
-import { BOARD_SIZE } from '../../shared/constants';
 import { CELL_PX, PIECE_VAR } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { cellOutline } from './outline';
 
 const C = CELL_PX;
-const SIZE = BOARD_SIZE * C;
 const EMPTY_SET: ReadonlySet<number> = new Set();
 
 interface Region {
@@ -25,8 +23,11 @@ interface Region {
  * one placed piece — no per-piece id needed. Preview cells are excluded so a
  * piece's finish never paints over the live (illegal) placement feedback.
  */
-function buildRegions(board: (Color | null)[], exclude: ReadonlySet<number>): Region[] {
-  const n = BOARD_SIZE;
+function buildRegions(
+  board: (Color | null)[],
+  exclude: ReadonlySet<number>,
+  n: number,
+): Region[] {
   const colorAt = (idx: number): Color | null =>
     idx >= 0 && idx < board.length && !exclude.has(idx) ? board[idx] : null;
 
@@ -115,8 +116,11 @@ export function PlacedLayer({
   settleId?: string;
 }) {
   const reduce = useReducedMotion();
+  // The board array carries its own side length; no Classic default to get wrong.
+  const n = Math.round(Math.sqrt(board.length));
+  const SIZE = n * C;
   const exclude = previewCells ?? EMPTY_SET;
-  const regions = useMemo(() => buildRegions(board, exclude), [board, exclude]);
+  const regions = useMemo(() => buildRegions(board, exclude, n), [board, exclude, n]);
   const allFillsD = useMemo(() => regions.map((r) => r.fillD).join(''), [regions]);
   const glowSet = glowColors && glowColors.length > 0 ? new Set(glowColors) : undefined;
   // Remount key so the settle flash replays exactly once per placement.
@@ -124,8 +128,8 @@ export function PlacedLayer({
     lastMove && lastMove.length > 0 ? (settleId ?? lastMove.join(',')) : '';
   // The last move's own silhouette + fill (the fill is only ever a clip for the ring).
   const ring = useMemo(
-    () => (lastMove && lastMove.length > 0 ? cellOutline(lastMove) : null),
-    [lastMove],
+    () => (lastMove && lastMove.length > 0 ? cellOutline(lastMove, n) : null),
+    [lastMove, n],
   );
 
   return (
@@ -388,8 +392,8 @@ export function PlacedLayer({
       {!reduce && settleKey !== '' && (
         <g key={settleKey} className="ob-settle">
           {lastMove!.map((idx) => {
-            const x = idx % BOARD_SIZE;
-            const y = (idx / BOARD_SIZE) | 0;
+            const x = idx % n;
+            const y = (idx / n) | 0;
             return <rect key={idx} x={x * C} y={y * C} width={C} height={C} fill="#ffffff" />;
           })}
         </g>
