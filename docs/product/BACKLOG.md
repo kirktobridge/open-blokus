@@ -1516,7 +1516,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
   Don't start before them: a registry with one variant in it enforces nothing.
 
 ### P57 — Variant scope as schema in the research layer (make M6 true)
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** [../research/FINDINGS.md](../research/FINDINGS.md)'s M6 closes with
   "Enforced at /triage (classification) and /research Phase P (entry gate)" — and
   neither skill contains the gate. Both carry M5's new-track check; neither mentions
