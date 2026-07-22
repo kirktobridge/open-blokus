@@ -41,6 +41,14 @@ becomes the first drafted entry — not a footnote on this one. Strength lived
 self-relative for ~20 runs before the Pentobi bridge recalibrated everything; don't
 let a new track repeat that.
 
+**Variant-scope check (M6):** every research draft names the variant it will run on —
+a `Variant:` line reading `classic` / `duo` / `both` / `mechanism` (vocabulary in
+FRAMEWORK.md's `## Variant scope`; the schema test rejects an open entry without it).
+A *constant* is presumed variant-scoped until measured otherwise; a *mechanism* is
+presumed portable but still says so. If the draft's validation corpus is Classic
+self-play while the question is about Duo, that mismatch is the draft's first problem,
+not a caveat — say which, in the entry.
+
 ## Steps
 1. Restate the idea in one sentence; run the classification test out loud.
 2. Check for an existing entry (`grep -in "<keyword>" docs/research/backlog/*.md docs/product/BACKLOG.md`).

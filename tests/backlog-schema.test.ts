@@ -16,6 +16,11 @@ import { fileURLToPath } from 'node:url';
  * title). Status must be one of the vocab words the file itself documents.
  * Required content fields are asserted only on *open* entries — terminal entries
  * (shipped / won / no-win / played-out) legitimately compress to a status + log.
+ *
+ * Variant scope (product P57) makes FINDINGS M6 true rather than merely claimed:
+ * an open research entry names the variant it will run on, and a finding from F19
+ * on names the variant it was measured on. F1–F18 predate the rule and are
+ * grandfathered — M6 exists *because* none of them said so.
  */
 
 const DASH = '—'; // em-dash — the canonical heading + SHIPPED separator
@@ -49,12 +54,13 @@ function sectionVocab(text: string, startRe: RegExp, stopAtBlank: boolean): Set<
 
 // Product: a wrapped "Status vocab:" paragraph in BACKLOG.md. Research: the shared
 // "## Status vocabulary" table in FRAMEWORK.md (a markdown table, not a paragraph).
+const FRAMEWORK = read('../docs/research/FRAMEWORK.md');
 const PRODUCT_VOCAB = sectionVocab(read('../docs/product/BACKLOG.md'), /status vocab/i, true);
-const RESEARCH_VOCAB = sectionVocab(
-  read('../docs/research/FRAMEWORK.md'),
-  /^## Status vocabulary/,
-  false,
-);
+const RESEARCH_VOCAB = sectionVocab(FRAMEWORK, /^## Status vocabulary/, false);
+
+// M6's variant vocabulary, sourced from FRAMEWORK.md's "## Variant scope" table so
+// the doc stays the definition and this test stays the enforcement.
+const VARIANT_VOCAB = sectionVocab(FRAMEWORK, /^## Variant scope/, false);
 
 type Backlog = {
   file: string;
@@ -169,6 +175,44 @@ const TERMINAL_RESEARCH = new Set(['won', 'no-win', 'abandoned', 'played-out']);
 
 const has = (body: string[], label: RegExp) => body.some((l) => label.test(l));
 
+/** The first word of a `**Variant:**` line, lowercased, or null if there's no such line. */
+function variantToken(body: string[]): string | null {
+  for (const l of body) {
+    const m = /\*\*Variant:\*\*\s*(.+)/.exec(l);
+    if (m) {
+      const tok = /^([A-Za-z][A-Za-z-]*)/.exec(m[1].trim());
+      return tok ? tok[1].toLowerCase() : '';
+    }
+  }
+  return null;
+}
+
+/**
+ * Findings in FINDINGS.md, as `### F<n> — Title` + body. Method lessons (`### M<n>`)
+ * are about *how we run experiments*, not about a measured constant, so M6's
+ * variant-scope rule doesn't apply to them.
+ */
+function parseFindings(): { n: number; heading: string; body: string[] }[] {
+  const out: { n: number; heading: string; body: string[] }[] = [];
+  let current: { n: number; heading: string; body: string[] } | null = null;
+  for (const raw of read('../docs/research/FINDINGS.md').split('\n')) {
+    const line = raw.replace(/\s+$/, '');
+    const m = /^### F(\d+) /.exec(line);
+    if (m) {
+      current = { n: Number(m[1]), heading: line, body: [] };
+      out.push(current);
+    } else if (line.startsWith('### ')) {
+      current = null; // an M# lesson or other section — stop collecting
+    } else if (current) {
+      current.body.push(line);
+    }
+  }
+  return out;
+}
+
+/** F1–F18 predate M6; the rule binds from F19 on. */
+const VARIANT_TAGGED_FROM = 19;
+
 describe('backlog schema', () => {
   for (const p of parsed) {
     describe(p.file, () => {
@@ -226,9 +270,16 @@ describe('backlog schema', () => {
               ['Method', /\*\*Method\b/],
               ['Success criteria', /\*\*Success criteria\b/],
               ['Cost', /\*\*Cost\b/],
+              ['Variant', /\*\*Variant\b/],
             ] as const) {
               expect(has(e.body, re), `open ${e.id} missing **${label}**`).toBe(true);
             }
+            // M6: and the variant it names must be one the framework defines.
+            const v = variantToken(e.body);
+            expect(
+              VARIANT_VOCAB.has(v ?? ''),
+              `open ${e.id} has **Variant:** "${v}" — not in {${[...VARIANT_VOCAB].join(', ')}}`,
+            ).toBe(true);
           }
         }
       });
@@ -254,6 +305,29 @@ describe('backlog schema', () => {
       });
     });
   }
+
+  describe('docs/research/FINDINGS.md', () => {
+    it('resolves a documented variant vocabulary', () => {
+      expect(
+        VARIANT_VOCAB.size,
+        'no `## Variant scope` vocabulary resolved from FRAMEWORK.md',
+      ).toBeGreaterThan(0);
+    });
+
+    it(`every finding from F${VARIANT_TAGGED_FROM} on names the variant it was measured on`, () => {
+      // M6: a constant is presumed variant-scoped until measured otherwise, and a
+      // mechanism is presumed portable but still says so. The tag is the `**(Classic)**`
+      // form F17/F18 already use.
+      const tag = new RegExp(`\\*\\*\\((${[...VARIANT_VOCAB].join('|')})\\)\\*\\*`, 'i');
+      for (const f of parseFindings()) {
+        if (f.n < VARIANT_TAGGED_FROM) continue;
+        expect(
+          f.body.some((l) => tag.test(l)),
+          `F${f.n} has no variant tag — add one of **(${[...VARIANT_VOCAB].join(')** / **(')})**`,
+        ).toBe(true);
+      }
+    });
+  });
 
   it('IDs are globally unique across all backlogs', () => {
     const all = parsed.flatMap((p) => p.entries.map((e) => e.id));

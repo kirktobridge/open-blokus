@@ -57,6 +57,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   target the same hot path; AE9 is the sharper tool — but the sub-items below are
   days-not-weeks, assumption-free, and partially subsumed by AE9 (do them first
   only if AE9 isn't imminent).
+- **Variant:** mechanism — throughput work; iters/s gains carry to any board size.
 - **Objective:** raise iterations-per-second so more search fits the AE1 time cap.
 - **Hypothesis:** allocation churn and redundant geometry work — not just the scan
   itself — are a large share of the F10 hot path; removing them buys iterations
@@ -130,6 +131,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE6 — Push the budget ladder to saturation
 - **Status:** proposed (pure benchmarking; low priority)
+- **Variant:** classic — the plateau is a measured curve on the Classic branching
+  factor; Duo's is its own question (AE30).
 - **Objective:** find where MCTS-vs-heuristic strength plateaus.
 - **Hypothesis:** Run I stopped at `it=320/d=0` (90.1%), still climbing +5 pts/
   doubling — the ceiling is mid-90s.
@@ -144,6 +147,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   shared colour). Duo is a two-*colour* game on 14×14 and is a different problem
   ([AE29](#ae29--duo-external-anchor-extend-the-pentobi-bridge-to-the-duo-variant)–AE31);
   don't merge the two entries.
+- **Variant:** classic — Classic 2p/3p seat conventions, explicitly **not** Duo (see
+  Status).
 - **Objective:** validate MCTS reward + backup for non-4p modes.
 - **Hypothesis:** 2p (one human steers two colors) and 3p (shared color) have
   different reward structures — placed-leader reward and per-color backup need
@@ -158,6 +163,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   **Duo makes this testable for the first time:** the entry has always said "revisit in 2p",
   and Duo (two colours, so only 2 plies to your next turn) is that testbed — its hypothesis
   predicts reuse should pay there. Gated on P20 M2b + product P54, not on AE7.
+- **Variant:** mechanism — tree reuse is a search-structure change, no constant riding
+  on the board.
 - **Objective:** determine whether persisting + re-rooting the search tree between
   moves pays off outside 4p.
 - **Hypothesis:** reuse hit-rate is ~0–5% in 4p (your next turn is 4 plies deep in a
@@ -234,6 +241,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE12 — Move-time management (chess-clock budgeting)
 - **Status:** proposed
+- **Variant:** mechanism — budget allocation across a game; the schedule is
+  board-agnostic.
 - **Objective:** reallocate a fixed *total* game budget across moves instead of a
   flat per-move cap.
 - **Hypothesis:** value-per-ms varies hugely by phase (Run O probe: 15 iters/500 ms
@@ -253,6 +262,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE13 — Endgame exact solver
 - **Status:** proposed
+- **Variant:** mechanism — an exact-search switchover; the *threshold* it finds will be
+  variant-scoped.
 - **Objective:** replace sampled search with exact search where the game tree
   becomes tractable.
 - **Hypothesis:** branching collapses late (few pieces, few attach points), so
@@ -273,6 +284,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE14 — Progressive widening (replace the fixed beam)
 - **Status:** proposed
+- **Variant:** mechanism — the point is to *remove* F8's variant-scoped beam constant,
+  not retune it.
 - **Objective:** eliminate the hand-tuned per-tier beam (F8's `beam ≈ iters/6`)
   with a visit-driven child-admission schedule.
 - **Hypothesis:** admitting children as visits accrue (k·N^α over the
@@ -342,6 +355,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   comparison that killed it here argues *for* it there: Pentobi ships 22.5 KB of Duo
   book against 173 bytes for Classic, so opening theory is worth roughly two orders of
   magnitude more on the Duo start. Re-rank this entry once Duo ships.
+- **Variant:** classic — worst-case latency is measured against Classic's early-move
+  branching; Duo searches are cheaper.
 - **Objective:** kill worst-case early-move latency (extreme tier: tens of seconds)
   and bank strength on the fixed start position.
 - **Hypothesis:** moves 1–3 recur across games (fixed corners, symmetric start), so
@@ -362,6 +377,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE17 — Root-parallel MCTS via Web Workers
 - **Status:** proposed
+- **Variant:** mechanism — a wall-clock multiplier on the same search.
 - **Objective:** multiply effective iterations at fixed wall-clock using the
   client's idle cores (bots are client-side only).
 - **Hypothesis:** K independent trees with root visit-count merging ≈ K× iterations
@@ -445,6 +461,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE20 — Gumbel root search (policy improvement at starved budgets)
 - **Status:** proposed
+- **Variant:** classic — a strength comparison at Classic budgets and branching.
 - **Objective:** stronger move selection exactly where our budgets are tiny —
   medium tier completes ~15–46 iterations/move (Run O probe).
 - **Hypothesis:** Gumbel-top-k action sampling + sequential halving at the root
@@ -466,6 +483,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE21 — Population-play evaluation (pool Elo readout)
 - **Status:** proposed
+- **Variant:** mechanism — a measurement methodology (population play), not a tuned
+  value.
 - **Objective:** detect self-play convention brittleness — a candidate that beats
   the incumbent head-to-head can still be weak against off-distribution play
   (the kingmaker/multiplayer caveat: 4p has no single optimal strategy). Also the
@@ -499,6 +518,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Status:** proposed — the F11 "step-change capacity" clause made concrete.
   Run O's no-win was a 609-param toy on ε-greedy-heuristic outcomes; this is the
   known summit path: board planes, real capacity, search-improved targets.
+- **Variant:** classic — the policy/value nets train on the Classic self-play corpus; a
+  Duo net is a separate track.
 - **Objective:** replace the hand-crafted heuristic beam with a learned policy
   prior and rollouts with a learned value — PUCT-style — beating full-rollout
   MCTS at matched wall-clock.
@@ -535,6 +556,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   `boardSizeOf`/`startCellOf`), so a reduced board is now expressible. Still blocked on
   P20 M2b for the two-colour play set, and on product P54 for a variant-aware search
   layer + a Duo-capable arena harness.
+- **Variant:** mechanism — exact endgame value; the tractable-depth constant it yields
+  is variant-scoped.
 - **Objective:** compute the exact game-theoretic value + principal variation of
   Blokus Duo on a reduced board (ladder: 6×6 → 7×7 → 8×8, full or reduced piece
   set) — a proof, and to our knowledge a novel result for any Blokus variant.
@@ -560,6 +583,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   simulations** (`libpentobi_mcts/Player.cpp` level counts, github.com/enz/pentobi)
   yet L2 matches our 500-iteration extreme: a ~17× per-simulation quality gap, and
   its prior knowledge is the biggest identifiable share.
+- **Variant:** classic — gated against Pentobi Classic L1/L2 and Classic feature
+  statistics.
 - **Objective:** initialize children at expansion with a move prior + value from
   `gamma = exp(φ·x)` over a small feature vector, replacing the fixed heuristic
   beam's hard cutoff with soft pruning (every legal child kept, priors steer).
@@ -593,6 +618,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 ### AE25 — WASM(+SIMD) search core (the client-side JS ceiling, part 1)
 - **Status:** proposed — sequence *after* the knowledge track (AE15/AE11/AE24)
   stabilizes the engine, so the port happens once.
+- **Variant:** mechanism — a port of the hot loop; strength-neutral by construction.
 - **Objective:** raise per-core iters/s by porting the hot loop (bitboard move-gen +
   playout) to WASM with SIMD; the TS implementation stays as the byte-identical
   differential reference (F12 pattern). Browser workers and the Node arena load the
@@ -668,6 +694,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   The `beam ≈ iters/6` rule and the shipped per-tier beams were tuned on pre-bitboard
   iteration counts; F12's ~2.5× throughput jump silently changed how many iterations
   each *timed* tier completes, which is exactly what F8's beam rule reads.
+- **Variant:** classic — a staleness re-check of the shipped Classic per-tier beams.
 - **Objective:** confirm the shipped per-tier beams (medium 6, hard 16) still satisfy
   `beam ≈ iters/6` now that timed tiers complete ~2.5× the iterations F8 measured.
 - **Hypothesis:** medium's iterations/move grew ~2.5× (F8-era ~30 → ~75), so its
@@ -738,6 +765,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
   number is trusted. [F14](../FINDINGS.md) placed our tiers on Pentobi's ladder in **4p
   Classic only**; our Duo strength is entirely unmeasured, while every constant a Duo
   bot would inherit was tuned on Classic ([M6](../FINDINGS.md)).
+- **Variant:** duo — the Duo external anchor; this is the entry that opens the Duo track
+  (M5).
 - **Objective:** place each shipped tier on Pentobi's **Duo** ladder, so every later Duo
   experiment has an outside-world readout from run one instead of after ~20 runs (M5).
 - **Hypothesis:** none needed — measurement infrastructure (the AE19 precedent). The one
@@ -766,6 +795,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE30 — Re-tune the Duo bot: beam:iterations and the heuristic weights
 - **Status:** proposed (blocked on product P54 + AE29 — the anchor lands first, per M5)
+- **Variant:** duo — the question *is* whether the Classic-tuned constants transfer to
+  14×14.
 - **Objective:** decide whether the Classic-tuned constants still hold on 14×14 with one
   opponent: the per-tier `beam` (medium 6, hard 16, extreme 20,
   [difficulty.ts](../../../src/client/ai/difficulty.ts)) and the heuristic weights
@@ -809,6 +840,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE31 — Duo reward model: the placed-square leader is not the Duo winner
 - **Status:** proposed (blocked on product P54; wants AE29's readout)
+- **Variant:** duo — Duo's advanced-only scoring is what makes the reward proxy wrong
+  (M6).
 - **Objective:** decide what an MCTS simulation in Duo should be rewarded for, given that
   two of the shipped reward's premises are false there.
 - **Hypothesis:** two independent defects — one provable on paper, one measurable.

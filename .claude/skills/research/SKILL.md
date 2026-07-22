@@ -124,7 +124,11 @@ one without "N/A", bounce it back to /triage as a product item. Verify the `Powe
 line is filled (`stats.py --power`, Phase 3) and the bar is reachable at the Method's
 n. **New-track gate (M5):** if this is the first entry of a new domain or claim-type,
 it must name the track's external readout — and if none exists, building one *is* the
-first entry, drafted before any self-relative run. Also slot the new entry
+first entry, drafted before any self-relative run. **Variant gate (M6):** the entry
+carries a `Variant:` line (`classic` / `duo` / `both` / `mechanism`, vocabulary in
+FRAMEWORK.md's `## Variant scope`) — the schema test fails an open entry without one.
+Where the Method's corpus or harness is a different variant than the question, name
+the gap in the entry rather than inheriting it silently. Also slot the new entry
 into that file's `## Next up` block if it's dependency-ready (payoff-ranked).
 
 ## Discipline checklist (refuse to skip, applies to every phase)
@@ -137,3 +141,4 @@ into that file's `## Next up` block if it's dependency-ready (payoff-ranked).
 - [ ] Backlog `Status` flipped + run linked at close
 - [ ] `won` close: deployment pointer + replication-for-shipped-defaults + staleness sweep
 - [ ] New track names its external readout before self-relative runs (M5)
+- [ ] Open entry carries `Variant:`; a finding from F19 on carries its variant tag (M6)
