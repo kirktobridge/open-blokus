@@ -1,4 +1,5 @@
-import { BOARD_SIZE, idx, inBounds, orthoNeighbors, diagNeighbors } from '../board';
+import { idx, inBounds, orthoNeighbors, diagNeighbors } from '../board';
+import { boardSizeOf } from '../modes';
 import { resolveCells } from '../pieces';
 import { generateLegalMoves } from '../moves';
 import type { Cell, Color, GameState, Placement } from '../types';
@@ -19,19 +20,18 @@ export const WEIGHTS: Weights = {
   block: 2,
 };
 
-const CENTER = (BOARD_SIZE - 1) / 2;
-
 /** Empty diagonal cells that stay legal future attach points after this placement. */
 function newFrontier(G: GameState, color: Color, cells: Cell[]): number {
-  const placed = new Set(cells.map((c) => idx(c.x, c.y)));
+  const size = boardSizeOf(G);
+  const placed = new Set(cells.map((c) => idx(c.x, c.y, size)));
   const isSameColor = (x: number, y: number) =>
-    inBounds(x, y) && (placed.has(idx(x, y)) || G.board[idx(x, y)] === color);
+    inBounds(x, y, size) && (placed.has(idx(x, y, size)) || G.board[idx(x, y, size)] === color);
 
   const frontier = new Set<number>();
   for (const c of cells) {
     for (const d of diagNeighbors(c)) {
-      if (!inBounds(d.x, d.y)) continue;
-      const di = idx(d.x, d.y);
+      if (!inBounds(d.x, d.y, size)) continue;
+      const di = idx(d.x, d.y, size);
       if (placed.has(di) || G.board[di] !== null) continue; // must be empty
       // An attach point can't be orthogonally adjacent to our own color.
       if (orthoNeighbors(d).some((n) => isSameColor(n.x, n.y))) continue;
@@ -43,11 +43,12 @@ function newFrontier(G: GameState, color: Color, cells: Cell[]): number {
 
 /** How many of our placed cells sit diagonally next to an opponent (deny their corner). */
 function opponentCornersDenied(G: GameState, color: Color, cells: Cell[]): number {
+  const size = boardSizeOf(G);
   let n = 0;
   for (const c of cells) {
     const denies = diagNeighbors(c).some((d) => {
-      if (!inBounds(d.x, d.y)) return false;
-      const v = G.board[idx(d.x, d.y)];
+      if (!inBounds(d.x, d.y, size)) return false;
+      const v = G.board[idx(d.x, d.y, size)];
       return v !== null && v !== color;
     });
     if (denies) n++;
@@ -56,9 +57,10 @@ function opponentCornersDenied(G: GameState, color: Color, cells: Cell[]): numbe
 }
 
 /** Higher when the piece sits closer to the center (mild). */
-function centerScore(cells: Cell[]): number {
+function centerScore(cells: Cell[], size: number): number {
+  const center = (size - 1) / 2;
   const avg =
-    cells.reduce((s, c) => s + Math.abs(c.x - CENTER) + Math.abs(c.y - CENTER), 0) /
+    cells.reduce((s, c) => s + Math.abs(c.x - center) + Math.abs(c.y - center), 0) /
     cells.length;
   return -avg;
 }
@@ -77,7 +79,7 @@ export function scoreCells(
   return (
     cells.length * weights.size +
     newFrontier(G, color, cells) * weights.frontier +
-    centerScore(cells) * weights.center +
+    centerScore(cells, boardSizeOf(G)) * weights.center +
     opponentCornersDenied(G, color, cells) * weights.block
   );
 }

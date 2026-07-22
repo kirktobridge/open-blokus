@@ -37,7 +37,7 @@ function oracleMoves(G: GameState, color: Color): { pieceId: import('../src/game
 
 /** Canonical, orientation-label-independent key: piece + sorted absolute cells. */
 function cellKey(pieceId: string, cells: Cell[]): string {
-  return pieceId + ':' + cells.map((c) => idx(c.x, c.y)).sort((a, b) => a - b).join(',');
+  return pieceId + ':' + cells.map((c) => idx(c.x, c.y, BOARD_SIZE)).sort((a, b) => a - b).join(',');
 }
 
 function keysFromOracle(G: GameState, color: Color): Set<string> {

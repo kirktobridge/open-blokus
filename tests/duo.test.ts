@@ -9,6 +9,8 @@ import { generateLegalMoves } from '../src/game/moves';
 import { buildBitBoards, bbLegal } from '../src/game/bitboard';
 import { finalScores, scoreColor } from '../src/game/scoring';
 import { COLOR_ORDER, PIECE_IDS, type Color } from '../src/game/types';
+import { chooseMove } from '../src/game/ai/heuristic';
+import { mulberry32 } from '../src/game/ai/arena';
 
 const duo = () => createInitialState(2, 'advanced', 'duo');
 
@@ -175,5 +177,40 @@ describe('Duo plays through the engine', () => {
     expect(Object.keys(over.colors).sort()).toEqual(['black', 'white']);
     expect(over.winners.length).toBeGreaterThan(0);
     client.stop();
+  });
+});
+
+describe('the shipped bot plays Duo without corrupting its reads', () => {
+  it('the heuristic returns legal moves for a whole Duo game', () => {
+    // The size-defaulting sweep's canonical case: `heuristic.ts` used to call
+    // `idx`/`inBounds` with no size, so on a 196-cell board it indexed as if 400,
+    // read `undefined`, and `undefined !== null` made out-of-range cells report as
+    // *occupied* — a silently worse bot with every test still green.
+    const G = createInitialState(2, 'advanced', 'duo');
+    const rng = mulberry32(7);
+    let plies = 0;
+    for (let guard = 0; guard < 100; guard++) {
+      const color = playColorsOf(G)[G.activeColorIndex];
+      const move = chooseMove(G, color, rng);
+      if (move) {
+        const cells = resolveCells(move);
+        expect(isLegalPlacement(G, color, move.pieceId, cells)).toBe(true);
+        // Every cell it reasons about must be on *this* board.
+        for (const c of cells) {
+          expect(c.x).toBeLessThan(14);
+          expect(c.y).toBeLessThan(14);
+        }
+        applyPlacement(G, color, move.pieceId, cells);
+        plies++;
+      } else {
+        colorStateOf(G, color).stuck = true;
+      }
+      if (playColorsOf(G).every((c) => colorStateOf(G, c).stuck)) break;
+      G.activeColorIndex = (G.activeColorIndex + 1) % playColorsOf(G).length;
+    }
+    // A bot reading out-of-range cells as occupied strangles itself early; a sound
+    // one fills most of a 14×14 board across both hands.
+    expect(plies).toBeGreaterThan(20);
+    expect(G.board.filter((c) => c !== null).length).toBeGreaterThan(120);
   });
 });

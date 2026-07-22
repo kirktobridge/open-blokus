@@ -26,7 +26,7 @@ describe('first move (corner rule)', () => {
     // Out of bounds.
     expect(isLegalPlacement(G, 'blue', 'I2', [cell(19, 0), cell(20, 0)])).toBe(false);
     // Occupy (0,0), then a piece overlapping it is illegal.
-    G.board[idx(0, 0)] = 'blue';
+    G.board[idx(0, 0, BOARD_SIZE)] = 'blue';
     colorStateOf(G, 'blue').hasStarted = true;
     expect(isLegalPlacement(G, 'blue', 'I1', [cell(0, 0)])).toBe(false);
   });
@@ -62,7 +62,7 @@ describe('corner-only growth (rules 4 & 5)', () => {
 
   it('allows sharing an edge with a different color', () => {
     const G = started();
-    G.board[idx(2, 2)] = 'red'; // red square adjacent to candidate
+    G.board[idx(2, 2, BOARD_SIZE)] = 'red'; // red square adjacent to candidate
     // (2,1) corners blue (1,0) and shares an edge with red (2,2) — allowed.
     expect(isLegalPlacement(G, 'blue', 'I1', [cell(2, 1)])).toBe(true);
   });
@@ -82,8 +82,8 @@ describe('applyPlacement', () => {
   it('paints cells, removes the piece, records lastPlaced, sets hasStarted', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'I2', [cell(0, 0), cell(1, 0)]);
-    expect(G.board[idx(0, 0)]).toBe('blue');
-    expect(G.board[idx(1, 0)]).toBe('blue');
+    expect(G.board[idx(0, 0, BOARD_SIZE)]).toBe('blue');
+    expect(G.board[idx(1, 0, BOARD_SIZE)]).toBe('blue');
     expect(colorStateOf(G, 'blue').remaining).not.toContain('I2');
     expect(colorStateOf(G, 'blue').remaining.length).toBe(20);
     expect(colorStateOf(G, 'blue').lastPlaced).toBe('I2');

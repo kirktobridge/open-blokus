@@ -7,6 +7,7 @@ import { generateLegalMoves } from '../src/game/moves';
 import { idx } from '../src/game/board';
 import { COLOR_ORDER } from '../src/game/types';
 import { colorStateOf } from '../src/game/modes';
+import { BOARD_SIZE } from '../src/shared/constants';
 
 /** Play the first legal move for whichever color is currently active. */
 function playCurrent(client: ReturnType<typeof makeClient>) {
@@ -84,7 +85,7 @@ describe('game over', () => {
       setup: () => {
         const G = createInitialState(4, 'basic');
         G.board.fill('red');
-        G.board[idx(0, 0)] = null; // leave blue's corner open
+        G.board[idx(0, 0, BOARD_SIZE)] = null; // leave blue's corner open
         colorStateOf(G, 'blue').remaining = ['I1'];
         for (const c of ['yellow', 'red', 'green'] as const) {
           colorStateOf(G, c).remaining = [];

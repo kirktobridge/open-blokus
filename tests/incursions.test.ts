@@ -5,6 +5,7 @@ import type { Color, GameState } from '../src/game/types';
 import { expansionAnchors } from '../src/client/advisor/legalMoves';
 import { incursionCorners, INCURSION_MIN_PIECE } from '../src/client/advisor/incursions';
 import { colorStateOf } from '../src/game/modes';
+import { BOARD_SIZE } from '../src/shared/constants';
 
 /**
  * Incursion advisor (P44): the open corners `forColor` relies on that an opponent
@@ -16,7 +17,7 @@ import { colorStateOf } from '../src/game/modes';
 
 /** Paint `color` onto board cells and mark it started (enough for the predicate). */
 function paint(G: GameState, color: Color, cells: [number, number][]): void {
-  for (const [x, y] of cells) G.board[idx(x, y)] = color;
+  for (const [x, y] of cells) G.board[idx(x, y, BOARD_SIZE)] = color;
   colorStateOf(G, color).hasStarted = true;
 }
 
@@ -41,7 +42,7 @@ describe('incursionCorners (P44 incursion advisor)', () => {
 
     const cells = incursionCorners(G, 'blue');
     // Green can hook an I3/L4/… onto (6,6) — a blue corner — so it's at risk.
-    expect(cells).toContain(idx(6, 6));
+    expect(cells).toContain(idx(6, 6, BOARD_SIZE));
 
     // Every flagged cell is an empty corner blue actually owns (never a false mark).
     const anchors = new Set(expansionAnchors(G, 'blue'));
