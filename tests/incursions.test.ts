@@ -3,7 +3,8 @@ import { createInitialState } from '../src/game/modes';
 import { idx } from '../src/game/board';
 import type { Color, GameState } from '../src/game/types';
 import { expansionAnchors } from '../src/client/advisor/legalMoves';
-import { incursionCorners, INCURSION_MIN_PIECE } from '../src/client/advisor/incursions';
+import { incursionCorners } from '../src/client/advisor/incursions';
+import { SIGNAL_THRESHOLDS } from '../src/client/signals';
 import { colorStateOf } from '../src/game/modes';
 import { BOARD_SIZE } from '../src/shared/constants';
 
@@ -58,7 +59,7 @@ describe('incursionCorners (P44 incursion advisor)', () => {
     paint(G, 'green', [[7, 7]]);
     // Green holds only a 2-square piece — it can touch (6,6) but that's a scratch,
     // not an incursion (below INCURSION_MIN_PIECE), so nothing is flagged.
-    expect(INCURSION_MIN_PIECE).toBeGreaterThan(2);
+    expect(SIGNAL_THRESHOLDS.INCURSION_MIN_PIECE).toBeGreaterThan(2);
     colorStateOf(G, 'green').remaining = ['I2'];
     expect(incursionCorners(G, 'blue')).toEqual([]);
   });

@@ -10,6 +10,9 @@
  * move must resolve to one of our legal moves (`moveToPlacement`), every bridged
  * game is replay-verified against our rules core for free.
  */
+/* eslint-disable no-restricted-imports -- Classic by design (P55): the Pentobi
+   bridge speaks Classic GTP only (its coords map assumes the 20x20 corners), so this
+   external baseline is Classic-scoped until AE29 extends the bridge. */
 import { COLOR_ORDER } from '../../types';
 import type { Color, GameState } from '../../types';
 import { colorStateOf, createInitialState } from '../../modes';
