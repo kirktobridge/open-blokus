@@ -26,20 +26,20 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P53** — review opened from Your stats → Recent games has no Settings/Controls/Leave chips
-   and no visible route to the menu; the in-game path gets them for free from the table shell.
-   Small, and now dependency-clear — P52 (shipped) made its one exit reliably visible.
-2. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
+1. **P45** — lobby menu: subtitles into hover tooltips. Exploratory — the mockup is built, so the
    open work is the call itself (tidiness vs. touch discoverability), not more code.
-3. **P20** M2b — Blokus Duo, the playable milestone: two-colour rules (`black`/`white` into
+2. **P20** M2b — Blokus Duo, the playable milestone: two-colour rules (`black`/`white` into
    the `Color` union), the 14×14 preset, forced advanced scoring, lobby + turn glue.
    Unblocked by M2a (shipped). The big one — a wide `Color`-union change, plus the owed
    sweep of size-defaulting call sites that M2a's Classic fallbacks left silent.
    **Co-lands with P56** (record/stats variant identity) — without it the recorder
    silently drops every finished Duo game.
-4. **P57** — variant scope as schema in the research layer. Dependency-free and cheap
+3. **P57** — variant scope as schema in the research layer. Dependency-free and cheap
    (a schema-test field + skill-gate lines); closes the gap where FINDINGS M6 claims an
    enforcement that doesn't exist, before more variant-silent entries accumulate.
+4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+   but the lowest-urgency of the ready set; listed because the rest of the tail (P54, P55,
+   P56, P58) is blocked behind P20 M2b, so the queue is genuinely short until Duo is playable.
 
 ---
 
@@ -1047,8 +1047,14 @@ four classic colors as accents, shapes as the star.
 - **Depends on:** nothing. Succeeds P48 (shipped) — completes its intent. Surfaces:
   `ReviewTable.tsx`, `RailPanel.tsx`, possibly `BlokusBoardView.tsx`.
 
-### P53 — Standalone review needs the table's chrome (Settings, Controls, Leave)
-- **Status:** in-progress — `feat/p53-review-chrome`
+### P53 — Standalone review needs the table's chrome (Settings, Controls, Leave) — SHIPPED
+- **Status:** shipped (2026-07-22, merge `2448d2f`) — taken as the preferred shape, not the
+  cheap one: a shared `src/client/TableShell.tsx` owns the table chrome (wordmark ·
+  kind-of-table pill · status slot · Settings/Controls/Leave chips) plus P52's `fill`
+  flex-column layout, and both entry paths — `LocalAIGame` and `App`'s standalone-review
+  branch — render it, so the two can't drift again. Covered by a new
+  `e2e/game-history.spec.ts` walk (Your stats → Review → chips → home) and /verify
+  screenshots of both paths.
 - **Value:** review reached from a table is rendered inside `LocalAIGame`, so it inherits
   the table's chip row — Settings, Controls help, Leave. Review reached from "Your stats" →
   Recent games is a sibling branch in `App` with no shell at all: the chips are gated on

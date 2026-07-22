@@ -323,7 +323,10 @@ nothing to undo mid-turn, and disabling undo avoids multiplayer desync confusion
 ```
 
 The offline table (`LocalAIGame`) mounts the same `<BlokusBoardView>` and docks
-`SettingsPanel`/`ControlsHelp` into its own top bar (both bgio clients run `debug:false`).
+`SettingsPanel`/`ControlsHelp` into a top bar (both bgio clients run `debug:false`).
+That bar is `<TableShell>` — shared, because a full-screen view is reachable by two
+routes (in-game and standalone review from Your stats), and chrome owned by one route
+silently disappears on the other (P53).
 
 ### UI-only state (never in `G`)
 
