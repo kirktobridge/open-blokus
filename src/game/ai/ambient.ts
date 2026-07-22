@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-imports -- Classic by design (P55): the front door's
+   ambient board is a 4-color 20x20 game, generated offline and shipped as cells. It
+   is decoration with a fixed look, not a variant-aware surface. */
 import type { AmbientGame } from '../../shared/ambient';
 import { BOARD_SIZE } from '../../shared/constants';
 import { COLOR_ORDER } from '../types';

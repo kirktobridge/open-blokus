@@ -1,5 +1,5 @@
 import type { ByColor, Color } from '../../game/types';
-import { COLOR_ORDER, DUO_COLOR_ORDER } from '../../game/types';
+import { ALL_COLORS } from '../../shared/constants';
 
 /**
  * Clockwise quarter-turns that bring each color's home corner to the bottom-right
@@ -22,9 +22,14 @@ export const TURNS_TO_BOTTOM_RIGHT: Record<Color, number> = {
  * The color the local human played, read from a record's seat labels ("human"),
  * or undefined for an all-AI watch game (no human seat → no preferred orientation).
  * Picks the first human color if several are flagged (hot-seat / multi-color seats).
+ *
+ * Reads `ALL_COLORS` — every color any variant deals — rather than a variant's play
+ * order, because a record's seat labels are all it has to go on: the variant isn't a
+ * parameter here, and a Duo record's `black` seat must resolve as readily as a
+ * Classic `blue` one.
  */
 export function humanColor(seats: ByColor<string>): Color | undefined {
-  return [...COLOR_ORDER, ...DUO_COLOR_ORDER].find((c) => seats[c] === 'human');
+  return ALL_COLORS.find((c) => seats[c] === 'human');
 }
 
 /**

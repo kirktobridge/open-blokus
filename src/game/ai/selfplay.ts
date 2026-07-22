@@ -7,6 +7,9 @@
  * React, no boardgame.io, no I/O — the dump CLI lives in
  * scripts/selfplay-dump.ts.
  */
+/* eslint-disable no-restricted-imports -- Classic by design (P55): records stamp
+   `variant: 'classic'` and the winner mapping below is the 4p Classic seat order.
+   Duo self-play would be a new emitter, not a widened one. */
 import { COLOR_ORDER } from '../types';
 import type {
   ByColor,

@@ -7,6 +7,9 @@
  * means, board fill]; the four logits softmax into win probabilities. Shared
  * weights keep it color-symmetric; "is to move" carries the turn information.
  */
+/* eslint-disable no-restricted-imports -- Classic by design (P55): the feature
+   vector is a fixed 4-color layout (INPUT_SIZE below), so a trained net is bound to
+   Classic. A Duo net is a different input shape, i.e. a different model. */
 import { COLOR_ORDER } from '../types';
 import type { Color, GameState } from '../types';
 import { colorStateOf } from '../modes';

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { VARIANTS } from '../src/game/modes';
+import { ALL_COLORS } from '../src/shared/constants';
 import type { Cell, Color, Variant } from '../src/game/types';
 
 /**
@@ -112,6 +113,15 @@ describe('VARIANTS ↔ the spec docs', () => {
 
     expect(VARIANTS.duo.scoring).toBe('advanced');
     expect(read(SPEC_DOC.duo)).toMatch(/Duo uses \*\*advanced scoring only\*\*/);
+  });
+
+  /**
+   * `ALL_COLORS` is what variant-neutral code (seat lookups, palettes) iterates instead
+   * of a variant's play order. It only stays neutral if it stays the union.
+   */
+  it('keeps ALL_COLORS the union of every variant s colors', () => {
+    const union = new Set(Object.values(VARIANTS).flatMap((v) => [...v.playColors]));
+    expect([...ALL_COLORS].sort()).toEqual([...union].sort());
   });
 
   it('supports exactly the seat counts each doc allows', () => {
