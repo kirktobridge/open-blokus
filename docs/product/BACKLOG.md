@@ -26,17 +26,16 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P54** — variant-aware AI harness (**in-progress**). Rescoped 2026-07-22: the bots
-   and the event/advisor surfaces turned out to be variant-aware already (M2b + P56 took
-   that half), so what's left is the arena — `playGame`/`runTournament` are Classic-only
-   by construction, which is the single thing blocking every Duo experiment. Blocks P55,
-   P58 and research AE29–AE31.
-2. **P20** M2c — achromatic tile finish. Duo ships on a provisional flat skin; black and
+1. **P20** M2c — achromatic tile finish. Duo ships on a provisional flat skin; black and
    white are the degenerate case for the relative tile modulations, and per CLAUDE.md no
    check can see it — an eyes-on pass per theme.
+2. **P55** — mechanical Classic/Duo separation. Dependency-ready now that P54 shipped;
+   highest-leverage guard left, since variant drift is the one class of bug that stays
+   green through vitest, typecheck **and** lint. Scoped smaller than drafted: the lint
+   rule wants an exemption list for the Classic-by-design callers, not a sweep.
 3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
-   but the lowest-urgency of the ready set; P13's bands are also worth re-asking per
-   variant once P54 lets the bots actually play Duo.
+   but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
+   variant, since the arena can play Duo.
 
 ---
 
@@ -333,8 +332,13 @@ this epic owns the user-facing feature + its UX.
   later research follow-up if we want to *verify* styles are distinct (would then
   get an AE entry).
 
-### P54 — Variant-aware AI harness (let the arena play Duo)
-- **Status:** in-progress
+### P54 — Variant-aware AI harness (let the arena play Duo) — SHIPPED
+- **Status:** shipped (2026-07-22) — all three surviving (rescoped) items landed: the
+  arena takes a variant and drives the playing set from it (`--duo` or a `--config`
+  carrying `"variant": "duo"`), the Duo AI guard test exists, and the threshold re-check
+  did move the bar — so a Duo threshold set and [../EVENTS.md](../EVENTS.md)'s **Duo
+  deltas** section landed with it. Classic is unchanged: AE18's byte-identity golden
+  passes untouched.
 - **Rescoped 2026-07-22 — most of this entry was already built.** As drafted, P54
   claimed the whole layer above the rules core still hardcoded 20×20 and four colors,
   so the bots played "a corrupted game" and the event/advisor/share surfaces silently
@@ -377,12 +381,18 @@ this epic owns the user-facing feature + its UX.
     [../../src/game/board.ts](../../src/game/board.ts), so the silent-corruption path is
     a typecheck error now.
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`config.playColors`,
-  `black`/`white` in the `Color` union). **Blocks** research AE29–AE31
-  ([ai-engine.md](../research/backlog/ai-engine.md)) — none of them can run until the
-  arena can play a Duo game. Also **blocks
-  [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)**,
-  which guards the constant-import path once every caller is fixed — `arena.ts` and
-  `arena.cli.ts` are the last two, so P55's lint scope can only be widened after this.
+  `black`/`white` in the `Color` union). **Unblocked** research AE29–AE31
+  ([ai-engine.md](../research/backlog/ai-engine.md)) — the arena can now play a Duo game;
+  closing those loops is /research's, not this entry's.
+- **Correction (2026-07-22):** this entry previously claimed `arena.ts` and `arena.cli.ts`
+  were *the last two* `COLOR_ORDER`-as-playing-set callers, so
+  [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
+  lint scope could simply be widened after P54. **That was wrong** — checked against the
+  tree post-build. Still reading `COLOR_ORDER`, and all of them legitimately Classic-scoped
+  rather than bugs: `selfplay.ts`, `valuenet.ts`, `pentobi/arena.ts`, `ambient.ts`,
+  `puzzle/daily.ts`, and the client palette UI (`Wordmark`, `AmbientBoard`, appearance,
+  `PalettePicker`). So P55 needs an **exemption list, not a clean sweep** — a refinement of
+  P55's scope, not a blocker on it.
 
 ---
 
@@ -1198,7 +1208,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     `moves.ts` 3, `alphabeta.ts` 7, `heuristic.ts` 6, `legalMoves.ts` 4) — the rules-core
     two are already size-aware from M2a, so M2b's own share is the client callers.
     The AI/advisor half of that sweep was meant to be its own entry —
-    [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo) — but M2b's required-`size`
+    [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped) — but M2b's required-`size`
     flip forced those call sites anyway, so it absorbed them and left P54 the harness.
     M2b also encodes GAME_SPEC_DUO §6's worked cases **D1–D5** as rules-core tests —
     D5 pins the start-cell pair against the anti-diagonal misreading §3 documents,
@@ -1344,7 +1354,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   - **Sequencing constraint:** must **co-land with [P20](#p20--variety-blokus-duo--blitz)
     M2b** — the recorder runs at every game-over, so "ships playable" opens this window
     immediately, one dependency *before*
-    [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo).
+    [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped).
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`black`/`white` in
   `Color`, `config.playColors`). Reads the variant registry from
   [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)
@@ -1377,7 +1387,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
     lint exemptions — not silently inherited.
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (playable Duo). The pacing
-  check wants [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo)
+  check wants [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped)
   first — pacing has to be *measured* on a Duo board, which needs the arena.
 
 ---
@@ -1451,7 +1461,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
   [P32](#p32--in-game-event-vocabulary-cuts-mobility-swings-endgame-beats--maintained-registry)'s
   events registry, and the edit-guard hook all make alignment mechanical — and this entry
   applies that idiom to the variant split. The failure it prevents is the one
-  [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo) documents:
+  [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped) documents:
   code reading the wrong board size stays green through vitest, typecheck **and** lint
   while the bot plays a corrupted game.
 - **Scope:**
@@ -1469,11 +1479,11 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     tests with [P20](#p20--variety-blokus-duo--blitz) M2b rather than waiting here.
   - **Variant dimension for the signal registries.** `EVENT_THRESHOLDS`
     ([../../src/client/drama.ts](../../src/client/drama.ts)) is a flat record and
-    [../EVENTS.md](../EVENTS.md)'s table has no variant column, so if P54's threshold
-    re-check says Duo needs different bars there is nowhere to put a second value except
-    off-registry. Give thresholds a per-variant axis, add the column, and extend
-    [tests/events-registry.test.ts](../../tests/events-registry.test.ts) to parse it —
-    the same both-ways idiom, one more dimension. Fold in the unregistered
+    [../EVENTS.md](../EVENTS.md) had no variant column. **P54 settled the event half:**
+    the re-check moved `CUT_MIN_LOSS`, so `DUO_EVENT_THRESHOLDS` + a **Duo deltas** table
+    landed, both held by [tests/events-registry.test.ts](../../tests/events-registry.test.ts).
+    What's left here is generalising that one-off delta into a real per-variant axis, and
+    folding in the unregistered
     standing-signal thresholds while at it: `INCURSION_MIN_PIECE`
     ([../../src/client/advisor/incursions.ts](../../src/client/advisor/incursions.ts))
     is feel-tuned like `CUT_MIN_LOSS` but has no doc mirror, no both-ways test, and no
@@ -1488,9 +1498,16 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     error. `CORNERS` is in the list because it is the third Classic constant with a
     live wrong-use path — the exact fallback P54 removes from `alphabeta.ts`.
     `eslint.config.js` already scopes rules per `files` block, so this drops in.
-    Intentionally-Classic surfaces caught by the widened net (the ambient generator,
-    the daily puzzle) take a per-file disable that must state the Classic-by-design
-    rationale — the exemption comment is where that intent finally gets recorded.
+    Intentionally-Classic surfaces caught by the widened net take a per-file disable that
+    must state the Classic-by-design rationale — the exemption comment is where that intent
+    finally gets recorded. **Refined 2026-07-22 (post-P54): this is an exemption list, not
+    a clean sweep.** P54 previously claimed `arena.ts`/`arena.cli.ts` were the last two
+    `COLOR_ORDER`-as-playing-set callers; a check of the tree after P54 landed says
+    otherwise. Still reading it, and all Classic-scoped by design rather than buggy:
+    `selfplay.ts` (stamps `variant: 'classic'`, self-consistent), `valuenet.ts` (4-colour
+    feature layout), `pentobi/arena.ts` (Classic-only external baseline), `ambient.ts`,
+    `puzzle/daily.ts`, and the client palette UI (`Wordmark`, `AmbientBoard`, appearance,
+    `PalettePicker`). Budget for annotating that set, not for converting it.
     Guards the **constant-import** path; P54's required-`size`
     param guards the **function-call** path — different holes, both needed.
   - **Agentic-layer guard:** add `docs/GAME_SPEC_DUO.md` to `.claude/edit-blocklist` once
@@ -1502,9 +1519,9 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     that is P54's closing step, since P54 already rewrites three of the five files
     involved and splitting it would touch them twice. It is also the highest-value guard
     of the lot, so it must not wait on P55.
-- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (shipped) + P54 — the registry
-  needs a real second variant to hold, and the lint rule would fire on code P54 is already
-  fixing. Don't start before them: a registry with one variant in it enforces nothing.
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (shipped) + P54 (shipped) —
+  both cleared, so this is dependency-ready. The registry needed a real second variant to
+  hold, and the lint rule would have fired on code P54 was still fixing.
   **Half the first bullet is already there:** M2b landed a `VARIANTS` table in
   [../../src/game/modes.ts](../../src/game/modes.ts) as the code-side source of truth, so
   what this entry still owes is the *both-ways test* against GAME_SPEC_DUO.md, not a new
