@@ -1179,8 +1179,8 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   read through `boardSizeOf` / `startCellOf` accessors; `bitboard.ts`'s hardcoded
   `SIZE`/`MASK20` are gone. Classic remains the only shipped variant and no behaviour
   changed — the brute-force move oracle and the bitboard-vs-`isLegalPlacement`
-  differential still pass, which is what makes that claim checkable. **M2b/M2c not
-  started.**
+  differential still pass, which is what makes that claim checkable. **M2b in-progress**
+  on `feat/p20-duo-rules` (co-landing P56); **M2c not started.**
 - **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
   move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
   entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
@@ -1307,7 +1307,8 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   replay-fork substrate if built — build the substrate once (see P2's R2 note).
 
 ### P56 — Variant identity through game records, history & progression
-- **Status:** proposed
+- **Status:** in-progress — co-landing with P20 M2b on `feat/p20-duo-rules` (a playable
+  Duo without this silently drops every finished Duo game).
 - **Value:** the whole persistence pipeline identifies a game by `(mode, scoring)` and
   addresses colors *positionally* through `COLOR_ORDER` — the variant is
   unrepresentable. `GameRecord` ([../../src/game/ai/selfplay.ts](../../src/game/ai/selfplay.ts))
