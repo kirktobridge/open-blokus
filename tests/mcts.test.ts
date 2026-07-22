@@ -15,6 +15,7 @@ import {
 import { chooseMove } from '../src/game/ai/heuristic';
 import { remainingSquares } from '../src/game/scoring';
 import { COLOR_ORDER } from '../src/game/types';
+import { colorStateOf } from '../src/game/modes';
 
 // MCTS is expensive; keep the unit config tiny. Strength (vs heuristic/random)
 // is validated in the benchmark / Run H, not here.
@@ -182,10 +183,10 @@ describe('reward-shaping default (P36/F15)', () => {
     // successive color has strictly more placed squares (blue fewest → green most).
     const G = createInitialState(4);
     COLOR_ORDER.forEach((c, i) => {
-      const rem = G.colors[c].remaining;
-      G.colors[c].remaining = rem.slice(0, rem.length - i * 3);
+      const rem = colorStateOf(G, c).remaining;
+      colorStateOf(G, c).remaining = rem.slice(0, rem.length - i * 3);
     });
-    const remaining = COLOR_ORDER.map((c) => remainingSquares(G.colors[c]));
+    const remaining = COLOR_ORDER.map((c) => remainingSquares(colorStateOf(G, c)));
     // Sanity: construction really did produce a strict placed ordering (green leads).
     expect(remaining[0]).toBeGreaterThan(remaining[1]);
     expect(remaining[1]).toBeGreaterThan(remaining[2]);

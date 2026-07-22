@@ -11,7 +11,7 @@ import { BlokusGame } from '../src/bgio/BlokusGame';
 import { attachRecorder, type RecorderClient } from '../src/client/log/recorder';
 import { generateLegalMoves } from '../src/game/moves';
 import type { GameRecord } from '../src/game/ai/selfplay';
-import { COLOR_ORDER, type Color, type GameState } from '../src/game/types';
+import { COLOR_ORDER, type ByColor, type GameState } from '../src/game/types';
 
 /** A minimal but valid record; the fields a history row reads are all explicit. */
 function record(over: Partial<GameRecord> = {}): GameRecord {
@@ -19,6 +19,7 @@ function record(over: Partial<GameRecord> = {}): GameRecord {
     seed: 0,
     mode: 4,
     scoring: 'basic',
+    variant: 'classic',
     seats: { blue: 'human', yellow: 'easy', red: 'easy', green: 'easy' },
     moves: [{ color: 'blue', pieceId: 'I2', rotation: 0, reflected: false, x: 0, y: 0 }],
     scores: { blue: 12, yellow: 5, red: 4, green: 3 },
@@ -174,7 +175,7 @@ describe('history is fed by the recorder (P15 M2)', () => {
     vi.stubGlobal('fetch', undefined);
 
     const client = Client({ game: BlokusGame, numPlayers: 4 });
-    const seats: Record<Color, string> = {
+    const seats: ByColor<string> = {
       blue: 'human',
       yellow: 'hard',
       red: 'hard',

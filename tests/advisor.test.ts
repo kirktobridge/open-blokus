@@ -7,6 +7,7 @@ import { idx } from '../src/game/board';
 import { attachPoints } from '../src/game/ai/alphabeta';
 import { COLOR_ORDER } from '../src/game/types';
 import { PIECE_IDS } from '../src/game/types';
+import { colorStateOf } from '../src/game/modes';
 import {
   unplayablePieces,
   legalTargetCells,
@@ -124,7 +125,7 @@ describe('unplayablePieces (P39 unplayable-piece shading)', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'V3', resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 }));
     const playable = new Set(generateLegalMoves(G, 'blue').map((p) => p.pieceId));
-    const expected = G.colors.blue.remaining.filter((id) => !playable.has(id));
+    const expected = colorStateOf(G, 'blue').remaining.filter((id) => !playable.has(id));
     expect(new Set(unplayablePieces(G, 'blue'))).toEqual(new Set(expected));
   });
 

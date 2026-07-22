@@ -16,6 +16,7 @@ import { applyPlacement } from '../src/game/placement';
 import { resolveCells, pieceSize } from '../src/game/pieces';
 import { remainingSquares } from '../src/game/scoring';
 import { mulberry32 } from '../src/game/ai/arena';
+import { colorStateOf } from '../src/game/modes';
 
 const clone = <T>(v: T): T => structuredClone(v);
 
@@ -50,7 +51,7 @@ describe('generateDailyPuzzle', () => {
     expect(p.playerColor).toBe(PUZZLE_COLOR);
     // The turn is pointed at the player's color, which has already opened.
     expect(COLOR_ORDER[p.state.activeColorIndex]).toBe(PUZZLE_COLOR);
-    expect(p.state.colors[PUZZLE_COLOR].hasStarted).toBe(true);
+    expect(colorStateOf(p.state, PUZZLE_COLOR).hasStarted).toBe(true);
     // The board is meaningfully populated by the self-play setup...
     expect(p.state.board.some((c) => c !== null)).toBe(true);
     // ...and every color, including the player's, is on the board.
@@ -59,7 +60,7 @@ describe('generateDailyPuzzle', () => {
     }
     // The player has moves to make and pieces to place.
     expect(hasAnyMove(p.state, PUZZLE_COLOR)).toBe(true);
-    expect(p.ceiling).toBe(remainingSquares(p.state.colors[PUZZLE_COLOR]));
+    expect(p.ceiling).toBe(remainingSquares(colorStateOf(p.state, PUZZLE_COLOR)));
     expect(p.ceiling).toBeGreaterThan(0);
   });
 });
@@ -84,18 +85,18 @@ describe('advanceOpponents', () => {
   it('lets the three other colors reply without touching the player color', () => {
     const p = generateDailyPuzzle('2026-07-10');
     const state = clone(p.state);
-    const before = COLOR_ORDER.map((c) => state.colors[c].remaining.length);
-    const playerBefore = state.colors[PUZZLE_COLOR].remaining.slice();
+    const before = COLOR_ORDER.map((c) => colorStateOf(state, c).remaining.length);
+    const playerBefore = colorStateOf(state, PUZZLE_COLOR).remaining.slice();
 
     const changed = advanceOpponents(state, PUZZLE_COLOR, mulberry32(1));
 
     // Each opponent (that had a move) placed exactly one piece; the player's hand
     // is untouched.
-    expect(state.colors[PUZZLE_COLOR].remaining).toEqual(playerBefore);
+    expect(colorStateOf(state, PUZZLE_COLOR).remaining).toEqual(playerBefore);
     let opponentsMoved = 0;
     COLOR_ORDER.forEach((c, i) => {
       if (c === PUZZLE_COLOR) return;
-      const placed = before[i] - state.colors[c].remaining.length;
+      const placed = before[i] - colorStateOf(state, c).remaining.length;
       expect(placed === 0 || placed === 1).toBe(true);
       if (placed === 1) opponentsMoved += 1;
     });

@@ -4,6 +4,7 @@ import { idx } from '../src/game/board';
 import type { Color, GameState } from '../src/game/types';
 import { expansionAnchors } from '../src/client/advisor/legalMoves';
 import { incursionCorners, INCURSION_MIN_PIECE } from '../src/client/advisor/incursions';
+import { colorStateOf } from '../src/game/modes';
 
 /**
  * Incursion advisor (P44): the open corners `forColor` relies on that an opponent
@@ -16,14 +17,14 @@ import { incursionCorners, INCURSION_MIN_PIECE } from '../src/client/advisor/inc
 /** Paint `color` onto board cells and mark it started (enough for the predicate). */
 function paint(G: GameState, color: Color, cells: [number, number][]): void {
   for (const [x, y] of cells) G.board[idx(x, y)] = color;
-  G.colors[color].hasStarted = true;
+  colorStateOf(G, color).hasStarted = true;
 }
 
 /** A 4p board with yellow + red benched, so a test isolates blue vs green. */
 function blueVsGreen(): GameState {
   const G = createInitialState(4);
-  G.colors.yellow.stuck = true;
-  G.colors.red.stuck = true;
+  colorStateOf(G, 'yellow').stuck = true;
+  colorStateOf(G, 'red').stuck = true;
   return G;
 }
 
@@ -57,7 +58,7 @@ describe('incursionCorners (P44 incursion advisor)', () => {
     // Green holds only a 2-square piece — it can touch (6,6) but that's a scratch,
     // not an incursion (below INCURSION_MIN_PIECE), so nothing is flagged.
     expect(INCURSION_MIN_PIECE).toBeGreaterThan(2);
-    G.colors.green.remaining = ['I2'];
+    colorStateOf(G, 'green').remaining = ['I2'];
     expect(incursionCorners(G, 'blue')).toEqual([]);
   });
 
@@ -65,8 +66,8 @@ describe('incursionCorners (P44 incursion advisor)', () => {
     // 2p: blue + red are one player, yellow + green the other. Bench the opponents;
     // red (blue's own color) can reach blue's corner, but that's not an incursion.
     const G = createInitialState(2);
-    G.colors.yellow.stuck = true;
-    G.colors.green.stuck = true;
+    colorStateOf(G, 'yellow').stuck = true;
+    colorStateOf(G, 'green').stuck = true;
     paint(G, 'blue', [[5, 5]]);
     paint(G, 'red', [[7, 7]]);
     expect(incursionCorners(G, 'blue')).toEqual([]);
@@ -76,7 +77,7 @@ describe('incursionCorners (P44 incursion advisor)', () => {
     const G = blueVsGreen();
     paint(G, 'blue', [[5, 5]]);
     paint(G, 'green', [[7, 7]]);
-    G.colors.green.stuck = true; // the only reacher can no longer move
+    colorStateOf(G, 'green').stuck = true; // the only reacher can no longer move
     expect(incursionCorners(G, 'blue')).toEqual([]);
   });
 });

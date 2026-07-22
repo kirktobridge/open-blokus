@@ -17,6 +17,7 @@ import {
   resultSummary,
 } from '../src/client/drama';
 import { emojiBoard } from '../src/game/share';
+import { colorStateOf } from '../src/game/modes';
 
 describe('placedSquares / TOTAL_SQUARES', () => {
   it('all 21 pieces total 89 squares', () => {
@@ -25,9 +26,9 @@ describe('placedSquares / TOTAL_SQUARES', () => {
 
   it('coverage = total minus remaining', () => {
     const G = createInitialState(4, 'basic');
-    expect(placedSquares(G.colors.blue)).toBe(0); // nothing placed yet
-    G.colors.blue.remaining = []; // everything placed
-    expect(placedSquares(G.colors.blue)).toBe(TOTAL_SQUARES);
+    expect(placedSquares(colorStateOf(G, 'blue'))).toBe(0); // nothing placed yet
+    colorStateOf(G, 'blue').remaining = []; // everything placed
+    expect(placedSquares(colorStateOf(G, 'blue'))).toBe(TOTAL_SQUARES);
   });
 });
 
@@ -35,9 +36,9 @@ describe('newlyStuckColors', () => {
   it('reports only the colors that flipped to stuck this update', () => {
     const prev = createInitialState(4, 'basic');
     const cur = createInitialState(4, 'basic');
-    prev.colors.red.stuck = true; // already stuck before → not "newly"
-    cur.colors.red.stuck = true;
-    cur.colors.yellow.stuck = true; // flipped this update
+    colorStateOf(prev, 'red').stuck = true; // already stuck before → not "newly"
+    colorStateOf(cur, 'red').stuck = true;
+    colorStateOf(cur, 'yellow').stuck = true; // flipped this update
     expect(newlyStuckColors(prev, cur)).toEqual(['yellow']);
   });
 
@@ -57,10 +58,10 @@ describe('revealRows', () => {
   it('sorts winners first, then by coverage desc', () => {
     const G = createInitialState(4, 'basic');
     // green covers most but red is the winner (fewest remaining → wins basic).
-    G.colors.red.remaining = []; // placed 89, winner
-    G.colors.green.remaining = ['I1']; // placed 88
-    G.colors.blue.remaining = ['I5', 'V5']; // placed 79
-    G.colors.yellow.remaining = ['I1']; // placed 88
+    colorStateOf(G, 'red').remaining = []; // placed 89, winner
+    colorStateOf(G, 'green').remaining = ['I1']; // placed 88
+    colorStateOf(G, 'blue').remaining = ['I5', 'V5']; // placed 79
+    colorStateOf(G, 'yellow').remaining = ['I1']; // placed 88
     const rows = revealRows(G, finalScores(G));
 
     expect(rows[0].color).toBe('red');
@@ -74,7 +75,7 @@ describe('revealRows', () => {
 describe('resultSummary', () => {
   it('names the winner and lists every color score', () => {
     const G = createInitialState(4, 'basic');
-    G.colors.blue.remaining = []; // winner (0 remaining)
+    colorStateOf(G, 'blue').remaining = []; // winner (0 remaining)
     const text = resultSummary(G, finalScores(G));
     expect(text).toContain('Blue wins');
     for (const name of ['Blue', 'Yellow', 'Red', 'Green']) expect(text).toContain(name);
@@ -100,7 +101,7 @@ describe('resultSummary', () => {
  */
 function paint(G: GameState, color: Color, cells: Cell[]): void {
   for (const c of cells) G.board[c.y * 20 + c.x] = color;
-  G.colors[color].hasStarted = true;
+  colorStateOf(G, color).hasStarted = true;
 }
 
 /** Paint a placement and record it as the move that just happened. */
@@ -224,7 +225,7 @@ describe('detectEvents — cut', () => {
 
     const cur = clone(prev);
     play(cur, 'red', attachCells(prev, 'blue').slice(0, 3));
-    cur.colors.blue.stuck = true;
+    colorStateOf(cur, 'blue').stuck = true;
 
     const events = detectEvents(prev, cur);
     expect(events.map((e) => e.kind)).toEqual(['out-of-moves']);
@@ -292,19 +293,19 @@ describe('detectEvents — cramped', () => {
 });
 
 describe('detectEvents — endgame', () => {
-  const withHands = (counts: Record<Color, number>): GameState => {
+  const withHands = (counts: Partial<Record<Color, number>>): GameState => {
     const G = createInitialState(4, 'basic');
-    for (const c of COLOR_ORDER) G.colors[c].remaining = G.colors[c].remaining.slice(0, counts[c]);
+    for (const c of COLOR_ORDER) colorStateOf(G, c).remaining = colorStateOf(G, c).remaining.slice(0, counts[c]);
     return G;
   };
 
   it('fires once, when the last live color runs its hand down', () => {
     const n = EVENT_THRESHOLDS.ENDGAME_PIECES_LEFT;
     const prev = withHands({ blue: n + 1, yellow: n, red: n, green: 12 });
-    prev.colors.green.stuck = true; // out of the game — its fat hand doesn't count
+    colorStateOf(prev, 'green').stuck = true; // out of the game — its fat hand doesn't count
 
     const cur = clone(prev);
-    cur.colors.blue.remaining = cur.colors.blue.remaining.slice(0, n);
+    colorStateOf(cur, 'blue').remaining = colorStateOf(cur, 'blue').remaining.slice(0, n);
 
     const events = detectEvents(prev, cur);
     expect(events.map((e) => e.kind)).toEqual(['endgame']);
@@ -312,14 +313,14 @@ describe('detectEvents — endgame', () => {
     expect(events[0].text).toBe('Final rounds');
 
     const later = clone(cur);
-    later.colors.red.remaining = later.colors.red.remaining.slice(0, n - 1);
+    colorStateOf(later, 'red').remaining = colorStateOf(later, 'red').remaining.slice(0, n - 1);
     expect(detectEvents(cur, later)).toEqual([]); // the crossing already happened
   });
 
   it('stays quiet once every color is stuck — that moment belongs to the reveal', () => {
     const prev = withHands({ blue: 6, yellow: 6, red: 6, green: 6 });
     const cur = clone(prev);
-    for (const c of COLOR_ORDER) cur.colors[c].stuck = true;
+    for (const c of COLOR_ORDER) colorStateOf(cur, c).stuck = true;
 
     expect(detectEvents(prev, cur).some((e) => e.kind === 'endgame')).toBe(false);
   });
@@ -337,7 +338,7 @@ describe('detectEvents — contract', () => {
     paint(prev, 'blue', staircase(2, 2));
     const cur = clone(prev);
     play(cur, 'red', attachCells(prev, 'blue').slice(0, 3));
-    cur.colors.yellow.stuck = true;
+    colorStateOf(cur, 'yellow').stuck = true;
 
     const kinds = detectEvents(prev, cur).map((e) => e.kind);
     expect(kinds.length).toBeGreaterThan(0);

@@ -19,10 +19,10 @@ import {
  */
 describe('pentobi coords', () => {
   it('maps the four corners the way Pentobi seats them', () => {
-    expect(cellToPoint(CORNERS.blue)).toBe('a20'); // top-left
-    expect(cellToPoint(CORNERS.yellow)).toBe('t20'); // top-right
-    expect(cellToPoint(CORNERS.red)).toBe('t1'); // bottom-right
-    expect(cellToPoint(CORNERS.green)).toBe('a1'); // bottom-left
+    expect(cellToPoint(CORNERS.blue!)).toBe('a20'); // top-left
+    expect(cellToPoint(CORNERS.yellow!)).toBe('t20'); // top-right
+    expect(cellToPoint(CORNERS.red!)).toBe('t1'); // bottom-right
+    expect(cellToPoint(CORNERS.green!)).toBe('a1'); // bottom-left
   });
 
   it('round-trips every board cell through point notation', () => {

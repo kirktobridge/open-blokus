@@ -4,6 +4,7 @@ import { createInitialState, CORNERS, boardSizeOf, startCellOf } from '../src/ga
 import { isLegalPlacement, applyPlacement } from '../src/game/placement';
 import { generateLegalMoves } from '../src/game/moves';
 import { idx, BOARD_SIZE } from '../src/game/board';
+import { colorStateOf } from '../src/game/modes';
 
 const cell = (x: number, y: number): Cell => ({ x, y });
 
@@ -26,7 +27,7 @@ describe('first move (corner rule)', () => {
     expect(isLegalPlacement(G, 'blue', 'I2', [cell(19, 0), cell(20, 0)])).toBe(false);
     // Occupy (0,0), then a piece overlapping it is illegal.
     G.board[idx(0, 0)] = 'blue';
-    G.colors.blue.hasStarted = true;
+    colorStateOf(G, 'blue').hasStarted = true;
     expect(isLegalPlacement(G, 'blue', 'I1', [cell(0, 0)])).toBe(false);
   });
 });
@@ -72,7 +73,7 @@ describe('availability', () => {
     const G = createInitialState(4);
     applyPlacement(G, 'blue', 'I2', [cell(0, 0), cell(1, 0)]);
     // I2 is no longer in remaining; even a geometrically valid spot is illegal.
-    expect(G.colors.blue.remaining).not.toContain('I2');
+    expect(colorStateOf(G, 'blue').remaining).not.toContain('I2');
     expect(isLegalPlacement(G, 'blue', 'I2', [cell(2, 1), cell(3, 1)])).toBe(false);
   });
 });
@@ -83,10 +84,10 @@ describe('applyPlacement', () => {
     applyPlacement(G, 'blue', 'I2', [cell(0, 0), cell(1, 0)]);
     expect(G.board[idx(0, 0)]).toBe('blue');
     expect(G.board[idx(1, 0)]).toBe('blue');
-    expect(G.colors.blue.remaining).not.toContain('I2');
-    expect(G.colors.blue.remaining.length).toBe(20);
-    expect(G.colors.blue.lastPlaced).toBe('I2');
-    expect(G.colors.blue.hasStarted).toBe(true);
+    expect(colorStateOf(G, 'blue').remaining).not.toContain('I2');
+    expect(colorStateOf(G, 'blue').remaining.length).toBe(20);
+    expect(colorStateOf(G, 'blue').lastPlaced).toBe('I2');
+    expect(colorStateOf(G, 'blue').hasStarted).toBe(true);
   });
 });
 

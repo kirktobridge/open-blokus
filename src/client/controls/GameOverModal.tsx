@@ -7,10 +7,11 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { Board } from '../board/Board';
 import { CountUp } from './CountUp';
 import { revealRows, resultSummary } from '../drama';
+import type { ByColor } from '../../game/types';
 import type { GameRecord } from '../../game/ai/selfplay';
 
 export interface GameOverPayload {
-  colors: Record<Color, number>;
+  colors: ByColor<number>;
   players: Record<string, number>;
   winners: string[];
 }
