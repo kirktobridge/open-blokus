@@ -1048,7 +1048,7 @@ four classic colors as accents, shapes as the star.
   `ReviewTable.tsx`, `RailPanel.tsx`, possibly `BlokusBoardView.tsx`.
 
 ### P53 — Standalone review needs the table's chrome (Settings, Controls, Leave)
-- **Status:** proposed
+- **Status:** in-progress — `feat/p53-review-chrome`
 - **Value:** review reached from a table is rendered inside `LocalAIGame`, so it inherits
   the table's chip row — Settings, Controls help, Leave. Review reached from "Your stats" →
   Recent games is a sibling branch in `App` with no shell at all: the chips are gated on
