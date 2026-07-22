@@ -1,14 +1,19 @@
 import { useMemo } from 'react';
 import type { Color } from '../../game/types';
-import { CELL_PX, PIECE_VAR } from '../theme';
+import { CELL_PX, PIECE_VAR, TILE_FINISH, tileVar, type TileFinish } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { cellOutline } from './outline';
 
 const C = CELL_PX;
 const EMPTY_SET: ReadonlySet<number> = new Set();
 
+/** SVG-id-safe key for a value class (`''` → `base`, `-dark` → `dark`). */
+const finishKey = (f: TileFinish): string => (f === '' ? 'base' : f.slice(1));
+
 interface Region {
   color: Color;
+  /** Which `--tile-*` fork molds this region — see TILE_FINISH (P20 M2c). */
+  finish: TileFinish;
   /** Union of the region's cell squares — one fill path (renders as one shape). */
   fillD: string;
   /** Top/left silhouette edges → light bevel. */
@@ -76,9 +81,84 @@ function buildRegions(
       if ((y < n - 1 ? colorAt(c + n) : null) !== color) shadowD += `M${px} ${py + C}h${C}`;
       if ((x < n - 1 ? colorAt(c + 1) : null) !== color) shadowD += `M${px + C} ${py}v${C}`;
     }
-    regions.push({ color, fillD, highlightD, shadowD });
+    regions.push({ color, finish: TILE_FINISH[color], fillD, highlightD, shadowD });
   }
   return regions;
+}
+
+/**
+ * The per-cell molding for one value class: frame bevel (light top-left, dark
+ * bottom-right), an inverted recess rim around the translucent window, a
+ * top-edge glint, and a seam so same-piece cells still read as individually
+ * molded squares. All inset 0.75px so strokes aren't clipped at the tile edge.
+ *
+ * Emitted once per class present on the board rather than once for the whole
+ * layer, because a `<pattern>`'s content inherits custom properties from where
+ * it *sits* (the `<defs>`), not from the element that references it — so a
+ * `--tile-hi` override on the referencing rect would do nothing, and each class
+ * needs its own copy resolving its own fork of the tokens.
+ */
+function TileDetailPattern({ finish }: { finish: TileFinish }) {
+  return (
+    <pattern
+      id={`pl-tile-detail-${finishKey(finish)}`}
+      patternUnits="userSpaceOnUse"
+      width={C}
+      height={C}
+    >
+      {/* Frame bevel: light top+left, dark bottom+right. */}
+      <path
+        d="M0.75 29.25 L0.75 0.75 L29.25 0.75"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth={1.5}
+        style={{ opacity: tileVar('--tile-hi', finish) }}
+      />
+      <path
+        d="M0.75 29.25 L29.25 29.25 L29.25 0.75"
+        fill="none"
+        stroke="#000000"
+        strokeWidth={1.5}
+        style={{ opacity: tileVar('--tile-lo', finish) }}
+      />
+      {/* Window recess rim, inverted: dark top+left, light bottom+right. At the
+          translucent window boundary, so the amplitudes are the theme's
+          (--tile-rim-lo/-hi) — a dark mat swallows the dark side. */}
+      <path
+        d="M5.5 24.5 L5.5 5.5 L24.5 5.5"
+        fill="none"
+        stroke="#000000"
+        strokeWidth={1}
+        style={{ strokeOpacity: tileVar('--tile-rim-lo', finish) }}
+      />
+      <path
+        d="M5.5 24.5 L24.5 24.5 L24.5 5.5"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth={1}
+        style={{ strokeOpacity: tileVar('--tile-rim-hi', finish) }}
+      />
+      {/* Top-edge glint. */}
+      <rect
+        x={4.5}
+        y={1.6}
+        width={6}
+        height={1.6}
+        rx={0.8}
+        style={{ fill: tileVar('--tile-glint', finish) }}
+        opacity={0.5}
+      />
+      {/* Seam (right+bottom) separating same-piece cells. Color-with-alpha, not a
+          plain black at a fixed opacity: on a near-black body the seam has to
+          switch to the light side or there is nothing left to draw it with. */}
+      <path
+        d="M0.75 29.25 L29.25 29.25 L29.25 0.75"
+        fill="none"
+        stroke={tileVar('--tile-seam', finish)}
+        strokeWidth={0.75}
+      />
+    </pattern>
+  );
 }
 
 /**
@@ -122,6 +202,12 @@ export function PlacedLayer({
   const exclude = previewCells ?? EMPTY_SET;
   const regions = useMemo(() => buildRegions(board, exclude, n), [board, exclude, n]);
   const allFillsD = useMemo(() => regions.map((r) => r.fillD).join(''), [regions]);
+  // Value classes actually on the board — Classic boards only ever hit `base`, so
+  // the per-class defs cost nothing there.
+  const finishes = useMemo(
+    () => [...new Set(regions.map((r) => r.finish))].sort(),
+    [regions],
+  );
   const glowSet = glowColors && glowColors.length > 0 ? new Set(glowColors) : undefined;
   // Remount key so the settle flash replays exactly once per placement.
   const settleKey =
@@ -168,75 +254,42 @@ export function PlacedLayer({
         <mask id="pl-tile-alpha">
           <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#pl-alpha-pat)" />
         </mask>
-        {/* (b) Detail paint: frame bevel (light top-left, dark bottom-right), an
-            inverted recess rim around the window, a top-edge glint, and a faint
-            seam so same-piece cells still read as individually molded squares. All
-            inset 0.75px so strokes aren't clipped at the tile edge. CSS vars
+        {/* (b) Detail paint, one copy per value class present (P20 M2c). CSS vars
             resolve inside inline SVG, so the theme tokens drive the finish. */}
-        <pattern id="pl-tile-detail" patternUnits="userSpaceOnUse" width={C} height={C}>
-          {/* Frame bevel: light top+left, dark bottom+right. */}
-          <path
-            d="M0.75 29.25 L0.75 0.75 L29.25 0.75"
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth={1.5}
-            style={{ opacity: 'var(--tile-hi)' }}
-          />
-          <path
-            d="M0.75 29.25 L29.25 29.25 L29.25 0.75"
-            fill="none"
-            stroke="#000000"
-            strokeWidth={1.5}
-            style={{ opacity: 'var(--tile-lo)' }}
-          />
-          {/* Window recess rim, inverted: dark top+left, light bottom+right. At the
-              translucent window boundary, so the amplitudes are the theme's
-              (--tile-rim-lo/-hi) — a dark mat swallows the dark side. */}
-          <path
-            d="M5.5 24.5 L5.5 5.5 L24.5 5.5"
-            fill="none"
-            stroke="#000000"
-            strokeWidth={1}
-            style={{ strokeOpacity: 'var(--tile-rim-lo)' }}
-          />
-          <path
-            d="M5.5 24.5 L24.5 24.5 L24.5 5.5"
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth={1}
-            style={{ strokeOpacity: 'var(--tile-rim-hi)' }}
-          />
-          {/* Top-edge glint. */}
-          <rect
-            x={4.5}
-            y={1.6}
-            width={6}
-            height={1.6}
-            rx={0.8}
-            style={{ fill: 'var(--tile-glint)' }}
-            opacity={0.5}
-          />
-          {/* Seam (right+bottom) separating same-piece cells. */}
-          <path
-            d="M0.75 29.25 L29.25 29.25 L29.25 0.75"
-            fill="none"
-            stroke="#000000"
-            strokeWidth={0.75}
-            strokeOpacity={0.14}
-          />
-        </pattern>
-        {/* One soft contact shadow for the whole placed layer — cast onto the mat,
-            so its opacity is the theme's (--tile-shadow): black vanishes on a dark
-            table, and the pieces would stop reading as resting on the surface. */}
-        <filter id="pl-shadow" x="-5%" y="-5%" width="110%" height="110%">
-          <feDropShadow
-            dx="0"
-            dy="0.8"
-            stdDeviation="1"
-            floodColor="#000000"
-            style={{ floodOpacity: 'var(--tile-shadow)' }}
-          />
-        </filter>
+        {finishes.map((f) => (
+          <TileDetailPattern key={f} finish={f} />
+        ))}
+        {/* Contact shadow — cast onto the mat, so its opacity is the theme's
+            (--tile-shadow): black vanishes on a dark table, and the pieces would
+            stop reading as resting on the surface. Per class as well, since a
+            white piece on a pale mat needs a deeper seat than a black one, which
+            grounds itself. */}
+        {finishes.map((f) => (
+          <filter
+            key={f}
+            id={`pl-shadow-${finishKey(f)}`}
+            x="-5%"
+            y="-5%"
+            width="110%"
+            height="110%"
+          >
+            <feDropShadow
+              dx="0"
+              dy="0.8"
+              stdDeviation="1"
+              floodColor="#000000"
+              style={{ floodOpacity: tileVar('--tile-shadow', f) }}
+            />
+          </filter>
+        ))}
+        {/* Union of each class's footprints — what its own detail pattern paints
+            over (the volume and grain stay on the global `pl-all`, being
+            class-independent). */}
+        {finishes.map((f) => (
+          <clipPath key={f} id={`pl-fin-${finishKey(f)}`}>
+            <path d={regions.filter((r) => r.finish === f).map((r) => r.fillD).join('')} />
+          </clipPath>
+        ))}
         {/* Soft blur for the contact shadow, so it reads as cast onto the mat
             (a feathered falloff) rather than a crisp keyline hugging the edge. */}
         <filter id="pl-ao-blur" x="-10%" y="-10%" width="120%" height="120%">
@@ -311,7 +364,7 @@ export function PlacedLayer({
               d={`${r.highlightD}${r.shadowD}`}
               fill="none"
               stroke="#000000"
-              style={{ strokeOpacity: 'var(--tile-ao)' }}
+              style={{ strokeOpacity: tileVar('--tile-ao', r.finish) }}
               strokeWidth={4}
             />
           ))}
@@ -321,37 +374,48 @@ export function PlacedLayer({
       {/* Translucent fills: one contact shadow (outer <g>) wraps the alpha mask
           (inner <g>) — nesting order matters, or the mask waffle-textures the
           drop-shadow. The window's lower alpha lets the board mat show through. */}
-      <g filter="url(#pl-shadow)">
-        <g mask="url(#pl-tile-alpha)">
-          {regions.map((r, i) => (
-            <path key={i} d={r.fillD} fill={PIECE_VAR[r.color]} fillOpacity={0.95} />
-          ))}
+      {finishes.map((f) => (
+        <g key={f} filter={`url(#pl-shadow-${finishKey(f)})`}>
+          <g mask="url(#pl-tile-alpha)">
+            {regions.map((r, i) =>
+              r.finish === f ? (
+                <path key={i} d={r.fillD} fill={PIECE_VAR[r.color]} fillOpacity={0.95} />
+              ) : null,
+            )}
+          </g>
         </g>
-      </g>
+      ))}
 
       {/* Macro lamp-pool volume, confined to the pieces. */}
       <rect x={0} y={0} width={SIZE} height={SIZE} fill="url(#pl-vol)" clipPath="url(#pl-all)" />
 
-      {/* Per-cell molding detail (bevels, window rim, glint, seams). */}
-      <rect
-        x={0}
-        y={0}
-        width={SIZE}
-        height={SIZE}
-        fill="url(#pl-tile-detail)"
-        clipPath="url(#pl-all)"
-      />
+      {/* Per-cell molding detail (bevels, window rim, glint, seams), each class's
+          pattern clipped to its own pieces. */}
+      {finishes.map((f) => (
+        <rect
+          key={f}
+          x={0}
+          y={0}
+          width={SIZE}
+          height={SIZE}
+          fill={`url(#pl-tile-detail-${finishKey(f)})`}
+          clipPath={`url(#pl-fin-${finishKey(f)})`}
+        />
+      ))}
 
       {/* Thin darker dye border around each piece footprint (the photo's edge),
           clipped to 1.5px inside so it can't bleed onto a neighbor sharing an edge.
-          The black-mix depth is the theme's (--tile-dye): the window shows the mat
-          just inside this line, so a heavy mix crushes the edge into a dark mat. */}
+          The mix depth is the theme's (--tile-dye): the window shows the mat just
+          inside this line, so a heavy mix crushes the edge into a dark mat. What
+          it mixes *toward* is a token too (--tile-dye-mix), because on a
+          near-black body mixing further toward black draws no border at all — the
+          achromatic forks flip it to white (P20 M2c). */}
       {regions.map((r, i) => (
         <g key={i} clipPath={`url(#pl-r${i})`}>
           <path
             d={`${r.highlightD}${r.shadowD}`}
             fill="none"
-            stroke={`color-mix(in srgb, ${PIECE_VAR[r.color]}, black var(--tile-dye))`}
+            stroke={`color-mix(in srgb, ${PIECE_VAR[r.color]}, ${tileVar('--tile-dye-mix', r.finish)} ${tileVar('--tile-dye', r.finish)})`}
             strokeWidth={3}
           />
         </g>
