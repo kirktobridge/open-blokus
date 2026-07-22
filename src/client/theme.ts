@@ -24,6 +24,41 @@ export const PIECE_VAR: Record<Color, string> = {
   white: 'var(--piece-white)',
 };
 
+/**
+ * Which set of `--tile-*` finish tokens a color's molding is drawn with (P20 M2c).
+ *
+ * The finish shades a tile with *relative* modulations — a white bevel over the
+ * body, a black one under it, a black dye edge — tuned against saturated
+ * mid-tones. Duo's black and white are the degenerate case: they clip at both
+ * ends, so a near-black body swallows every dark stroke and a near-white one
+ * swallows every light stroke, and the tile flattens. Splitting the tokens by
+ * value class lets a theme lean the mold onto the side that still has range.
+ *
+ * The class is a property of the *color slot's intent*, not of the hex a theme
+ * happens to assign — a user theme that retunes `--piece-blue` to near-black
+ * still gets the base set. That's the honest trade: the alternative is reading
+ * a computed luminance at render, which no longer re-skins for free.
+ */
+export type TileFinish = '' | '-dark' | '-light';
+export const TILE_FINISH: Record<Color, TileFinish> = {
+  blue: '',
+  yellow: '',
+  red: '',
+  green: '',
+  black: '-dark',
+  white: '-light',
+};
+
+/**
+ * One finish token, resolved for a value class: `--tile-hi` for the mid-tones,
+ * `var(--tile-hi-dark, var(--tile-hi))` for black. The fallback is what keeps
+ * theme.css honest — a theme defines an extreme override *only* where the base
+ * value genuinely fails there, and the delta is the documentation.
+ */
+export function tileVar(token: string, finish: TileFinish): string {
+  return finish === '' ? `var(${token})` : `var(${token}${finish}, var(${token}))`;
+}
+
 // Neutral UI surfaces resolve from CSS vars (see theme.css) so dark mode flips
 // them without re-render.
 export const EMPTY_CELL = 'var(--empty-cell)';

@@ -19,11 +19,14 @@
   --piece-red: #dc2626;
   --piece-green: #16a34a;
 
-  /* Duo's two colors (P20 M2b). Provisional and deliberately off the extremes:
-   * MatLayer/PlacedLayer shade tiles with *relative* modulations, so pure #000 /
-   * #fff clip their bevel and AO away at both ends. Per-theme tuning is M2c. */
-  --piece-black: #1f2328;
-  --piece-white: #f2ede3;
+  /* Duo's two colors (P20 M2c). Still off the extremes — the finish is relative,
+   * so pure #000/#fff clip it away — but now tuned per theme against that theme's
+   * *mat*, since these two are the only piece colors whose whole identity is
+   * value: black has to stay the darker thing on the board and white the lighter
+   * one, and both have to separate from a mat that is itself near one end.
+   * Linen's mat is pale, so black can go deep and white must out-light it. */
+  --piece-black: #16191d;
+  --piece-white: #ffffff;
 
   /* Typography tokens — shared across schemes; retunable in Settings. */
   --font-ui: 'Nunito', system-ui, sans-serif;
@@ -75,6 +78,48 @@
      genuinely mat-cast constant: black is invisible on a dark table, so dark
      carries a deeper value or the pieces stop reading as resting on the surface. */
   --tile-shadow: 0.35;
+  /* Seam between same-piece cells, and the color the dye border mixes toward
+     (both were literals in PlacedLayer until P20 M2c, which is exactly why they
+     vanished on an achromatic body — a black seam on a black tile is nothing).
+     Color-with-alpha rather than an opacity, since the extremes need the stroke
+     to change *side*, not just amplitude. */
+  --tile-seam: rgba(0, 0, 0, 0.14);
+  --tile-dye-mix: #000000;
+
+  /* Achromatic finish (P20 M2c) — the `-dark` / `-light` forks of the tile
+     tokens above, used for Duo's black and white (see TILE_FINISH in theme.ts).
+     Anything not overridden here falls through to the base value, so what is
+     written is exactly what the extremes needed. The rule both forks follow: a
+     modulation only reads where the body still has range, so each leans the mold
+     onto its one live side and stops pretending the other is doing work.
+
+     Dark body: the white bevel carries it alone; every black stroke is spent, so
+     they drop to a whisper and the dye edge flips to mixing toward white (30% of
+     black *into* black is an invisible border). */
+  --tile-hi-dark: 0.5;
+  --tile-lo-dark: 0.1;
+  --tile-rim-lo-dark: 0.08;
+  --tile-rim-hi-dark: 0.3;
+  --tile-seam-dark: rgba(255, 255, 255, 0.16);
+  --tile-dye-mix-dark: #ffffff;
+  --tile-dye-dark: 26%;
+  /* A near-black piece already grounds itself against a pale mat, so the cast
+     shadow eases off rather than muddying its edge. */
+  --tile-ao-dark: 0.1;
+  --tile-shadow-dark: 0.3;
+
+  /* Light body: the mirror. The white bevel and glint are spent, the dark side
+     does the molding, and the piece leans on shadow to separate from a mat that
+     is nearly its own value — this is the fork that needs the *most* help on the
+     pale themes, where the tile is otherwise a white square on cream. */
+  --tile-hi-light: 0.14;
+  --tile-lo-light: 0.34;
+  --tile-rim-lo-light: 0.26;
+  --tile-rim-hi-light: 0.08;
+  --tile-glint-light: #fff8e6;
+  --tile-seam-light: rgba(0, 0, 0, 0.2);
+  --tile-ao-light: 0.2;
+  --tile-shadow-light: 0.42;
 
   /* Molded-board finish (P5) — how hard the board's lattice/wells/studs are lit
      (MatLayer). Separate from --tile-* because the board is matte plastic under
@@ -125,11 +170,12 @@
   --piece-red: #dc2626;
   --piece-green: #16a34a;
 
-  /* Duo's two colors (P20 M2b). Provisional and deliberately off the extremes:
-   * MatLayer/PlacedLayer shade tiles with *relative* modulations, so pure #000 /
-   * #fff clip their bevel and AO away at both ends. Per-theme tuning is M2c. */
-  --piece-black: #1f2328;
-  --piece-white: #f2ede3;
+  /* Duo's two colors (P20 M2c). Lamplight's mat is itself near-black, so black
+   * is *lifted* here — a slate that still reads as the dark side of the pair but
+   * separates from the board instead of dissolving into it; and white warms to
+   * lamp temperature, since a pure white square glares under this scheme. */
+  --piece-black: #2c313a;
+  --piece-white: #ece2cd;
 
   --bg: #0f1115;
   --fg: #e5e7eb;
@@ -158,6 +204,33 @@
   --tile-ao: 0.18;
   --tile-dye: 22%;
   --tile-shadow: 0.5;
+  --tile-seam: rgba(0, 0, 0, 0.22);
+
+  /* Achromatic finish (P20 M2c) on the dark mat. The forks swap roles relative to
+     the pale themes: here it's *black* that struggles to separate (mat and piece
+     are both near-black, and a black contact shadow between them is nothing), so
+     it takes the light-side treatment — a strong bevel and a light dye edge — and
+     leans on its own lifted body rather than on shadow. White, meanwhile, is the
+     high-contrast piece on this scheme and needs almost no help beyond a dark
+     underside. */
+  --tile-hi-dark: 0.36;
+  --tile-lo-dark: 0.16;
+  --tile-rim-lo-dark: 0.1;
+  --tile-rim-hi-dark: 0.26;
+  --tile-seam-dark: rgba(255, 255, 255, 0.14);
+  --tile-dye-mix-dark: #ffffff;
+  --tile-dye-dark: 30%;
+  --tile-ao-dark: 0.24;
+  --tile-shadow-dark: 0.45;
+
+  --tile-hi-light: 0.12;
+  --tile-lo-light: 0.4;
+  --tile-rim-lo-light: 0.3;
+  --tile-rim-hi-light: 0.08;
+  --tile-glint-light: #fff4dc;
+  --tile-seam-light: rgba(0, 0, 0, 0.24);
+  --tile-ao-light: 0.3;
+  --tile-shadow-light: 0.6;
 
   /* Molded menu tile (P35) — dark card: a faint warm glint, a deeper shade. */
   --card-hi: rgba(255, 240, 214, 0.09);
@@ -202,11 +275,11 @@
   --piece-red: #dc2626;
   --piece-green: #16a34a;
 
-  /* Duo's two colors (P20 M2b). Provisional and deliberately off the extremes:
-   * MatLayer/PlacedLayer shade tiles with *relative* modulations, so pure #000 /
-   * #fff clip their bevel and AO away at both ends. Per-theme tuning is M2c. */
-  --piece-black: #1f2328;
-  --piece-white: #f2ede3;
+  /* Duo's two colors (P20 M2c). Pale mat like Linen, but warm and a shade darker
+   * (#efe6d1), so white can sit a touch off pure and still out-light it, and
+   * black takes the warm cast of the walnut lamp rather than Linen's neutral. */
+  --piece-black: #1b1a17;
+  --piece-white: #fffdf6;
 
   --bg: #372f27;
   --fg: #efe6d4;
@@ -233,6 +306,13 @@
   --tile-ao: 0.13;
   --tile-dye: 30%;
   --tile-shadow: 0.38;
+
+  /* Achromatic finish (P20 M2c) — pale mat like Linen, so the forks track the
+     :root values; the warm glint and slightly deeper seating are the walnut
+     delta, same reasoning as the base tokens above. */
+  --tile-glint-light: #fff6e4;
+  --tile-ao-light: 0.22;
+  --tile-shadow-light: 0.45;
 
   /* Molded menu tile (P35) — pale card like Linen, glint faintly warm. */
   --card-hi: rgba(255, 253, 245, 0.8);
