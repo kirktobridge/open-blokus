@@ -5,7 +5,10 @@ instructions (BJV44, ©2013 Mattel). This document is the single source of truth
 game logic. Anything ambiguous in the printed rules is resolved here and marked
 **[RULING]**.
 
-*The Duo variant (14×14, 2 colors) is specified in [GAME_SPEC\_](vscode-webview://1bnunp98kuq5bitrt45i5nir2lnh41s1nbp6l7b6kn0esaj48r26/GAME_SPEC_DUO.md)[DUO.md](http://DUO.md), which overrides this document only where it says so.*
+*Duo (14×14, 2 colors) is specified in [GAME_SPEC_DUO.md](GAME_SPEC_DUO.md): it governs
+wherever it states a Duo value and inherits everything else here unchanged. A rule
+restated there without being changed is a bug in that file, not a conflict.*
+
 
 ---
 
