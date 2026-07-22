@@ -5,9 +5,16 @@
  * head-to-head, the way cchung89/Blokus_Game_Solver runs 100-match tournaments.
  * Everything is seeded, so results are reproducible.
  */
-import { COLOR_ORDER } from '../types';
-import type { ByColor, Color, GameMode, GameState, Placement, ScoringVariant } from '../types';
-import { colorStateOf, createInitialState } from '../modes';
+import type {
+  ByColor,
+  Color,
+  GameMode,
+  GameState,
+  Placement,
+  ScoringVariant,
+  Variant,
+} from '../types';
+import { VARIANTS, colorStateOf, createInitialState, ownersFor, playColorsOf } from '../modes';
 import { resolveCells, pieceSize } from '../pieces';
 import { applyPlacement } from '../placement';
 import { generateLegalMoves } from '../moves';
@@ -70,13 +77,14 @@ export function heuristicStrategy(weights: Weights = WEIGHTS): Strategy {
 
 /**
  * Advance to the next non-stuck color (mirrors BlokusGame.advanceActiveColor).
- * The arena is a Classic-only research harness — running it on other variants is
- * P54's job, so this walks COLOR_ORDER directly.
+ * Walks the *variant's* playing set, so a Duo game rotates over two colors and
+ * never reaches for a color it was never dealt.
  */
 function advanceActiveColor(G: GameState): void {
-  for (let step = 1; step <= COLOR_ORDER.length; step++) {
-    const i = (G.activeColorIndex + step) % COLOR_ORDER.length;
-    if (!colorStateOf(G, COLOR_ORDER[i]).stuck) {
+  const play = playColorsOf(G);
+  for (let step = 1; step <= play.length; step++) {
+    const i = (G.activeColorIndex + step) % play.length;
+    if (!colorStateOf(G, play[i]).stuck) {
       G.activeColorIndex = i;
       return;
     }
@@ -90,6 +98,7 @@ function advanceActiveColor(G: GameState): void {
 export function playGame(
   byColor: ByColor<Strategy>,
   opts: {
+    variant?: Variant;
     mode?: GameMode;
     scoring?: ScoringVariant;
     rng?: () => number;
@@ -97,8 +106,12 @@ export function playGame(
     onMove?: (color: Color, move: Placement) => void;
   } = {},
 ): ReturnType<typeof finalScores> {
-  const { mode = 4, scoring = 'basic', rng = Math.random, onMove } = opts;
-  const G = createInitialState(mode, scoring);
+  const { variant = 'classic', scoring = 'basic', rng = Math.random, onMove } = opts;
+  // Default to the variant's fullest table (Classic 4p, Duo 2p) rather than a
+  // literal 4, which Duo doesn't support at all.
+  const { mode = maxMode(variant) } = opts;
+  const G = createInitialState(mode, scoring, variant);
+  const play = playColorsOf(G);
 
   // Lazy stuck detection (AE18): no per-move `recomputeStuck` (= `hasAnyMove` ×4,
   // the expensive full-scan case). A color is discovered stuck only when its
@@ -108,9 +121,9 @@ export function playGame(
   // color stays stuck. The eager driver's proactive marking only ever *skipped*
   // that color's turn (a zero-rng no-op); here the strategy is called once more
   // and returns null, leaving the rng stream and the played moves identical.
-  let live = COLOR_ORDER.length; // colors not yet known-stuck
+  let live = play.length; // colors not yet known-stuck
   while (live > 0) {
-    const color = COLOR_ORDER[G.activeColorIndex];
+    const color = play[G.activeColorIndex];
     const strategy = byColor[color];
     if (!strategy) throw new Error(`no strategy seated for ${color}`);
     const move = strategy(G, color, rng);
@@ -131,6 +144,18 @@ export function playGame(
 /** Total squares one color owns across all 21 pieces (sum of sizes). */
 const TOTAL_SQUARES = 89;
 
+/** The variant's fullest seating — Classic 4p, Duo 2p. */
+const maxMode = (variant: Variant): GameMode =>
+  VARIANTS[variant].modes.reduce((a, b) => (b > a ? b : a));
+
+/**
+ * Squares a color still holds, recovered from its final score. Under `basic` the
+ * score *is* the remaining count; under `advanced` (which Duo forces) it is
+ * `-remaining`, or a positive all-placed bonus meaning nothing is left.
+ */
+const remainingFrom = (score: number, scoring: ScoringVariant): number =>
+  scoring === 'basic' ? score : Math.max(0, -score);
+
 export interface TournamentResult {
   /** Wins credited to each contestant name (ties split evenly). */
   wins: Record<string, number>;
@@ -140,8 +165,9 @@ export interface TournamentResult {
   winRate: Record<string, number>;
   /**
    * Summed final placement (rank, ties averaged; 1 = best) over each name's seats
-   * (AE15). Mean placement = placement / played. Ranking is by placed squares,
-   * matching the basic-scoring winner order.
+   * (AE15). Mean placement = placement / played. Ranking is by final score in the
+   * scoring variant's own direction, so it agrees with the winner order under both
+   * `basic` (lower is better) and `advanced` (higher is better, bonuses included).
    */
   placement: Record<string, number>;
   /** Summed final placed squares (89 − remaining) over each name's seats (AE15). */
@@ -151,20 +177,35 @@ export interface TournamentResult {
 }
 
 /**
- * Run `games` matches among `contestants` (one per color → length must equal the
- * mode's color count: 4). Seat assignment rotates each game so first-move
- * advantage is shared evenly. Wins are credited by contestant name; ties split
- * the win 1/k across co-winners. Seeded by `seed` for reproducibility.
+ * Run `games` matches among `contestants` — one per color, so the list length must
+ * equal the variant's play-color count (Classic 4, Duo 2). Seat assignment rotates
+ * each game so first-move advantage is shared evenly. Wins are credited by
+ * contestant name; ties split the win 1/k across co-winners. Seeded by `seed`.
  */
 export function runTournament(
   contestants: Contestant[],
-  opts: { games?: number; mode?: GameMode; scoring?: ScoringVariant; seed?: number } = {},
+  opts: {
+    games?: number;
+    variant?: Variant;
+    mode?: GameMode;
+    scoring?: ScoringVariant;
+    seed?: number;
+  } = {},
 ): TournamentResult {
-  const { games = 100, mode = 4, scoring = 'basic', seed = 1 } = opts;
-  const n = COLOR_ORDER.length;
+  const { games = 100, variant = 'classic', scoring = 'basic', seed = 1 } = opts;
+  const { mode = maxMode(variant) } = opts;
+  const play = VARIANTS[variant].playColors;
+  const n = play.length;
   if (contestants.length !== n) {
-    throw new Error(`need ${n} contestants for mode ${mode}, got ${contestants.length}`);
+    throw new Error(
+      `need ${n} contestants for ${variant} mode ${mode}, got ${contestants.length}`,
+    );
   }
+  // Colors map to human playerIDs per the variant/mode seating, which is what
+  // `finalScores` reports winners as — Duo is black='0'/white='1', not a
+  // COLOR_ORDER position.
+  const owners = ownersFor(mode, variant);
+  const effectiveScoring = VARIANTS[variant].scoring ?? scoring;
 
   const rng = mulberry32(seed);
   const wins: Record<string, number> = {};
@@ -185,36 +226,37 @@ export function runTournament(
     const seatName: Record<Color, string> = {} as Record<Color, string>;
     const byColor: ByColor<Strategy> = {};
     contestants.forEach((c, i) => {
-      const color = COLOR_ORDER[(i + g) % n];
+      const color = play[(i + g) % n];
       seatName[color] = c.name;
       byColor[color] = c.strategy;
     });
     for (const c of contestants) played[c.name] += 1;
 
-    const { winners, colors } = playGame(byColor, { mode, scoring, rng });
-    // winners are playerIDs; in 4p each color is its own player ("0".."3").
-    // Map winner playerIDs back to colors via owners, then to names.
-    const winColors = COLOR_ORDER.filter(
-      (color) => winners.includes(String(seatPosOf(color))),
-    );
+    const { winners, colors } = playGame(byColor, { variant, mode, scoring, rng });
+    // winners are playerIDs; map them back to colors via the seating, then to names.
+    const winColors = play.filter((color) => winners.includes(String(owners[color])));
     if (winColors.length !== 1) ties += 1;
     const share = winColors.length ? 1 / winColors.length : 0;
     for (const color of winColors) wins[seatName[color]] += share;
 
-    // Placement + placed-squares readouts (AE15). Under basic scoring
-    // colors[color] = remaining squares, so placed = 89 − remaining and lower
-    // remaining ranks better. Ties averaged: rank = 1 + strictly-better +
-    // (tied − 1)/2, matching the winner ordering above.
-    const placed = COLOR_ORDER.map((color) => TOTAL_SQUARES - (colors[color] ?? 0));
-    COLOR_ORDER.forEach((color, i) => {
-      let better = 0;
+    // Placement + placed-squares readouts (AE15). Rank by final score in the
+    // scoring variant's own direction so it agrees with the winner order; placed
+    // squares are recovered separately, since under `advanced` the score carries
+    // all-placed bonuses and is not a remaining-square count. Ties averaged:
+    // rank = 1 + strictly-better + (tied − 1)/2.
+    const scores = play.map((color) => colors[color] ?? 0);
+    const better = (a: number, b: number) =>
+      effectiveScoring === 'basic' ? a < b : a > b;
+    play.forEach((color, i) => {
+      let ahead = 0;
       let tied = 0;
-      for (const p of placed) {
-        if (p > placed[i]) better++;
-        else if (p === placed[i]) tied++;
+      for (const s of scores) {
+        if (better(s, scores[i])) ahead++;
+        else if (s === scores[i]) tied++;
       }
-      placement[seatName[color]] += 1 + better + (tied - 1) / 2;
-      placedSquares[seatName[color]] += placed[i];
+      placement[seatName[color]] += 1 + ahead + (tied - 1) / 2;
+      placedSquares[seatName[color]] +=
+        TOTAL_SQUARES - remainingFrom(scores[i], effectiveScoring);
     });
   }
 
@@ -223,11 +265,6 @@ export function runTournament(
     winRate[name] = played[name] ? wins[name] / played[name] : 0;
   }
   return { wins, played, winRate, placement, placedSquares, games, ties };
-}
-
-/** In 4p each color owns its own playerID, equal to its turn-order index. */
-function seatPosOf(color: Color): number {
-  return COLOR_ORDER.indexOf(color);
 }
 
 // --- Multi-seed averaging -------------------------------------------------
@@ -266,13 +303,15 @@ export function runTournamentSeeds(
   contestants: Contestant[],
   opts: {
     games?: number;
+    variant?: Variant;
     mode?: GameMode;
     scoring?: ScoringVariant;
     seeds?: number;
     baseSeed?: number;
   } = {},
 ): AveragedResult {
-  const { games = 100, mode = 4, scoring = 'basic', seeds = 10, baseSeed = 1 } = opts;
+  const { games = 100, variant = 'classic', scoring = 'basic', seeds = 10, baseSeed = 1 } = opts;
+  const { mode = maxMode(variant) } = opts;
   const names = [...new Set(contestants.map((c) => c.name))];
 
   const rateSamples: Record<string, number[]> = Object.fromEntries(names.map((n) => [n, []]));
@@ -282,7 +321,13 @@ export function runTournamentSeeds(
   let tieTotal = 0;
 
   for (let s = 0; s < seeds; s++) {
-    const r = runTournament(contestants, { games, mode, scoring, seed: baseSeed + s });
+    const r = runTournament(contestants, {
+      games,
+      variant,
+      mode,
+      scoring,
+      seed: baseSeed + s,
+    });
     for (const n of names) {
       rateSamples[n].push(r.winRate[n]);
       shareSamples[n].push(r.wins[n] / r.games);

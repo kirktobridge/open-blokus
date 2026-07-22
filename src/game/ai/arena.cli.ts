@@ -17,7 +17,8 @@ import { alphaBetaStrategy } from './alphabeta';
 import { mctsStrategy, enableRolloutStats, getRolloutStats, type MctsConfig } from './mcts';
 import { WEIGHTS, type Weights } from './heuristic';
 import { valueNetProbs, type ValueNetWeights } from './valuenet';
-import { COLOR_ORDER } from '../types';
+import { VARIANTS, playColorsOf } from '../modes';
+import type { Variant } from '../types';
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const flagArgs = process.argv.slice(2).filter((a) => a.startsWith('--'));
@@ -26,13 +27,52 @@ const games = Number(args[0] ?? 100);
 const seeds = Number(args[1] ?? 8);
 const baseSeed = Number(args[2] ?? 1);
 
+/**
+ * Rule set every table runs under. `--duo` switches the whole run to 14×14 2-color;
+ * an experiment config can pin its own (`"variant": "duo"`), which is how the Duo
+ * experiments declare their seats explicitly rather than reducing a Classic table.
+ */
+let RULES: Variant = flags.has('--duo') ? 'duo' : 'classic';
+let SEATS = VARIANTS[RULES].playColors.length;
+
+function applyVariant(v: Variant): void {
+  RULES = v;
+  SEATS = VARIANTS[v].playColors.length;
+}
+
+/**
+ * Fit a seat list written for one variant onto another's table. The hardcoded
+ * tables below are Classic 4-seaters; most are an A/B pairing written twice, which
+ * reduces to Duo's 2 seats by truncation without losing a contestant. A table whose
+ * distinct names don't survive that (a 4-way ablation) is **skipped**, not silently
+ * trimmed — a benchmark that quietly drops a contestant is worse than one that
+ * doesn't run. Reach for `--config` to state Duo seats explicitly.
+ */
+function fitSeats(title: string, contestants: Contestant[]): Contestant[] | null {
+  if (contestants.length === SEATS) return contestants;
+  if (contestants.length < SEATS) {
+    // Cycle a short list around the table (2 names → 4 Classic seats).
+    return Array.from({ length: SEATS }, (_, i) => contestants[i % contestants.length]);
+  }
+  const fitted = contestants.slice(0, SEATS);
+  const kept = new Set(fitted.map((c) => c.name));
+  const dropped = [...new Set(contestants.map((c) => c.name))].filter((n) => !kept.has(n));
+  if (dropped.length) {
+    console.log(`\n${title}  — skipped on ${RULES}: ${SEATS} seats can't hold ${dropped.join(', ')}`);
+    return null;
+  }
+  return fitted;
+}
+
 function table(
   title: string,
   contestants: Contestant[],
   g: number = games,
   s: number = seeds,
 ): void {
-  const r = runTournamentSeeds(contestants, { games: g, seeds: s, baseSeed });
+  const seated = fitSeats(title, contestants);
+  if (!seated) return;
+  const r = runTournamentSeeds(seated, { games: g, seeds: s, baseSeed, variant: RULES });
   // `--result`: one machine-readable line per name for shard pooling — the human
   // table rounds game-share to a whole percent, which loses the fractional wins
   // (ties split) that the stats helper needs. Emitted alongside the table.
@@ -76,6 +116,8 @@ interface ExperimentConfig {
   seats: SeatConfig[];
   games?: number;
   seeds?: number;
+  /** Rule set to play under; `--duo` sets it for the whole run instead. */
+  variant?: Variant;
 }
 
 function buildStrategy(seat: SeatConfig): Contestant['strategy'] {
@@ -98,7 +140,7 @@ function buildStrategy(seat: SeatConfig): Contestant['strategy'] {
       };
       if (typeof netWeights === 'string') {
         const w = JSON.parse(readFileSync(netWeights, 'utf8')) as ValueNetWeights;
-        rest.leafValue = (G) => valueNetProbs(G, COLOR_ORDER[G.activeColorIndex], w);
+        rest.leafValue = (G) => valueNetProbs(G, playColorsOf(G)[G.activeColorIndex], w);
       }
       return mctsStrategy(rest);
     }
@@ -110,6 +152,7 @@ if (configFlag) {
   const cfg = JSON.parse(
     readFileSync(configFlag.slice('--config='.length), 'utf8'),
   ) as ExperimentConfig;
+  if (cfg.variant) applyVariant(cfg.variant);
   table(
     cfg.title,
     cfg.seats.map((s) => ({ name: s.name, strategy: buildStrategy(s) })),
@@ -224,12 +267,12 @@ if (flags.has('--rollout-stats')) {
     rankRewardWeight: 0.25,
     rolloutSamples: 48, // mirrors the extreme tier (difficulty.ts)
   };
-  const seats: Contestant[] = COLOR_ORDER.map((_, i) => ({
+  const seats: Contestant[] = VARIANTS[RULES].playColors.map((_, i) => ({
     name: `extreme#${i}`,
     strategy: mctsStrategy(cfg),
   }));
   enableRolloutStats(true);
-  runTournamentSeeds(seats, { games: 1, seeds: 1, baseSeed });
+  runTournamentSeeds(seats, { games: 1, seeds: 1, baseSeed, variant: RULES });
   const st = getRolloutStats()!;
   enableRolloutStats(false);
   const pct = (x: number) => (x * 100).toFixed(1).padStart(5) + '%';

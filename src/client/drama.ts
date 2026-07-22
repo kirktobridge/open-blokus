@@ -1,6 +1,6 @@
 import type { Cell, Color, ColorState, GameState } from '../game/types';
 import { PIECE_IDS } from '../game/types';
-import { colorStateOf, ownerOf, playColorsOf } from '../game/modes';
+import { colorStateOf, ownerOf, playColorsOf, variantOf } from '../game/modes';
 import { pieceSize } from '../game/pieces';
 import { remainingSquares } from '../game/scoring';
 import { attachCells } from '../game/ai/alphabeta';
@@ -73,6 +73,34 @@ export const EVENT_THRESHOLDS = {
   ENDGAME_PIECES_LEFT: 5,
 } as const;
 
+/**
+ * The threshold set, with values widened to `number` — `EVENT_THRESHOLDS` is
+ * `as const`, so without this a variant delta couldn't hold a different value than
+ * Classic's literal type.
+ */
+export type EventThresholds = { readonly [K in keyof typeof EVENT_THRESHOLDS]: number };
+
+/**
+ * Duo's deltas, stated the way GAME_SPEC_DUO states rules: only what changes.
+ *
+ * Re-measured on 20 heuristic self-play games per variant (P54). Duo's frontier
+ * runs ~11 wide against Classic's ~13, so the *same* 2-cell loss clears
+ * `CUT_MIN_SHARE` that a Classic frontier would have absorbed — and with one
+ * opponent instead of three, on a board half the area, colors interlock far more.
+ * At the Classic bars that fired 7.4 cuts per Duo game against Classic's 3.5, in
+ * games half as long: chatter. Requiring a 3-cell loss brings it to 2.7 per game,
+ * back in line with the ~2.8 the vocabulary was tuned for. `CRAMPED_MAX` needs no
+ * delta — it sits at the 10th percentile of the frontier in *both* variants and
+ * fires ~0.4 times per game either way — and piece counts are variant-independent.
+ */
+export const DUO_EVENT_THRESHOLDS = {
+  CUT_MIN_LOSS: 3,
+} as const satisfies Partial<EventThresholds>;
+
+/** The thresholds this game's variant plays under. */
+export const thresholdsFor = (G: GameState): EventThresholds =>
+  variantOf(G) === 'duo' ? { ...EVENT_THRESHOLDS, ...DUO_EVENT_THRESHOLDS } : EVENT_THRESHOLDS;
+
 /** One detected event. `color` is the subject (null for board-wide events). */
 export interface DramaEvent {
   kind: EventId;
@@ -138,7 +166,7 @@ function inEndgame(G: GameState): boolean {
   const live = playColorsOf(G).filter((c) => !colorStateOf(G, c).stuck);
   if (live.length === 0) return false; // game's over; that's the reveal's job, not a beat
   return live.every(
-    (c) => colorStateOf(G, c).remaining.length <= EVENT_THRESHOLDS.ENDGAME_PIECES_LEFT,
+    (c) => colorStateOf(G, c).remaining.length <= thresholdsFor(G).ENDGAME_PIECES_LEFT,
   );
 }
 
@@ -155,6 +183,7 @@ function inEndgame(G: GameState): boolean {
 export function detectEvents(prev: GameState, cur: GameState): DramaEvent[] {
   const events: DramaEvent[] = [];
   const spoken = new Set<Color>();
+  const bars = thresholdsFor(cur);
 
   for (const color of newlyStuckColors(prev, cur)) {
     events.push({ kind: 'out-of-moves', color, text: outOfMovesText(color) });
@@ -176,8 +205,8 @@ export function detectEvents(prev: GameState, cur: GameState): DramaEvent[] {
       if (victim === mover || spoken.has(victim)) continue;
       const before = frontierBefore[victim];
       const lost = before - frontierAfter[victim];
-      if (lost < EVENT_THRESHOLDS.CUT_MIN_LOSS) continue;
-      if (lost < EVENT_THRESHOLDS.CUT_MIN_SHARE * before) continue;
+      if (lost < bars.CUT_MIN_LOSS) continue;
+      if (lost < bars.CUT_MIN_SHARE * before) continue;
       if (lost <= worstLoss) continue;
       worstLoss = lost;
       worst = {
@@ -199,8 +228,7 @@ export function detectEvents(prev: GameState, cur: GameState): DramaEvent[] {
     const cs = colorStateOf(cur, color);
     if (!cs.hasStarted || cs.stuck) continue;
     const crossed =
-      frontierBefore[color] > EVENT_THRESHOLDS.CRAMPED_MAX &&
-      frontierAfter[color] <= EVENT_THRESHOLDS.CRAMPED_MAX;
+      frontierBefore[color] > bars.CRAMPED_MAX && frontierAfter[color] <= bars.CRAMPED_MAX;
     if (!crossed) continue;
     events.push({ kind: 'cramped', color, text: crampedText(color) });
     spoken.add(color);
