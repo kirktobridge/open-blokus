@@ -5,7 +5,9 @@ import reactHooks from 'eslint-plugin-react-hooks';
 export default tseslint.config(
   // design_handoff_* holds static design mockups (HTML + vendored browser JS), not
   // app source — linting it is meaningless, same as docs.
-  { ignores: ['dist', 'docs', 'coverage', 'design_handoff_*'] },
+  // .stryker-tmp (mutation sandbox copies) and reports/ (generated HTML mutation
+  // report + vendored JS) are build artifacts, not source — same as dist/coverage.
+  { ignores: ['dist', 'docs', 'coverage', 'design_handoff_*', '.stryker-tmp', 'reports'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   // Enables react-hooks/rules-of-hooks + exhaustive-deps (the client code relies on
