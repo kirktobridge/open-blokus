@@ -35,6 +35,11 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    the `Color` union), the 14×14 preset, forced advanced scoring, lobby + turn glue.
    Unblocked by M2a (shipped). The big one — a wide `Color`-union change, plus the owed
    sweep of size-defaulting call sites that M2a's Classic fallbacks left silent.
+   **Co-lands with P56** (record/stats variant identity) — without it the recorder
+   silently drops every finished Duo game.
+4. **P57** — variant scope as schema in the research layer. Dependency-free and cheap
+   (a schema-test field + skill-gate lines); closes the gap where FINDINGS M6 claims an
+   enforcement that doesn't exist, before more variant-silent entries accumulate.
 
 ---
 
@@ -367,6 +372,23 @@ this epic owns the user-facing feature + its UX.
   - Fix `attachCells` **once at the source** so `drama.ts`, `legalMoves.ts` and
     `recap.ts` all inherit it; re-check `EVENT_THRESHOLDS` legibility on a 14×14 board
     and update EVENTS.md's frontier note if they move.
+  - **Same two holes, presentation layer.** The sweep extends past the AI files to the
+    surfaces that read live `GameState` with `COLOR_ORDER` as the playing set or a
+    20-stride: [../../src/client/drama.ts](../../src/client/drama.ts) (detector loops,
+    `revealRows`/`resultSummary`, and a literal `y * 20` cell key that neither lint nor
+    the required-`size` flip can see),
+    [../../src/game/recap.ts](../../src/game/recap.ts) (frame flattening + per-color
+    maps), [../../src/game/share.ts](../../src/game/share.ts) (`emojiBoard` loops the
+    constant — past cell 196 it reads `undefined` and prints it), and the advisor
+    readouts ([../../src/client/advisor/incursions.ts](../../src/client/advisor/incursions.ts)
+    opponent loop, `roomReadout` in
+    [../../src/client/advisor/legalMoves.ts](../../src/client/advisor/legalMoves.ts)).
+    On a Duo board these fail in the same silent shape as the bots: no beat, cue, or
+    cut highlight ever fires, game-over reveals four Classic rows, the share grid is
+    garbage. Same fix idiom — `boardSizeOf` and the `config.playColors` read (one
+    shared accessor, so the door is single) — and then held closed by P55's widened
+    lint scope. These are constant imports and literals, not size-defaulting calls, so
+    the closing step below does **not** catch them; they must be swept here.
   - **Harness:** `playGame` hardcodes `mode = 4, scoring = 'basic'`, so the arena cannot
     play a Duo game at all. Take a variant/config. This is the prerequisite for *every*
     Duo experiment, which is why it lands here rather than in research.
@@ -1191,6 +1213,13 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     The AI/advisor half of that sweep is its own entry —
     [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo), which
     M2b unblocks; M2b itself only owes the rules-core and client call sites.
+    M2b also encodes GAME_SPEC_DUO §6's worked cases **D1–D5** as rules-core tests —
+    D5 pins the start-cell pair against the anti-diagonal misreading §3 documents,
+    the only mechanical guard on those coordinates until P55's registry test exists.
+    And M2b **co-lands
+    [P56](#p56--variant-identity-through-game-records-history--progression)**: the
+    game recorder runs at every game-over, so a playable Duo without record/stats
+    variant identity silently loses every Duo game it finishes (see P56).
   - **M2c achromatic tile finish** — per-theme `--piece-black` / `--piece-white` plus
     finish handling so bevel, AO and shadow survive at both ends of the value range.
     Split out because `MatLayer`/`PlacedLayer` shade tiles with *relative* modulations
@@ -1273,6 +1302,86 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   deterministically per seed.
 - **Depends on:** P1 (logs) + P2 R0 scrubber (both shipped). Subsumes P2 R2's
   replay-fork substrate if built — build the substrate once (see P2's R2 note).
+
+### P56 — Variant identity through game records, history & progression
+- **Status:** proposed
+- **Value:** the whole persistence pipeline identifies a game by `(mode, scoring)` and
+  addresses colors *positionally* through `COLOR_ORDER` — the variant is
+  unrepresentable. `GameRecord` ([../../src/game/ai/selfplay.ts](../../src/game/ai/selfplay.ts))
+  has no variant field, and `mode: 2` already means Classic two-humans-two-colors, so it
+  cannot also mean Duo; `serializeRecord` writes seats/scores/winners/moves by
+  `COLOR_ORDER` index (`black`/`white` → −1); and every reconstruction path —
+  `replayGame`, `buildRecap` ([../../src/game/recap.ts](../../src/game/recap.ts)), the
+  recorder's replay cross-check
+  ([../../src/client/log/recorder.ts](../../src/client/log/recorder.ts)) — funnels
+  through `createInitialState(mode, scoring)`, which can only build a Classic board, so
+  a Duo first move at (4,4) throws against the corner rule. The failure is **silent by
+  the layer's own design**: the recorder's catch-and-warn and `loadHistory`'s
+  drop-on-read ([../../src/client/log/history.ts](../../src/client/log/history.ts))
+  were built for legacy corruption and swallow the structurally-new Duo data
+  identically — the first finished Duo game simply *vanishes* (no log record, no
+  history row, no recap), with vitest/typecheck/lint green because every test in this
+  layer constructs Classic states. Downstream, the P15 store mixes variants:
+  `GameResult` ([../../src/client/progression/progression.ts](../../src/client/progression/progression.ts))
+  carries no variant, so `perTier` W/L blends Classic and Duo games against a tier
+  whose strength differs per variant (research AE29's premise — and P18's future
+  per-persona records inherit the same blend), `bestScores.advanced` shares one slot
+  across two different games (the P51 "one slot, two quantities" bug reborn), and
+  first-win / perfect-clear milestones fire once across variants.
+- **Scope:**
+  - `variant` on `GameRecord`; `SerializedRecord` **v3** with v1/v2 reading as
+    `classic` (the existing version-defaulting pattern), and seat/score/winner/move
+    arrays keyed by the variant's play-color list instead of `COLOR_ORDER` position.
+  - Thread the variant through every reconstruction: initial-state building,
+    `replayGame`, `buildRecap`, the recorder capture + score cross-check, and
+    `summarize`'s seat/lineup reads (today `colorsLabelled` filters `COLOR_ORDER`, so
+    a repaired Duo record would still summarize as `watched` / score `null`).
+  - P15 store: `variant` on `GameResult`; `perTier`, `bestScores`, and the milestone
+    unlocks keyed per variant; `sanitize` migrates pre-variant blobs to `classic`
+    (the P51 precedent: attribute or drop, never guess).
+  - **Guards (the point of the entry):** a serialize → deserialize → replay round-trip
+    test on a Duo record; a test that a finished Duo game **survives** the recorder's
+    catch and `loadHistory`'s drop-on-read — the silent paths must be proven
+    pass-through for well-formed new-variant data, not just for Classic; a progression
+    fold test asserting Classic and Duo results land in separate buckets.
+  - **Sequencing constraint:** must **co-land with [P20](#p20--variety-blokus-duo--blitz)
+    M2b** — the recorder runs at every game-over, so "ships playable" opens this window
+    immediately, one dependency *before*
+    [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo).
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`black`/`white` in
+  `Color`, `config.playColors`). Reads the variant registry from
+  [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)
+  once that lands, but must not wait for it.
+
+### P58 — Variant-scoped onboarding & feel content (tutorial, blitz pacing)
+- **Status:** proposed
+- **Value:** two player-facing surfaces are calibrated to Classic with nothing
+  recording the scope. The tutorial
+  ([../../src/client/tutorial/scenarios.ts](../../src/client/tutorial/scenarios.ts))
+  builds a Classic state and teaches "your first piece must cover your own starting
+  corner" — true in its Classic flow, false as a statement about the game once Duo
+  ships, and Duo's *defining* rule (interior start cells,
+  [../GAME_SPEC_DUO.md](../GAME_SPEC_DUO.md) §3) has no teaching surface at all. Blitz
+  pacing (`BLITZ_PACE_MS`,
+  [../../src/client/ai/difficulty.ts](../../src/client/ai/difficulty.ts)) floors
+  visible think-time against each tier's *Classic* search cost (P25); Duo searches are
+  faster (196 cells, one opponent), so the tuned human-plausible feel drifts. Neither
+  is code-incorrect and no test can see either — content and feel, the same detector
+  class as P20 M2c's "the only detector is looking at it."
+- **Scope:**
+  - A Duo teaching surface: either a Duo scenario in the tutorial flow (interior start
+    cell, one-opponent framing, advanced-only scoring) or an explicit variant gate on
+    the existing flow with its copy scoped to Classic — decided at build time; the
+    requirement is that no copy states a Classic-only rule as a rule of "the game."
+  - Re-measure per-tier think-time on Duo and re-check the `BLITZ_PACE_MS` ranges
+    against it — measured with `time`, not guessed.
+  - Where content deliberately stays Classic (the front-door ambient board, the daily
+    puzzle), the Classic-by-design intent gets written at the site as part of
+    [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
+    lint exemptions — not silently inherited.
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (playable Duo). The pacing
+  check wants [P54](#p54--variant-aware-ai--advisor-layer-make-the-bots-actually-play-duo)
+  first — the bots must actually be playing Duo correctly before timing them.
 
 ---
 
@@ -1357,17 +1466,41 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     no value in the doc the code contradicts.
     **Known limit, stated so nobody over-trusts it:** this pins *values*, not prose. It
     cannot detect a shared rule restated in the delta doc — that stays convention.
-  - **Scoped lint rule:** `no-restricted-imports` on `BOARD_SIZE` / `COLOR_ORDER` within
-    variant-sensitive paths (`src/game/ai/**`, `src/client/board/**`,
-    `src/client/advisor/**`), so reaching for a Classic constant from code that must be
-    variant-aware is a lint error. `eslint.config.js` already scopes rules per `files`
-    block, so this drops in. Guards the **constant-import** path; P54's required-`size`
+    Until this test exists, the start-cell pair `(4,4)`/`(9,9)` is guarded only by
+    GAME_SPEC_DUO §3's in-doc warning against the anti-diagonal misreading — which is
+    why the §6 worked cases (D1–D5, D5 being that exact invariant) land as rules-core
+    tests with [P20](#p20--variety-blokus-duo--blitz) M2b rather than waiting here.
+  - **Variant dimension for the signal registries.** `EVENT_THRESHOLDS`
+    ([../../src/client/drama.ts](../../src/client/drama.ts)) is a flat record and
+    [../EVENTS.md](../EVENTS.md)'s table has no variant column, so if P54's threshold
+    re-check says Duo needs different bars there is nowhere to put a second value except
+    off-registry. Give thresholds a per-variant axis, add the column, and extend
+    [tests/events-registry.test.ts](../../tests/events-registry.test.ts) to parse it —
+    the same both-ways idiom, one more dimension. Fold in the unregistered
+    standing-signal thresholds while at it: `INCURSION_MIN_PIECE`
+    ([../../src/client/advisor/incursions.ts](../../src/client/advisor/incursions.ts))
+    is feel-tuned like `CUT_MIN_LOSS` but has no doc mirror, no both-ways test, and no
+    recorded variant scope, because the registry's charter covers only *events*. A
+    second "standing signals" table (they are deliberately not events — P44) under the
+    same test closes that class.
+  - **Scoped lint rule:** `no-restricted-imports` on `BOARD_SIZE` / `COLOR_ORDER` /
+    `CORNERS` within variant-sensitive paths (`src/game/ai/**`, `src/client/board/**`,
+    `src/client/advisor/**`, plus the three files the drift analysis found outside
+    those trees: `src/client/drama.ts`, `src/game/recap.ts`, `src/game/share.ts`), so
+    reaching for a Classic constant from code that must be variant-aware is a lint
+    error. `CORNERS` is in the list because it is the third Classic constant with a
+    live wrong-use path — the exact fallback P54 removes from `alphabeta.ts`.
+    `eslint.config.js` already scopes rules per `files` block, so this drops in.
+    Intentionally-Classic surfaces caught by the widened net (the ambient generator,
+    the daily puzzle) take a per-file disable that must state the Classic-by-design
+    rationale — the exemption comment is where that intent finally gets recorded.
+    Guards the **constant-import** path; P54's required-`size`
     param guards the **function-call** path — different holes, both needed.
   - **Agentic-layer guard:** add `docs/GAME_SPEC_DUO.md` to `.claude/edit-blocklist` once
     its §7 open questions settle, and propose a CLAUDE.md **Invariant** line naming the
-    variant split. **Blocker:** CLAUDE.md is currently gitignored, so an invariant written
-    there reaches neither parallel sessions nor a fresh clone — un-ignoring it is a
-    prerequisite for this bullet, and a human call.
+    variant split. The former blocker is gone — CLAUDE.md has been tracked since
+    `7aa4017`, so an invariant written there reaches parallel sessions and fresh clones;
+    the line is proposable now, with human sign-off (CLAUDE.md stays human-owned).
   - **Explicitly not here:** making `size` a required argument of `idx`/`xy`/`inBounds` —
     that is P54's closing step, since P54 already rewrites three of the five files
     involved and splitting it would touch them twice. It is also the highest-value guard
@@ -1375,3 +1508,37 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b + P54 — the registry needs a
   real second variant to hold, and the lint rule would fire on code P54 is already fixing.
   Don't start before them: a registry with one variant in it enforces nothing.
+
+### P57 — Variant scope as schema in the research layer (make M6 true)
+- **Status:** proposed
+- **Value:** [../research/FINDINGS.md](../research/FINDINGS.md)'s M6 closes with
+  "Enforced at /triage (classification) and /research Phase P (entry gate)" — and
+  neither skill contains the gate. Both carry M5's new-track check; neither mentions
+  variants; FRAMEWORK.md's template has no variant field. So the scoping rule the
+  research layer *paid for* (M6 documents three silent breaks) exists only as prose
+  that misdescribes itself as enforced — the most corrosive kind of drift in a repo
+  whose method is trusting exactly such claims. Concretely open today: a
+  variant-silent AE/AD entry passes the P21 schema test exactly as F1–F18 originally
+  did; AD2–AD4 ([../research/backlog/advisor.md](../research/backlog/advisor.md)) name
+  no variant while their validation corpus (Run O, 697k positions) is Classic 4p
+  self-play and AD2/AD3's candidate value signal — the F15 rank term — is
+  algebraically void at two colors (AE31); and the tier comment in
+  [../../src/client/ai/difficulty.ts](../../src/client/ai/difficulty.ts) states
+  F8/F15/F18 constants as universal truths.
+- **Scope:**
+  - **Schema, not convention:** a required `Variant:` line on *open* AE/AD entries,
+    with a small vocabulary (`classic` / `duo` / `both` / `mechanism`), enforced by
+    extending [tests/backlog-schema.test.ts](../../tests/backlog-schema.test.ts)'s
+    required-fields check — the P21 pattern, one more field. Template line in
+    FRAMEWORK.md to match.
+  - The gate text M6 already claims: one line in /triage's classification step and one
+    in /research Phase P, beside the existing M5 lines.
+  - Correct M6's enforcement sentence to name what actually enforces it. Optionally
+    extend the schema test to require a variant tag on findings from F19 on.
+  - Apply the rule to today's violators: variant-scope lines on AD2–AD4 (corpus and
+    value-signal caveats above) and on `difficulty.ts`'s finding citations.
+  - **Split pens, stated:** this entry's product-side work is the schema test and the
+    skill text; every edit under `docs/research/` (FRAMEWORK.md template, FINDINGS M6,
+    AD2–AD4) executes through /research, its single writer.
+- **Depends on:** nothing — dependency-free guardrail work, startable now; coordinates
+  with /research for its half.
