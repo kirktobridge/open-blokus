@@ -175,6 +175,71 @@ const TERMINAL_RESEARCH = new Set(['won', 'no-win', 'abandoned', 'played-out']);
 
 const has = (body: string[], label: RegExp) => body.some((l) => label.test(l));
 
+/**
+ * The terminal vocab for whichever backlog an entry belongs to. A `Depends on:`
+ * can point across files (product P54 blocks research AE29), so the set is chosen
+ * by the *dependency's* own ID kind, not the referrer's.
+ */
+const terminalOf = (e: { id: string }) =>
+  /^P\d+$/.test(e.id) ? TERMINAL_PRODUCT : TERMINAL_RESEARCH;
+
+/**
+ * `- **Drafted:** YYYY-MM-DD` → the date string, or null.
+ *
+ * Semantics: **when this entry's claims were last established** — first drafted, or
+ * last re-verified against `src/`. Bumping it on re-verification is the intended
+ * workflow, not a loophole: the staleness check below asks "has anything landed
+ * since someone last confirmed this entry is true?", and re-confirming it is
+ * precisely how you answer yes. Bumping it *without* re-reading the code is the
+ * abuse, and no test can catch that — only the habit can.
+ */
+function draftedOn(body: string[]): string | null {
+  for (const l of body) {
+    const m = l.match(/\*\*Drafted:\*\*\s*(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/**
+ * The date a terminal entry reached its terminal state, read from the free-form
+ * parenthetical the docs already use (`shipped (2026-07-21, merge e69687c)`,
+ * `**Rescoped 2026-07-06**`). Returns the *latest* date in the entry's Status
+ * line(s) — good enough to answer "did this land after that was drafted?" and
+ * conservative: no date means no staleness claim.
+ */
+function terminalDateOf(body: string[]): string | null {
+  const dates: string[] = [];
+  for (const l of body) {
+    if (!/\*\*Status:\*\*/.test(l) && dates.length === 0 && !/^\s{2,}/.test(l)) continue;
+    if (/\*\*Status:\*\*/.test(l) || dates.length > 0) {
+      for (const m of l.matchAll(/(\d{4}-\d{2}-\d{2})/g)) dates.push(m[1]);
+    }
+    if (/^- \*\*(?!Status)/.test(l) && dates.length > 0) break; // next field ends Status
+  }
+  return dates.length ? dates.sort()[dates.length - 1] : null;
+}
+
+/**
+ * IDs an entry declares it depends on — **the first physical line of the
+ * `Depends on:` field only**.
+ *
+ * Deliberately conservative. The field's wrapped continuation routinely carries
+ * narrative cross-references ("R0.2 note: …P15 M2's planned reuse of it is gone",
+ * "**Blocks** AE29–AE31"), which are *not* dependencies; consuming them made this
+ * check report P2 as depending on P15 the first time it ran. A staleness tripwire
+ * that cries wolf gets ignored, which is strictly worse than one with modest
+ * reach — so this under-reports by construction rather than guessing.
+ */
+function dependsOn(body: string[], idPattern: RegExp): string[] {
+  const line = body.find((l) => /\*\*Depends on:\*\*/.test(l));
+  if (!line) return [];
+  const ids = [...line.matchAll(/\b((?:P|AE|AD)\d+)\b/g)]
+    .map((m) => m[1])
+    .filter((id) => idPattern.test(id));
+  return [...new Set(ids)];
+}
+
 /** The first word of a `**Variant:**` line, lowercased, or null if there's no such line. */
 function variantToken(body: string[]): string | null {
   for (const l of body) {
@@ -280,6 +345,53 @@ describe('backlog schema', () => {
               VARIANT_VOCAB.has(v ?? ''),
               `open ${e.id} has **Variant:** "${v}" — not in {${[...VARIANT_VOCAB].join(', ')}}`,
             ).toBe(true);
+          }
+        }
+      });
+
+      it('every open entry is dated', () => {
+        // An entry is a snapshot of what was true when someone wrote it. Without a
+        // date, a claim drafted before the code it describes is indistinguishable
+        // from one written this morning — which is exactly how P54 shipped a scope
+        // whose premise two other entries had already invalidated. The date is what
+        // makes /implement's premise gate *affordable*: re-verify the old ones
+        // rather than all of them.
+        const open = b.idPattern.source.startsWith('^P') ? OPEN_PRODUCT : OPEN_RESEARCH;
+        const today = new Date().toISOString().slice(0, 10);
+        for (const e of p.entries) {
+          if (!open.has(e.statusToken ?? '')) continue;
+          const d = draftedOn(e.body);
+          expect(d, `open ${e.id} has no **Drafted:** YYYY-MM-DD`).not.toBeNull();
+          expect(d! <= today, `${e.id} is drafted in the future (${d})`).toBe(true);
+        }
+      });
+
+      it('flags an open entry older than a dependency that has since landed', () => {
+        // P54's failure, mechanized. An entry drafted *before* something it depends
+        // on reached a terminal state is presumptively stale: the dependency
+        // usually moved the very code the entry describes (P20 M2b's sweep is what
+        // silently voided most of P54's scope). This does not mean the entry is
+        // wrong — it means nobody may build it without re-checking against `src/`
+        // and re-dating it. Conservative by construction: it only fires when *both*
+        // dates are parseable, so a missing date never invents an alarm.
+        const isProduct = b.idPattern.source.startsWith('^P');
+        const open = isProduct ? OPEN_PRODUCT : OPEN_RESEARCH;
+        const byId = new Map(parsed.flatMap((q) => q.entries.map((e) => [e.id, e] as const)));
+
+        for (const e of p.entries) {
+          if (!open.has(e.statusToken ?? '')) continue;
+          const drafted = draftedOn(e.body);
+          if (!drafted) continue; // the check above owns that failure
+          for (const depId of dependsOn(e.body, /^(P|AE|AD)\d+$/)) {
+            const dep = byId.get(depId);
+            if (!dep || !terminalOf(dep).has(dep.statusToken ?? '')) continue;
+            const landed = terminalDateOf(dep.body);
+            if (!landed || landed <= drafted) continue;
+            expect.fail(
+              `${e.id} (drafted ${drafted}) depends on ${depId}, which landed ` +
+                `${landed} — presumptively stale. Re-verify its claims against ` +
+                `src/ and bump **Drafted:**, or rescope it, before building.`,
+            );
           }
         }
       });

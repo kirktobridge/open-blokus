@@ -62,6 +62,15 @@ remember and exit conditions are easy to skip, so the backlog schema test guards
 *both* — open entries carry their framework fields, and a `won` entry must name where
 it deployed (`Deploys as:`). A won result with no owner is inventory, not value.
 
+**Every open entry is dated** (`- **Drafted:** YYYY-MM-DD`, the first bullet) —
+meaning *when its claims were last established*, by drafting or by re-verifying
+against `src/`. Bumping it after a real re-read is the intended workflow; bumping it
+to quiet a failing check is the one abuse no test can catch. The schema test flags an
+open entry drafted **before** a dependency it names reached a terminal state: that
+dependency usually moved the very code the entry describes, which is exactly how P54
+came to be built against a premise two other entries had already voided. A flag means
+*re-verify before building*, not *the entry is wrong*.
+
 ## Research (AI/engine experiments) — [docs/research/](docs/research/)
 
 Where AI-strategy + engine tuning is tracked. **Read

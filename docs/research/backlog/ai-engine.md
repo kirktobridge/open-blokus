@@ -53,6 +53,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Deploys as:** shipped (see Status line).
 
 ### AE2 — Make MCTS faster (more iterations per time cap)
+- **Drafted:** 2026-07-02
 - **Status:** proposed (partly banked — the anchor optimization already shipped a
   **~16× move-gen speedup**, F7/Run J engine note; this entry is now the *further*
   gains beyond that. Still valuable: each budget doubling ≈ +5 pts, and F8 showed
@@ -135,6 +136,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Deploys as:** shipped (see Status line).
 
 ### AE6 — Push the budget ladder to saturation
+- **Drafted:** 2026-07-02
 - **Status:** proposed (pure benchmarking; low priority)
 - **Variant:** classic — the plateau is a measured curve on the Classic branching
   factor; Duo's is its own question (AE30).
@@ -147,6 +149,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** slow; no code change.
 
 ### AE7 — MCTS mode coverage (2p / 3p)
+- **Drafted:** 2026-07-02
 - **Status:** deferred (blocked on 2p/3p AI actually landing). **Not Duo.** This is
   2p/3p *Classic* — 20×20, four colour sets, one human steering two colours (or the 3p
   shared colour). Duo is a two-*colour* game on 14×14 and is a different problem
@@ -164,6 +167,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** moderate; also unblocks AE8's tree-reuse revisit.
 
 ### AE8 — Tree reuse across turns (revisit in 2p)
+- **Drafted:** 2026-07-02
 - **Status:** deferred (implemented; **no-win in 4p, measured** — kept, correct, zero-cost on miss).
   **Duo makes this testable for the first time:** the entry has always said "revisit in 2p",
   and Duo (two colours, so only 2 plies to your next turn) is that testbed — its hypothesis
@@ -246,6 +250,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** [Run T](../log/ai-strategy.md) (2026-07-09)
 
 ### AE12 — Move-time management (chess-clock budgeting)
+- **Drafted:** 2026-07-06
 - **Status:** proposed
 - **Variant:** mechanism — budget allocation across a game; the schedule is
   board-agnostic.
@@ -267,6 +272,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE13 — Endgame exact solver
+- **Drafted:** 2026-07-06
 - **Status:** proposed
 - **Variant:** mechanism — an exact-search switchover; the *threshold* it finds will be
   variant-scoped.
@@ -289,6 +295,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE14 — Progressive widening (replace the fixed beam)
+- **Drafted:** 2026-07-06
 - **Status:** proposed
 - **Variant:** mechanism — the point is to *remove* F8's variant-scoped beam constant,
   not retune it.
@@ -353,6 +360,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Deploys as:** product P36 (rankRewardWeight 0.25 retune-in-place).
 
 ### AE16 — Opening book
+- **Drafted:** 2026-07-06
 - **Status:** proposed (deprioritized for 4p Classic, 2026-07-07 — Pentobi's own
   shipped `book_classic.blksgf` is 173 *bytes* vs Duo's 22.5 KB: even the reference
   engine found books barely worth having on the 4p Classic start. The latency half
@@ -382,6 +390,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE17 — Root-parallel MCTS via Web Workers
+- **Drafted:** 2026-07-06
 - **Status:** proposed
 - **Variant:** mechanism — a wall-clock multiplier on the same search.
 - **Objective:** multiply effective iterations at fixed wall-clock using the
@@ -466,6 +475,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Deploys as:** shipped (see Status line).
 
 ### AE20 — Gumbel root search (policy improvement at starved budgets)
+- **Drafted:** 2026-07-06
 - **Status:** proposed
 - **Variant:** classic — a strength comparison at Classic budgets and branching.
 - **Objective:** stronger move selection exactly where our budgets are tiny —
@@ -488,6 +498,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE21 — Population-play evaluation (pool Elo readout)
+- **Drafted:** 2026-07-06
 - **Status:** proposed
 - **Variant:** mechanism — a measurement methodology (population play), not a tuned
   value.
@@ -521,6 +532,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE22 — AlphaZero-lite pipeline (policy+value net over board planes; AE4's designated successor)
+- **Drafted:** 2026-07-06
 - **Status:** proposed — the F11 "step-change capacity" clause made concrete.
   Run O's no-win was a 609-param toy on ε-greedy-heuristic outcomes; this is the
   known summit path: board planes, real capacity, search-improved targets.
@@ -556,6 +568,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE23 — Solve a reduced Blokus (Duo on small boards)
+- **Drafted:** 2026-07-06
 - **Status:** deferred (wants AE9 node rates; the one true *solver* item, everything
   else is player-strength). **Board-size blocker partly cleared:** P20 M2a shipped the
   rules-core generalization (board size + start cells are `GameConfig`, read via
@@ -586,6 +599,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE24 — Trained softmax move priors (soft pruning replaces the beam)
+- **Drafted:** 2026-07-08
 - **Status:** proposed — the primary F14 follow-up. Pentobi Classic L1/L2 use **3/30
   simulations** (`libpentobi_mcts/Player.cpp` level counts, github.com/enz/pentobi)
   yet L2 matches our 500-iteration extreme: a ~17× per-simulation quality gap, and
@@ -623,6 +637,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE25 — WASM(+SIMD) search core (the client-side JS ceiling, part 1)
+- **Drafted:** 2026-07-08
 - **Status:** proposed — sequence *after* the knowledge track (AE15/AE11/AE24)
   stabilizes the engine, so the port happens once.
 - **Variant:** mechanism — a port of the hot loop; strength-neutral by construction.
@@ -700,6 +715,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   fired as designed: the width lever is iteration-dominated (the risk above was real).
 
 ### AE27 — Re-validate per-tier beam:iteration ratios and the budget ladder post-bitboard
+- **Drafted:** 2026-07-15
 - **Status:** proposed — retroactive staleness sweep of F8/AE10 after AE9 (F12).
   The `beam ≈ iters/6` rule and the shipped per-tier beams were tuned on pre-bitboard
   iteration counts; F12's ~2.5× throughput jump silently changed how many iterations
@@ -774,6 +790,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
   `fallbackMove` rate at width 48 (ships as `npm run arena -- --rollout-stats`).
 
 ### AE29 — Duo external anchor: extend the Pentobi bridge to the `duo` variant
+- **Drafted:** 2026-07-21
 - **Status:** proposed — **dependency-ready** as of 2026-07-22: both product gates
   (P20 M2b, P54) shipped, so the arena plays Duo (`npm run arena -- --duo`, or a
   `--config` JSON carrying `"variant": "duo"` — the reproducible path a run should use;
@@ -813,6 +830,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE30 — Re-tune the Duo bot: beam:iterations and the heuristic weights
+- **Drafted:** 2026-07-21
 - **Status:** proposed (blocked on **AE29** only — the anchor lands first, per M5. The
   product gate cleared: P54 shipped 2026-07-22 and the arena plays Duo.)
 - **Variant:** duo — the question *is* whether the Classic-tuned constants transfer to
@@ -859,6 +877,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE31 — Duo reward model: the placed-square leader is not the Duo winner
+- **Drafted:** 2026-07-21
 - **Status:** proposed (wants AE29's readout; no product gate left — P54 shipped
   2026-07-22 and the arena plays Duo, with placement now ranked by score in the scoring
   variant's own direction and placed-squares recovered separately, so advanced-scoring

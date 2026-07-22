@@ -65,6 +65,7 @@ order runs foundation → offline surfaces → live surfaces.
   are already cheat-resistant canonical tuples, replay is exact.
 
 ### P2 — Post-game recap (play-by-play, blunders, key moments)
+- **Drafted:** 2026-07-02
 - **Status:** partial — **R0 + R0.1 + R0.2 shipped**: post-game review is now an in-table
   mode of the offline vs-AI table — frame-driven rendering, so the full-size board, the
   four player cards + hand tray, and the score/mobility timelines all track the scrubbed
@@ -117,6 +118,7 @@ order runs foundation → offline surfaces → live surfaces.
   `GameRecord` with no live client, which is exactly what a standalone shell needs.
 
 ### P3 — Mid-game advisor overlay
+- **Drafted:** 2026-07-02
 - **Status:** partial — **R1 shipped**; R2+ deferred until the evaluator is trustworthy.
 - **Value:** live in-game guidance without overwhelming the player.
 - **Scope / milestones:** R1 "show legal placements" — **shipped**: opt-in "Legal moves"
@@ -224,6 +226,7 @@ this epic owns the user-facing feature + its UX.
 - **Depends on:** server integration decisions; reuses the shipped bot strategies.
 
 ### P13 — Ladder calibration policy (tiers as strength contracts)
+- **Drafted:** 2026-07-06
 - **Status:** proposed.
 - **Value:** as bot research lands wins, the difficulty ladder stays meaningful
   instead of drifting or bloating: each tier keeps the strength players learned it
@@ -1063,6 +1066,7 @@ four classic colors as accents, shapes as the star.
 The "why come back" layer — daily hooks and a memory of your journey across games.
 
 ### P14 — Daily puzzle
+- **Drafted:** 2026-07-06
 - **Status:** partial — **M1 shipped** (reshaped from static solitaire to a *contested*
   personal-best puzzle): a fixed daily seed plays a deep opening (~11 pieces per color),
   hands the player one color, then the other three colors answer every player placement
@@ -1157,6 +1161,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 ## Epic: Game modes
 
 ### P20 — Variety: Blokus Duo & blitz
+- **Drafted:** 2026-07-06
 - **Status:** partial — **M1 (blitz) shipped**: per-move countdown for human seats in the
   offline vs-AI table. **M2a shipped**: board size + start cells live in `GameConfig`,
   read through `boardSizeOf` / `startCellOf` accessors; `bitboard.ts`'s hardcoded
@@ -1361,6 +1366,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   once that lands, but must not wait for it.
 
 ### P58 — Variant-scoped onboarding & feel content (tutorial, blitz pacing)
+- **Drafted:** 2026-07-22
 - **Status:** proposed
 - **Value:** two player-facing surfaces are calibrated to Classic with nothing
   recording the scope. The tutorial
@@ -1451,6 +1457,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
   user confirms).
 
 ### P55 — Mechanical Classic/Duo separation (make variant drift impossible, not discouraged)
+- **Drafted:** 2026-07-22
 - **Status:** proposed
 - **Value:** Duo's arrival turned every board-size and colour-set assumption into a
   correctness question, and today the answer is *convention*: research M6 and the

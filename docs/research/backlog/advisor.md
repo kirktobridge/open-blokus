@@ -41,6 +41,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 ---
 
 ### AD2 — Position evaluator ("how am I doing right now?")
+- **Drafted:** 2026-07-02
 - **Status:** proposed (arena-log validation unblocked; human-game validation waits on P1)
 - **Variant:** classic — the Run O validation corpus (697k positions) is Classic 4p
   self-play, and the F15 rank term this leans on is algebraically void at two colors
@@ -62,6 +63,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Ships as:** part of backlog P2/P3.
 
 ### AD3 — Win probability
+- **Drafted:** 2026-07-02
 - **Status:** proposed (arena-log validation unblocked; human-game calibration waits
   on P1, AD2)
 - **Variant:** classic — calibration rides on AD2's Classic evaluator and a Classic
@@ -80,6 +82,7 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Ships as:** part of backlog P3.
 
 ### AD4 — Blunder / key-moment signal detection
+- **Drafted:** 2026-07-02
 - **Status:** proposed (blocked on P1 logging, AD2). **Zero engine work needed:** the
   existing `mctsSearch` root's children already carry per-color visit/reward stats,
   so best-move gap = played move's Q vs best child's Q straight off the returned tree.
