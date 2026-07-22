@@ -284,6 +284,25 @@ describe('backlog schema', () => {
         }
       });
 
+      it('every `won` entry names where it deployed', () => {
+        // The close side of the schema. The open-side check above guards fields on
+        // the way *in*; this guards the way *out*. FRAMEWORK's won-close requires a
+        // `Deploys as:` pointer because a won result with no owner is inventory, not
+        // value — and the intent is easy to bury in Status/Log prose ("ship the
+        // knob (product-side)"), where nothing can grep it and no one is accountable
+        // for it. A structured field is checkable; a sentence is not. State
+        // `no deployment surface` when there genuinely is none.
+        if (b.idPattern.source.startsWith('^P')) return; // research backlogs only
+        for (const e of p.entries) {
+          if (e.statusToken !== 'won') continue;
+          expect(
+            has(e.body, /\*\*Deploys as:\*\*/),
+            `won ${e.id} has no **Deploys as:** — name the product P#, the ` +
+              `retune-in-place task, or "no deployment surface"`,
+          ).toBe(true);
+        }
+      });
+
       it('has a `## Next up` block whose IDs all exist and are non-terminal', () => {
         // Product P22: the queue head must never dangle or go stale. Every listed
         // ID must resolve to a real entry in this backlog and not be terminal

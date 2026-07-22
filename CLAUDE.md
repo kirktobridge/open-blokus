@@ -32,6 +32,36 @@ only where it explicitly says so; if a fact appears in both, `GAME_SPEC.md` wins
   automatically) so alignment is mechanical, not manual. BUILD_ORDER is disposable —
   tick off / delete phases as they ship.
 
+## Claim discipline (drift you *write*, not drift you inherit)
+
+The premise gate guards claims you **read**. These guard claims you **write** — a
+sentence that's wrong on arrival is worse than one that rotted, because nothing
+signals it's suspect. All three rules cost seconds and have each been paid for.
+
+- **A tool's empty result is not evidence.** "grep found none" ≠ "there are none": a
+  proxied, misflagged, or wrong-path search returns empty *exactly* like a true
+  negative. Before promoting a "none found" to a durable claim, run a **positive
+  control** — the same tool against a pattern you know matches. Empty control means
+  your tooling lied, not the repo. (Two `rtk`-proxied greps once "proved" no research
+  entry was `won`; nine were.)
+- **Never write an exhaustive inventory into prose.** "X and Y are the last remaining
+  Z", "nothing else calls W" — unmaintainable, and nothing can hold them. Write the
+  **consequence** ("P55 needs an exemption list"), not the inventory. If the inventory
+  matters, it belongs in a test — that's what
+  [tests/backlog-schema.test.ts](tests/backlog-schema.test.ts) and
+  [tests/events-registry.test.ts](tests/events-registry.test.ts) are for.
+- **Say how strongly a claim is held** when it isn't obvious: *mechanically enforced*
+  (a test holds it), *verified* (checked this session — say how), or *asserted*
+  (a belief). Research already grades evidence this way
+  (`replicated`/`significant`/`directional`, `stats.py` over eyeballing); prose claims
+  about the code get the same courtesy. An asserted claim that reads as verified is
+  how the next session inherits your guess as fact.
+
+**Schema checks run on the way *out*, not just in.** Entry conditions are easy to
+remember and exit conditions are easy to skip, so the backlog schema test guards
+*both* — open entries carry their framework fields, and a `won` entry must name where
+it deployed (`Deploys as:`). A won result with no owner is inventory, not value.
+
 ## Research (AI/engine experiments) — [docs/research/](docs/research/)
 
 Where AI-strategy + engine tuning is tracked. **Read

@@ -13,6 +13,30 @@ flip + a one-line note. This is not a rewrite pass.
 Project doc discipline (CLAUDE.md) governs: **code + tests own the *what*; docs keep
 the *why*.** Don't restate signatures or duplicate what the code already says.
 
+## Write gate (the premise gate, pointed outward)
+
+/implement verifies claims it **reads**. This skill is a *pen*, so it owes the same
+standard to claims it **writes** — single-writer settles who edits, not what may be
+asserted. Before committing any factual claim about the code:
+
+- **Verify it now, at the standard you'd demand of one you read.** A claim written
+  today that's wrong on arrival is worse than one that rotted, because the next
+  session has no reason to doubt it.
+- **A tool's empty result is not evidence.** "grep found none" ≠ "there are none" —
+  a proxied/misflagged/wrong-path search returns empty exactly like a true negative.
+  Before writing a negative you can't otherwise support, run a **positive control**:
+  the same tool against a pattern you *know* matches. If the control comes back
+  empty, your tooling lied, not the repo.
+- **Never write an exhaustive inventory into prose** — "X and Y are the last
+  remaining Z", "nothing else calls W". These rot on contact and nothing can hold
+  them. Write the **consequence** ("P55 needs an exemption list"), not the
+  inventory. If the inventory genuinely matters, it belongs in a test
+  ([tests/backlog-schema.test.ts](../../../tests/backlog-schema.test.ts) is the
+  idiom), never in a sentence.
+- **Label the claim's strength** when it isn't self-evident — *mechanically enforced*
+  (a test holds it), *verified* (checked this session; say how), or *asserted*
+  (someone's belief). An asserted claim that reads as verified is how drift starts.
+
 **Single-writer contract:** this skill is the sole writer of
 [docs/product/BACKLOG.md](../../../docs/product/BACKLOG.md),
 [docs/BUILD_ORDER.md](../../../docs/BUILD_ORDER.md), and

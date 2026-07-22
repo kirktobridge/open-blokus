@@ -12,6 +12,21 @@ gitignored by design; it's session state, not project history). Sessions run in
 parallel on different branches, so HANDOFF is **sectioned per branch**: rewrite only
 the current branch's section, never another session's.
 
+**Write gate (HANDOFF is a durable claim too).** The baton is what the next session
+trusts instead of re-reading the tree, so a wrong line here is *load-bearing*. Every
+check below is a search whose **empty result you are about to promote to a fact** —
+that is precisely the inference that fails silently when a tool is proxied,
+misflagged, or pointed at the wrong path. So:
+- **Positive-control every "none found"** before it becomes a HANDOFF line: re-run
+  the same query against a pattern you know matches, or confirm it a second way
+  (a different tool, or a test that would fail). `git`-native and test-enforced
+  results are already strong; ad-hoc greps are not.
+- **Never write an exhaustive inventory** ("these are the last N", "no entry is in
+  state S") — state the consequence, or let a test hold it.
+- **Never write "pre-existing, not mine to fix"** about something you have not
+  verified. That phrasing tells the next session not to look, which converts your
+  unchecked guess into their settled fact.
+
 ## Checks (fix or surface each hit — don't silently pass)
 1. `git status --short` — uncommitted changes? Group them into checkpoint commits
    (below). Untracked files under `scripts/` or `src/` are a red flag: either commit

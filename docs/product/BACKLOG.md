@@ -387,12 +387,12 @@ this epic owns the user-facing feature + its UX.
 - **Correction (2026-07-22):** this entry previously claimed `arena.ts` and `arena.cli.ts`
   were *the last two* `COLOR_ORDER`-as-playing-set callers, so
   [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
-  lint scope could simply be widened after P54. **That was wrong** — checked against the
-  tree post-build. Still reading `COLOR_ORDER`, and all of them legitimately Classic-scoped
-  rather than bugs: `selfplay.ts`, `valuenet.ts`, `pentobi/arena.ts`, `ambient.ts`,
-  `puzzle/daily.ts`, and the client palette UI (`Wordmark`, `AmbientBoard`, appearance,
-  `PalettePicker`). So P55 needs an **exemption list, not a clean sweep** — a refinement of
-  P55's scope, not a blocker on it.
+  lint scope could simply be widened after P54. **That was wrong** — several more remain,
+  all legitimately Classic-scoped rather than bugs. Consequence, which is the durable part:
+  **P55 wants an exemption list, not a clean sweep** — a refinement of its scope, not a
+  blocker on it. The list itself is deliberately *not* recorded here; P55 re-derives it at
+  build time, when it will be accurate. (Lesson, now in CLAUDE.md's *Claim discipline*:
+  an exhaustive inventory in prose rots on contact — write the consequence, or a test.)
 
 ---
 
@@ -1503,11 +1503,13 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     finally gets recorded. **Refined 2026-07-22 (post-P54): this is an exemption list, not
     a clean sweep.** P54 previously claimed `arena.ts`/`arena.cli.ts` were the last two
     `COLOR_ORDER`-as-playing-set callers; a check of the tree after P54 landed says
-    otherwise. Still reading it, and all Classic-scoped by design rather than buggy:
-    `selfplay.ts` (stamps `variant: 'classic'`, self-consistent), `valuenet.ts` (4-colour
-    feature layout), `pentobi/arena.ts` (Classic-only external baseline), `ambient.ts`,
-    `puzzle/daily.ts`, and the client palette UI (`Wordmark`, `AmbientBoard`, appearance,
-    `PalettePicker`). Budget for annotating that set, not for converting it.
+    otherwise. Budget for *annotating* the Classic-by-design set, not converting it.
+    **Snapshot, not a spec — re-derive membership when you build this** (a list in prose
+    rots; that is the mistake being corrected here). As of 2026-07-22, and what makes
+    each Classic-scoped, which is the part worth not re-deriving: `selfplay.ts` (stamps
+    `variant: 'classic'`, self-consistent), `valuenet.ts` (4-colour feature layout),
+    `pentobi/arena.ts` (Classic-only external baseline), `ambient.ts`, `puzzle/daily.ts`,
+    and the client palette UI (`Wordmark`, `AmbientBoard`, appearance, `PalettePicker`).
     Guards the **constant-import** path; P54's required-`size`
     param guards the **function-call** path — different holes, both needed.
   - **Agentic-layer guard:** add `docs/GAME_SPEC_DUO.md` to `.claude/edit-blocklist` once

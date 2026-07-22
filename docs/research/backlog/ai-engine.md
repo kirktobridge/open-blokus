@@ -692,9 +692,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
   the extra iterations rather than the width, which this design cannot separate —
   an `rolloutSamples 6 @ 59 it` arm is the control that isolates it, and it's cheap
   to add. Interacts with AE24 (learned priors would replace the sampler outright).
+- **Deploys as:** product [P37](../../product/BACKLOG.md) — extreme's `rolloutSamples`
+  6→48, shipped (`replication-pending`). AE28 is the fixed-iteration follow-up that
+  sized the bump; the `fallbackMove` instrumentation this entry asked for ships as
+  `npm run arena -- --rollout-stats`.
 - **Log:** [Run U](../log/ai-strategy.md) → [F17](../FINDINGS.md). Confound control
   fired as designed: the width lever is iteration-dominated (the risk above was real).
-  Follow-ups: instrument `fallbackMove` rate at width 48; ship the knob (product-side).
 
 ### AE27 — Re-validate per-tier beam:iteration ratios and the budget ladder post-bitboard
 - **Status:** proposed — retroactive staleness sweep of F8/AE10 after AE9 (F12).
@@ -763,8 +766,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** compute-heavy — 500 iters/move is ~3× the AE26 per-game cost;
   n=600 ran 732 min / 150 CPU-h at 14-way. Risk (underpowered for a small effect) did
   not fire — the effect was large (+11 pts), CI cleared at n=600.
-- **Log:** [Run V](../log/ai-strategy.md) → [F18](../FINDINGS.md). Follow-up (product):
-  ship the `extreme` `rolloutSamples` bump; instrument `fallbackMove` rate at width 48.
+- **Deploys as:** product [P37](../../product/BACKLOG.md) — extreme's `rolloutSamples`
+  6→48, shipped (`replication-pending`; the Run V re-batch is still owed, ~150 CPU-h).
+  Verified in [difficulty.ts](../../../src/client/ai/difficulty.ts): the `extreme` tier
+  ships `rolloutSamples: 48`.
+- **Log:** [Run V](../log/ai-strategy.md) → [F18](../FINDINGS.md). Follow-up: instrument
+  `fallbackMove` rate at width 48 (ships as `npm run arena -- --rollout-stats`).
 
 ### AE29 — Duo external anchor: extend the Pentobi bridge to the `duo` variant
 - **Status:** proposed — **dependency-ready** as of 2026-07-22: both product gates

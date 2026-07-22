@@ -18,6 +18,18 @@ phase. `<ID>` = a backlog id like `AE3` (ai-engine) or `AD1` (advisor).
 (backlog, log, FINDINGS). /ship never touches these; when a research win ships as a
 feature, the close (Phase 4) still happens here.
 
+**Write gate.** Being the only pen settles *who* edits, not *what may be asserted*.
+This track already grades evidence (`replicated`/`significant`/`directional`, M1's
+n<200 bar, "stats from `stats.py`, not eyeballed") — **apply that same rigour to
+prose claims about the code**, which currently get none:
+- A tool's empty result is not evidence. Before writing a negative ("no entry
+  does X", "nothing else calls Y"), run a **positive control** — the same tool
+  against a pattern you know matches. Empty control = your tooling lied.
+- Never write an exhaustive inventory into prose; it rots on contact and nothing
+  holds it. Write the consequence, or make it a test.
+- Say which kind of claim it is: *mechanically enforced*, *verified* (how?), or
+  *asserted*. An asserted claim that reads as verified is drift with a head start.
+
 Map of the folder:
 - [backlog/](../../../docs/research/backlog/) — planned experiments (`AE#`, `AD#`), one framework block each.
 - [log/](../../../docs/research/log/) — append-only run records.
