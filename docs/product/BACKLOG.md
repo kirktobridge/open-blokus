@@ -26,13 +26,13 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P20** M2c — achromatic tile finish. Duo ships on a provisional flat skin; black and
-   white are the degenerate case for the relative tile modulations, and per CLAUDE.md no
-   check can see it — an eyes-on pass per theme.
-2. **P55** — mechanical Classic/Duo separation. Dependency-ready now that P54 shipped;
+1. **P55** — mechanical Classic/Duo separation. Dependency-ready now that P54 shipped;
    highest-leverage guard left, since variant drift is the one class of bug that stays
    green through vitest, typecheck **and** lint. Scoped smaller than drafted: the lint
    rule wants an exemption list for the Classic-by-design callers, not a sweep.
+2. **P58** — variant-scoped onboarding & feel. Fully dependency-ready now that P20 M2c
+   closed the Duo build-out; it's the remaining Duo gap that only a human can see, and
+   its Classic-by-design sites want writing at the same time as P55's exemptions.
 3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
@@ -383,7 +383,7 @@ this epic owns the user-facing feature + its UX.
     required argument of `idx`/`xy`/`inBounds` in
     [../../src/game/board.ts](../../src/game/board.ts), so the silent-corruption path is
     a typecheck error now.
-- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`config.playColors`,
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz--shipped) M2b (`config.playColors`,
   `black`/`white` in the `Color` union). **Unblocked** research AE29–AE31
   ([ai-engine.md](../research/backlog/ai-engine.md)) — the arena can now play a Duo game;
   closing those loops is /research's, not this entry's.
@@ -1160,11 +1160,10 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ## Epic: Game modes
 
-### P20 — Variety: Blokus Duo & blitz
+### P20 — Variety: Blokus Duo & blitz — SHIPPED
 - **Drafted:** 2026-07-06
-- **Status:** in-progress — **M2c is claimed this session** (branch
-  `feat/p20-m2c-achromatic-finish`); everything below is the `partial` state it builds on,
-  and the entry returns to `partial`/`shipped` at land time. **M1 (blitz) shipped**: per-move countdown for human seats in the
+- **Status:** shipped (2026-07-22, merge `bb12931`) — all milestones landed.
+  **M1 (blitz) shipped**: per-move countdown for human seats in the
   offline vs-AI table. **M2a shipped**: board size + start cells live in `GameConfig`,
   read through `boardSizeOf` / `startCellOf` accessors; `bitboard.ts`'s hardcoded
   `SIZE`/`MASK20` are gone. Classic remains the only shipped variant and no behaviour
@@ -1181,7 +1180,15 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   to 19, advisor footprint keyed to a 20-stride, progression defaulting to Classic,
   Duo setup dropping the human seat, game-over mosaic framed at Classic's pixel size —
   were found by /verify and fixed. Co-landed with **P56** (merge `eaaf694`).
-  **M2c not started.**
+  **M2c shipped** — the `--tile-*` finish tokens fork by value class (`-dark` /
+  `-light`, resolved through a `var()` fallback chain), so a theme overrides only where
+  the base finish genuinely fails at that end of the range. `--piece-black` /
+  `--piece-white` are tuned per theme against that theme's mat rather than shared.
+  What's mechanical underneath is pinned by `tests/tileFinish.test.ts` (fallback chain
+  resolves; `PlacedLayer` can't reach a class-varying token bare; every dye edge
+  separates from its own body, with a control showing black clears that bar *only*
+  because of the fork); the look itself was verified the only way it can be — eyes-on
+  across Linen, Lamplight and Walnut, Duo and Classic.
 - **Note (M1):** expiry auto-plays a *random legal move*, not a skip — Blokus has no pass
   move (GAME_SPEC §5), so a timeout forfeits your choice of move, not your turn. The
   entry's "auto-skip **or** auto-random" was resolved to auto-random for that reason.
@@ -1224,9 +1231,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     [P56](#p56--variant-identity-through-game-records-history--progression--shipped)**: the
     game recorder runs at every game-over, so a playable Duo without record/stats
     variant identity silently loses every Duo game it finishes (see P56).
-  - **M2c achromatic tile finish** — per-theme `--piece-black` / `--piece-white` plus
-    finish handling so bevel, AO and shadow survive at both ends of the value range.
-    Split out because `MatLayer`/`PlacedLayer` shade tiles with *relative* modulations
+  - **M2c achromatic tile finish** — shipped (see Status). Split out because `MatLayer`/`PlacedLayer` shade tiles with *relative* modulations
     (`--tile-hi` 0.42, `--tile-lo` 0.26, `--tile-ao`, `--tile-shadow` 0.35, `--tile-dye`
     30%) tuned against saturated mid-tones; black and white are the degenerate case and
     clip at **both** ends. Per CLAUDE.md this failure is invisible to vitest/typecheck/
@@ -1308,7 +1313,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   replay-fork substrate if built — build the substrate once (see P2's R2 note).
 
 ### P56 — Variant identity through game records, history & progression — SHIPPED
-- **Status:** shipped — co-landed with [P20](#p20--variety-blokus-duo--blitz) M2b
+- **Status:** shipped — co-landed with [P20](#p20--variety-blokus-duo--blitz--shipped) M2b
   (merge `eaaf694`). `GameRecord` carries `variant`; `SerializedRecord` is **v3** with
   v1/v2 reading back as `classic`, and seats/scores/winners/moves keyed by the variant's
   play-color list instead of `COLOR_ORDER` position. The variant threads through every
@@ -1358,11 +1363,11 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     catch and `loadHistory`'s drop-on-read — the silent paths must be proven
     pass-through for well-formed new-variant data, not just for Classic; a progression
     fold test asserting Classic and Duo results land in separate buckets.
-  - **Sequencing constraint:** must **co-land with [P20](#p20--variety-blokus-duo--blitz)
+  - **Sequencing constraint:** must **co-land with [P20](#p20--variety-blokus-duo--blitz--shipped)
     M2b** — the recorder runs at every game-over, so "ships playable" opens this window
     immediately, one dependency *before*
     [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped).
-- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (`black`/`white` in
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz--shipped) M2b (`black`/`white` in
   `Color`, `config.playColors`). Reads the variant registry from
   [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)
   once that lands, but must not wait for it.
@@ -1394,7 +1399,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     puzzle), the Classic-by-design intent gets written at the site as part of
     [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
     lint exemptions — not silently inherited.
-- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (playable Duo). The pacing
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz--shipped) M2b (playable Duo). The pacing
   check wants [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped)
   first — pacing has to be *measured* on a Duo board, which needs the arena.
 
@@ -1485,7 +1490,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     Until this test exists, the start-cell pair `(4,4)`/`(9,9)` is guarded only by
     GAME_SPEC_DUO §3's in-doc warning against the anti-diagonal misreading — which is
     why the §6 worked cases (D1–D5, D5 being that exact invariant) land as rules-core
-    tests with [P20](#p20--variety-blokus-duo--blitz) M2b rather than waiting here.
+    tests with [P20](#p20--variety-blokus-duo--blitz--shipped) M2b rather than waiting here.
   - **Variant dimension for the signal registries.** `EVENT_THRESHOLDS`
     ([../../src/client/drama.ts](../../src/client/drama.ts)) is a flat record and
     [../EVENTS.md](../EVENTS.md) had no variant column. **P54 settled the event half:**
@@ -1530,7 +1535,7 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     that is P54's closing step, since P54 already rewrites three of the five files
     involved and splitting it would touch them twice. It is also the highest-value guard
     of the lot, so it must not wait on P55.
-- **Depends on:** [P20](#p20--variety-blokus-duo--blitz) M2b (shipped) + P54 (shipped) —
+- **Depends on:** [P20](#p20--variety-blokus-duo--blitz--shipped) M2b (shipped) + P54 (shipped) —
   both cleared, so this is dependency-ready. The registry needed a real second variant to
   hold, and the lint rule would have fired on code P54 was still fixing.
   **Half the first bullet is already there:** M2b landed a `VARIANTS` table in

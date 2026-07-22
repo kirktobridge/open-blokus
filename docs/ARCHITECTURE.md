@@ -390,9 +390,22 @@ e2e renders the graph through an `OfflineAudioContext` and asserts on the wavefo
 ### Appearance & preferences (client-only)
 
 **One token vocabulary, one store.** Every appearance value — fonts, surfaces, board,
-accents, *and the four piece colors* (`--piece-blue` &c.) — is a CSS custom property on
-`<html>`, so the whole app retints with **no React re-render** and there is no second
-(JS-prop) rail for colors: components paint with `PIECE_VAR[color]`.
+accents, *and the piece colors* (`--piece-blue` &c., one per member of the `Color`
+union) — is a CSS custom property on `<html>`, so the whole app retints with **no React
+re-render** and there is no second (JS-prop) rail for colors: components paint with
+`PIECE_VAR[color]`.
+
+**The finish tokens fork by value class, because they are relative.** `--tile-hi`,
+`--tile-lo`, `--tile-ao`, `--tile-dye-mix` &c. describe *modulations of the body color*,
+not absolute values, so a single setting can only be right for a band of bodies —
+Duo's near-black and near-white clip at opposite ends and the tile flattens. Hence
+`-dark` / `-light` variants resolved through a `var()` fallback chain
+(`var(--tile-hi-dark, var(--tile-hi))`): a theme writes an override *only* where the
+base genuinely fails at that end, so the delta is the documentation, and Classic bodies
+never leave the base path. The corollary for SVG: a `<pattern>` inherits custom
+properties from the `<defs>` it lives in, not from the element referencing it, so
+class-varying finishes need one emitted def **per value class present**, not one def
+plus an override at the use site.
 
 A **theme** is a complete assignment of that vocabulary. The three built-ins are the
 `[data-theme]` blocks in `theme.css` (this keeps the no-flash boot and the
