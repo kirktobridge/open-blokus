@@ -63,8 +63,13 @@ export function ProgressionPanel({
   // Classic and Duo are different games, so their tier records and best scores are
   // separate stores (P56) — and separate readouts. The switch appears only once
   // there is a second variant to switch to.
-  const [variant, setVariant] = useState<Variant>('classic');
   const playedVariants = VARIANT_KEYS.filter((v) => hasGames(p, v));
+  // Default to a variant you have actually played, not to Classic: a Duo-only
+  // player would otherwise read Classic's zeros with no control to switch (the
+  // switch only appears once there are two).
+  const [picked, setPicked] = useState<Variant | null>(null);
+  const variant: Variant = picked ?? playedVariants[0] ?? 'classic';
+  const setVariant = setPicked;
   const best = bestScoreTile(p, variant);
   // Read once on mount: the stats modal remounts each time it opens, and nothing
   // can finish a game while you're looking at it.

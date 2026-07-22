@@ -2,15 +2,18 @@ import { useCallback, useRef, useState } from 'react';
 import type { Cell, PieceId, Rotation } from '../../game/types';
 import { BOARD_SIZE } from '../../shared/constants';
 
-const clamp = (n: number) => Math.max(0, Math.min(BOARD_SIZE - 1, n));
-const CENTER = Math.floor(BOARD_SIZE / 2);
+const clamp = (n: number, size: number) => Math.max(0, Math.min(size - 1, n));
 
 /**
  * UI-only state for composing a placement: the selected piece, its orientation,
  * the hovered board cell, and whether that placement is `staged` (locked, awaiting
  * submit). Never stored in G.
  */
-export function useSelection() {
+export function useSelection(boardSize: number = BOARD_SIZE) {
+  // The keyboard cursor lives in board coordinates, so its bounds are the
+  // variant's — clamping to Classic's 19 walks it off a 14×14 Duo board.
+  const sizeRef = useRef(boardSize);
+  sizeRef.current = boardSize;
   const [pieceId, setPieceId] = useState<PieceId | null>(null);
   const [rotation, setRotation] = useState<Rotation>(0);
   const [reflected, setReflected] = useState(false);
@@ -48,7 +51,9 @@ export function useSelection() {
   /** Move the hovered cell by (dx, dy); initializes at board center. Clamped. */
   const move = useCallback((dx: number, dy: number) => {
     setHover((h) =>
-      h ? { x: clamp(h.x + dx), y: clamp(h.y + dy) } : { x: CENTER, y: CENTER },
+      h
+        ? { x: clamp(h.x + dx, sizeRef.current), y: clamp(h.y + dy, sizeRef.current) }
+        : { x: sizeRef.current >> 1, y: sizeRef.current >> 1 },
     );
     setStaged(false);
   }, []);

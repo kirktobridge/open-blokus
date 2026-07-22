@@ -73,7 +73,17 @@ export function CustomGameScreen({
                     // normalizeSetup pins the seat count and scoring a variant
                     // requires, so a switch can never leave an unstartable form.
                     const v = e.target.value as Variant;
-                    setSetup((s) => normalizeSetup({ ...s, variant: v }));
+                    setSetup((s) => {
+                      // Carry the human seats across, not the bot count: pinning Duo
+                      // to 2 seats while keeping "3 bots" would silently turn your
+                      // game into a watch game.
+                      const humans = s.mode - s.aiCount;
+                      const next = normalizeSetup({ ...s, variant: v });
+                      return normalizeSetup({
+                        ...next,
+                        aiCount: Math.max(0, next.mode - Math.min(humans, next.mode)),
+                      });
+                    });
                   }}
                   style={FIELD}
                 >

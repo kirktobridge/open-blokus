@@ -3,10 +3,10 @@ import type { ReactNode } from 'react';
 import type { BoardProps } from 'boardgame.io/react';
 import type { Color, GameState, PieceId } from '../game/types';
 
-import { BOARD_SIZE } from '../shared/constants';
 import { resolveCells } from '../game/pieces';
 import { isLegalPlacement } from '../game/placement';
-import { colorStateOf, ownerOf, playColorsOf, startCellOf } from '../game/modes';
+import { idx } from '../game/board';
+import { boardSizeOf, colorStateOf, ownerOf, playColorsOf, startCellOf } from '../game/modes';
 import { Board } from './board/Board';
 import { BoardFrame } from './board/BoardFrame';
 import { unplayablePieces, moveOptionCells, type MoveOptionCells } from './advisor/legalMoves';
@@ -88,7 +88,8 @@ export function BlokusBoardView({
   /** Dismiss the ceremony into in-table review mode (P2 R0.2); offline only. */
   onReview?: () => void;
 }) {
-  const sel = useSelection();
+  const boardSize = boardSizeOf(G);
+  const sel = useSelection(boardSize);
   const playColors = playColorsOf(G);
   const activeColor = playColors[G.activeColorIndex];
   // Single-player passes isActive=true for the current player; multiplayer gates it.
@@ -228,7 +229,7 @@ export function BlokusBoardView({
   // anchors' consequence, so the pips ride *over* the wash rather than replacing it.
   const advisorHints = useMemo<Hint[]>(() => {
     if (advisorTargets.targets.length === 0) return [];
-    const hovered = new Set(oriented.map((c) => c.y * BOARD_SIZE + c.x));
+    const hovered = new Set(oriented.map((c) => idx(c.x, c.y, boardSize)));
     const cells = advisorTargets.targets.filter((c) => !hovered.has(c));
     const anchors = advisorTargets.anchors.filter((c) => !hovered.has(c));
     const out: Hint[] = [];
@@ -240,7 +241,7 @@ export function BlokusBoardView({
       out.push({ id: 'anchor', cells: anchors, tone: 'anchor', mark: 'pip' });
     }
     return out;
-  }, [advisorTargets, oriented, activeColor]);
+  }, [advisorTargets, oriented, activeColor, boardSize]);
 
   // Incursion advisor (P44): an opt-in, standing warning overlay marking the active
   // color's open corners that an opponent could seize next turn — the "before" to
