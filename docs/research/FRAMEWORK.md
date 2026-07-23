@@ -137,6 +137,7 @@ of them said so.
 | AI strategy | headless arena, pure rules core | [src/game/ai/arena.ts](../../src/game/ai/arena.ts) · `npm run arena [games] [seeds] [baseSeed]` |
 | regression guard | ~180 games every `npm test` | [tests/arena.test.ts](../../tests/arena.test.ts), [tests/alphabeta.test.ts](../../tests/alphabeta.test.ts) |
 | engine profiling | CPU profile scripts | [scripts/profile-mcts.ts](../../scripts/profile-mcts.ts) · `npx vite-node scripts/profile-mcts.ts` (Run N / F10) |
+| population play / pool Elo | round-robin over a frozen pool → Bradley-Terry Elo | `npm run arena … --pool=scripts/experiments/pool.json [--members=a,b,c]` (F19). `pool.json` is **Classic**; every rating is scoped to its `(variant × pool)` (M6) — a Duo ladder is a separate `--duo` pool on a **non-comparable** scale. Shard heavy pools — see below |
 | advisor / evaluator | *not built yet — see [backlog/advisor.md](backlog/advisor.md)* | needs [product backlog](../product/BACKLOG.md) P1 game-logging first |
 
 **Experiment configs:** an experiment's arena setup lives in
@@ -144,6 +145,18 @@ of them said so.
 runs via `npm run arena <games> <seeds> <baseSeed> -- --config=scripts/experiments/<id>.json`.
 Never edit the hardcoded tables in `arena.cli.ts` for a run — those are the standing
 baselines. Commit the config alongside the log record so every run is reproducible.
+
+**Heavy / sharded sweeps — reuse, don't re-derive.** When one process is too slow
+(MCTS pools; the champion is ~130 s/game), shard with the existing tooling rather than
+rebuilding it: `scripts/experiments/ae21-sweep.sh` runs parallel seed-batches of a
+`--pool` round-robin (resumable), `ae21-champion.sh` runs one heavy contestant as
+isolated pair-sweeps (no seed-collision), and `ae21-pool.ts` sums the shards → refits
+Elo → Wilson CIs. `ae28-sweep.sh` is the single-config head-to-head analog. Oversubscribing
+cores is safe **only** for fixed-work engines (fixed-iteration MCTS, fixed-depth alphabeta) —
+CPU contention then moves wall-time, never strength; never shard a wall-clock-budgeted tier.
+Cost is real (AE21's full pool was ~85 CPU-h even sharded — Sweep A alone ~51) — **`time`
+every batch and size n from a measured probe, never a guess** (M1's sibling: the estimate
+lies too — AE21's first ETA was ~4× low).
 
 New research domains (advisor, UX) add their own harness row here and their own
 `log/*.md` + `backlog/*.md` files following the same templates.

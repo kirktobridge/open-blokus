@@ -872,3 +872,124 @@ widening (independent of, and on top of, the ~1.35× move-speed gain). Deploy: r
 `extreme`'s `rolloutSamples` from 6 toward 48. Time-budgeted tiers (medium/hard) were
 already covered by Run U. Config-only knob; the `fallbackMove`-exhaustion path is
 sample-with-replacement (`mcts.ts` — no crash, only wasted cycles in sparse endgames).
+
+### Run W — Population-play harness: does pool Elo add signal over head-to-head? (AE21)
+Builds the round-robin + Bradley-Terry Elo harness AE21 specifies and validates it on
+a **fast, low-diversity** subset of the frozen pool. Not the discriminating run — the
+pre-registered bar (pool ranking reorders/separates a pair head-to-head calls equal, or
+correlates better with the AE19 Pentobi ladder) is tested by the *diverse* pool (MCTS
+tiers + champion), which is compute-heavy and deferred. This run answers the cheaper
+prior question: is the harness correct, and what does a **transitive** pool show?
+
+**Setup.** New pure core `runRoundRobin` + `bradleyTerryElo` (`src/game/ai/arena.ts`):
+every unordered pair plays a mirrored 2v2 match (reusing `runTournamentSeeds`, so seat
+rotation / tie-splitting / scoring are identical to every other table), filling a
+pairwise game-share matrix; a prior-regularized MM Bradley-Terry fit → one Elo/member,
+centered 1500. Pool versioned in `scripts/experiments/pool.json` (champion = extreme-MCTS
+top entry; MCTS members pinned to fixed iterations, not time budgets, for cross-machine
+reproducibility). CLI `--pool=… --members=…`. Members here: `random, greedy-size,
+heuristic (incumbent), alphabeta-d2 (depth 2, beam 8)`. Classic 20×20 4p, n=300/pair
+(75 games × 4 seeds, baseSeed 1..4), 6 pairs. Wall 12.5 min (single-process; alphabeta
+~0.65 s/game dominates). Stats via `stats.py`.
+
+**Results.** Pairwise game-share (row vs column), Elo-ordered; n=300/pair.
+
+| row \ col        | alphabeta | heuristic | greedy | random | **Pool Elo** |
+|------------------|-----------|-----------|--------|--------|--------------|
+| **alphabeta-d2** | —         | 49.6%     | 91.5%  | 100.0% | **1841**     |
+| **heuristic** ⚑  | 50.4%     | —         | 87.3%  | 99.2%  | **1828**     |
+| **greedy-size**  | 8.5%      | 12.7%     | —      | 97.7%  | **1470**     |
+| **random**       | 0.0%      | 0.8%      | 2.3%   | —      | **861**      |
+
+Key Wilson CIs (n=300): alphabeta vs heuristic **49.6% [44.0, 55.2]** (straddles 50,
+z=−0.13) — a genuine tie; greedy vs heuristic 12.7% [9.4, 16.9]; random vs heuristic
+0.8% [0.3, 2.7]; greedy vs random 97.7% [95.3, 98.9].
+
+**Read.** The harness is correct: deterministic across repeats (unit-tested), matrix
+mirrors sum to 1, Elo is transitive and sensibly spaced. But on **this** pool the pool
+ranking **adds no signal** — it reproduces the head-to-head ordering exactly. The one
+pair head-to-head calls equal (alphabeta ≈ heuristic, CI straddles 50) is *also* an Elo
+near-tie (13 Elo, within noise); every other pair is separated identically by both
+methods. This is structural, not bad luck: **a transitive pool forces pool-Elo to agree
+with head-to-head by construction** (Bradley-Terry has a consistent global order to
+recover, so the marginal-vs-incumbent order and the fitted order coincide). Population
+play only *can* add signal when the pool is **non-transitive / off-distribution** —
+where a member is strong against its training opponent but folds to a different style
+(the 4p kingmaker caveat). None of random/greedy/heuristic/alphabeta plays that role;
+the MCTS tiers and champion (tuned via self-play against the heuristic) are exactly the
+members that might, which is why the discriminating run needs them.
+
+**Decision:** not a close. Harness **delivered and validated** (Run W); AE21 stays
+**active**. The pre-registered bar is untested — its discriminating run is a round-robin
+over the diverse pool (`champion, mcts-150, mcts-30, alphabeta-d2, heuristic, greedy-size,
+random`), which is MCTS-heavy: a 7-member round-robin is 21 pairs, the ~10 MCTS pairs at
+seconds/move → tens of CPU-hours; schedule deliberately (shard like AE28's sweep). Its
+readouts to compare: pool Elo vs the marginal-vs-incumbent (heuristic column) ordering,
+and pool Elo rank vs the AE19 Pentobi-level placement of the same MCTS members. No
+shipped default changes; the harness + versioned pool + champion designation are what
+product **P13** consumes (ladder = tiers as bands vs the champion), independent of the
+signal test.
+
+### Run W2 — Diverse-pool round-robin: does pool Elo beat head-to-head on the full pool? (AE21)
+The discriminating run F19/Run W deferred: the full 7-member pool including the
+latency-unbounded champion, sharded so the champion (~131 s/game) is feasible. Tests
+AE21's pre-registered bar — pool ranking reorders/separates a pair head-to-head-vs-the-
+incumbent calls equal, *or* correlates with the AE19 Pentobi ladder better than
+head-to-head does.
+
+**Setup.** New sharding infra (`scripts/experiments/ae21-sweep.sh` parallel-seed batches
+of the `--pool` round-robin; `ae21-champion.sh` runs the champion as isolated 2-member
+pair-sweeps so its cells never seed-collide with the cheap sweep; `ae21-pool.ts` sums
+shards → refits the same `bradleyTerryElo` → Wilson CIs). Two sweeps pooled (cells carry
+independent n): **Sweep A** champion-free 6-member pool at **n=200/pair** (50 seed-batches
+× 4 games, baseSeed 1..50; wall 3 h 55 m, ~51 CPU-h, 16 cores); **Sweep B** champion vs
+each of the 6, **n=40/pair** directional (40 seed-batches × 1 game; wall ~2 h 37 m — the
+champion anchor, not a hypothesis under test). Classic 20×20 4p, mirrored 2v2 per pair.
+Stats via `ae21-pool.ts`'s Wilson intervals.
+
+**Results.** Pool Elo (Bradley-Terry, centered 1500) and each bot's game-share vs the
+incumbent (heuristic):
+
+| bot            | pool Elo | vs incumbent          | n (vs inc) |
+|----------------|----------|-----------------------|------------|
+| champion ♛     | **2056** | 93.3% [81.2, 97.8]    | 40         |
+| mcts-150       | **1796** | 82.8% [77.0, 87.4]    | 200        |
+| mcts-30        | **1683** | 66.1% [59.3, 72.3]    | 200        |
+| alphabeta-d2   | **1587** | 55.5% [48.6, 62.2]    | 200        |
+| heuristic ⚑    | **1549** | —                     | —          |
+| greedy-size    | **1215** | 13.8% [9.7, 19.2]     | 200        |
+| random         |  **615** |  0.0% [0.0, 1.9]      | 200        |
+
+Champion vs the field: mcts-150 84.2% [70.0, 92.4], mcts-30 91.3% [78.5, 96.7],
+alphabeta 96.7% [85.9, 99.3], heuristic 93.3%, greedy/random 100% — all n=40.
+
+**Read.** The pool is **strictly transitive** — every higher-Elo bot beats every
+lower-Elo bot head-to-head (no upset in any of the 21 cells), and the champion dominates
+the whole field (CI lower bounds ≥ 70%). Consequently the pool-Elo order is **identical**
+to the ranking-by-share-vs-incumbent order — pool Elo **adds no signal**. The tightest
+candidate for a "tie the pool breaks", mcts-30 (66.1%) vs alphabeta (55.5%) vs the
+incumbent, is already *marginally distinguishable* through the incumbent alone
+(two-proportion z ≈ 2.2, p ≈ 0.03), so it is not a tie the pool is needed to break — and
+pool Elo ranks them in the same order anyway. The AE19 arm likewise fails to *separate*
+the methods: pool Elo ranks the three AE19-placed bots champion > mcts-150 > heuristic,
+matching Pentobi's order, but head-to-head-vs-incumbent gives the same order, so the pool
+does not correlate *better*. This is the F19 mechanism confirmed at full strength: on a
+transitive pool the Bradley-Terry fit has one consistent global order to recover, which
+the marginal-vs-incumbent view already exposes. Population play would only add signal with
+a **non-transitive** member (strong vs its training opponent, weak vs another style); none
+of our current strategy families — random, greedy, heuristic, alphabeta, the MCTS tiers,
+or the champion — plays that role. (Earlier caveat retracted: a partial-data n=112 pool
+made mcts-30 ≈ alphabeta vs the incumbent look like a tie the pool broke; at n=200 the gap
+is real and the apparent win was sampling noise — M1, again.)
+
+**Decision:** **no-win** on the pre-registered bar — pool Elo neither reorders/separates a
+head-to-head tie nor correlates better with AE19; the pool is a transitive ladder, so
+head-to-head-vs-incumbent is a sufficient ranker for our current bots. Informative
+negative, confirms/extends [F19](../FINDINGS.md). The **harness + sharding infra ship
+regardless**, and the run's real product is the **champion-anchored Elo ladder** itself:
+it gives product **P13** its ceiling anchor (champion 2056) and per-tier ratings, and is a
+front-end surface in its own right (bot strength in the difficulty picker / a future arena
+mode). AE21 closes no-win with that as its `Deploys as:`. No shipped default changes, so no
+replication or staleness debt. A deliberately non-transitive pool (e.g. two heuristics
+tuned to beat different opponents) remains the only way this bar could still be met — not
+queued; speculative.

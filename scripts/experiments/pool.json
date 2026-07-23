@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "title": "AE21 population-play pool (Classic)",
+  "note": "CLASSIC pool (20x20, 4 colors). Frozen evaluation pool for round-robin Elo; every rating it yields is Classic-scoped (M6) and NOT comparable to a Duo ladder — Duo is a separate --duo pool (different population = different scale), not built here, and its bots would still run Classic-tuned constants (AE29-31). Top entry (tags.champion) is the latency-unbounded strength ceiling P13's shippable tiers are measured against; bump it whenever a won experiment raises the ceiling. mcts members use fixed iterations (not time budgets) so the pool is reproducible across machines. Run a subset with --members=a,b,c; the heavy mcts arm is a separate pooled run.",
+  "members": [
+    {
+      "name": "champion",
+      "strategy": "mcts",
+      "options": { "iterations": 500, "beam": 20, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutSamples": 48 },
+      "tags": { "champion": true }
+    },
+    {
+      "name": "mcts-150",
+      "strategy": "mcts",
+      "options": { "iterations": 150, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 }
+    },
+    {
+      "name": "mcts-30",
+      "strategy": "mcts",
+      "options": { "iterations": 30, "beam": 6, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 }
+    },
+    {
+      "name": "alphabeta-d2",
+      "strategy": "alphabeta",
+      "options": { "depth": 2, "beam": 8 }
+    },
+    {
+      "name": "heuristic",
+      "strategy": "heuristic",
+      "tags": { "incumbent": true }
+    },
+    {
+      "name": "greedy-size",
+      "strategy": "greedy-size"
+    },
+    {
+      "name": "random",
+      "strategy": "random"
+    }
+  ]
+}

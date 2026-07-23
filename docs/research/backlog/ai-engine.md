@@ -27,17 +27,16 @@ test (product P21) fails CI if any ID here is missing or terminal.
    is trustworthy until this lands.
 3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
-4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
-5. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
+4. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
    guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
    F8/AE10).
-6. **AE15 replication** — second independent seed pool confirming F15's w=0.25
+5. **AE15 replication** — second independent seed pool confirming F15's w=0.25
    game-share guard (≥48% lower bound), owed because w=0.25 now backs a shipped default
    (tiers + P36 base default). On agreement, upgrades F15 to `replicated` and clears
    **P36's** `replication-pending` only — P37's is a distinct debt (F18/AE28,
    `rolloutSamples` 48 vs 6, a Run V re-batch). Cheap: one re-run of Run S's config on
    fresh seeds.
-7. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
+6. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
    fixed 500 iters); clears **P37's** `replication-pending`, upgrades F18 to
    `replicated`. Compute-heavy (~150 CPU-h at n=600) — schedule deliberately.
 
@@ -498,8 +497,21 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE21 — Population-play evaluation (pool Elo readout)
-- **Drafted:** 2026-07-06
-- **Status:** proposed
+- **Drafted:** 2026-07-23 — re-verified against `src/game/ai/arena.ts` at the harness build.
+- **Status:** no-win (Runs W, W2 / [F19](../FINDINGS.md)) — pool Elo does **not** beat
+  head-to-head as a ranker on our bots. The full 7-member pool (incl. the latency-unbounded
+  champion) is **strictly transitive** (no upset in 21 cells), so pool-Elo order is identical
+  to the share-vs-incumbent order: neither AE21 arm fires (no head-to-head tie reordered, and
+  it tracks the AE19 Pentobi order no better than head-to-head). Head-to-head-vs-incumbent is
+  a sufficient ranker until a **non-transitive** pool member exists (not queued; speculative).
+  Harness + sharding infra delivered regardless.
+- **Deploys as:** the champion-anchored **Elo ladder**, **Classic-only** (champion 2056 …
+  random 615; 20×20 4p) → product **P61** (surface bot strength in the difficulty picker /
+  a future arena mode) and **P13**'s ceiling anchor + per-tier ratings. Elo is scoped to its
+  `(variant × pool)` (M6): these numbers are shown only in Classic; **Duo is unrated** until a
+  separate `--duo` pool run exists (its bots run Classic-tuned constants — AE29–31), and a Duo
+  ladder is a *different scale*, never compared to this one. *Not* a research-readout adoption
+  (the pre-registered bar for that is the no-win above).
 - **Variant:** mechanism — a measurement methodology (population play), not a tuned
   value.
 - **Objective:** detect self-play convention brittleness — a candidate that beats
@@ -529,7 +541,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Power:** measurement — sized by target CI width, no binomial bar.
 - **Cost / risk:** small-moderate; pure arena tooling, no engine change.
   Compute grows with pool size — prune to ~6–8 members.
-- **Log:** —
+- **Log:** Run W (harness + transitive fast-pool), Run W2 (full diverse pool incl champion,
+  n=200 non-champion / n=40 champion) → [F19](../FINDINGS.md).
 
 ### AE22 — AlphaZero-lite pipeline (policy+value net over board planes; AE4's designated successor)
 - **Drafted:** 2026-07-06

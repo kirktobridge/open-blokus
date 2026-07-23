@@ -307,6 +307,39 @@ note predicted. Deferred the trainer feature-cache sub-item with the value-net p
 (the tournament rng is shared across games, so any stray draw cascades). Run Q;
 closed [AE18](backlog/ai-engine.md) as won (live subset).
 
+### F19 — Population-play pool Elo does not beat head-to-head on our bots (Classic): they form a transitive strength ladder
+`replicated` (50 independent seeds, n=200/pair for the non-champion cells; champion cells
+n=40 directional but only fix the unambiguous top anchor), **(mechanism)** — a measurement
+methodology, not a tuned value. The AE21 round-robin + Bradley-Terry pool-Elo harness is
+built and correct (`runRoundRobin`/`bradleyTerryElo`, `src/game/ai/arena.ts`; deterministic,
+unit-tested; sharded via `scripts/experiments/ae21-sweep.sh`/`ae21-champion.sh`/`ae21-pool.ts`;
+pool versioned in `pool.json`, champion top entry). Tested on the **full 7-member pool**
+(random, greedy-size, heuristic, alphabeta-d2, mcts-30, mcts-150, champion), Run W2: the
+pool is **strictly transitive** — no upset in any of the 21 cells, champion dominates the
+field (84–100%) — so pool-Elo order is **identical** to the ranking-by-share-vs-incumbent
+order and **adds no signal**. Neither AE21 arm fires: no head-to-head tie is reordered/
+separated (the tightest pair, mcts-30 vs alphabeta through the incumbent, is already
+marginally distinct at p≈0.03), and pool-Elo agrees with the AE19 Pentobi order no *better*
+than head-to-head does. Structural cause: **a transitive pool has one consistent global
+order, which the Bradley-Terry fit and the marginal-vs-incumbent view both recover** — the
+pool only helps with a **non-transitive** member (strong vs its training opponent, weak vs
+another style; the 4p kingmaker caveat), and none of our current strategy families —
+including the self-play-tuned MCTS tiers and champion — is one. So for ranking our bots,
+head-to-head-vs-incumbent is sufficient. (Run W's fast 4-member pool showed the same; Run
+W2's earlier partial n=112 falsely flagged mcts-30 ≈ alphabeta as a pool-broken tie — noise,
+gone by n=200, M1.) **Deployment is independent of the negative:** the harness's real output
+is a **champion-anchored Elo ladder** (champion 2056, mcts-150 1796, mcts-30 1683, alphabeta
+1587, heuristic 1549, greedy 1215, random 615) — product **P13**'s ceiling anchor + tier
+ratings, and a front-end surface (bot strength in the difficulty picker / an arena mode).
+**Variant scope (M6): every number here is Classic (20×20 4p).** Elo is scoped to its
+`(variant × pool)` — these ratings do *not* transfer to Duo and are *not comparable* to a
+Duo ladder (a different pool = a different scale). Duo is a separate, unmeasured ladder, and
+its bots still run Classic-tuned constants (difficulty.ts / AE29–31); producing it is a
+distinct `--duo` pool run. What *is* portable is the transitivity mechanism above (it's
+structural, not a number) — though whether the Duo pool is *also* transitive is itself
+unmeasured (2p zero-sum has no kingmaker, so plausibly yes, but untested). Runs W, W2;
+closed [AE21](backlog/ai-engine.md) no-win.
+
 ---
 
 ## Method lessons (the ones we paid for)

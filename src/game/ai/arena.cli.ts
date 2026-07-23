@@ -8,10 +8,12 @@
 import { readFileSync } from 'node:fs';
 import {
   runTournamentSeeds,
+  runRoundRobin,
   randomStrategy,
   greedySizeStrategy,
   heuristicStrategy,
   type Contestant,
+  type PoolMember,
 } from './arena';
 import { alphaBetaStrategy } from './alphabeta';
 import { mctsStrategy, enableRolloutStats, getRolloutStats, type MctsConfig } from './mcts';
@@ -145,6 +147,71 @@ function buildStrategy(seat: SeatConfig): Contestant['strategy'] {
       return mctsStrategy(rest);
     }
   }
+}
+
+// 0b. Population-play pool (`--pool=scripts/experiments/pool.json`, AE21). Runs a
+// round-robin over the frozen pool, prints the pairwise game-share matrix and the
+// Bradley-Terry pool Elo, and exits. `--members=a,b,c` runs a named subset (the
+// full pool with mcts tiers is a heavy run; a fast subset validates the harness).
+// `--result` emits one RESULT line per ordered pairing for Wilson CIs via stats.py.
+interface PoolConfig {
+  version?: number;
+  title?: string;
+  members: (SeatConfig & { tags?: PoolMember['tags'] })[];
+}
+
+const poolFlag = flagArgs.find((f) => f.startsWith('--pool='));
+if (poolFlag) {
+  const cfg = JSON.parse(readFileSync(poolFlag.slice('--pool='.length), 'utf8')) as PoolConfig;
+  const subsetFlag = flagArgs.find((f) => f.startsWith('--members='));
+  const wanted = subsetFlag
+    ? new Set(subsetFlag.slice('--members='.length).split(',').map((s) => s.trim()))
+    : null;
+  const chosen = cfg.members.filter((m) => !wanted || wanted.has(m.name));
+  if (chosen.length < 2) {
+    console.error(`pool needs ≥2 members; got ${chosen.length}`);
+    process.exit(1);
+  }
+  const members: PoolMember[] = chosen.map((m) => ({
+    name: m.name,
+    strategy: buildStrategy(m),
+    tags: m.tags,
+  }));
+  const rr = runRoundRobin(members, { games, seeds, baseSeed, variant: RULES });
+  const n = rr.gamesPerPair;
+
+  if (flags.has('--result')) {
+    for (const a of rr.names) {
+      for (const b of rr.names) {
+        const cell = rr.matrix[a][b];
+        if (cell) console.log(`RESULT\t${a}_vs_${b}\t${cell.wins.toFixed(4)}\t${cell.games}`);
+      }
+    }
+  }
+
+  console.log(
+    `\n${cfg.title ?? 'pool'}  (${RULES}, round-robin ${members.length} members, ` +
+      `${seeds}×${games} games/pair, base seed ${baseSeed})`,
+  );
+  // Pairwise game-share matrix (row's share vs column), ordered by pool Elo.
+  const order = rr.ranking;
+  const head = order.map((nm) => nm.slice(0, 6).padStart(7)).join('');
+  console.log(`  ${''.padEnd(14)}${head}`);
+  for (const a of order) {
+    const cells = order
+      .map((b) => (a === b ? '   —   ' : (rr.matrix[a][b].share * 100).toFixed(0).padStart(6) + '%'))
+      .join('');
+    console.log(`  ${a.padEnd(14)}${cells}`);
+  }
+  console.log(`\n  Pool Elo (Bradley-Terry, centered 1500):`);
+  for (const nm of order) {
+    const member = members.find((m) => m.name === nm)!;
+    const tag = member.tags?.champion ? '  ♛ champion' : member.tags?.incumbent ? '  ⚑ incumbent' : '';
+    const bar = '█'.repeat(Math.max(0, Math.round((rr.elo[nm] - 1000) / 40)));
+    console.log(`  ${nm.padEnd(14)} ${rr.elo[nm].toFixed(0).padStart(5)}  ${bar}${tag}`);
+  }
+  console.log(`\n  (n=${n} games/pair; run stats.py on the RESULT lines for Wilson CIs)`);
+  process.exit(0);
 }
 
 const configFlag = flagArgs.find((f) => f.startsWith('--config='));

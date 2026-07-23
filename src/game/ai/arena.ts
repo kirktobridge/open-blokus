@@ -359,3 +359,157 @@ export function runTournamentSeeds(
 
   return { rows, seeds, gamesPerSeed: games, meanTies: tieTotal / seeds };
 }
+
+// --- Round-robin population play (AE21) ------------------------------------
+//
+// Head-to-head-vs-the-incumbent judges a bot on one yardstick; population play
+// judges it against a diverse *pool* so convention-brittle strengths (beats one
+// opponent, folds against off-distribution play — the 4p kingmaker caveat) show
+// up. Every unordered pair plays a mirrored match (2 seats each on Classic, 1
+// each on Duo), filling a pairwise game-share matrix; a Bradley-Terry fit turns
+// that matrix into a single Elo per member — the pool ranking. The frozen pool
+// is versioned in scripts/experiments/pool.json; its top entry is the champion,
+// the latency-unbounded strength ceiling P13's shippable tiers are measured against.
+
+/** One member of the frozen evaluation pool. */
+export interface PoolMember extends Contestant {
+  /** Marks the versioned champion (top of pool.json) and/or the shipped incumbent. */
+  tags?: { champion?: boolean; incumbent?: boolean };
+}
+
+/** A single pairwise cell of the round-robin matrix. */
+export interface PairResult {
+  /** Row member's mean game-share vs the column member (fractional wins / games). */
+  share: number;
+  /** Fractional games the row member won (ties split), summed over its seats. */
+  wins: number;
+  /** Games behind this cell (games × seeds). Wilson CIs are computed from wins/n. */
+  games: number;
+}
+
+export interface RoundRobinResult {
+  names: string[];
+  /** matrix[a][b] = a's head-to-head result vs b (undefined on the diagonal). */
+  matrix: Record<string, Record<string, PairResult>>;
+  /** Bradley-Terry Elo per member, centered on 1500; sorted desc as `ranking`. */
+  elo: Record<string, number>;
+  /** Member names ordered by Elo (pool ranking), strongest first. */
+  ranking: string[];
+  gamesPerPair: number;
+  seedsPerPair: number;
+}
+
+/**
+ * Fit Bradley-Terry strengths to a pairwise win matrix by MM iteration
+ * (Hunter 2004), then map to the Elo scale. `wins[i][j]` is i's fractional wins
+ * over j across `n[i][j]` games. A small `prior` win/loss on every realized
+ * pairing keeps a member that goes 0% (random) or 100% off ±∞ — standard BT
+ * regularization. Ratings are centered so the pool mean is 1500.
+ */
+export function bradleyTerryElo(
+  names: string[],
+  wins: Record<string, Record<string, number>>,
+  n: Record<string, Record<string, number>>,
+  opts: { prior?: number; iterations?: number } = {},
+): Record<string, number> {
+  const { prior = 0.5, iterations = 1000 } = opts;
+  const p: Record<string, number> = Object.fromEntries(names.map((name) => [name, 1]));
+  // Total (regularized) wins per member — fixed across iterations.
+  const W: Record<string, number> = Object.fromEntries(names.map((name) => [name, 0]));
+  for (const i of names) {
+    for (const j of names) {
+      if (i === j || n[i]?.[j] == null) continue;
+      W[i] += (wins[i]?.[j] ?? 0) + prior;
+    }
+  }
+  for (let it = 0; it < iterations; it++) {
+    const next: Record<string, number> = {};
+    for (const i of names) {
+      let denom = 0;
+      for (const j of names) {
+        if (i === j || n[i]?.[j] == null) continue;
+        const games = n[i][j] + 2 * prior; // both regularization games count
+        denom += games / (p[i] + p[j]);
+      }
+      next[i] = denom > 0 ? W[i] / denom : p[i];
+    }
+    // Normalize to geometric mean 1 for numerical stability.
+    const logMean =
+      names.reduce((a, name) => a + Math.log(next[name]), 0) / names.length;
+    const g = Math.exp(logMean);
+    for (const name of names) p[name] = next[name] / g;
+  }
+  // BT strength → Elo (400/ln10 per e-fold), centered on 1500.
+  const scale = 400 / Math.LN10;
+  const raw = Object.fromEntries(names.map((name) => [name, scale * Math.log(p[name])]));
+  const mean = names.reduce((a, name) => a + raw[name], 0) / names.length;
+  return Object.fromEntries(names.map((name) => [name, raw[name] - mean + 1500]));
+}
+
+/**
+ * Round-robin every unordered pair of `members` and fit pool Elo. Each pair plays
+ * a mirrored, seed-averaged match — the two members cycle to fill the variant's
+ * seats (2 each on Classic, 1 each on Duo) — reusing `runTournament` so the
+ * per-game seat rotation, tie-splitting and scoring stay identical to every other
+ * arena table. Deterministic for a fixed `baseSeed`.
+ */
+export function runRoundRobin(
+  members: PoolMember[],
+  opts: {
+    games?: number;
+    seeds?: number;
+    baseSeed?: number;
+    variant?: Variant;
+    mode?: GameMode;
+    scoring?: ScoringVariant;
+    prior?: number;
+  } = {},
+): RoundRobinResult {
+  const { games = 100, seeds = 4, baseSeed = 1, variant = 'classic', prior = 0.5 } = opts;
+  const names = members.map((m) => m.name);
+  if (new Set(names).size !== names.length) {
+    throw new Error('pool members must have distinct names');
+  }
+  const seats = VARIANTS[variant].playColors.length;
+  const matrix: Record<string, Record<string, PairResult>> = Object.fromEntries(
+    names.map((name) => [name, {}]),
+  );
+  const wins: Record<string, Record<string, number>> = Object.fromEntries(
+    names.map((name) => [name, {}]),
+  );
+  const n: Record<string, Record<string, number>> = Object.fromEntries(
+    names.map((name) => [name, {}]),
+  );
+  const gamesPerPair = games * seeds;
+
+  for (let a = 0; a < members.length; a++) {
+    for (let b = a + 1; b < members.length; b++) {
+      const [ma, mb] = [members[a], members[b]];
+      // Cycle the pair to fill the table: [a,b,a,b] on Classic, [a,b] on Duo.
+      const contestants: Contestant[] = Array.from({ length: seats }, (_, k) =>
+        k % 2 === 0 ? ma : mb,
+      );
+      const r = runTournamentSeeds(contestants, {
+        games,
+        seeds,
+        baseSeed,
+        variant,
+        mode: opts.mode,
+        scoring: opts.scoring,
+      });
+      const share = Object.fromEntries(r.rows.map((row) => [row.name, row.meanGameShare]));
+      const sa = share[ma.name] ?? 0;
+      const sb = share[mb.name] ?? 0;
+      matrix[ma.name][mb.name] = { share: sa, wins: sa * gamesPerPair, games: gamesPerPair };
+      matrix[mb.name][ma.name] = { share: sb, wins: sb * gamesPerPair, games: gamesPerPair };
+      wins[ma.name][mb.name] = sa * gamesPerPair;
+      wins[mb.name][ma.name] = sb * gamesPerPair;
+      n[ma.name][mb.name] = gamesPerPair;
+      n[mb.name][ma.name] = gamesPerPair;
+    }
+  }
+
+  const elo = bradleyTerryElo(names, wins, n, { prior });
+  const ranking = [...names].sort((x, y) => elo[y] - elo[x]);
+  return { names, matrix, elo, ranking, gamesPerPair, seedsPerPair: seeds };
+}

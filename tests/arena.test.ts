@@ -4,6 +4,8 @@ import {
   playGame,
   runTournament,
   runTournamentSeeds,
+  runRoundRobin,
+  bradleyTerryElo,
   mulberry32,
   randomStrategy,
   greedySizeStrategy,
@@ -93,5 +95,76 @@ describe('arena.runTournamentSeeds', () => {
     expect(a.rows[0].meanRate).toBeGreaterThan(a.rows[1].meanRate);
     // Multiple seeds → a real spread is reported.
     expect(a.rows[0].stdRate).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('arena.bradleyTerryElo', () => {
+  it('orders a transitive matrix and centers the pool mean on 1500', () => {
+    const names = ['strong', 'mid', 'weak'];
+    // A perfectly transitive 80/60/? matrix.
+    const n = 100;
+    const wins = {
+      strong: { mid: 70, weak: 90 },
+      mid: { strong: 30, weak: 70 },
+      weak: { strong: 10, mid: 30 },
+    };
+    const games = {
+      strong: { mid: n, weak: n },
+      mid: { strong: n, weak: n },
+      weak: { strong: n, mid: n },
+    };
+    const elo = bradleyTerryElo(names, wins, games);
+    expect(elo.strong).toBeGreaterThan(elo.mid);
+    expect(elo.mid).toBeGreaterThan(elo.weak);
+    const mean = names.reduce((a, nm) => a + elo[nm], 0) / names.length;
+    expect(mean).toBeCloseTo(1500, 6);
+  });
+
+  it('stays finite for a 0%/100% member (prior regularization)', () => {
+    const names = ['winner', 'loser'];
+    const wins = { winner: { loser: 100 }, loser: { winner: 0 } };
+    const games = { winner: { loser: 100 }, loser: { winner: 100 } };
+    const elo = bradleyTerryElo(names, wins, games);
+    expect(Number.isFinite(elo.winner)).toBe(true);
+    expect(Number.isFinite(elo.loser)).toBe(true);
+    expect(elo.winner).toBeGreaterThan(elo.loser);
+  });
+});
+
+describe('arena.runRoundRobin', () => {
+  const pool = () => [
+    { name: 'heuristic', strategy: heuristicStrategy() },
+    { name: 'greedy-size', strategy: greedySizeStrategy },
+    { name: 'random', strategy: randomStrategy },
+  ];
+
+  it('is deterministic and fills a full pairwise matrix', () => {
+    const a = runRoundRobin(pool(), { games: 8, seeds: 2, baseSeed: 1 });
+    const b = runRoundRobin(pool(), { games: 8, seeds: 2, baseSeed: 1 });
+    expect(a).toEqual(b);
+    // Every off-diagonal cell present; diagonal empty. Mirror shares sum to ~1.
+    for (const x of a.names) {
+      for (const y of a.names) {
+        if (x === y) expect(a.matrix[x][y]).toBeUndefined();
+        else expect(a.matrix[x][y].games).toBe(16);
+      }
+    }
+    expect(a.matrix.heuristic.random.share + a.matrix.random.heuristic.share).toBeCloseTo(1, 6);
+  });
+
+  it('ranks heuristic over greedy over random by pool Elo', () => {
+    const rr = runRoundRobin(pool(), { games: 12, seeds: 3, baseSeed: 5 });
+    expect(rr.ranking).toEqual(['heuristic', 'greedy-size', 'random']);
+    expect(rr.elo.heuristic).toBeGreaterThan(rr.elo['greedy-size']);
+    expect(rr.elo['greedy-size']).toBeGreaterThan(rr.elo.random);
+  });
+
+  it('rejects duplicate member names', () => {
+    expect(() =>
+      runRoundRobin([
+        { name: 'x', strategy: randomStrategy },
+        { name: 'x', strategy: greedySizeStrategy },
+      ]),
+    ).toThrow(/distinct/);
   });
 });
