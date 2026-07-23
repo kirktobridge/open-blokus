@@ -12,11 +12,13 @@ import {
 } from '../advisor/legalMoves';
 
 /**
- * The scripted P4 tutorial. Four steps, each a self-contained board + a set of
- * clickable hints, teaching the four ideas the backlog names: start from your
- * corner, no own-edge contact, many corner options, and preserving expansion
- * lanes. Every hint's legality/quality is derived from the rules core here (not
- * asserted by hand), so the lesson can never disagree with the actual engine —
+ * The scripted P4 tutorial. Four Classic steps + one Duo step (P58), each a
+ * self-contained board + a set of clickable hints. The Classic four teach: start
+ * from your corner, no own-edge contact, many corner options, and preserving
+ * expansion lanes. The Duo step teaches the variant's *defining* difference — you
+ * open from an interior start cell, not a corner (GAME_SPEC_DUO §3). Every hint's
+ * legality/quality is derived from the rules core here (not asserted by hand), so
+ * the lesson can never disagree with the actual engine, on either board size —
  * `tests/tutorial.test.ts` locks that in.
  */
 
@@ -71,7 +73,7 @@ function step1Start(): TutStep {
   return {
     id: 'start',
     title: 'Start from your corner',
-    lesson: 'Your first piece must cover your own starting corner — the top-left, glowing below. Click it to place.',
+    lesson: 'In Classic Blokus, your first piece must cover your own starting corner — the top-left, glowing below. Click it to place.',
     color: 'blue',
     piece: 'V3',
     G,
@@ -92,7 +94,7 @@ function step1Start(): TutStep {
         feedback: 'Not there — your very first piece has to touch your own corner.',
       },
     ],
-    success: 'Every color opens from its own corner. Yours is the top-left.',
+    success: 'In Classic, every color opens from its own corner. Yours is the top-left.',
   };
 }
 
@@ -192,9 +194,44 @@ function step4Growth(): TutStep {
   };
 }
 
+function step5DuoStart(): TutStep {
+  // Blokus Duo: 14×14, two colors (black opens), advanced-only scoring — the rules
+  // core builds the right board and start cells from the variant table. Black's start
+  // is an *interior* cell (GAME_SPEC_DUO §3), not a corner, which is the whole point.
+  const G = createInitialState(2, 'advanced', 'duo');
+  const interior = place('V3', 4, 4); // covers black's interior start (4,4)
+  const cornerMove = place('V3', 0, 0); // the top-left corner — an ordinary cell in Duo
+  return {
+    id: 'duo-start',
+    title: 'Duo opens from the middle',
+    lesson: 'Blokus Duo is a two-player duel on a smaller 14×14 board. Its big twist: you don’t start in a corner — your first piece must cover your own interior start cell, glowing below. Click it to place.',
+    color: 'black',
+    piece: 'V3',
+    G,
+    hints: [
+      {
+        id: 'interior',
+        cells: placementCells(G, interior),
+        tone: 'legal',
+        advances: true,
+        placement: interior,
+        feedback: '',
+      },
+      {
+        id: 'corner',
+        cells: placementCells(G, cornerMove),
+        tone: 'illegal',
+        advances: false,
+        feedback: 'Not in Duo — the corner is just an ordinary square here. Your opening has to cover the marked interior cell.',
+      },
+    ],
+    success: 'That interior opening — with only one opponent to fence with — is what makes Duo a sharper, more head-to-head game.',
+  };
+}
+
 /** Build the ordered tutorial steps (fresh state each call). */
 export function buildTutorial(): TutStep[] {
-  return [step1Start(), step2Edges(), step3Corners(), step4Growth()];
+  return [step1Start(), step2Edges(), step3Corners(), step4Growth(), step5DuoStart()];
 }
 
 /** Board index of a cell — re-exported for tests/consumers building scenarios. */

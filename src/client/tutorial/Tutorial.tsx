@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react';
-import { BOARD_SIZE } from '../../shared/constants';
 import { applyPlacement } from '../../game/placement';
 import { resolveCells } from '../../game/pieces';
 import type { GameState } from '../../game/types';
@@ -8,8 +7,6 @@ import { LegalMoveHints, type Hint } from '../advisor/LegalMoveHints';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CELL_PX, FONT_MONO, FONT_UI, PANEL, PRIMARY_BTN, SECONDARY_BTN } from '../theme';
 import { buildTutorial, type TutHint } from './scenarios';
-
-const BOARD_PX = BOARD_SIZE * CELL_PX;
 
 type FeedbackTone = 'good' | 'bad' | 'warn';
 
@@ -85,6 +82,11 @@ export function Tutorial({ onExit, onComplete }: { onExit: () => void; onComplet
   const fbColor =
     feedback?.tone === 'good' ? '#16a34a' : feedback?.tone === 'bad' ? '#dc2626' : '#b45309';
 
+  // The step's board is square and its length is the only statement of its size
+  // (400 Classic, 196 Duo) — the tutorial spans both variants (P58), so derive it.
+  const size = Math.round(Math.sqrt(G.board.length));
+  const boardPx = size * CELL_PX;
+
   return (
     <div style={{ background: 'var(--table-bg)', minHeight: '100vh', fontFamily: FONT_UI }}>
       {/* Top bar */}
@@ -134,9 +136,9 @@ export function Tutorial({ onExit, onComplete }: { onExit: () => void; onComplet
             boxShadow: 'inset 0 1px 0 var(--frame-hi), 0 24px 48px rgba(15,9,3,.42)',
           }}
         >
-          <div style={{ position: 'relative', width: BOARD_PX, height: BOARD_PX }}>
+          <div style={{ position: 'relative', width: boardPx, height: boardPx }}>
             <Board board={G.board} activeColor={step.color} lastMove={G.lastMove} />
-            <LegalMoveHints hints={hints} cells={BOARD_SIZE} onPick={onPick} pulse />
+            <LegalMoveHints hints={hints} cells={size} onPick={onPick} pulse />
           </div>
         </div>
 
