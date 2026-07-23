@@ -307,6 +307,25 @@ note predicted. Deferred the trainer feature-cache sub-item with the value-net p
 (the tournament rng is shared across games, so any stray draw cascades). Run Q;
 closed [AE18](backlog/ai-engine.md) as won (live subset).
 
+### F19 — Population-play pool Elo only adds signal on a *non-transitive* pool; on a transitive one it just reproduces head-to-head
+`directional` (harness validated; scientific bar untested), **(mechanism)** — a
+measurement methodology, not a tuned value. The AE21 round-robin + Bradley-Terry pool-Elo harness is
+built and correct (`runRoundRobin`/`bradleyTerryElo`, `src/game/ai/arena.ts`;
+deterministic, unit-tested; pool versioned in `scripts/experiments/pool.json` with the
+champion as its top entry). Validated on a fast 4-member pool (random, greedy-size,
+heuristic, alphabeta-d2), n=300/pair (Run W): pool Elo **reproduced the head-to-head
+ordering exactly** and added no signal — the only head-to-head tie (alphabeta ≈ heuristic,
+49.6% [44.0, 55.2]) is also an Elo near-tie. This is structural: **a transitive pool has a
+single consistent global order, so the Bradley-Terry fit and the marginal-vs-incumbent
+ranking coincide by construction.** Population play can only *reorder* a head-to-head tie
+when the pool is non-transitive / off-distribution — a member strong against its training
+opponent but weak against a different style (the 4p kingmaker caveat). The MCTS tiers and
+champion (self-play-tuned against the heuristic) are the candidate non-transitive members,
+so AE21's pre-registered bar (adds signal, or correlates with the [AE19](backlog/ai-engine.md)
+Pentobi ladder better than head-to-head) is only testable by the compute-heavy diverse-pool
+run — deferred, AE21 stays active. Independent of that test, the harness + versioned pool +
+champion designation are the infra product **P13** (ladder calibration) consumes. Run W.
+
 ---
 
 ## Method lessons (the ones we paid for)

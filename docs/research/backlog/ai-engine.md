@@ -27,7 +27,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
    is trustworthy until this lands.
 3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
-4. **AE21** — population-play Elo: the anchor-pool readout that unlocks product P13.
+4. **AE21** — population-play Elo: harness now built & validated (Run W/F19); remaining
+   is the compute-heavy **diverse-pool** round-robin (MCTS tiers + champion) that actually
+   tests the signal/AE19-correlation bar and gives P13 its champion-anchored ladder.
 5. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
    guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
    F8/AE10).
@@ -498,8 +500,16 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Log:** —
 
 ### AE21 — Population-play evaluation (pool Elo readout)
-- **Drafted:** 2026-07-06
-- **Status:** proposed
+- **Drafted:** 2026-07-23 — re-verified against `src/game/ai/arena.ts` at the harness build.
+- **Status:** active — harness **delivered & validated** (Run W / [F19](../FINDINGS.md)):
+  `runRoundRobin` + `bradleyTerryElo` in `arena.ts`, pool versioned in
+  `scripts/experiments/pool.json` (champion = top entry), CLI `--pool=…`. The
+  pre-registered bar is **untested**: Run W's fast 4-member pool is transitive, so pool
+  Elo reproduces head-to-head *by construction* (F19). The discriminating run is a
+  round-robin over the **diverse** pool (`champion, mcts-150, mcts-30, alphabeta-d2,
+  heuristic, greedy-size, random`) — 21 pairs, ~10 MCTS-heavy at seconds/move (tens of
+  CPU-h); shard like AE28's sweep, schedule deliberately. Readouts to compare there: pool
+  Elo vs marginal-vs-incumbent order, and pool-Elo rank vs AE19 Pentobi placement.
 - **Variant:** mechanism — a measurement methodology (population play), not a tuned
   value.
 - **Objective:** detect self-play convention brittleness — a candidate that beats
@@ -529,7 +539,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Power:** measurement — sized by target CI width, no binomial bar.
 - **Cost / risk:** small-moderate; pure arena tooling, no engine change.
   Compute grows with pool size — prune to ~6–8 members.
-- **Log:** —
+- **Log:** Run W (harness build + transitive-pool validation) → [F19](../FINDINGS.md).
+  Discriminating diverse-pool run: pending.
 
 ### AE22 — AlphaZero-lite pipeline (policy+value net over board planes; AE4's designated successor)
 - **Drafted:** 2026-07-06
