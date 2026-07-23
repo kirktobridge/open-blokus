@@ -1094,9 +1094,24 @@ four classic colors as accents, shapes as the star.
   readable grey for Black. Whether White's survive the same treatment was never observed.
 - **Depends on:** nothing. P20 M2c shipped the token vocabulary this reuses.
 
-### P60 — Preset piece-color palettes (IDE-inspired)
+### P60 — Preset piece-color palettes (IDE-inspired) — SHIPPED
 - **Drafted:** 2026-07-22
-- **Status:** in-progress
+- **Status:** shipped (2026-07-23) — five one-click piece palettes (colorblind-safe
+  Okabe–Ito leading, then Dracula / Tokyo Night / Catppuccin / Gruvbox) as swatch buttons
+  above the per-color editor. Applying one forks the active built-in — or overlays the
+  active user theme — with the six `--piece-*` tokens, so a palette rides on top of whatever
+  mat is selected and the built-ins stay pristine (fork named `<Mat> · <Palette>`).
+  **Deploys as:** [../../src/client/palettes.ts](../../src/client/palettes.ts) (the
+  registry; `Record<Color, string>` makes a missing color a type error) +
+  `applyPiecePalette` in [../../src/client/appearance.ts](../../src/client/appearance.ts) +
+  `PalettePresets` in [../../src/client/PalettePicker.tsx](../../src/client/PalettePicker.tsx),
+  held by [../../tests/palettes.test.ts](../../tests/palettes.test.ts) and the preset case
+  in [../../e2e/palette.spec.ts](../../e2e/palette.spec.ts). **Verified by eye** across all
+  three built-in mats × all five presets (18 screenshots): every palette's four Classic hues
+  stay mutually distinguishable and legible on each mat. One correction to the premise below:
+  **Walnut is also a cream mat** (only Lamplight is dark), and the per-tile gel bevel +
+  outline is what carries the pastel palettes (Catppuccin, Tokyo Night's tan yellow) on
+  cream — the constraint's eyes-on obligation is discharged.
 - **Value:** [P12](#p12--theming--settings-panel--shipped) made piece colors fully
   tunable, but the only path to a fresh look is hand-editing six tokens and eyeballing
   contrast. Curated, named presets — a colorblind-safe set plus IDE-inspired flavors
