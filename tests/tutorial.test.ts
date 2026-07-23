@@ -19,8 +19,8 @@ const legalOf = (stepId: string, hintId: string): boolean => {
 };
 
 describe('P4 tutorial scenarios stay in sync with the rules', () => {
-  it('has the four scripted steps in order', () => {
-    expect(steps.map((s) => s.id)).toEqual(['start', 'edges', 'corners', 'growth']);
+  it('has the four Classic steps then the Duo step, in order', () => {
+    expect(steps.map((s) => s.id)).toEqual(['start', 'edges', 'corners', 'growth', 'duo-start']);
   });
 
   it('every advancing hint is a legal placement, every advancing hint carries one', () => {
@@ -79,5 +79,26 @@ describe('P4 tutorial scenarios stay in sync with the rules', () => {
         pieceId: 'I2', rotation: 0, reflected: false, x: 2, y: 0,
       }),
     );
+  });
+
+  it('duo step: a 14×14 black board whose opening covers the interior start, not a corner', () => {
+    const s = byId('duo-start');
+    // The Duo variant board is 14×14 = 196 cells, and black opens (GAME_SPEC_DUO §3/§5).
+    expect(s.G.board.length).toBe(14 * 14);
+    expect(s.color).toBe('black');
+    // The interior hint is a legal first move that actually covers black's start cell…
+    expect(legalOf('duo-start', 'interior')).toBe(true);
+    const start = s.G.config.startCells?.black;
+    expect(start, 'Duo state must carry black’s start cell').toBeDefined();
+    const interior = s.hints.find((h) => h.id === 'interior')!;
+    const covers = resolveCells(interior.placement!).some((c) => c.x === start!.x && c.y === start!.y);
+    expect(covers, 'the interior opening must cover black’s start cell').toBe(true);
+    // …and the start cell is interior, not a corner — the point of the whole step.
+    expect(start!.x > 0 && start!.y > 0).toBe(true);
+    // The corner move is illegal precisely because Duo does not open from the corner.
+    const corner = s.hints.find((h) => h.id === 'corner')!;
+    const cornerCells = resolveCells({ pieceId: 'V3', rotation: 0, reflected: false, x: 0, y: 0 });
+    expect(corner.placement).toBeUndefined();
+    expect(isLegalPlacement(s.G, s.color, 'V3', cornerCells)).toBe(false);
   });
 });

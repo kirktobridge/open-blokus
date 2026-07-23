@@ -65,6 +65,13 @@ export function mctsConfigFor(difficulty: MctsTier): Partial<MctsConfig> {
  * tier's own search cost (easy ≈ instant, medium ≈ 0.5 s, hard ≈ 2 s budget) so
  * total visible time stays human and rises with tier. `extreme` is excluded from
  * blitz entirely (see resolveExtremeForBlitz), so it never paces.
+ *
+ * **Variant-independent (verified, P58).** These ranges hold on Duo unchanged. A
+ * fixed-*iteration* search would finish faster on Duo's smaller board, but every
+ * pace-able tier is either heuristic-instant (easy) or *time-budget*-bound
+ * (medium ≈ 500 ms, hard ≈ 2000 ms) — measured identical on Classic and Duo — so
+ * the visible search cost these ranges floor doesn't move with the variant. The
+ * only faster-on-Duo tier is `extreme`, which never paces.
  */
 const BLITZ_PACE_MS: Record<Exclude<Difficulty, 'extreme'>, [number, number]> = {
   easy: [1200, 2200],

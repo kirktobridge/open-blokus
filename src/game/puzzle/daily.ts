@@ -1,3 +1,7 @@
+/* eslint-disable no-restricted-imports -- Classic by design (P55/P58): the daily
+   puzzle is a 4-color 20x20 game by construction — one Classic opening, shared by
+   everyone on a given day, that the player continues solo. It is not a variant-aware
+   surface; there is deliberately no Duo daily. */
 /**
  * Daily puzzle — seeded contested solitaire (product P14 M1).
  *

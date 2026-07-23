@@ -40,6 +40,7 @@ export default tseslint.config(
   {
     files: [
       'src/game/ai/**',
+      'src/game/puzzle/**',
       'src/client/board/**',
       'src/client/advisor/**',
       'src/client/drama.ts',
