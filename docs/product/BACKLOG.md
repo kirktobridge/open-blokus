@@ -1061,7 +1061,7 @@ four classic colors as accents, shapes as the star.
 
 ### P59 — Achromatic tray & thumbnail finish (the low-contrast seat's inventory)
 - **Drafted:** 2026-07-22
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** in Duo one seat's 21-piece inventory strip is near-illegible on every theme —
   White's glyphs on the pale seat card in Linen/Walnut, Black's on the dark card in
   Lamplight. **Verified** by eye on all three during
