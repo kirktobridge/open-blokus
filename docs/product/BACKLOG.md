@@ -26,7 +26,10 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+1. **P61** — surface bot strength ratings (difficulty-picker Elo). Dependency-ready now:
+   AE21/F19 measured the ladder (heuristic 1549 … champion 2056), so the near-term display
+   is a cheap, visible legibility win with the data already in hand.
+2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
 
@@ -255,6 +258,27 @@ this epic owns the user-facing feature + its UX.
 - **Depends on:** research AE21 (population-play Elo — the anchor-pool measurement
   that makes recalibration cheap and trustworthy); a won AE experiment beating the
   current top tier for any actual new rung.
+
+### P61 — Surface bot strength ratings (difficulty picker + arena mode)
+- **Drafted:** 2026-07-23
+- **Status:** proposed.
+- **Value:** the difficulty ladder reads as four opaque words today (easy/medium/hard/
+  extreme); research AE21/[F19](../research/FINDINGS.md) measured a champion-anchored Elo
+  per bot, so showing each tier its rating makes difficulty legible as *strength*
+  ("Medium ~1680", "Extreme ~2060") and turns an invisible research artifact into a
+  player-facing feature. A future GUI arena mode (pit bots — eventually yourself — against
+  the frozen pool with a live Elo board) is a natural engagement surface on the same data.
+- **Scope:**
+  - *Near-term:* the difficulty picker shows each tier its rating, baked from the AE21 pool
+    ladder (easy = heuristic 1549; medium/hard/extreme = MCTS tiers up toward champion
+    2056). Static display, no client-side computation.
+  - *Future/extension:* a GUI-accessible **arena mode** — in-app round-robins, live Elo
+    board, human-game folding. The engine already computes it (`runRoundRobin`/
+    `bradleyTerryElo` in [arena.ts](../../src/game/ai/arena.ts), `pool.json`,
+    `scripts/experiments/ae21-pool.ts`); the work is UI + human-game plumbing. Larger —
+    split into its own entry when picked up.
+- **Depends on:** research AE21 (the measured ratings — its `Deploys as:`); relates to P13
+  (tiers-as-strength-bands, made visible). No engine change for the near-term display.
 
 ### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
 - **Status:** shipped — `replication-pending` — `DEFAULTS.rankRewardWeight` flipped
