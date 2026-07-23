@@ -31,6 +31,10 @@ const PLACED_LAYER = readFileSync(
   resolve(__dirname, '../src/client/board/PlacedLayer.tsx'),
   'utf8',
 );
+const PIECE_THUMB = readFileSync(
+  resolve(__dirname, '../src/client/tray/PieceThumb.tsx'),
+  'utf8',
+);
 
 /**
  * Top-level theme blocks, as `{ token: value }`.
@@ -131,6 +135,15 @@ describe('tile finish tokens', () => {
     expect(PLACED_LAYER).toContain('tileVar('); // positive control for the above
   });
 
+  it('PieceThumb reads class-varying tokens through tileVar, never bare (P59)', () => {
+    // The tray molds its cells with the same `--tile-*` tokens as the board, so a
+    // stray `var(--tile-hi)` would reintroduce exactly the achromatic clipping P59
+    // fixed — a white glyph washing into a pale seat card.
+    const bare = [...PIECE_THUMB.matchAll(/var\(--tile-[\w-]+\)/g)].map((m) => m[0]);
+    expect(bare).toEqual([]);
+    expect(PIECE_THUMB).toContain('tileVar('); // positive control for the above
+  });
+
   it('tileVar falls back to the base token for the forks', () => {
     expect(tileVar('--tile-hi', '')).toBe('var(--tile-hi)');
     expect(tileVar('--tile-hi', '-dark')).toBe('var(--tile-hi-dark, var(--tile-hi))');
@@ -161,6 +174,10 @@ describe('achromatic piece colors', () => {
 });
 
 describe('dye edge separates from the body it borders', () => {
+  // This floor is the mechanical "the glyph is not its background" the tray needs
+  // too (P59): PieceThumb strokes each cell with this same dye-edge formula, so a
+  // border that reads against the body here is a border that defines the near-mono
+  // glyph against its seat card in the tray — the board and tray share one guard.
   const COLORS = Object.keys(TILE_FINISH) as Color[];
   /** Met by every color/theme pair today; the mid-tones sit closest to it. */
   const FLOOR = 1.4;
