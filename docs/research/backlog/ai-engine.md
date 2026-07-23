@@ -505,10 +505,13 @@ test (product P21) fails CI if any ID here is missing or terminal.
   it tracks the AE19 Pentobi order no better than head-to-head). Head-to-head-vs-incumbent is
   a sufficient ranker until a **non-transitive** pool member exists (not queued; speculative).
   Harness + sharding infra delivered regardless.
-- **Deploys as:** the champion-anchored **Elo ladder** (champion 2056 … random 615) →
-  product **P61** (surface bot strength in the difficulty picker / a future arena mode) and
-  **P13**'s ceiling anchor + per-tier ratings. *Not* a research-readout adoption (the
-  pre-registered bar for that is the no-win above).
+- **Deploys as:** the champion-anchored **Elo ladder**, **Classic-only** (champion 2056 …
+  random 615; 20×20 4p) → product **P61** (surface bot strength in the difficulty picker /
+  a future arena mode) and **P13**'s ceiling anchor + per-tier ratings. Elo is scoped to its
+  `(variant × pool)` (M6): these numbers are shown only in Classic; **Duo is unrated** until a
+  separate `--duo` pool run exists (its bots run Classic-tuned constants — AE29–31), and a Duo
+  ladder is a *different scale*, never compared to this one. *Not* a research-readout adoption
+  (the pre-registered bar for that is the no-win above).
 - **Variant:** mechanism — a measurement methodology (population play), not a tuned
   value.
 - **Objective:** detect self-play convention brittleness — a candidate that beats

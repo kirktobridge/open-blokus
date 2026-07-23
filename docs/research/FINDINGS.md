@@ -307,7 +307,7 @@ note predicted. Deferred the trainer feature-cache sub-item with the value-net p
 (the tournament rng is shared across games, so any stray draw cascades). Run Q;
 closed [AE18](backlog/ai-engine.md) as won (live subset).
 
-### F19 — Population-play pool Elo does not beat head-to-head on our bots: they form a transitive strength ladder
+### F19 — Population-play pool Elo does not beat head-to-head on our bots (Classic): they form a transitive strength ladder
 `replicated` (50 independent seeds, n=200/pair for the non-champion cells; champion cells
 n=40 directional but only fix the unambiguous top anchor), **(mechanism)** — a measurement
 methodology, not a tuned value. The AE21 round-robin + Bradley-Terry pool-Elo harness is
@@ -331,7 +331,14 @@ gone by n=200, M1.) **Deployment is independent of the negative:** the harness's
 is a **champion-anchored Elo ladder** (champion 2056, mcts-150 1796, mcts-30 1683, alphabeta
 1587, heuristic 1549, greedy 1215, random 615) — product **P13**'s ceiling anchor + tier
 ratings, and a front-end surface (bot strength in the difficulty picker / an arena mode).
-Runs W, W2; closed [AE21](backlog/ai-engine.md) no-win.
+**Variant scope (M6): every number here is Classic (20×20 4p).** Elo is scoped to its
+`(variant × pool)` — these ratings do *not* transfer to Duo and are *not comparable* to a
+Duo ladder (a different pool = a different scale). Duo is a separate, unmeasured ladder, and
+its bots still run Classic-tuned constants (difficulty.ts / AE29–31); producing it is a
+distinct `--duo` pool run. What *is* portable is the transitivity mechanism above (it's
+structural, not a number) — though whether the Duo pool is *also* transitive is itself
+unmeasured (2p zero-sum has no kingmaker, so plausibly yes, but untested). Runs W, W2;
+closed [AE21](backlog/ai-engine.md) no-win.
 
 ---
 

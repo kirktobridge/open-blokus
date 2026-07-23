@@ -1,7 +1,7 @@
 {
   "version": 1,
   "title": "AE21 population-play pool (Classic)",
-  "note": "Frozen evaluation pool for round-robin Elo. Top entry (tags.champion) is the latency-unbounded strength ceiling P13's shippable tiers are measured against; bump it whenever a won experiment raises the ceiling. mcts members use fixed iterations (not time budgets) so the pool is reproducible across machines. Run a subset with --members=a,b,c; the heavy mcts arm is a separate pooled run.",
+  "note": "CLASSIC pool (20x20, 4 colors). Frozen evaluation pool for round-robin Elo; every rating it yields is Classic-scoped (M6) and NOT comparable to a Duo ladder — Duo is a separate --duo pool (different population = different scale), not built here, and its bots would still run Classic-tuned constants (AE29-31). Top entry (tags.champion) is the latency-unbounded strength ceiling P13's shippable tiers are measured against; bump it whenever a won experiment raises the ceiling. mcts members use fixed iterations (not time budgets) so the pool is reproducible across machines. Run a subset with --members=a,b,c; the heavy mcts arm is a separate pooled run.",
   "members": [
     {
       "name": "champion",

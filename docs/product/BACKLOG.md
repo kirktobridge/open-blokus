@@ -277,8 +277,15 @@ this epic owns the user-facing feature + its UX.
     `bradleyTerryElo` in [arena.ts](../../src/game/ai/arena.ts), `pool.json`,
     `scripts/experiments/ae21-pool.ts`); the work is UI + human-game plumbing. Larger —
     split into its own entry when picked up.
-- **Depends on:** research AE21 (the measured ratings — its `Deploys as:`); relates to P13
-  (tiers-as-strength-bands, made visible). No engine change for the near-term display.
+  - *Variant scope (M6):* Elo is scoped to its `(variant × pool)`, so Classic and Duo
+    ratings are separate, **non-comparable** scales. Show the Classic ladder **only in
+    Classic games**; on Duo show `unrated` / `—` until a Duo ladder exists. A Duo ladder is
+    a separate, cheap `--duo` pool-Elo run (smaller board; its bots still run Classic-tuned
+    constants, research AE29–31) — a P61 sub-task, not yet done. Never show a Classic number
+    on a Duo board, and never compare the two scales.
+- **Depends on:** research AE21/[F19](../research/FINDINGS.md) (the measured ratings, Classic
+  — its `Deploys as:`); relates to P13 (tiers-as-strength-bands, made visible). No engine
+  change for the near-term display.
 
 ### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
 - **Status:** shipped — `replication-pending` — `DEFAULTS.rankRewardWeight` flipped
