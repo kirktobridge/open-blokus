@@ -1094,6 +1094,35 @@ four classic colors as accents, shapes as the star.
   readable grey for Black. Whether White's survive the same treatment was never observed.
 - **Depends on:** nothing. P20 M2c shipped the token vocabulary this reuses.
 
+### P60 — Preset piece-color palettes (IDE-inspired)
+- **Drafted:** 2026-07-22
+- **Status:** in-progress
+- **Value:** [P12](#p12--theming--settings-panel--shipped) made piece colors fully
+  tunable, but the only path to a fresh look is hand-editing six tokens and eyeballing
+  contrast. Curated, named presets — a colorblind-safe set plus IDE-inspired flavors
+  (Dracula, Tokyo Night, Catppuccin, Gruvbox) — give an instant, legible retint in one
+  click. Piece color is the game's core semantic channel; players should be able to make
+  it theirs without a color-theory detour.
+- **Scope:** a small registry of named piece palettes, each mapping the semantic colors
+  (blue/yellow/red/green + Duo's black/white) to hex. Surfaced as one-click swatches in
+  the PalettePicker section of Settings. Applying one forks the active built-in, writing
+  only the `--piece-*` overrides — so a palette is orthogonal to the surface mat and rides
+  on top of Linen / Lamplight / Walnut. The existing per-token editor still forks further
+  from any preset.
+- **Constraint (design against, not decorate):** IDE themes are tuned for code surfaces,
+  not four maximally-distinct game tokens on a mat. Each preset needs its four Classic hues
+  mutually distinguishable **and** legible against all three built-in mats, plus a sensible
+  Duo black/white pair. Needs an eyes-on pass per preset × mat (same detector as
+  [P40](#p40--theme-proof-the-piece-finish-audit-placedlayers-constants)/[P59](#p59--achromatic-tray--thumbnail-finish-the-low-contrast-seats-inventory--shipped)
+  — vitest/typecheck/lint stay green regardless). The colorblind-safe preset has the
+  near-objective bar and should lead.
+- **Depends on:** [P12](#p12--theming--settings-panel--shipped) (fork-only-overrides model
+  + PalettePicker). Finish tokens (P40/P59) derive from the mat, not piece hue, so swapping
+  piece colors on an existing mat needs no finish retune.
+- **Later, separately:** full IDE-flavored themes (matching mat + surfaces + pieces) are a
+  distinct future entry — they'd reuse the mat/finish-tuning machinery (P40/P59) and carry
+  the surface-design cost this entry deliberately avoids.
+
 ---
 
 ## Epic: Engagement & retention
