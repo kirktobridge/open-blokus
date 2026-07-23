@@ -26,14 +26,10 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P59** — achromatic tray & thumbnail finish. A live legibility defect in a shipped
-   variant, not a gap: one Duo seat's inventory is near-illegible on all three themes, seen
-   during M2c's eyes-on pass. Small (tokenize four constants) and dependency-free, and it
-   reuses the vocabulary M2c just landed while that is still fresh.
-2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+1. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-3. **P55** — last, and not a build task: its three mechanical guards landed, and all that
+2. **P55** — last, and not a build task: its three mechanical guards landed, and all that
    remains is *proposing* the CLAUDE.md Invariant line to the user. Listed so the one
    human-owned scrap doesn't drop off the map.
 
@@ -1059,9 +1055,18 @@ four classic colors as accents, shapes as the star.
   out of view, `‹ Back` stays hidden regardless. Build P52 first or together. Succeeds P15 M2
   (shipped). Surfaces: `App.tsx`, `LocalAIGame.tsx`, `ReviewTable.tsx`.
 
-### P59 — Achromatic tray & thumbnail finish (the low-contrast seat's inventory)
+### P59 — Achromatic tray & thumbnail finish (the low-contrast seat's inventory) — SHIPPED
 - **Drafted:** 2026-07-22
-- **Status:** in-progress
+- **Status:** shipped (2026-07-22) — the tray thumbnail's mold bevel, glint, dye edge, and
+  placed dash now resolve through `tileVar` / `TILE_FINISH` (the same `--tile-*` tokens as
+  `PlacedLayer`), so the tray finish forks by value class the way the board does — white
+  leans dark (`-light`), black leans light (`-dark`); the available hand cell gains a
+  dye-edge border. **Deploys as:**
+  [../../src/client/tray/PieceThumb.tsx](../../src/client/tray/PieceThumb.tsx) (value-class-
+  forked tray finish), held by a routing guard in
+  [../../tests/tileFinish.test.ts](../../tests/tileFinish.test.ts). Verified by eye across
+  Linen / Lamplight / Walnut in a Duo game — the full-size hand tray was observed this pass
+  too (black-on-dark reads), so the scope's "asserted, not observed" caveat is discharged.
 - **Value:** in Duo one seat's 21-piece inventory strip is near-illegible on every theme —
   White's glyphs on the pale seat card in Linen/Walnut, Black's on the dark card in
   Lamplight. **Verified** by eye on all three during
