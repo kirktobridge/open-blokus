@@ -26,18 +26,14 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P58** — variant-scoped onboarding & feel. Fully dependency-ready now that P20 M2c
-   closed the Duo build-out; it's the Duo *content* gap that only a human can see (P59 is
-   the rendering one), and its Classic-by-design sites now have a written precedent to
-   follow — P55's lint exemptions.
-2. **P59** — achromatic tray & thumbnail finish. A live legibility defect in a shipped
+1. **P59** — achromatic tray & thumbnail finish. A live legibility defect in a shipped
    variant, not a gap: one Duo seat's inventory is near-illegible on all three themes, seen
    during M2c's eyes-on pass. Small (tokenize four constants) and dependency-free, and it
    reuses the vocabulary M2c just landed while that is still fresh.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-4. **P55** — last, and not a build task: its three mechanical guards landed, and all that
+3. **P55** — last, and not a build task: its three mechanical guards landed, and all that
    remains is *proposing* the CLAUDE.md Invariant line to the user. Listed so the one
    human-owned scrap doesn't drop off the map.
 
@@ -1409,9 +1405,22 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)
   once that lands, but must not wait for it.
 
-### P58 — Variant-scoped onboarding & feel content (tutorial, blitz pacing)
+### P58 — Variant-scoped onboarding & feel content (tutorial, blitz pacing) — SHIPPED
 - **Drafted:** 2026-07-22
-- **Status:** in-progress
+- **Status:** shipped (2026-07-22) — all three scope items landed. **(1) Duo teaching
+  surface:** a fifth tutorial step (`step5DuoStart` in
+  [../../src/client/tutorial/scenarios.ts](../../src/client/tutorial/scenarios.ts)) on a
+  real 14×14 Duo board teaches the interior-start rule
+  ([../GAME_SPEC_DUO.md](../GAME_SPEC_DUO.md) §3); `Tutorial.tsx` is now variant-aware,
+  deriving the board from the step's size. **(2) Blitz pacing:** re-measured on Duo — the
+  pace-able tiers are heuristic-instant or time-budget-bound, so `BLITZ_PACE_MS` is
+  variant-independent and unchanged; the finding is recorded as a verification note in
+  [../../src/client/ai/difficulty.ts](../../src/client/ai/difficulty.ts). **(3)
+  Classic-by-design sites:** the daily puzzle is annotated Classic-by-design and brought
+  under [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
+  no-restricted-imports guard (`src/game/puzzle/**` in `eslint.config.js`); the ambient
+  front-door board already carried its exemption. No follow-ups owed — the pacing re-measure
+  concluded with no change, and the ambient site was pre-done.
 - **Value:** two player-facing surfaces are calibrated to Classic with nothing
   recording the scope. The tutorial
   ([../../src/client/tutorial/scenarios.ts](../../src/client/tutorial/scenarios.ts))
