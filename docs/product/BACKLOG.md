@@ -29,9 +29,6 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 1. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-2. **P55** — last, and not a build task: its three mechanical guards landed, and all that
-   remains is *proposing* the CLAUDE.md Invariant line to the user. Listed so the one
-   human-owned scrap doesn't drop off the map.
 
 ---
 
@@ -1516,7 +1513,8 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
 
 ### P55 — Mechanical Classic/Duo separation (make variant drift impossible, not discouraged)
 - **Drafted:** 2026-07-22
-- **Status:** partial — **the three mechanical guards shipped** (`052c867`), each *held
+- **Status:** shipped (2026-07-22) — **all four guards now in place.** The three
+  mechanical guards shipped (`052c867`), each *held
   by a test* rather than asserted: (1) `tests/variants-registry.test.ts` holds `VARIANTS`
   to GAME_SPEC/GAME_SPEC_DUO both ways — board size, colours + turn order, start cells,
   scoring, seat counts; (2) [../../src/client/tuning.ts](../../src/client/tuning.ts)
@@ -1524,9 +1522,10 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
   [../../src/client/signals.ts](../../src/client/signals.ts) registers the standing
   signals (`INCURSION_MIN_PIECE`) that had no doc mirror at all, both mirrored in
   [../EVENTS.md](../EVENTS.md); (3) the `no-restricted-imports` guard, with four
-  Classic-by-design file exemptions that state their reason. **Only the CLAUDE.md
-  Invariant line is still owed** — human-owned, so it is a proposal awaiting sign-off,
-  not work an agent finishes.
+  Classic-by-design file exemptions that state their reason. The fourth guard — the
+  human-owned CLAUDE.md **Variant ≠ Classic** Invariant line (`CLAUDE.md`, in the
+  Invariants section) — is now applied, so the agentic layer names the split too and
+  the entry is closed.
 - **Value:** Duo's arrival turned every board-size and colour-set assumption into a
   correctness question, and today the answer is *convention*: research M6 and the
   `(Classic)` finding tags ask future sessions to remember, and GAME_SPEC_DUO.md's delta

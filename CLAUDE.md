@@ -109,6 +109,15 @@ multiplayer, lobby) • Vitest. Vendored framework docs: [docs/boardgame.io/](do
   Use arrays + plain objects.
 - **Color ≠ player.** `numPlayers` = humans; colors are owned via a map + custom
   turn order (handles 2p multi-color and 3p shared color). See ARCHITECTURE §4.
+- **Variant ≠ Classic.** Board size, color set, and start cells are per-variant.
+  Read them through `boardSizeOf` / `playColorsOf` / `startCellOf` (`src/game/modes.ts`),
+  never the Classic constants `BOARD_SIZE` / `COLOR_ORDER` / `CORNERS`, in any code that
+  must also run on a Duo board. The `VARIANTS` registry is the single source (held
+  both-ways against GAME_SPEC_DUO by `tests/variants-registry.test.ts`); a
+  `no-restricted-imports` lint rule blocks the Classic constants inside variant-sensitive
+  trees, and genuinely Classic-only files take a disable that states why. The bug this
+  prevents — reading the wrong board size — stays green through vitest, typecheck **and**
+  lint at once (P54 caught the AI harness doing exactly that).
 - **One move: `placePiece`.** No pass move — stuck colors auto-skip by advancing
   `activeColorIndex` inside the move. See GAME_SPEC §5, §9.
 - **Cheat-resistant moves** carry `(pieceId, rotation, reflected, x, y)`; the engine
