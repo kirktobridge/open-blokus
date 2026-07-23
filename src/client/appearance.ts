@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { COLOR_ORDER } from '../game/types';
 import { PIECE_TOKEN } from './theme';
+import { PIECE_PALETTES, pieceOverridesOf } from './palettes';
 
 /* The one appearance store. A *theme* is a complete assignment of the token
  * vocabulary; the three built-ins live as [data-theme] blocks in theme.css. A
@@ -342,6 +343,38 @@ export function setTokenOverride(name: string, value: string): void {
     ...state,
     userThemes: state.userThemes.map((t) =>
       t.id === target.id ? { ...t, overrides: { ...t.overrides, [name]: value } } : t,
+    ),
+  });
+}
+
+/**
+ * Apply a preset piece palette (P60): overlay its six `--piece-*` values onto
+ * the active theme. On a pristine built-in this forks it — named
+ * `<Mat> · <Palette>` so the fork reads as the palette riding on top of the mat
+ * — leaving the built-in untouched, exactly as a manual piece edit does. On an
+ * existing user theme it overwrites only the piece tokens, keeping its other
+ * overrides. Unknown ids are ignored.
+ */
+export function applyPiecePalette(paletteId: string): void {
+  const palette = PIECE_PALETTES.find((p) => p.id === paletteId);
+  if (!palette) return;
+  const pieceOverrides = pieceOverridesOf(palette);
+  const target = activeTheme();
+  if (!target) {
+    const base = activeBase();
+    const fork: UserTheme = {
+      id: newId(),
+      name: `${THEME_META[base].name} · ${palette.name}`,
+      base,
+      overrides: pieceOverrides,
+    };
+    commit({ userThemes: [...state.userThemes, fork], activeId: fork.id });
+    return;
+  }
+  commit({
+    ...state,
+    userThemes: state.userThemes.map((t) =>
+      t.id === target.id ? { ...t, overrides: { ...t.overrides, ...pieceOverrides } } : t,
     ),
   });
 }

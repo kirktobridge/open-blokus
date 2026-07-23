@@ -29,7 +29,7 @@ import {
   usePrefs,
   type InventoryDisplay,
 } from './settings';
-import { PaletteControls } from './PalettePicker';
+import { PaletteControls, PalettePresets } from './PalettePicker';
 import { configureSound, play } from './sound/engine';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
@@ -430,6 +430,9 @@ export function SettingsPanel({ docked = false }: { docked?: boolean }) {
 
           {/* Piece colors */}
           <div style={sectionLabel}>Piece colors</div>
+          <div style={{ marginBottom: 8 }}>
+            <PalettePresets />
+          </div>
           <div style={{ marginBottom: 14 }}>
             <PaletteControls />
           </div>

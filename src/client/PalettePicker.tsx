@@ -1,8 +1,52 @@
 import { COLOR_ORDER } from '../game/types';
 import { PIECE_TOKEN } from './theme';
-import { clearTokenOverride, effectiveToken, setTokenOverride, useActiveTheme } from './appearance';
+import {
+  applyPiecePalette,
+  clearTokenOverride,
+  effectiveToken,
+  setTokenOverride,
+  useActiveTheme,
+} from './appearance';
+import { PIECE_PALETTES } from './palettes';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * One-click preset piece palettes (P60). Applying one forks the active built-in
+ * (or overlays the active user theme) with the six `--piece-*` colors — the same
+ * fork the per-color editor below makes, just all at once from a curated set.
+ * The swatch previews the four Classic colors; black/white come along for Duo.
+ */
+export function PalettePresets() {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} data-testid="palette-presets">
+      {PIECE_PALETTES.map((p) => (
+        <button
+          key={p.id}
+          onClick={() => applyPiecePalette(p.id)}
+          data-testid={`palette-preset-${p.id}`}
+          title={`Apply ${p.name} piece colors`}
+          aria-label={`Apply ${p.name} palette`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 7px',
+            fontSize: 11,
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ display: 'inline-flex', borderRadius: 2, overflow: 'hidden' }}>
+            {COLOR_ORDER.map((c) => (
+              <span key={c} style={{ width: 9, height: 14, background: p.colors[c] }} />
+            ))}
+          </span>
+          {p.name}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Piece-color editor for the active theme — the four `--piece-*` tokens. Editing
