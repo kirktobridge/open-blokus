@@ -26,10 +26,12 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P61** — surface bot strength ratings (difficulty-picker Elo). Dependency-ready now:
-   AE21/F19 measured the ladder (heuristic 1549 … champion 2056), so the near-term display
-   is a cheap, visible legibility win with the data already in hand.
-2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+1. **P62** — Elo ladder artifact + recalibration policy: the committed, hash-guarded data
+   layer under the ratings. Dependency-ready (AE21 harness + Classic ladder exist); P61 reads
+   it. First slice (artifact + staleness test) is cheap and reuses the existing shard cache.
+2. **P61** — surface bot strength ratings (difficulty-picker Elo). Ready once P62's artifact
+   exists (the display consumes it): a cheap, visible legibility win with the data in hand.
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
 
@@ -259,6 +261,38 @@ this epic owns the user-facing feature + its UX.
   that makes recalibration cheap and trustworthy); a won AE experiment beating the
   current top tier for any actual new rung.
 
+### P62 — Elo ladder artifact + recalibration policy (keep ratings in sync with the pool)
+- **Drafted:** 2026-07-23
+- **Status:** proposed.
+- **Value:** pool Elo is a *derived* artifact of `(variant × pool)` — once the pool changes,
+  yesterday's ladder is silently wrong. Today it exists only as prose in a research log
+  ([F19](../research/FINDINGS.md)), so P61's display has nothing machine-readable to read and
+  nothing stops a stale rating from shipping. This makes the ladder a committed, hash-guarded
+  artifact that recalibrates cheaply and *can't* drift.
+- **Scope:**
+  - **Ladder artifact** per variant — matrix + Elo + the **hash of the `pool.json` it was
+    fit from**, committed. `pool.json` = Classic; a Duo artifact when a Duo pool exists.
+  - **Staleness test** — hash pool.json members+configs vs the artifact's recorded hash; fail
+    CI if the pool changed without regeneration (same "let a test hold it" idiom as the
+    events/backlog registries).
+  - **Incremental recalibration driver** — on a membership change, run only the new/changed
+    bot's k pairs (`--members=new,X`), reuse the durable `.result` shard cache so existing
+    pairs never re-run, refit via `ae21-pool.ts`, rewrite the artifact. ~5–40× cheaper than a
+    full re-run (heuristic-class add ~1–2 CPU-h vs ~85 for the full pool; provisional-vs-a-few-
+    anchors cheaper still, directional n≈40 with CIs on the artifact).
+  - **Policy** (generalizes the pool.json champion note): any pool edit / new bot →
+    recalibrate that variant's ladder before the artifact is trusted; champion/version bumps
+    stay behind the existing "won experiment raises the ceiling" gate.
+  - **Open decision — anchor model:** `bradleyTerryElo` mean-centers today (=1500), so adding
+    a bot shifts every published number though nobody got stronger. Frozen-anchor/provisional
+    (peg heuristic or the AE19 Pentobi anchor; rate a new bot without moving established ones —
+    stable) vs periodic full re-fit (research-accurate, everyone moves). Likely both:
+    provisional on add, full re-fit on version bumps. Decide when P61 is built.
+- **Depends on:** research AE21/[F19](../research/FINDINGS.md) (harness + first Classic ladder)
+  + its sharding infra (`ae21-sweep`/`champion`/`pool`). **P61 depends on this.** No engine
+  change — tooling + a test. First slice: artifact + staleness test reusing the shard cache;
+  anchor-model refit later.
+
 ### P61 — Surface bot strength ratings (difficulty picker + arena mode)
 - **Drafted:** 2026-07-23
 - **Status:** proposed.
@@ -283,9 +317,10 @@ this epic owns the user-facing feature + its UX.
     a separate, cheap `--duo` pool-Elo run (smaller board; its bots still run Classic-tuned
     constants, research AE29–31) — a P61 sub-task, not yet done. Never show a Classic number
     on a Duo board, and never compare the two scales.
-- **Depends on:** research AE21/[F19](../research/FINDINGS.md) (the measured ratings, Classic
-  — its `Deploys as:`); relates to P13 (tiers-as-strength-bands, made visible). No engine
-  change for the near-term display.
+- **Depends on:** **P62** (the ladder-artifact data layer — the display reads its committed,
+  hash-guarded ratings rather than hardcoding); research AE21/[F19](../research/FINDINGS.md)
+  (the measured ratings, Classic); relates to P13 (tiers-as-strength-bands, made visible). No
+  engine change for the near-term display.
 
 ### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
 - **Status:** shipped — `replication-pending` — `DEFAULTS.rankRewardWeight` flipped
