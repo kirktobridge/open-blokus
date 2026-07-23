@@ -1411,7 +1411,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ### P58 — Variant-scoped onboarding & feel content (tutorial, blitz pacing)
 - **Drafted:** 2026-07-22
-- **Status:** proposed
+- **Status:** in-progress
 - **Value:** two player-facing surfaces are calibrated to Classic with nothing
   recording the scope. The tutorial
   ([../../src/client/tutorial/scenarios.ts](../../src/client/tutorial/scenarios.ts))
