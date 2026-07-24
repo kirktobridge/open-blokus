@@ -21,11 +21,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
    is now known to be mostly the iterations shorter playouts buy (not per-move smarts),
    so a prior has to add signal a cheap size-max sampler doesn't. **AE32**'s concept
    mining is the natural feed for its design phase — read before fixing the feature set.
-2. **AE29** — Duo external anchor (newly dependency-ready, 2026-07-22, when product P54
-   made the arena variant-aware). The M5 gate for a whole track: Duo is **shipped to
-   players** and the bots' strength there is entirely unmeasured, while every constant
-   they use was tuned on Classic (M6). Nothing self-relative about Duo — AE30, AE31 —
-   is trustworthy until this lands.
+2. **AE30** — re-tune the Duo bot (beam:iterations + heuristic weights). Unblocked
+   2026-07-23 by AE29 closing `won`: the Duo ladder now has an external readout, and
+   [F20](../FINDINGS.md) gives it a concrete target — our whole shipped ladder tops out
+   at **Pentobi Duo L1**, about one level below its Classic placement. The largest
+   known gap on any *shipped-to-players* configuration, and the readout to measure it
+   against already exists.
 3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
 4. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
@@ -805,11 +806,17 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE29 — Duo external anchor: extend the Pentobi bridge to the `duo` variant
 - **Drafted:** 2026-07-21
-- **Status:** proposed — **dependency-ready** as of 2026-07-22: both product gates
+- **Status:** won (Run X / [F20](../FINDINGS.md)) — the Duo external anchor exists and
+  the tiers are placed. Headline: our whole shipped ladder tops out at **Pentobi Duo
+  L1** (extreme is *even* with L1 — 52.8% [45.8, 59.6], inconclusive, not a win — and
+  loses CI-clear to L2/L3; easy is 9.2% vs L1), about **one level below** where the
+  same tiers sit on Classic (F14). Bridge is variant-parameterized and replay-verified
+  (zero mapping throws in 1400 bridged games).
+  Was **dependency-ready** as of 2026-07-22: both product gates
   (P20 M2b, P54) shipped, so the arena plays Duo (`npm run arena -- --duo`, or a
   `--config` JSON carrying `"variant": "duo"` — the reproducible path a run should use;
-  `--result` shard pooling works with it). Extending the Pentobi bridge itself is *this
-  entry's* work, not a blocker: `pentobi/arena.ts` is still Classic-only by construction.
+  `--result` shard pooling works with it). Extending the Pentobi bridge itself was *this
+  entry's* work, not a blocker: `pentobi/arena.ts` was Classic-only by construction.
   **The M5 anchor for the Duo
   track** — a new variant is a new track, so this lands before any self-relative Duo
   number is trusted. [F14](../FINDINGS.md) placed our tiers on Pentobi's ladder in **4p
@@ -840,13 +847,40 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** small–moderate. The bridge, GTP protocol and replay verifier all
   exist; this is parameterization plus a 2-seat loop. Risk: Duo coordinate/piece mapping
   bugs silently corrupting results — mitigated by the same replay verification that
-  caught exactly that for Classic.
-- **Log:** —
+  caught exactly that for Classic. *(Realised: the risk did not fire — zero replay
+  throws. Duo GTP conventions were probed from the binary rather than assumed.)*
+- **Deploys as:** the standing Duo external readout,
+  `npm run arena:pentobi -- --variant=duo` (configs `scripts/experiments/ae29-*.json`)
+  — consumed by **AE30** (Duo beam:iterations + heuristic weights) and **AE31** (Duo
+  reward model), which now have an outside-world number to move instead of a
+  self-relative one. No product surface changes on this entry: the *fix* for the
+  measured weakness is AE30/AE31's retune, not a UI change. If the gap survives that
+  retune, whether Duo's difficulty labels should be re-pegged against the Classic
+  ladder becomes a product question — not filed, since it is premature until AE30 runs.
+- **Replication:** none owed — this run changed **no shipped default** (it is a
+  measurement of the existing configs, not a retune), so the shipped-defaults
+  replication rule does not bite.
+- **Staleness sweep:** nothing to re-check — the run moved neither engine throughput
+  nor any tuned constant, so no existing finding's premise shifts. It *adds* a premise
+  (Classic constants underperform on Duo) that AE30/AE31 already exist to act on, and
+  that `difficulty.ts`'s variant-scope note already states.
+- **Coverage gap:** only the two *fixed-compute* tiers (easy, extreme) were placed.
+  Shipped `medium`/`hard` are time-budget (500 ms / 2000 ms per move), hence
+  machine-dependent and not reproducible from a log; placing them needs a
+  wall-clock-controlled batch. Left open deliberately, not silently.
+- **Log:** [Run X](../log/ai-strategy.md) (2026-07-23) — easy + extreme vs Pentobi Duo
+  L1–L4 / L1–L3, n=200 per pairing, 2 seeds × 100.
 
 ### AE30 — Re-tune the Duo bot: beam:iterations and the heuristic weights
 - **Drafted:** 2026-07-21
-- **Status:** proposed (blocked on **AE29** only — the anchor lands first, per M5. The
-  product gate cleared: P54 shipped 2026-07-22 and the arena plays Duo.)
+- **Status:** proposed — **dependency-ready** as of 2026-07-23: AE29 closed `won`
+  (Run X / [F20](../FINDINGS.md)), so the M5 anchor exists and the readout to tune
+  against is `npm run arena:pentobi -- --variant=duo`. F20 also sets the target: the
+  shipped ladder tops out at **Pentobi Duo L1**, ~one level below its Classic placement,
+  and names the three Classic-scoped constants most likely carrying the loss
+  (`rankRewardWeight` inert at two colors, `beam ≈ iters/6`, placed-square reward vs
+  Duo's advanced-only scoring). The product gate cleared earlier: P54 shipped
+  2026-07-22 and the arena plays Duo.
 - **Variant:** duo — the question *is* whether the Classic-tuned constants transfer to
   14×14.
 - **Objective:** decide whether the Classic-tuned constants still hold on 14×14 with one

@@ -1,0 +1,8 @@
+{
+  "title": "AE29 — heuristic (easy tier) vs Pentobi Duo (1v1)",
+  "variant": "duo",
+  "seats": [
+    { "kind": "local", "name": "heuristic", "strategy": "heuristic" },
+    { "kind": "pentobi", "name": "pentobi-duo-L1", "level": 1 }
+  ]
+}

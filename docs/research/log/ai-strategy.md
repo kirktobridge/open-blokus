@@ -993,3 +993,81 @@ mode). AE21 closes no-win with that as its `Deploys as:`. No shipped default cha
 replication or staleness debt. A deliberately non-transitive pool (e.g. two heuristics
 tuned to beat different opponents) remains the only way this bar could still be met — not
 queued; speculative.
+
+---
+
+### Run X — Duo external anchor: our tiers on Pentobi's Duo ladder (AE29)
+The M5 anchor that opens the Duo track. [F14](../FINDINGS.md) placed our tiers on
+Pentobi's ladder in 4p Classic only; Duo shipped to players with every bot constant
+inherited from Classic and its strength entirely unmeasured. Question: where does each
+shipped tier sit on Pentobi's **Duo** ladder, and how much does the Classic-tuned
+configuration lose in transfer?
+
+**Setup.** Extended the AE19 GTP bridge from Classic-only to variant-parameterized
+(this entry's own work): `pentobi/coords.ts` takes a **required** `size` argument
+(Classic 20 / Duo 14) instead of a hardcoded 20-based map, `moveToPlacement` reads
+`boardSizeOf(G)`; `pentobi/arena.ts` drives seats/colors/mode from the variant via
+`playColorsOf` + `VARIANTS` (its P55 "Classic by design" lint exemption removed —
+the file is genuinely variant-aware now); `pentobi/run.ts` gained `--variant=duo`
+and a config `"variant"` field. Duo GTP conventions were **probed from the binary,
+not assumed**: 14×14, columns a–n, rows from the bottom, start points e10=(4,4) and
+j5=(9,9) — identical to our `DUO_START_CELLS` — and our color names `black`/`white`
+are accepted GTP color tokens directly, so no remap was needed. Configs
+`scripts/experiments/ae29-{heuristic,extreme-L1}.json` (`"variant":"duo"`), levels
+swept with `--level`. 1v1, seats rotated per game, seed-averaged 2 seeds × 100 games
+= **n=200 per pairing**; game-share vs a 50% null, Wilson CIs from `stats.py`.
+Replay verification (every Pentobi move must resolve to one of our legal moves) ran
+on all 1400 bridged games and **threw zero times** — the mapping correctness gate.
+
+**Results.** Game-share of *our* tier vs each Pentobi Duo level, n=200 each:
+
+| our tier              | vs L1                  | vs L2                  | vs L3                  | vs L4        |
+|-----------------------|------------------------|------------------------|------------------------|--------------|
+| easy (heuristic)      | 9.2% [6.0, 14.1]       | 0.8% [0.2, 3.2]        | 0.0% [0.0, 1.9]        | 0.0%         |
+| extreme (500 iters)   | **52.8% [45.8, 59.6]** | 35.5% [29.2, 42.3]     | 14.8% [10.5, 20.3]     | not run      |
+
+Extreme = the shipped config: 500 iterations, beam 20, `rolloutSamples` 48,
+`rankRewardWeight` 0.25. Side-by-side with the Classic ladder (F14, 4p 2v2):
+easy 21.2% → **9.2%** vs L1; extreme 61.8% (CI-clear win) → **52.8%** (inconclusive)
+vs L1, and ~45.3% (directional even) → **35.5%** (CI-clear loss) vs L2.
+
+**Read.** Against the pre-registered criterion — the highest level each tier beats
+CI-clear — the answer for **both measured tiers is "none."** Easy is crushed by L1
+(CI upper bound 14.1%, nowhere near 50%) and is effectively zero from L2 up. Extreme
+is **statistically even with Duo L1** (CI [45.8, 59.6] spans 50%, one-sided p=0.22 —
+inconclusive, not a win) and loses CI-clear to L2 and L3. So the entire shipped
+ladder tops out at *level-1-equivalent* on Duo.
+
+The transfer readout the entry asked for: our tiers land roughly **one Pentobi level
+lower on Duo than on Classic**. Extreme moves from "beats L1 CI-clear, even with L2"
+(Classic) to "even with L1, loses L2 CI-clear" (Duo); easy's share vs L1 more than
+halves. **Caveat, stated rather than glossed:** the Classic figures are 4p 2v2 *team*
+shares and these are 1v1 — both null at 50%, but they are different game structures,
+so "one level lower" is a comparison of **ladder placement**, not of a strictly
+matched statistic. The direction is consistent across two independent tiers and large
+in the extreme tier's case; the precise size of the loss is not established by this
+run.
+
+Mechanism is not isolated here, but the difficulty-tier doc already names three
+Classic-scoped constants that cannot transfer as written (M6): `rankRewardWeight`
+is provably inert at two colors (the rank term collapses onto the winner term at
+n=2), `beam ≈ iters/6` encodes a branching factor that moves with board size and
+opponent count, and the reward ranks by *placed squares* — the winner under basic
+scoring, not under Duo's advanced-only scoring. Any of these could carry the loss;
+this run does not attribute it.
+
+**Coverage gap (not a silent omission).** Only the two *fixed-compute* tiers were
+placed. The shipped `medium`/`hard` tiers are **time-budget** (500 ms / 2000 ms per
+move), so their strength is machine-dependent and not reproducible from a log — the
+same reason AE19 recorded fixed-iteration configs on Classic. Placing them needs a
+wall-clock-controlled batch (or fixed-iteration proxies, which would be a different
+thing than the shipped tier); left to a follow-up.
+
+**Decision:** **won** as a measurement — the Duo ladder now has an external readout
+(`npm run arena:pentobi -- --variant=duo`), replay-verified, and AE30/AE31 have an
+outside-world number to move rather than a self-relative one. The substantive finding
+is that Duo strength is *worse than Classic strength*, which is what M5 exists to
+catch before a track starts tuning against itself. No shipped default changed, so no
+replication or staleness debt is incurred by this run. Timing note for sizing later
+Duo work: extreme ≈ 20 s/game at 500 iters (n=200 ≈ 67 min/pairing, single-threaded);
+the heuristic ladder is seconds.

@@ -340,6 +340,33 @@ structural, not a number) — though whether the Duo pool is *also* transitive i
 unmeasured (2p zero-sum has no kingmaker, so plausibly yes, but untested). Runs W, W2;
 closed [AE21](backlog/ai-engine.md) no-win.
 
+### F20 — Our whole shipped ladder tops out at Pentobi **Duo** level 1, about one level below where it sits on Classic
+`significant` **(duo)** — one well-powered run, n=200 per pairing, CIs clear except where
+stated. The first external anchor for Duo (Run X, AE29), via the AE19 GTP bridge extended
+to the variant. Against the criterion "highest Pentobi level each tier beats CI-clear",
+the answer for both measured tiers is **none**. Our `extreme` tier (500 iters, beam 20,
+`rolloutSamples` 48) is **statistically even with Duo L1** — 52.8% game-share, CI
+[45.8, 59.6], one-sided p=0.22, i.e. *inconclusive, not a win* — and loses CI-clear to L2
+(35.5% [29.2, 42.3]) and L3 (14.8% [10.5, 20.3]). Our `easy` tier (heuristic) is far below
+L1 (9.2% [6.0, 14.1]) and ~0% from L2 up. **Transfer loss:** the same tiers place roughly
+**one Pentobi level lower on Duo than on Classic** ([F14](#f14)) — extreme goes from
+"beats L1 CI-clear (61.8%), even with L2" to "even with L1, loses L2 CI-clear"; easy's
+share vs L1 more than halves (21.2% → 9.2%). *Held as directional on size, not on
+direction:* the Classic figures are 4p 2v2 **team** shares and these are 1v1, so this
+compares **ladder placement**, not a strictly matched statistic — the direction is
+consistent across two independent tiers, the magnitude is not established. Cause is
+**not attributed** by this run, but three Classic-scoped constants are known not to
+transfer as written (M6, `difficulty.ts`): `rankRewardWeight` is provably inert at two
+colors, `beam ≈ iters/6` encodes a branching factor that moves with board size and
+opponent count, and the reward ranks by placed squares — the winner under *basic*
+scoring, not under Duo's advanced-only scoring. Practical consequence: **Duo bots are
+weaker than Classic bots and no self-relative Duo tuning should be trusted against
+anything but this ladder** (exactly M5's purpose). Scope: only the two *fixed-compute*
+tiers were placed; shipped `medium`/`hard` are time-budget and machine-dependent, so
+their placement needs a wall-clock-controlled batch and is **unmeasured**. Standing
+readout: `npm run arena:pentobi -- --variant=duo`, replay-verified (zero mapping throws
+across 1400 bridged games). Run X; closed [AE29](backlog/ai-engine.md) won.
+
 ---
 
 ## Method lessons (the ones we paid for)

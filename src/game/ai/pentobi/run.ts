@@ -3,6 +3,7 @@
  *
  *   npm run arena:pentobi -- --config=scripts/experiments/ae19-<tier>-L<level>.json
  *   [--games=N] [--seeds=K] [--baseSeed=S] [--bin=/path/to/pentobi-gtp]
+ *   [--variant=duo]   # or "variant":"duo" in the config; default classic (AE29)
  *
  * The Pentobi binary is NOT in the repo (GPL, built from source — see the AE19
  * log run). Locate it via `--bin=`, the `PENTOBI_GTP` env var, or the default
@@ -22,6 +23,7 @@ import {
 } from '../arena';
 import { mctsStrategy, type MctsConfig } from '../mcts';
 import { WEIGHTS, type Weights } from '../heuristic';
+import type { Variant } from '../../types';
 import { runVsPentobi, type Seat } from './arena';
 
 interface SeatConfig {
@@ -34,6 +36,7 @@ interface SeatConfig {
 interface ExperimentConfig {
   title: string;
   seats: SeatConfig[];
+  variant?: Variant;
   games?: number;
   seeds?: number;
   baseSeed?: number;
@@ -90,6 +93,7 @@ async function main(): Promise<void> {
   const seeds = Number(flag('seeds') ?? cfg.seeds ?? 4);
   const baseSeed = Number(flag('baseSeed') ?? cfg.baseSeed ?? 1);
   const threads = Number(flag('threads') ?? cfg.threads ?? 1);
+  const variant = (flag('variant') ?? cfg.variant ?? 'classic') as Variant;
   const binPath =
     flag('bin') ?? process.env.PENTOBI_GTP ?? join(homedir(), '.local/share/pentobi-gtp/pentobi-gtp');
 
@@ -98,8 +102,9 @@ async function main(): Promise<void> {
   const names = [...new Set(seats.map((s) => s.name))];
 
   // Per-seed samples of each name's game-share (wins / games — a *team* share
-  // that nulls at seats/4, i.e. 50% in the AE19 2v2). Pool wins over all seeds
-  // and pair against total games for stats.py's 50/50 test.
+  // that nulls at (its seats)/(total seats): 50% in the AE19 2v2 and in the AE29
+  // Duo 1v1. Pool wins over all seeds and pair against total games for stats.py's
+  // 50/50 test.
   const shareSamples: Record<string, number[]> = Object.fromEntries(names.map((n) => [n, []]));
   const totalWins: Record<string, number> = Object.fromEntries(names.map((n) => [n, 0]));
   const totalGames = games * seeds;
@@ -109,7 +114,7 @@ async function main(): Promise<void> {
   let tieTotal = 0;
 
   for (let s = 0; s < seeds; s++) {
-    const r = await runVsPentobi(seats, { games, seed: baseSeed + s, binPath, threads });
+    const r = await runVsPentobi(seats, { games, seed: baseSeed + s, binPath, threads, variant });
     for (const n of names) {
       shareSamples[n].push(r.wins[n] / r.games);
       totalWins[n] += r.wins[n];
@@ -142,7 +147,7 @@ async function main(): Promise<void> {
         `(pooled ${row.wins.toFixed(1)}/${totalGames})  ${bar}`,
     );
   }
-  console.log('\nstats.py (pooled team wins / total games — null = seats/4):');
+  console.log(`\nstats.py (pooled team wins / total games — null = seats/${seats.length}):`);
   for (const row of rows) {
     console.log(
       `  ${row.name}: python3 .claude/skills/research/stats.py ${row.wins.toFixed(1)} ${totalGames}`,
