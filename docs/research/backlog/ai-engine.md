@@ -19,7 +19,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 1. **AE24** — trained softmax move priors: the main share of the ~17× per-simulation
    quality gap vs Pentobi (F14). F17 sharpens it — priors must beat *width*, and width
    is now known to be mostly the iterations shorter playouts buy (not per-move smarts),
-   so a prior has to add signal a cheap size-max sampler doesn't.
+   so a prior has to add signal a cheap size-max sampler doesn't. **AE32**'s concept
+   mining is the natural feed for its design phase — read before fixing the feature set.
 2. **AE29** — Duo external anchor (newly dependency-ready, 2026-07-22, when product P54
    made the arena variant-aware). The M5 gate for a whole track: Duo is **shipped to
    players** and the bots' strength there is entirely unmeasured, while every constant
@@ -936,4 +937,67 @@ test (product P21) fails CI if any ID here is missing or terminal.
   exists), moderate compute. Risk: the gate closes it cheaply — which is the design.
   Interacts with AE30: retune the beam on the reward you intend to ship, or run them in
   that order.
+- **Log:** —
+
+### AE32 — Mine human strategy writing for candidate eval / prior features
+- **Drafted:** 2026-07-23
+- **Status:** proposed
+- **Variant:** classic — the source material is 2011 competitive Blokus Classic, and any
+  term it yields is a *constant* until measured otherwise (M6). Concepts that read as
+  mechanisms (packing, corner denial, tempo) still get tested on Classic first; Duo
+  transfer is a separate question, not an assumption.
+- **Objective:** turn human strategic vocabulary into concrete, testable engine features.
+  Two sources, same author lineage, treated the same way — as a source of *hypotheses*,
+  never as ground truth:
+  - `c2strategy.wordpress.com` — ~10 posts, 2011: basics, beginner strategy,
+    end-game/packing puzzles, commented BBT4 + Masters Series finals. Live.
+  - `blokusstrategy.com` — the successor site c2strategy redirects to; the domain is now
+    parked and for sale, but captured in the Wayback Machine:
+    `https://web.archive.org/web/*/http://blokusstrategy.com/*`. Likely the larger and
+    later body of work.
+- **Hypothesis:** experienced human players reason with concepts our eval doesn't encode
+  (piece-ordering discipline, packing efficiency, reachability distance, when to contest
+  vs. develop elsewhere). At least one of them, expressed as a cheap feature, adds
+  move-ranking signal that our current size-max-flavoured heuristic and rollout policy
+  don't already capture — the gap [F17](../FINDINGS.md) says a prior must clear.
+- **Method:**
+  1. Read both archives. c2strategy is a direct polite crawl (robots.txt, rate-limited).
+     blokusstrategy.com comes from Wayback — enumerate captures via the wildcard listing /
+     CDX API, take the latest successful capture per path, and dedupe against c2strategy,
+     which it probably supersedes rather than duplicates. Extract concepts into a
+     **written candidate feature list**: per entry, the human concept, a proposed
+     computable definition, est. cost per node, and which consumer it targets (heuristic
+     term / rollout policy AE11 / prior AE24 / opening book AE16). **That list is this
+     entry's primary deliverable and survives even if every candidate loses.**
+  2. Pre-register the list (commit it) *before* any arena run — the multiple-comparison
+     guard, since several candidates get tested off one reading (M2).
+  3. Implement the cheap candidates; arena each against the unmodified incumbent for its
+     consumer, one variable at a time. **Two-stage, to keep the cost sane:** screen every
+     candidate at n≈600 (only large effects survive), then re-run survivors at the n the
+     bar actually needs. A candidate screening at ~50% closes on the screen; it is not
+     promoted in the hope that n rescues it.
+  4. Report **all** candidates, winners and losers. Any winner is `directional` until a
+     second independent seed pool replicates it — no shipping a default off one pool (the
+     F15/F18 replication debts are the precedent).
+- **Success criteria:** ≥1 derived feature beats its incumbent with a game-share 95% CI
+  lower bound ≥ **52%**, replicated on a second seed pool. Zero winners ⇒ close `no-win`,
+  keeping the candidate list and the negative result — which concepts the eval already
+  captures implicitly is itself worth knowing.
+- **Power:** binomial game-share per candidate (`stats.py --power --bar 52`): a +2pt true
+  effect (54%) needs **n ≥ 2398** to clear the bar, +3pt (55%) needs **n ≥ 1066**; at the
+  screening n=600 the minimum detectable observed share is **56.0%**. So the bar is only
+  reachable at the confirm stage — budget ~2400 games per survivor plus its replication
+  pool, and treat the n=600 screen as a filter, not as a test of the bar.
+- **Cost / risk:** reading is cheap; the compute is the confirm stage, so cost scales with
+  how many candidates survive screening — cap the tested set at the 3–4 highest-value
+  candidates and leave the rest documented in the list. Risks: (1) concepts may not be
+  mechanizable at a useful cost per node; (2) several will likely restate what the
+  heuristic already does implicitly, which the arena will show as ~50%; (3) usage — game
+  records and ideas are fine to derive from, the author's prose is not ours to reproduce:
+  attribute the source, don't copy text into the repo or the product; (4) Wayback coverage
+  is uneven — HTML pages usually captured, linked downloads (game files, images carrying
+  diagrams) often not; missing attachments are the expected case, not a blocker, since
+  prose is the target.
+- **Ships as:** any winning term deploys through its consumer's existing path (heuristic =
+  `easy` tier; AE11/AE24 = all MCTS tiers). The candidate list seeds future AE drafts.
 - **Log:** —
