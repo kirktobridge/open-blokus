@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Duo ladder step 3: extreme (500 iters, beam 20, samples 48) vs hard (950 iters, beam 16) — the suspected inversion, hard out-searches extreme on Duo",
+  "variant": "duo",
+  "seats": [
+    { "name": "extreme", "strategy": "mcts", "options": { "iterations": 500, "beam": 20, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutSamples": 48 } },
+    { "name": "hard", "strategy": "mcts", "options": { "iterations": 950, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

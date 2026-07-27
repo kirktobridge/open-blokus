@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Duo beam bracket (medium regime): beam 24 vs shipped beam 6 @ 250 iters — brackets the optimum between the winning 16 and the losing 42",
+  "variant": "duo",
+  "seats": [
+    { "name": "b24", "strategy": "mcts", "options": { "iterations": 250, "beam": 24, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } },
+    { "name": "b6", "strategy": "mcts", "options": { "iterations": 250, "beam": 6, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

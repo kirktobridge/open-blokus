@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Duo ladder step 2: hard (950 iters, beam 16) vs retuned medium (250 iters, beam 16)",
+  "variant": "duo",
+  "seats": [
+    { "name": "hard", "strategy": "mcts", "options": { "iterations": 950, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } },
+    { "name": "medium-b16", "strategy": "mcts", "options": { "iterations": 250, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

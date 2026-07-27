@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Duo beam sweep (hard regime): beam 48 vs shipped beam 16, both @ 950 iters (the 2000 ms Duo equivalent, Phase 1)",
+  "variant": "duo",
+  "seats": [
+    { "name": "b48", "strategy": "mcts", "options": { "iterations": 950, "beam": 48, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } },
+    { "name": "b16", "strategy": "mcts", "options": { "iterations": 950, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

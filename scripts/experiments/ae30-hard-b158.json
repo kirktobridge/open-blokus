@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Duo beam sweep (hard regime): beam 158 (F8's iters/6 at Duo's measured 950 iters) vs shipped beam 16",
+  "variant": "duo",
+  "seats": [
+    { "name": "b158", "strategy": "mcts", "options": { "iterations": 950, "beam": 158, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } },
+    { "name": "b16", "strategy": "mcts", "options": { "iterations": 950, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Phase 3 Duo weight ablation: no-block (block=0) vs full heuristic {size:10,frontier:3,center:1,block:2}",
+  "variant": "duo",
+  "seats": [
+    { "name": "full", "strategy": "heuristic" },
+    { "name": "no-block", "strategy": "heuristic", "options": { "block": 0 } }
+  ]
+}

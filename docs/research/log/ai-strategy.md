@@ -1071,3 +1071,106 @@ catch before a track starts tuning against itself. No shipped default changed, s
 replication or staleness debt is incurred by this run. Timing note for sizing later
 Duo work: extreme ≈ 20 s/game at 500 iters (n=200 ≈ 67 min/pairing, single-threaded);
 the heuristic ladder is seconds.
+
+---
+
+### Run Y — Duo bot re-tune: do the Classic-tuned beam and heuristic weights transfer to 14×14? (AE30)
+
+**Date:** 2026-07-27 · **Config:** `scripts/experiments/ae30-phase1.ts`,
+`ae30-{medium-b16,medium-b42,medium-b24,hard-b48,hard-b158}.json`,
+`ae30-ladder-*.json`, `ae30-w-*.json`, driver `ae30-sweep.sh`.
+All arena runs are Duo 1v1, fixed-iteration (shardable; see the substitution note below).
+
+**Phase 1 — measurement (seeds 42/43/44, heuristic self-play).**
+
+| | Classic (4p, 20×20) | Duo (2p, 14×14) |
+|---|---|---|
+| game length | 74 plies | 31 plies |
+| branching, peak | 781 @ ply 12 | **950 @ ply 4** |
+| medium — iters/move @ 500 ms | 39 | **247** |
+| hard — iters/move @ 2000 ms | 155 | **955** |
+| extreme — ms/move @ 500 iters | 5973 | 1549 |
+
+`iters/beam` drift Duo vs Classic: medium **6.4×**, hard **6.2×** (Phase-2 gate was >2×).
+
+**Phase 2 — beam sweep.** Screen n=200/matchup (directional, M1); confirmation n=600
+on independent seeds (base-seed offset 100, no overlap with the screen).
+
+| stage | matchup | n | game-share | Wilson 95% CI |
+|---|---|---|---|---|
+| screen | medium b16 vs b6 | 200 | 64.2% | [57.4, 70.6] |
+| screen | medium **b42** vs b6 (*F8's iters/6*) | 200 | 41.0% | [34.4, 47.9] |
+| screen | hard b48 vs b16 | 200 | 48.8% | [41.9, 55.6] |
+| screen | hard **b158** vs b16 (*F8's iters/6*) | 200 | 18.0% | [13.3, 23.9] |
+| bracket | medium b24 vs b6 | 200 | 54.2% | [47.3, 61.0] |
+| **confirm** | medium **b16 vs b6** | 600 | **58.6%** | **[54.6, 62.5]** |
+| pooled | medium b16 vs b6 | 800 | 60.0% | [56.6, 63.3] |
+
+**Phase 2b — ladder monotonicity (criterion (a)), n=600 each, seeds offset 500.**
+
+| step | matchup | game-share | Wilson 95% CI | verdict |
+|---|---|---|---|---|
+| 1 | medium-b16 vs easy | 95.8% | [93.8, 97.1] | clear |
+| 2 | hard vs medium-b16 | 76.1% | [72.5, 79.3] | clear |
+| 3 | **extreme vs hard** | **49.8%** | **[45.8, 53.8]** | **not clear — flat** |
+
+**Phase 3 — weight ablation (heuristic vs heuristic, 50 games × 12 seeds).**
+
+| arm | n | game-share vs full | Wilson 95% CI |
+|---|---|---|---|
+| **no-block** (`block: 0`) | 600 | **75.7%** | [72.1, 78.9] |
+| no-block, replication (seeds 500+) | 600 | 74.9% | [71.3, 78.2] |
+| no-block, pooled | 1200 | **75.3%** | [72.8, 77.6] |
+| no-center (`center: 0`) | 600 | 53.0% | [49.0, 57.0] |
+| frontier-10 | 600 | 53.2% | [49.2, 57.2] |
+
+**Substitution note (stated, not glossed).** The ladder steps run each tier at the
+*fixed iteration count Phase 1 measured for its Duo time budget* (medium 250, hard 950;
+extreme is fixed-iteration already), not at the shipped `timeBudgetMs`. Time-budgeted
+seats are machine-dependent and cannot be sharded or reproduced from a log — the same
+constraint Run X recorded. This makes the ladder reproducible at the cost of pinning
+throughput to this machine; a wall-clock-controlled ladder would be a different run.
+
+**Read.** Three of the entry's own premises did not survive contact.
+
+1. **Branching does not collapse on Duo — it peaks higher** (950 vs Classic's 781).
+   The hypothesis attributed the `iters/beam` drift to collapsing branching; the drift
+   is real (6.4×/6.2×) but comes entirely from the *other* input: 31-ply games mean
+   rollouts terminate far sooner, so the same millisecond budget buys ~6× the iterations.
+   Conclusion survived, stated mechanism did not.
+2. **F8's `beam ≈ iters/6` does not extrapolate.** It prescribes beam 42 (medium) and
+   158 (hard) at Duo's measured iteration counts; both *lose*, 158 catastrophically
+   (18.0%). Yet medium's shipped beam 6 genuinely is too small — 16 beats it CI-clear
+   at n=600, and the bracket completes a unimodal curve 6 → **16** → 24 → 42. The
+   optimum sits near 16 at *both* 250 and 950 iterations, so beam tracks something
+   other than iteration count on this board. F8's rule is Classic-local, not a law.
+3. **`block` is not more valuable in Duo — it is actively harmful.** The entry reasoned
+   that corner-denial against one decisive opponent should matter *more* than against
+   three diffuse ones. Measured, deleting the term wins 75.3% pooled over n=1200. This
+   is the largest single effect in the run, and it is the opposite of the prediction.
+   `center` and `frontier` are inconclusive at n=600 — F2's Classic reading ("`center`
+   ≈ noise") transfers unchanged.
+
+Criterion (a) **fails at the top step**: extreme and hard are statistically
+indistinguishable on Duo (49.8%, CI spans 50). Phase 1 gives the mechanism — hard
+completes **955** iterations per move inside its 2000 ms budget while extreme is pinned
+to a fixed **500**, so on a 14×14 board the tier above searches *less*. This is not
+caused by the beam change (it reproduces with hard at its inherited beam 16); it is
+extreme's fixed iteration count being a Classic-scoped constant.
+
+**Deployment constraint found while measuring.** `mcts.ts` reads the module constant
+`WEIGHTS` directly for beam ordering (:193) and the rollout policy (:422). A per-variant
+weight vector is therefore **not** a config change — it needs weights threaded through
+`MctsConfig`. Phase 3's win is measured at the heuristic level (the `easy` tier and the
+move-ordering/rollout signal); carrying it into medium/hard/extreme requires that code
+change first, and a re-measurement after it.
+
+**Decision.** Split, and deliberately not closed as a single verdict — criterion (b) is
+met twice over while pre-registered criterion (a) fired its fail condition:
+- **adopt** medium beam 6 → 16 on Duo (58.6% at n=600, replicated across two independent
+  seed batches, lower bound 54.6% > the 52% bar);
+- **adopt** `block: 0` on Duo at the heuristic level (75.3% pooled, n=1200, replicated);
+- **hold** `center` and `frontier` at their Classic values (inconclusive);
+- **hold** hard's beam 16 (48 is a coin-flip, 158 loses) — it transfers unchanged;
+- the extreme/hard flat step is a **new** defect with a named mechanism, not a result
+  this entry can absorb; it needs its own entry and its own pre-registered bar.

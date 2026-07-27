@@ -230,6 +230,12 @@ per-tier beams are **Classic numbers**, and *both* of the rule's inputs move on 
 two-color board — branching collapses while the ms-budgeted tiers complete more
 iterations per move, pushing `iters/beam` up. Duo's tiers are therefore likely
 *under*-beamed, the mirror image of the break above and equally invisible. See AE30.
+**Measured, and the rule did not survive the trip** ([F21](#f21), Run Y): Duo's tiers
+*are* under-beamed (medium 6 → 16 is a replicated win), but `beam ≈ iters/6` predicts
+the wrong beams there by a wide margin — 42 and 158 both lose, 158 catastrophically —
+and Duo's optimum sits near 16 at both 250 and 950 iterations, i.e. it does not scale
+with iterations at all. Branching also does **not** collapse on Duo; it peaks higher
+than Classic. Read the ratio rule as a **Classic-local fit**, not a scaling law (M6).
 
 ### F9 — RAVE / AMAF value sharing does not buy strength in Blokus MCTS
 `replicated` (no-win) **(Classic)**. At **matched iterations** (150 iters, beam 16, rolloutDepth 12),
@@ -366,6 +372,52 @@ tiers were placed; shipped `medium`/`hard` are time-budget and machine-dependent
 their placement needs a wall-clock-controlled batch and is **unmeasured**. Standing
 readout: `npm run arena:pentobi -- --variant=duo`, replay-verified (zero mapping throws
 across 1400 bridged games). Run X; closed [AE29](backlog/ai-engine.md) won.
+
+### F21 — Duo's `medium` beam should be 16, not 6 — and F8's `beam ≈ iters/6` rule is Classic-local
+`replicated` **(duo)** — two independent seed batches agree (screen n=200: 64.2%
+[57.4, 70.6]; confirmation on non-overlapping seeds n=600: **58.6%** [54.6, 62.5], clearing
+the pre-registered 52% lower-bound bar; pooled n=800: 60.0% [56.6, 63.3]). Raising the
+`medium` tier's beam from the Classic-inherited 6 to **16** is a large Duo win at matched
+iterations. **But the rule that predicted it is wrong.** [F8](#f8)'s `beam ≈ iters/6`
+prescribes beam **42** for Duo `medium` (250 iters) and **158** for `hard` (950 iters);
+both *lose* — 42 at 41.0% [34.4, 47.9], 158 at 18.0% [13.3, 23.9]. A beam-24 bracket
+completes a unimodal curve **6 → 16 (peak) → 24 (54.2%) → 42 (loses)**, and `hard`'s
+optimum is also near its inherited 16 (48 is a coin-flip at 48.8%). So the optimum sits
+near 16 at *both* 250 and 950 iterations: **on Duo, beam does not track the iteration
+count at all**, which is the whole content of F8's rule. Treat `beam ≈ iters/6` as a
+Classic-local fit (M6), not a scaling law. Mechanism note: the `iters/beam` drift that
+motivated the sweep is real (medium 6.4×, hard 6.2× vs Classic) but *not* for the reason
+[AE30](backlog/ai-engine.md) hypothesized — Duo branching does not collapse, it peaks
+**higher** than Classic (950 @ ply 4 vs 781 @ ply 12); the drift comes from 31-ply games
+letting rollouts terminate sooner, so a fixed ms budget buys ~6× the iterations. Run Y.
+
+### F22 — Blokus Duo's heuristic is better with corner-denial (`block`) switched off entirely
+`replicated` **(duo)** — two independent seed batches (75.7% [72.1, 78.9] and 74.9%
+[71.3, 78.2]; pooled **75.3%** [72.8, 77.6], n=1200). Deleting the `block` term
+(`opponentCornersDenied`, Classic weight 2) from the heuristic wins ~3:1 against the full
+Classic weight vector on Duo. This is the **largest single effect** measured on the variant
+and it **inverts the predicted direction**: the hypothesis was that denial should matter
+*more* against one decisive opponent than against three diffuse ones. `center` (53.0%
+[49.0, 57.0]) and `frontier=10` (53.2% [49.2, 57.2]) are inconclusive at n=600, so F2's
+Classic reading — `center` ≈ noise — transfers unchanged. **Scope, load-bearing:** measured
+heuristic-vs-heuristic, i.e. it establishes the claim for the `easy` tier and for the
+move-ordering/rollout *signal*, **not** for the MCTS tiers' playing strength. `mcts.ts`
+reads the module constant `WEIGHTS` directly ([:193](../../src/game/ai/mcts.ts) beam
+ordering, [:422](../../src/game/ai/mcts.ts) rollout policy), so a per-variant weight vector
+is a **code change**, not a config change — and needs re-measuring once threaded. Run Y.
+
+### F23 — The Duo ladder is flat at the top: `hard` and `extreme` are statistically identical
+`significant` **(duo)** — n=600, **49.8%** [45.8, 53.8], one-sided p=0.53. The bottom of
+the ladder is healthy (medium-b16 vs easy 95.8% [93.8, 97.1]; hard vs medium-b16 76.1%
+[72.5, 79.3]), but the top step does not exist: `extreme` gives players nothing over
+`hard` on Duo. **Mechanism is measured, not guessed:** `hard` completes **955** iterations
+per move inside its 2000 ms budget on a 14×14 board, while `extreme` is pinned to a fixed
+**500** — so the tier advertised as strongest searches roughly *half* as much as the tier
+below it. This is a Classic-scoped constant (`iterations: 500` was sized against Classic
+throughput, where extreme's 500 beats hard's 155) leaking into a variant it was never
+measured on — M6 again, and the second time in two runs that a `difficulty.ts` constant
+has failed to transfer. Independent of the F21 beam change: it reproduces with `hard` at
+its inherited beam 16. Run Y.
 
 ---
 

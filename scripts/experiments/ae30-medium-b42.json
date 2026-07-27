@@ -1,0 +1,8 @@
+{
+  "title": "AE30 Duo beam sweep (medium regime): beam 42 (F8's iters/6 at Duo's measured 250 iters) vs shipped beam 6",
+  "variant": "duo",
+  "seats": [
+    { "name": "b42", "strategy": "mcts", "options": { "iterations": 250, "beam": 42, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } },
+    { "name": "b6", "strategy": "mcts", "options": { "iterations": 250, "beam": 6, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

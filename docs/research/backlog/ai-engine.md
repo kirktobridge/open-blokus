@@ -21,26 +21,36 @@ test (product P21) fails CI if any ID here is missing or terminal.
    is now known to be mostly the iterations shorter playouts buy (not per-move smarts),
    so a prior has to add signal a cheap size-max sampler doesn't. **AE32**'s concept
    mining is the natural feed for its design phase — read before fixing the feature set.
-2. **AE30** — re-tune the Duo bot (beam:iterations + heuristic weights). Unblocked
-   2026-07-23 by AE29 closing `won`: the Duo ladder now has an external readout, and
-   [F20](../FINDINGS.md) gives it a concrete target — our whole shipped ladder tops out
-   at **Pentobi Duo L1**, about one level below its Classic placement. The largest
-   known gap on any *shipped-to-players* configuration, and the readout to measure it
-   against already exists.
-3. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
+2. **AE33** — restore the Duo ladder's top step. Carved out of AE30's close: `extreme`
+   and `hard` are statistically identical on Duo (49.8%, [F23](../FINDINGS.md)) because
+   `hard` completes 955 iters/move against `extreme`'s fixed 500. Cause already measured,
+   so this is a sweep rather than an investigation — and it is a *shipped tier doing
+   nothing for players*, which outranks further Classic engine work.
+3. **AE34** — does `block: 0` survive into the Duo MCTS tiers? Cheap, and it decides
+   P63's last slice: F22's 75.3% is a *heuristic-level* result, so shipping it to the
+   tiers without measuring would read the finding past its stated scope. **Blocked on
+   P63(b)** — the `MctsConfig` weights seam — so sequence it after that lands.
+4. **AE31** — Duo reward model (placed-square leader ≠ Duo winner). Now the last
+   untested member of the trio of Classic-scoped constants F20 named; AE30 falsified
+   the beam one and retuned the weights, leaving the scoring proxy. Its readout
+   (`arena:pentobi --variant=duo`) exists.
+5. **AE17** — root-parallel workers: cheapest compute multiplier once per-sim
    quality is fixed; no deployment changes needed.
-4. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
+6. **AE27** — post-bitboard beam:iters re-validation: cheap phase-1 profiling that
    guards the shipped tiers against F12's ~2.5× throughput shift (staleness sweep of
-   F8/AE10).
-5. **AE15 replication** — second independent seed pool confirming F15's w=0.25
+   F8/AE10). Note: **Classic-scoped and unaffected by AE30** — F21 falsified
+   `beam ≈ iters/6` on Duo only; the Classic fit AE27 re-validates still stands.
+7. **AE15 replication** — second independent seed pool confirming F15's w=0.25
    game-share guard (≥48% lower bound), owed because w=0.25 now backs a shipped default
    (tiers + P36 base default). On agreement, upgrades F15 to `replicated` and clears
    **P36's** `replication-pending` only — P37's is a distinct debt (F18/AE28,
    `rolloutSamples` 48 vs 6, a Run V re-batch). Cheap: one re-run of Run S's config on
    fresh seeds.
-6. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
+8. **AE28 replication** — second independent seed pool on Run V's config (48 vs 6 at
    fixed 500 iters); clears **P37's** `replication-pending`, upgrades F18 to
-   `replicated`. Compute-heavy (~150 CPU-h at n=600) — schedule deliberately.
+   `replicated`. Compute-heavy (~150 CPU-h at n=600) — schedule deliberately. Scope
+   note: this is the *Classic* extreme regime; Duo's `rolloutSamples` optimum rides on
+   AE33's iteration sweep, not on this batch.
 
 ---
 
@@ -873,7 +883,38 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE30 — Re-tune the Duo bot: beam:iterations and the heuristic weights
 - **Drafted:** 2026-07-21
-- **Status:** proposed — **dependency-ready** as of 2026-07-23: AE29 closed `won`
+- **Status:** won (Run Y / [F21](../FINDINGS.md), [F22](../FINDINGS.md), [F23](../FINDINGS.md))
+  — the transfer question is decided: the Classic constants do **not** all hold on 14×14.
+  Two adoptions cleared the 52% bar, both replicated on independent seed batches: `medium`
+  beam **6 → 16** (58.6% at n=600, lower bound 54.6%) and heuristic **`block: 2 → 0`**
+  (75.3% pooled, n=1200). `hard`'s beam 16, `center` and `frontier` transfer unchanged.
+  **Criterion (a) failed** — the Duo ladder is flat at the top (`extreme` vs `hard` 49.8%,
+  CI [45.8, 53.8]) — and is carved out to **AE33** rather than absorbed here: the flat step
+  reproduces with `hard` at its inherited beam 16, so it is a pre-existing defect this run
+  *found* (extreme's fixed 500 iters is a Classic-scoped constant; `hard` completes 955/move
+  on Duo), not one the retune caused. It needs its own pre-registered bar.
+  Closed `won` on that split by explicit decision, 2026-07-27 — recorded because
+  reinterpreting a pre-registered fail after seeing results is exactly what M2 guards.
+- **Deploys as:** two named retune-in-place tasks, **both blocked on a code change** —
+  `mcts.ts` reads the module constant `WEIGHTS` directly ([:193](../../../src/game/ai/mcts.ts)
+  beam ordering, [:422](../../../src/game/ai/mcts.ts) rollout policy), so a per-variant
+  weight vector is not a config edit. (1) *Per-variant beam* in
+  [difficulty.ts](../../../src/client/ai/difficulty.ts): Duo `medium` beam 16. (2) *Per-variant
+  heuristic weights*: thread a weight vector through `MctsConfig`, then set Duo `block: 0`
+  — and **re-measure**, since F22 is established at the heuristic level only, not for the
+  MCTS tiers' playing strength. Both want a product entry via /triage → /ship; neither is
+  shipped by this close.
+- **Staleness sweep:** [F8](../FINDINGS.md) amended in place — its `beam ≈ iters/6` rule is
+  now marked a Classic-local fit, not a scaling law (F21 falsified it on Duo). AE27
+  (post-bitboard beam:iters re-validation) is **Classic-scoped and unaffected**. F18/AE28
+  (`rolloutSamples` 48) was measured on Classic `extreme`; Duo `extreme` is implicated by
+  F23's iteration-count problem, so AE33 covers it rather than this entry.
+- **Superseded premises (recorded, not quietly dropped):** two of this entry's own
+  hypotheses were falsified by its measurements — Duo branching does **not** collapse (it
+  peaks *higher* than Classic, 950 vs 781), and `block` is **not** more valuable against a
+  single decisive opponent (deleting it wins 3:1). Conclusions survived; the stated
+  reasoning did not. See Run Y's **Read**.
+- ~~**Status:** active (Phase 1 measurement, started 2026-07-27)~~ — **dependency-ready** as of 2026-07-23: AE29 closed `won`
   (Run X / [F20](../FINDINGS.md)), so the M5 anchor exists and the readout to tune
   against is `npm run arena:pentobi -- --variant=duo`. F20 also sets the target: the
   shipped ladder tops out at **Pentobi Duo L1**, ~one level below its Classic placement,
@@ -921,8 +962,9 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** moderate compute (three phases; phase 2 only fires on measured drift),
   no engine change beyond config. Risk: retuning per variant doubles the tier surface — if
   phase 1 shows no drift, close early and record the transfer as a finding rather than
-  shipping a second constant set.
-- **Log:** —
+  shipping a second constant set. *(Outturn: the drift was real and the "no engine change
+  beyond config" assumption was wrong — see `Deploys as:`.)*
+- **Log:** Run Y → [F21, F22, F23](../FINDINGS.md).
 
 ### AE31 — Duo reward model: the placed-square leader is not the Duo winner
 - **Drafted:** 2026-07-21
@@ -1034,4 +1076,87 @@ test (product P21) fails CI if any ID here is missing or terminal.
   prose is the target.
 - **Ships as:** any winning term deploys through its consumer's existing path (heuristic =
   `easy` tier; AE11/AE24 = all MCTS tiers). The candidate list seeds future AE drafts.
+- **Log:** —
+
+### AE33 — Duo's top ladder step is flat: `extreme` must out-search `hard` on 14×14
+- **Drafted:** 2026-07-27
+- **Status:** proposed — **dependency-ready**. Carved out of [AE30](#ae30) at its close
+  (Run Y / [F23](../FINDINGS.md)) rather than absorbed, because AE30's criterion (a) is a
+  *fail* it cannot close over and the fix is a different constant than the ones AE30 tuned.
+- **Variant:** duo — the constant at fault is Classic-scoped and only misbehaves at 14×14.
+- **Objective:** restore a real top step on the Duo ladder. Measured: `extreme` vs `hard`
+  is **49.8%**, CI [45.8, 53.8] at n=600 — statistically identical, so the tier players are
+  told is strongest gives them nothing. The bottom of the ladder is healthy (95.8%, 76.1%).
+- **Hypothesis:** the cause is measured, not guessed. `extreme` is pinned to a fixed
+  `iterations: 500` while `hard` completes **955** iterations per move inside its 2000 ms
+  budget on Duo (Run Y phase 1) — the top tier searches roughly *half* as much as the one
+  below it. On Classic the same constants are fine (extreme 500 vs hard 155), which is
+  exactly M6: a constant sized against Classic throughput leaking into a variant it was
+  never measured on. Raising Duo's `extreme` iteration count should restore the step.
+  Secondary: F18's `rolloutSamples: 48` was measured on *Classic* extreme at 500 iters
+  (AE28); at a different Duo iteration count its optimum may move, so sweep it jointly
+  rather than inheriting it.
+- **Method:** phase 1 — latency budget first: extreme is the no-time-budget tier, but
+  Run Y measured it at 1549 ms/move on Duo vs 5973 ms on Classic, so there is headroom;
+  fix the acceptable Duo move-time cap before sweeping, so the answer is shippable.
+  Phase 2 — sweep Duo `extreme` iterations over {1000, 1500, 2000} × `rolloutSamples`
+  {6, 48} against `hard` (950 iters, beam 16), fixed-iteration configs so shards pool
+  (`scripts/experiments/ae33-*.json`, driver reuses `ae30-sweep.sh`). Phase 3 — re-run the
+  full adjacent-step ladder at the winner to confirm monotonicity end-to-end, and report
+  the winner's placement on the AE29 Pentobi Duo ladder (`npm run arena:pentobi --
+  --variant=duo`) so the gain is anchored externally, not just self-relatively.
+- **Success criteria:** (a) `extreme` beats `hard` with Wilson lower bound > **52%** over
+  ≥600 pooled Duo games, *and* (b) the retuned tier's p95 move time stays under the cap
+  fixed in phase 1 — a tier that wins by taking 30 s/move is not shippable. (c) The full
+  ladder re-run must leave every adjacent step CI-clear of 50% (AE30's criterion (a),
+  inherited and still owed).
+- **Power:** n=600 → MDE 56.0% (`stats.py --power --bar 52 --n 600`). A ~2× iteration
+  increase is a large lever by F6 (~+5 pts per budget doubling) but not obviously ≥56%,
+  so plan to pool a second batch to n≥1200 rather than assume one batch settles it.
+- **Cost / risk:** moderate — Duo extreme is ~1.5 s/move, so a 2000-iter arm is ~4× that;
+  budget accordingly. Risk: raising iterations trades directly against move latency, and
+  extreme is already excluded from blitz for that reason; if no setting clears (a) inside
+  the (b) cap, the honest outcome is **collapsing the Duo ladder to three tiers**, which
+  is a product decision, not a research one — surface it rather than shipping a tier that
+  does nothing.
+- **Log:** —
+
+### AE34 — Does `block: 0` survive into the MCTS tiers on Duo?
+- **Drafted:** 2026-07-27
+- **Status:** proposed — blocked on **P63** scope (b), the `weights` seam in `MctsConfig`.
+  Not runnable before it: [mcts.ts](../../../src/game/ai/mcts.ts) reads the module constant
+  `WEIGHTS` directly (:193 beam ordering, :422 rollout policy), so there is no way to give a
+  search a different weight vector today. Stated as a blocker rather than a caveat because
+  it is a code change in another skill's tree, not an arena config.
+- **Variant:** duo — the term's measured behaviour is variant-specific ([F22](../FINDINGS.md)).
+- **Objective:** decide whether Duo's `medium`/`hard`/`extreme` tiers should also drop the
+  `block` term, or whether F22's win is confined to the greedy chooser.
+- **Hypothesis:** genuinely open, which is why it needs its own bar rather than an
+  assumption. F22 is a **75.3% pooled (n=1200, replicated)** result measured
+  heuristic-vs-heuristic — that establishes the `easy` tier and the *signal* the beam and
+  rollout policy read, not tier playing strength. Two mechanisms pull opposite ways: a bad
+  move-ordering prior costs a search less than it costs a greedy chooser (the search
+  corrects it), which would shrink the effect; but the same prior also shapes every rollout,
+  which would preserve or amplify it. F17's framing — a prior must beat *width* — says the
+  first effect is the one to expect, so a null here is a real possible outcome and is worth
+  recording either way.
+- **Method:** head-to-head at fixed iterations (shardable; `ae30-sweep.sh` drives it
+  unchanged), Duo 1v1, `block: 0` vs `block: 2` at each tier's measured Duo iteration count
+  from Run Y (medium 250, hard 950), holding the F21 beams (medium 16, hard 16). Configs
+  `scripts/experiments/ae34-*.json`. Seed-average, and pool a second independent seed batch
+  before any shipped default moves. Report `extreme` only after **AE33** settles its
+  iteration count — measuring a tier that is about to be retuned wastes the batch.
+- **Success criteria:** adopt Duo `block: 0` for a tier only if it clears **52%** game-share
+  (Wilson lower bound) vs `block: 2` over ≥600 pooled Duo games *at that tier*. Per-tier, not
+  pooled across tiers — F17/F18 already showed a knob's optimum is budget-regime-dependent,
+  so one verdict for all tiers would be the same mistake in a new place.
+- **Power:** n=600 → MDE 56.0% (`stats.py --power --bar 52 --n 600`). F22's heuristic-level
+  effect is enormous (75.3%), so if it transfers at even half strength n=600 is ample; the
+  risk is the *null* case, where a true ~53% would need n≈1066 to clear. Plan the second
+  batch as the default, not the exception.
+- **Cost / risk:** low compute (Duo medium ≈ 19 s/game, hard ≈ 4× that; ~2 and ~8 CPU-h per
+  600-game arm). Risk: the answer may differ by tier, which is a legitimate outcome and the
+  reason the bar is per-tier — but it would leave Duo carrying two weight vectors, so record
+  the simplest defensible configuration rather than the highest-scoring one per tier.
+- **Deploys as:** [P63](../../product/BACKLOG.md) scope (c), which is gated on this entry.
 - **Log:** —
