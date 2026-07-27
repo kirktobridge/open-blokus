@@ -39,6 +39,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
+5. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+   dependency-free — the tournament engine already runs in the browser, and only the Elo
+   board waits on P62/P61 — but it is much the largest build of the ready set, so it sits
+   last until something above it clears.
 
 ---
 
@@ -307,24 +311,23 @@ this epic owns the user-facing feature + its UX.
   change — tooling + a test. This slice: regenerate + commit the shards, artifact, staleness
   test, incremental driver; anchor-model refit later (decided with P61).
 
-### P61 — Surface bot strength ratings (difficulty picker + arena mode)
+### P61 — Surface bot strength ratings (difficulty picker)
 - **Drafted:** 2026-07-23
 - **Status:** proposed.
 - **Value:** the difficulty ladder reads as four opaque words today (easy/medium/hard/
   extreme); research AE21/[F19](../research/FINDINGS.md) measured a champion-anchored Elo
   per bot, so showing each tier its rating makes difficulty legible as *strength*
   ("Medium ~1680", "Extreme ~2060") and turns an invisible research artifact into a
-  player-facing feature. A future GUI arena mode (pit bots — eventually yourself — against
-  the frozen pool with a live Elo board) is a natural engagement surface on the same data.
+  player-facing feature. An in-app arena that pits bots against each other is a natural
+  engagement surface on the same data — split out as
+  [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other).
 - **Scope:**
   - *Near-term:* the difficulty picker shows each tier its rating, baked from the AE21 pool
     ladder (easy = heuristic 1549; medium/hard/extreme = MCTS tiers up toward champion
     2056). Static display, no client-side computation.
-  - *Future/extension:* a GUI-accessible **arena mode** — in-app round-robins, live Elo
-    board, human-game folding. The engine already computes it (`runRoundRobin`/
-    `bradleyTerryElo` in [arena.ts](../../src/game/ai/arena.ts), `pool.json`,
-    `scripts/experiments/ae21-pool.ts`); the work is UI + human-game plumbing. Larger —
-    split into its own entry when picked up.
+  - *Future/extension:* a GUI-accessible **arena mode** is now
+    [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other) — it consumes this
+    entry's ratings but ships independently of them.
   - *Variant scope (M6):* Elo is scoped to its `(variant × pool)`, so Classic and Duo
     ratings are separate, **non-comparable** scales. Show the Classic ladder **only in
     Classic games**; on Duo show `unrated` / `—` until a Duo ladder exists. A Duo ladder is
@@ -335,6 +338,48 @@ this epic owns the user-facing feature + its UX.
   hash-guarded ratings rather than hardcoding); research AE21/[F19](../research/FINDINGS.md)
   (the measured ratings, Classic); relates to P13 (tiers-as-strength-bands, made visible). No
   engine change for the near-term display.
+
+### P64 — In-app arena (matchup lab: pit bots against each other)
+- **Drafted:** 2026-07-27
+- **Status:** proposed.
+- **Value:** the arena is the most interesting thing the project has built and it is
+  reachable only from a terminal. Letting a player configure a matchup — seat A vs
+  seat B, tier/strategy per seat, variant, seed, N games — and watch it play turns
+  the research harness into an engagement surface: "which bot actually beats which"
+  is a question players ask about a difficulty picker and can currently only be told,
+  never shown. Split out of P61's *Future/extension* bullet, as that entry invites.
+- **Scope:**
+  - **Bot-only, by definition.** The arena is a *matchup lab*, not a play mode: every
+    seat is an engine. This is what keeps it a batch harness with a replay viewer
+    instead of a second live-game loop. Human-vs-the-ladder is a different product —
+    a rival roster you beat in order — and belongs to
+    [P18](#p18--bot-personas)'s campaign/completion-roster framing, not here.
+  - *Setup:* pick variant, per-seat contestant (difficulty tiers via
+    [difficulty.ts](../../src/client/ai/difficulty.ts) + the raw strategies
+    `randomStrategy` / `greedySizeStrategy` / `heuristicStrategy`), seed, and game
+    count. Seeded so a matchup is reproducible and shareable.
+  - *Run + watch:* single game replays on the real board at a stepped pace
+    (reuse the existing board/`PlacedLayer` render); N-game batch reports
+    win/score/margin rows from `runTournament`. `runRoundRobin` +
+    `bradleyTerryElo` for a pool table is the stretch, not the first milestone.
+  - *Threading:* arena play must not block the UI. [arena.ts](../../src/game/ai/arena.ts)
+    is import-clean of `node:` and runs in the browser as-is (verified 2026-07-27 with a
+    positive control against [arena.cli.ts](../../src/game/ai/arena.cli.ts), which is the
+    Node-only half); the existing [mctsWorker.ts](../../src/client/ai/mctsWorker.ts) seam is
+    shaped for one bot in a live game, so batch runs need their own worker entry — that,
+    not the arena itself, is the porting work. Headless-only means it never contends
+    with input.
+  - *Variant scope (M6):* both. Classic and Duo matchups both run today
+    ([P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped) made the
+    arena variant-aware). **Elo display is the part that is not both:** ratings are
+    scoped to their `(variant × pool)` and non-comparable, and no Duo ladder exists
+    yet — so a Duo matchup shows head-to-head win rates only, `unrated` for Elo,
+    until P61's Duo-ladder sub-task runs. Head-to-head results need no ladder at all.
+- **Depends on:** P61 (rating display + the Duo-ladder sub-task) for any Elo surface;
+  P62 (ladder artifact) for where committed ratings are read from. Neither gates the
+  head-to-head matchup lab, which can ship first. Sibling, not dependency:
+  [P18](#p18--bot-personas) owns the human-facing rival ladder. No engine change —
+  UI + a batch worker.
 
 ### P36 — Retune MCTS tiers with rankRewardWeight 0.25 (deploy F15)
 - **Status:** shipped — `replication-pending` — `DEFAULTS.rankRewardWeight` flipped
@@ -403,7 +448,12 @@ this epic owns the user-facing feature + its UX.
   UI picks rivals instead of tiers (tier still visible); **head-to-head rivalry
   records** — per-persona W/L persisted in the P15 store, surfaced at setup + win
   screen ("Greta leads you 4–2"). Future framing once tiers are strength contracts:
-  a **campaign/completion roster** — a fixed set of rivals to beat in order.
+  a **campaign/completion roster** — a fixed set of rivals to beat in order. This is
+  where *you vs the ladder* lives (a single-player campaign);
+  [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other)'s arena is bot-only
+  and deliberately excludes a human seat. The roster can now be **ordered by measured
+  Elo** from P62's committed ladder artifact rather than hand-authored by feel — that
+  data did not exist when this entry was drafted.
 - **Depends on:** P13 (tiers as strength contracts) + a settled top tier. Optional
   later research follow-up if we want to *verify* styles are distinct (would then
   get an AE entry).
