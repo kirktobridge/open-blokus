@@ -31,7 +31,11 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    it. First slice (artifact + staleness test) is cheap and reuses the existing shard cache.
 2. **P61** — surface bot strength ratings (difficulty-picker Elo). Ready once P62's artifact
    exists (the display consumes it): a cheap, visible legibility win with the data in hand.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+3. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
+   (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
+   pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
+   only (c) waits on AE34. Duo players are running the measured-worse settings today.
+4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
 
@@ -1560,6 +1564,46 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 - **Depends on:** [P20](#p20--variety-blokus-duo--blitz--shipped) M2b (playable Duo). The pacing
   check wants [P54](#p54--variant-aware-ai-harness-let-the-arena-play-duo--shipped)
   first — pacing has to be *measured* on a Duo board, which needs the arena.
+
+### P63 — Per-variant AI tier constants (Duo stops inheriting Classic's beam and weights)
+- **Drafted:** 2026-07-27
+- **Status:** proposed
+- **Value:** [AE30](../research/backlog/ai-engine.md) measured two Classic-tuned constants
+  that do **not** transfer to 14×14, and today Duo players get both of the losing settings:
+  the `medium` tier runs a beam of 6 where 16 wins 58.6% at n=600
+  ([F21](../research/FINDINGS.md), replicated), and the heuristic carries a `block` term
+  that *loses 3:1* on Duo — deleting it wins 75.3% over n=1200
+  ([F22](../research/FINDINGS.md), replicated). Neither can ship as a config edit, which is
+  why this is an entry and not a one-line tweak: **verified this session**,
+  [mcts.ts](../../src/game/ai/mcts.ts) reads the module constant `WEIGHTS` directly for beam
+  ordering (:193) and the rollout policy (:422), so there is no seam to pass a variant's
+  weights through. This is the deployment surface AE30's `won` close points at; without it
+  the research result is inventory.
+- **Scope:** three slices, deliberately independent — (a) and (b) ship without waiting on
+  research, (c) does not.
+  - **(a) Per-variant tier config.** `MCTS_TIERS`
+    ([difficulty.ts](../../src/client/ai/difficulty.ts)) reads through
+    [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
+    existing axis — `tunedFor(base, deltas, G)` / `VariantDeltas<T>` in
+    [tuning.ts](../../src/client/tuning.ts), **verified present this session** — with a Duo
+    delta of `medium.beam = 16`. Reuse, not new infra. Note the shape mismatch to settle at
+    build time: `tunedFor` keys off a `GameState`, while tier configs are chosen at seat-setup
+    time; pass the variant rather than widening the helper if that reads cleaner.
+  - **(b) A weights seam in the search core.** Add `weights` to `MctsConfig`, replacing the
+    two module-constant reads above; default to `WEIGHTS` so Classic behaviour is unchanged.
+    Contained by design — [heuristic.ts](../../src/game/ai/heuristic.ts) already takes weights
+    as a parameter (`heuristicStrategy(weights = WEIGHTS)`), so only the search core lacks the
+    seam. `tuning.ts` is **not** reusable here: it lives in `src/client/` and the search core
+    is the pure rules-side tree, which cannot import from it.
+  - **(c) Duo `block: 0`** — gated on **AE34**, not on (b). F22 is measured
+    heuristic-vs-heuristic, so it establishes the `easy` tier and the move-ordering/rollout
+    *signal*; whether the term still hurts once a search sits on top of it is unmeasured.
+    Shipping (c) off F22 alone would be reading a finding past its stated scope.
+- **Depends on:** [AE30](../research/backlog/ai-engine.md) (`won`) for (a) and (b);
+  **AE34** for (c). Adjacent but not blocking:
+  [P13](#p13--ladder-calibration-policy-tiers-as-strength-contracts) would make `MCTS_TIERS`
+  an implementation detail behind measured strength bands — compatible with (a), and its
+  bands are worth re-asking per variant once this lands.
 
 ---
 
