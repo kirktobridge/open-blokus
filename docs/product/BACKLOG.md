@@ -27,8 +27,9 @@ to "what to build next." Refreshed by /ship on status flips + intake (see P22); 
 schema test (P21) fails CI if any ID here is missing or terminal.
 
 1. **P62** — Elo ladder artifact + recalibration policy: the committed, hash-guarded data
-   layer under the ratings. Dependency-ready (AE21 harness + Classic ladder exist); P61 reads
-   it. First slice (artifact + staleness test) is cheap and reuses the existing shard cache.
+   layer under the ratings. **In progress.** Dependency-ready (AE21 harness exists); P61 reads
+   it. Not cheap after all — the shard cache it was costed against is gone, so this slice
+   re-runs the pool and commits the shards.
 2. **P61** — surface bot strength ratings (difficulty-picker Elo). Ready once P62's artifact
    exists (the display consumes it): a cheap, visible legibility win with the data in hand.
 3. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
@@ -266,8 +267,11 @@ this epic owns the user-facing feature + its UX.
   current top tier for any actual new rung.
 
 ### P62 — Elo ladder artifact + recalibration policy (keep ratings in sync with the pool)
-- **Drafted:** 2026-07-23
-- **Status:** proposed.
+- **Drafted:** 2026-07-27 — re-verified against `src/`: the ladder is still prose-only
+  (no `2056`/`1796`/`1683` anywhere in `src/`, `scripts/`, `tests/`; positive control on
+  `champion` matched), and `bradleyTerryElo`/`pool.json`/the sweep scripts are as described.
+- **Status:** in-progress — building the artifact, the staleness test, **and** the
+  incremental driver in one slice.
 - **Value:** pool Elo is a *derived* artifact of `(variant × pool)` — once the pool changes,
   yesterday's ladder is silently wrong. Today it exists only as prose in a research log
   ([F19](../research/FINDINGS.md)), so P61's display has nothing machine-readable to read and
@@ -284,6 +288,12 @@ this epic owns the user-facing feature + its UX.
     pairs never re-run, refit via `ae21-pool.ts`, rewrite the artifact. ~5–40× cheaper than a
     full re-run (heuristic-class add ~1–2 CPU-h vs ~85 for the full pool; provisional-vs-a-few-
     anchors cheaper still, directional n≈40 with CIs on the artifact).
+    **Premise correction (verified 2026-07-27): the cache this was costed against did not
+    exist** — AE21's shards were written to an uncommitted, ungitignored outdir and are gone
+    (the only `.result` files on disk are the gitignored `.ae26-`/`.ae28-scratch/`). So the
+    driver's saving was unrealisable, and the recorded ladder was unreproducible. This slice
+    therefore **regenerates the full 7-member sweep and commits the shards**, which is what
+    makes the cache durable and the ~5–40× claim true from here on.
   - **Policy** (generalizes the pool.json champion note): any pool edit / new bot →
     recalibrate that variant's ladder before the artifact is trusted; champion/version bumps
     stay behind the existing "won experiment raises the ceiling" gate.
@@ -294,8 +304,8 @@ this epic owns the user-facing feature + its UX.
     provisional on add, full re-fit on version bumps. Decide when P61 is built.
 - **Depends on:** research AE21/[F19](../research/FINDINGS.md) (harness + first Classic ladder)
   + its sharding infra (`ae21-sweep`/`champion`/`pool`). **P61 depends on this.** No engine
-  change — tooling + a test. First slice: artifact + staleness test reusing the shard cache;
-  anchor-model refit later.
+  change — tooling + a test. This slice: regenerate + commit the shards, artifact, staleness
+  test, incremental driver; anchor-model refit later (decided with P61).
 
 ### P61 — Surface bot strength ratings (difficulty picker + arena mode)
 - **Drafted:** 2026-07-23
