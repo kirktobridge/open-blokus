@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "variant": "classic",
+  "pool": {
+    "file": "scripts/experiments/pool.json",
+    "fingerprint": "fnv1a64:66144095f05335e7",
+    "members": [
+      "champion",
+      "mcts-150",
+      "mcts-30",
+      "alphabeta-d2",
+      "heuristic",
+      "greedy-size",
+      "random"
+    ]
+  },
+  "provenance": {
+    "generated": "2026-07-27",
+    "source": "STANDIN - scratch data, real pool",
+    "shardDirs": [
+      "/tmp/claude-1000/-home-glamdring-open-blokus-open-blokus/72440821-e735-43d3-9acd-b7a79618378c/scratchpad/shards"
+    ],
+    "batchFiles": 3
+  },
+  "fit": {
+    "method": "bradley-terry-mm",
+    "centeredOn": 1500,
+    "prior": 0.5
+  },
+  "elo": {
+    "alphabeta-d2": 1719,
+    "heuristic": 1650,
+    "greedy-size": 1484,
+    "random": 1147
+  },
+  "ranking": [
+    "alphabeta-d2",
+    "heuristic",
+    "greedy-size",
+    "random"
+  ],
+  "anchors": {
+    "champion": "champion",
+    "incumbent": "heuristic"
+  },
+  "cells": [
+    {
+      "a": "alphabeta-d2",
+      "b": "heuristic",
+      "share": 0.6667,
+      "wins": 4,
+      "games": 6,
+      "ci": [
+        0.3,
+        0.9032
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "greedy-size",
+      "share": 0.8333,
+      "wins": 5,
+      "games": 6,
+      "ci": [
+        0.4365,
+        0.9699
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "random",
+      "share": 1,
+      "wins": 6,
+      "games": 6,
+      "ci": [
+        0.6097,
+        1
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "alphabeta-d2",
+      "share": 0.3333,
+      "wins": 2,
+      "games": 6,
+      "ci": [
+        0.0968,
+        0.7
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "greedy-size",
+      "share": 0.8333,
+      "wins": 5,
+      "games": 6,
+      "ci": [
+        0.4365,
+        0.9699
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "random",
+      "share": 1,
+      "wins": 6,
+      "games": 6,
+      "ci": [
+        0.6097,
+        1
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "alphabeta-d2",
+      "share": 0.1667,
+      "wins": 1,
+      "games": 6,
+      "ci": [
+        0.0301,
+        0.5635
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "heuristic",
+      "share": 0.1667,
+      "wins": 1,
+      "games": 6,
+      "ci": [
+        0.0301,
+        0.5635
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "random",
+      "share": 1,
+      "wins": 6,
+      "games": 6,
+      "ci": [
+        0.6097,
+        1
+      ]
+    },
+    {
+      "a": "random",
+      "b": "alphabeta-d2",
+      "share": 0,
+      "wins": 0,
+      "games": 6,
+      "ci": [
+        0,
+        0.3903
+      ]
+    },
+    {
+      "a": "random",
+      "b": "heuristic",
+      "share": 0,
+      "wins": 0,
+      "games": 6,
+      "ci": [
+        0,
+        0.3903
+      ]
+    },
+    {
+      "a": "random",
+      "b": "greedy-size",
+      "share": 0,
+      "wins": 0,
+      "games": 6,
+      "ci": [
+        0,
+        0.3903
+      ]
+    }
+  ]
+}

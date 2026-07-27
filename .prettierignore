@@ -2,3 +2,9 @@ dist
 coverage
 docs/boardgame.io
 package-lock.json
+
+# Generated + its evidence, not hand-edited (P62). The ladder artifact is written by
+# scripts/experiments/ae21-ladder.ts, which compares its output byte-for-byte against
+# the file on disk (`--check`); a reformat would make an up-to-date ladder look stale.
+src/game/ai/ladder/classic.json
+scripts/experiments/ae21-shards
