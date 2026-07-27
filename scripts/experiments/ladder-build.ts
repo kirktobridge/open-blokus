@@ -1,7 +1,7 @@
 /**
  * Generate a committed Elo ladder artifact from the `.result` shard cache (P62).
  *
- * The counterpart to `ae21-pool.ts`: same shards, same Bradley-Terry fit, same Wilson
+ * The counterpart to `pool-report.ts`: same shards, same Bradley-Terry fit, same Wilson
  * intervals (all via `lib/shards.ts` + `arena.ts`), but the output is the machine-
  * readable `src/game/ai/ladder/<variant>.json` that P61 reads and
  * `tests/ladder-artifact.test.ts` guards — rather than a table for a human.
@@ -10,7 +10,7 @@
  * edit without a recalibration fails CI instead of shipping stale ratings.
  *
  * Usage:
- *   vite-node scripts/experiments/ae21-ladder.ts <shard-dir> [<shard-dir> ...]
+ *   vite-node scripts/experiments/ladder-build.ts <shard-dir> [<shard-dir> ...]
  *     [--variant=classic] [--pool=scripts/experiments/pool.json] [--out=<path>]
  *     [--source="AE21 Run W2 re-run (P62)"] [--check]
  *
@@ -29,7 +29,7 @@ const flag = (name: string, fallback: string) =>
   argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 
 if (!dirs.length) {
-  console.error('usage: vite-node ae21-ladder.ts <shard-dir> [...] [--variant=] [--pool=] [--out=]');
+  console.error('usage: vite-node ladder-build.ts <shard-dir> [...] [--variant=] [--pool=] [--out=]');
   process.exit(1);
 }
 

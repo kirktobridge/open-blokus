@@ -1,8 +1,12 @@
 /**
- * Shared reader for AE21 `.result` shard caches (P62).
+ * Shared reader for the pool round-robin's `.result` shard cache (P62).
  *
- * Extracted from `ae21-pool.ts` so the human-readable pool report and the committed
- * ladder artifact (`ae21-ladder.ts`) are computed by the *same* code. Two copies of
+ * The shard format originates in AE21 (which built this harness and then closed
+ * no-win); the cache and the tooling over it long outlived that experiment, so they
+ * are named for what they do, not for the question that first needed them.
+ *
+ * Extracted from `pool-report.ts` so the human-readable pool report and the committed
+ * ladder artifact (`ladder-build.ts`) are computed by the *same* code. Two copies of
  * this parser would be free to disagree, and a ladder that disagrees with the report
  * it was supposedly read off is exactly the drift P62 exists to prevent.
  *

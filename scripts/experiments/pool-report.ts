@@ -1,23 +1,24 @@
 /**
- * Pool AE21 round-robin shards → pairwise matrix → Bradley-Terry Elo + Wilson CIs.
+ * Human-readable pool report: round-robin shards → pairwise matrix → Bradley-Terry
+ * Elo + Wilson CIs.
  *
- * Reads every `*.result` file under the given dir(s) (see ae21-sweep.sh), sums each
+ * Reads every `*.result` file under the given dir(s) (see pool-sweep.sh), sums each
  * ordered pairing's fractional wins and games across batches, refits pool Elo with the
  * same `bradleyTerryElo` the live CLI uses, and prints the Elo-ordered game-share matrix
  * with a per-cell 95% Wilson CI. Cells carry independent n, so a champion-cell sweep at
  * directional n pools cleanly with a champion-free sweep at high n.
  *
  * Shard reading and the Wilson interval live in `lib/shards.ts`, shared with
- * `ae21-ladder.ts` so the committed artifact and this report can't drift apart (P62).
+ * `ladder-build.ts` so the committed artifact and this report can't drift apart (P62).
  *
- * Usage: vite-node scripts/experiments/ae21-pool.ts <dir> [<dir> ...]
+ * Usage: vite-node scripts/experiments/pool-report.ts <dir> [<dir> ...]
  */
 import { bradleyTerryElo } from '../../src/game/ai/arena';
 import { poolShards, wilson } from './lib/shards';
 
 const dirs = process.argv.slice(2);
 if (!dirs.length) {
-  console.error('usage: vite-node ae21-pool.ts <dir> [<dir> ...]');
+  console.error('usage: vite-node pool-report.ts <dir> [<dir> ...]');
   process.exit(1);
 }
 

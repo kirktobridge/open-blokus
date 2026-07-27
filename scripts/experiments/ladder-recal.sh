@@ -9,25 +9,25 @@
 #
 # The saving is real only because the shards are committed. They were not, before
 # P62: AE21's original sweep wrote to a scratch dir that was later deleted, so the
-# first ladder had to be regenerated from nothing. Keep ae21-shards/ in the repo.
+# first ladder had to be regenerated from nothing. Keep pool-shards/ in the repo.
 #
 # What this does NOT do: decide the anchor model. `bradleyTerryElo` mean-centers, so
 # adding a member shifts every published rating even though nobody got stronger. That
 # is P62's open decision (frozen-anchor/provisional vs periodic full re-fit), settled
 # with P61 — until then, treat post-add ratings as a re-fit of the whole pool.
 #
-# Usage: ae21-recal.sh <new-member> [batches] [games-per-batch]
-#   ae21-recal.sh newbot 40 1          # directional n=40 vs each existing member
+# Usage: ladder-recal.sh <new-member> [batches] [games-per-batch]
+#   ladder-recal.sh newbot 40 1          # directional n=40 vs each existing member
 #
 # Pre-req: add the member to pool.json first (this reads its name list from there).
 set -u
 cd "$(dirname "$0")/../.."
 
-NEW="${1:?usage: ae21-recal.sh <new-member> [batches] [games]}"
+NEW="${1:?usage: ladder-recal.sh <new-member> [batches] [games]}"
 BATCHES="${2:-40}"
 GAMES="${3:-1}"
 POOL=scripts/experiments/pool.json
-CACHE=scripts/experiments/ae21-shards
+CACHE=scripts/experiments/pool-shards
 
 members() { node -e '
   const p = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
@@ -47,14 +47,14 @@ echo ">>> reusing shard cache at $CACHE (existing pairs are never re-run)"
 
 for opp in $OPPONENTS; do
   echo ">>> $NEW vs $opp"
-  bash scripts/experiments/ae21-sweep.sh "$CACHE/pairs/${NEW}__vs__${opp}" "$NEW,$opp" "$BATCHES" "$GAMES"
+  bash scripts/experiments/pool-sweep.sh "$CACHE/pairs/${NEW}__vs__${opp}" "$NEW,$opp" "$BATCHES" "$GAMES"
 done
 
 echo ">>> refitting the ladder over the whole cache"
 # The bin directly, not `npx`: npx parses `--flag=value` as its own npm config and
 # refuses to run the script.
-./node_modules/.bin/vite-node scripts/experiments/ae21-ladder.ts "$CACHE" \
-  --source="incremental recalibration: +$NEW (ae21-recal.sh)"
+./node_modules/.bin/vite-node scripts/experiments/ladder-build.ts "$CACHE" \
+  --source="incremental recalibration: +$NEW (ladder-recal.sh)"
 
 echo
 echo "Done. Review the diff in src/game/ai/ladder/classic.json and commit it together"

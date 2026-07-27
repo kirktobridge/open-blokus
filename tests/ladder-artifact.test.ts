@@ -75,7 +75,7 @@ describe('Classic ladder artifact', () => {
   const ladder: LadderArtifact = CLASSIC_LADDER;
 
   // The staleness guard itself. If this fails, pool.json changed without the ladder
-  // being regenerated — run scripts/experiments/ae21-recal.sh (see its header).
+  // being regenerated — run scripts/experiments/ladder-recal.sh (see its header).
   it('was fit from the current pool.json', () => {
     expect(ladder.pool.fingerprint).toBe(poolFingerprint(pool));
   });
