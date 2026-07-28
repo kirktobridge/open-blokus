@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { GameMode, Variant } from '../../game/types';
 import { DIFFICULTIES, resolveExtremeForBlitz, type Difficulty } from '../ai/difficulty';
+import { formatTierRating, ladderFor } from '../ai/ratings';
 import { BLITZ_OPTIONS } from '../blitz/blitz';
 import { FIELD, FONT_UI, GHOST_BTN, PANEL, PRIMARY_BTN, WELL_ROW } from '../theme';
 import {
@@ -34,6 +35,7 @@ export function CustomGameScreen({
     () => botSeatLabels(mode, aiCount, variant),
     [mode, aiCount, variant],
   );
+  const ratedVariant = ladderFor(variant) !== undefined;
 
   // What Quick Play would start right now. Starting a game no longer touches this
   // (P46) — only pinning does — so the screen tracks it separately from the setup
@@ -180,15 +182,42 @@ export function CustomGameScreen({
                         // paced into a blitz clock — disable it and say why in
                         // place, no modal (P25).
                         const blocked = d === 'extreme' && blitzSeconds != null;
+                        // The rating replaces the tier's own suffix slot, so a
+                        // blocked extreme still explains itself rather than
+                        // advertising a strength you can't select (P61).
+                        const rating = formatTierRating(variant, d);
+                        const suffix = blocked
+                          ? ' — needs untimed play'
+                          : rating
+                            ? ` — ${rating}`
+                            : '';
                         return (
                           <option key={d} value={d} disabled={blocked}>
-                            {blocked ? 'extreme — needs untimed play' : d}
+                            {d}
+                            {suffix}
                           </option>
                         );
                       })}
                     </select>
                   </label>
                 ))}
+                {/* A bare "1683" is not legible on its own — it needs to say what
+                    scale it is on, and (M6) that the scale is Classic-only. Duo
+                    reads as deliberately unrated rather than broken. */}
+                <p
+                  data-testid="rating-caption"
+                  style={{ margin: '2px 0 0', color: 'var(--mut)', fontSize: 12, lineHeight: 1.45 }}
+                >
+                  {ratedVariant ? (
+                    <>
+                      Ratings are Elo from bot-vs-bot play, on the Classic pool.{' '}
+                      <strong>≈</strong> marks a tier whose search is time-budgeted, so its
+                      rating varies with your machine.
+                    </>
+                  ) : (
+                    <>Duo bots are unrated — the Elo scale is Classic-only, and the two are not comparable.</>
+                  )}
+                </p>
               </div>
             )}
 

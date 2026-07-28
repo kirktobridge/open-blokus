@@ -104,6 +104,20 @@ describe('Classic ladder artifact', () => {
     }
   });
 
+  /**
+   * The published scale's zero point (P61). Re-fitting reproduces whatever anchor the
+   * artifact names (see the reproducibility test below), so self-consistency alone
+   * can't stop someone regenerating on a different anchor and silently republishing
+   * every tier's rating. This pins the convention itself.
+   */
+  it('is anchored on the incumbent, not the pool mean', () => {
+    expect(ladder.schema).toBe(2);
+    expect(ladder.fit.anchor.member).toBe(ladder.anchors.incumbent);
+    expect(ladder.fit.anchor.elo).toBe(1549);
+    // The whole point: the anchor member sits exactly on its stated rating.
+    expect(ladder.elo[ladder.fit.anchor.member]).toBe(1549);
+  });
+
   it('carries anchors that point at real pool members', () => {
     const names = new Set(pool.members.map((m) => m.name));
     expect(ladder.anchors.champion && names.has(ladder.anchors.champion)).toBe(true);
@@ -155,7 +169,7 @@ describe('Classic ladder artifact', () => {
     ]);
     expect(names.sort()).toEqual([...ladder.ranking].sort());
 
-    const elo = bradleyTerryElo(names, wins, games);
+    const elo = bradleyTerryElo(names, wins, games, { anchor: ladder.fit.anchor });
     for (const name of names) {
       expect(Math.round(elo[name]), `${name} rating is not what the shards give`).toBe(ladder.elo[name]);
     }

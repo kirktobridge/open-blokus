@@ -404,15 +404,35 @@ export interface RoundRobinResult {
  * (Hunter 2004), then map to the Elo scale. `wins[i][j]` is i's fractional wins
  * over j across `n[i][j]` games. A small `prior` win/loss on every realized
  * pairing keeps a member that goes 0% (random) or 100% off ±∞ — standard BT
- * regularization. Ratings are centered so the pool mean is 1500.
+ * regularization.
+ *
+ * BT identifies only rating *differences*; the absolute level is a free constant
+ * fixed by convention. Two are offered, and which one you want depends on whether
+ * the numbers get published:
+ *
+ * - **Default (mean 1500)** — right for an ad-hoc report, where the pool *is* the
+ *   frame of reference and nothing outlives the run.
+ * - **`anchor`** — pins one member to a stated rating. Adding a member then can't
+ *   move a rating whose pairwise results didn't change, which mean-centering does
+ *   (a weak newcomer lowers the mean, so every incumbent's number rises to
+ *   compensate). The committed ladder artifact uses this, because it publishes to
+ *   the difficulty picker and a number that drifts for invisible reasons is worse
+ *   than no number (P61).
  */
 export function bradleyTerryElo(
   names: string[],
   wins: Record<string, Record<string, number>>,
   n: Record<string, Record<string, number>>,
-  opts: { prior?: number; iterations?: number } = {},
+  opts: { prior?: number; iterations?: number; anchor?: { member: string; elo: number } } = {},
 ): Record<string, number> {
-  const { prior = 0.5, iterations = 1000 } = opts;
+  const { prior = 0.5, iterations = 1000, anchor } = opts;
+  // An anchor naming a member that isn't in the fit would silently fall back to
+  // mean-centering while the artifact still claimed to be anchored — the exact
+  // "published number moved for an invisible reason" failure the anchor exists to
+  // prevent. Refuse instead.
+  if (anchor && !names.includes(anchor.member)) {
+    throw new Error(`anchor member "${anchor.member}" is not in the pool: ${names.join(', ')}`);
+  }
   const p: Record<string, number> = Object.fromEntries(names.map((name) => [name, 1]));
   // Total (regularized) wins per member — fixed across iterations.
   const W: Record<string, number> = Object.fromEntries(names.map((name) => [name, 0]));
@@ -439,11 +459,13 @@ export function bradleyTerryElo(
     const g = Math.exp(logMean);
     for (const name of names) p[name] = next[name] / g;
   }
-  // BT strength → Elo (400/ln10 per e-fold), centered on 1500.
+  // BT strength → Elo (400/ln10 per e-fold). The shift is the free constant above.
   const scale = 400 / Math.LN10;
   const raw = Object.fromEntries(names.map((name) => [name, scale * Math.log(p[name])]));
-  const mean = names.reduce((a, name) => a + raw[name], 0) / names.length;
-  return Object.fromEntries(names.map((name) => [name, raw[name] - mean + 1500]));
+  const shift = anchor
+    ? anchor.elo - raw[anchor.member]
+    : 1500 - names.reduce((a, name) => a + raw[name], 0) / names.length;
+  return Object.fromEntries(names.map((name) => [name, raw[name] + shift]));
 }
 
 /**

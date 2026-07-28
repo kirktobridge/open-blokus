@@ -28,7 +28,8 @@ export interface LadderCell {
 }
 
 export interface LadderArtifact {
-  schema: 1;
+  /** 2 = anchored fit (P61); 1 was mean-centered on 1500 (P62). */
+  schema: 2;
   variant: Variant;
   /** The pool this was fit from, and its strength-bearing fingerprint (see ./hash). */
   pool: { file: string; fingerprint: string; members: string[] };
@@ -39,8 +40,14 @@ export interface LadderArtifact {
     shardDirs: string[];
     batchFiles: number;
   };
-  fit: { method: string; centeredOn: number; prior: number };
-  /** Bradley-Terry Elo per member, centered so the pool mean is `fit.centeredOn`. */
+  /**
+   * How the ratings were fit. `anchor` pins the scale's free constant to one member
+   * rather than to the pool mean, so a pool addition can't move a rating whose
+   * pairwise results didn't change — see `bradleyTerryElo` for why that matters once
+   * the numbers are published to players (P61).
+   */
+  fit: { method: string; anchor: { member: string; elo: number }; prior: number };
+  /** Bradley-Terry Elo per member, on the scale `fit.anchor` pins. */
   elo: Record<string, number>;
   /** Member names strongest-first. */
   ranking: string[];

@@ -129,6 +129,83 @@ describe('arena.bradleyTerryElo', () => {
     expect(Number.isFinite(elo.loser)).toBe(true);
     expect(elo.winner).toBeGreaterThan(elo.loser);
   });
+
+  /**
+   * Why the committed ladder is anchored rather than mean-centered (P61). These two
+   * tests are a matched pair: the same pool gains the same newcomer, and only the
+   * centering convention differs. Under the mean, ratings the picker publishes move
+   * because of who *else* joined; under an anchor they don't.
+   */
+  describe('anchoring', () => {
+    const n = 100;
+    const base = {
+      names: ['strong', 'mid', 'weak'],
+      wins: {
+        strong: { mid: 70, weak: 90 },
+        mid: { strong: 30, weak: 70 },
+        weak: { strong: 10, mid: 30 },
+      } as Record<string, Record<string, number>>,
+      games: {
+        strong: { mid: n, weak: n },
+        mid: { strong: n, weak: n },
+        weak: { strong: n, mid: n },
+      } as Record<string, Record<string, number>>,
+    };
+    // A newcomer far below everyone — the case that drags the pool mean down hardest.
+    const grown = {
+      names: [...base.names, 'newcomer'],
+      wins: {
+        strong: { ...base.wins.strong, newcomer: 95 },
+        mid: { ...base.wins.mid, newcomer: 92 },
+        weak: { ...base.wins.weak, newcomer: 85 },
+        newcomer: { strong: 5, mid: 8, weak: 15 },
+      },
+      games: {
+        strong: { ...base.games.strong, newcomer: n },
+        mid: { ...base.games.mid, newcomer: n },
+        weak: { ...base.games.weak, newcomer: n },
+        newcomer: { strong: n, mid: n, weak: n },
+      },
+    };
+
+    const anchor = { member: 'mid', elo: 1549 };
+    const drift = (opts?: { anchor: { member: string; elo: number } }) => {
+      const before = bradleyTerryElo(base.names, base.wins, base.games, opts);
+      const after = bradleyTerryElo(grown.names, grown.wins, grown.games, opts);
+      return Object.fromEntries(base.names.map((nm) => [nm, after[nm] - before[nm]]));
+    };
+
+    it('mean-centering moves every incumbent by a common offset nobody earned', () => {
+      const d = drift();
+      // ~+100 each: not one of them played differently, and the shifts barely differ
+      // from each other — which is the tell that this is the arithmetic of who is in
+      // the room, not a re-estimate of anyone's strength.
+      for (const name of base.names) {
+        expect(Math.abs(d[name]), `${name} should have drifted`).toBeGreaterThan(50);
+      }
+      const spread = Math.max(...base.names.map((nm) => d[nm])) - Math.min(...base.names.map((nm) => d[nm]));
+      expect(spread).toBeLessThan(Math.min(...base.names.map((nm) => Math.abs(d[nm]))));
+    });
+
+    it('an anchor pins its member exactly and leaves the rest to re-estimation', () => {
+      const withAnchor = drift({ anchor });
+      const withMean = drift();
+      expect(withAnchor.mid).toBeCloseTo(0, 6);
+      // The newcomer's results still inform the fit, so the others move a little — by
+      // their measured strength. An order of magnitude below the composition shift.
+      for (const name of base.names) {
+        expect(Math.abs(withAnchor[name]), `${name} drifted like a re-centering`).toBeLessThan(
+          Math.abs(withMean[name]) / 5,
+        );
+      }
+    });
+
+    it('refuses an anchor that names a member outside the pool', () => {
+      expect(() => bradleyTerryElo(base.names, base.wins, base.games, { anchor: { member: 'ghost', elo: 1500 } })).toThrow(
+        /not in the pool/,
+      );
+    });
+  });
 });
 
 describe('arena.runRoundRobin', () => {

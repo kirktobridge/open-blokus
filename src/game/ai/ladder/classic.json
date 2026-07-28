@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "variant": "classic",
   "pool": {
     "file": "scripts/experiments/pool.json",
@@ -24,14 +24,17 @@
   },
   "fit": {
     "method": "bradley-terry-mm",
-    "centeredOn": 1500,
+    "anchor": {
+      "member": "heuristic",
+      "elo": 1549
+    },
     "prior": 0.5
   },
   "elo": {
     "champion": 2056,
     "mcts-150": 1796,
     "mcts-30": 1683,
-    "alphabeta-d2": 1587,
+    "alphabeta-d2": 1588,
     "heuristic": 1549,
     "greedy-size": 1215,
     "random": 615
