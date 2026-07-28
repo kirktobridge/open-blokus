@@ -601,3 +601,10 @@ client. Networked rooms stay human-only.
   (F6 breaks the heuristic ceiling, F8 per-tier beam) with rank-normalized reward shaping so
   a losing bot still fights for placement (F15, `rankRewardWeight`). Tuning lives in research.
 - `ai.enumerate` must always mirror `generateLegalMoves`.
+- **Bot strength ratings are a derived artifact, never hardcoded** (P62,
+  [src/game/ai/ladder/](../src/game/ai/ladder/)). Pool Elo is only meaningful for the
+  `(variant × pool)` it was fit from, so each variant's ladder is committed alongside a
+  fingerprint of the pool it came from, and a test fails if the pool changes without
+  regeneration — otherwise yesterday's ratings ship silently wrong. Consumers read the
+  artifact; changing the pool means recalibrating (`npm run ladder:recal`). Classic and Duo
+  ladders are separate, non-comparable scales.

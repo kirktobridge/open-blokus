@@ -26,23 +26,21 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P62** — Elo ladder artifact + recalibration policy: the committed, hash-guarded data
-   layer under the ratings. **In progress.** Dependency-ready (AE21 harness exists); P61 reads
-   it. Not cheap after all — the shard cache it was costed against is gone, so this slice
-   re-runs the pool and commits the shards.
-2. **P61** — surface bot strength ratings (difficulty-picker Elo). Ready once P62's artifact
-   exists (the display consumes it): a cheap, visible legibility win with the data in hand.
-3. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
+1. **P61** — surface bot strength ratings (difficulty-picker Elo). **Unblocked:** P62 landed
+   the committed, hash-guarded artifact the display reads, so this is a cheap, visible
+   legibility win with the data in hand. Also carries P62's remaining piece — the anchor-model
+   decision (mean-centered today, so published numbers move when the pool grows).
+2. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-4. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-5. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
-   dependency-free — the tournament engine already runs in the browser, and only the Elo
-   board waits on P62/P61 — but it is much the largest build of the ready set, so it sits
-   last until something above it clears.
+4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+   dependency-free — the tournament engine already runs in the browser, and its Elo board now
+   waits only on P61 — but it is much the largest build of the ready set, so it sits last
+   until something above it clears.
 
 ---
 
@@ -274,8 +272,11 @@ this epic owns the user-facing feature + its UX.
 - **Drafted:** 2026-07-27 — re-verified against `src/`: the ladder is still prose-only
   (no `2056`/`1796`/`1683` anywhere in `src/`, `scripts/`, `tests/`; positive control on
   `champion` matched), and `bradleyTerryElo`/`pool.json`/the sweep scripts are as described.
-- **Status:** in-progress — building the artifact, the staleness test, **and** the
-  incremental driver in one slice.
+- **Status:** partial — **shipped 2026-07-27:** the artifact, the staleness test, the
+  incremental driver, the policy, and the committed shard cache the driver reuses
+  (`npm run ladder` / `ladder:check` / `ladder:recal`). **Remaining:** the anchor-model
+  decision below, deferred to P61 by design — the artifact ships mean-centered on 1500,
+  so published numbers still move when the pool gains a member.
 - **Value:** pool Elo is a *derived* artifact of `(variant × pool)` — once the pool changes,
   yesterday's ladder is silently wrong. Today it exists only as prose in a research log
   ([F19](../research/FINDINGS.md)), so P61's display has nothing machine-readable to read and
@@ -289,15 +290,16 @@ this epic owns the user-facing feature + its UX.
     events/backlog registries).
   - **Incremental recalibration driver** — on a membership change, run only the new/changed
     bot's k pairs (`--members=new,X`), reuse the durable `.result` shard cache so existing
-    pairs never re-run, refit via `ae21-pool.ts`, rewrite the artifact. ~5–40× cheaper than a
+    pairs never re-run, refit via `ladder-build.ts`, rewrite the artifact. ~5–40× cheaper than a
     full re-run (heuristic-class add ~1–2 CPU-h vs ~85 for the full pool; provisional-vs-a-few-
     anchors cheaper still, directional n≈40 with CIs on the artifact).
-    **Premise correction (verified 2026-07-27): the cache this was costed against did not
-    exist** — AE21's shards were written to an uncommitted, ungitignored outdir and are gone
-    (the only `.result` files on disk are the gitignored `.ae26-`/`.ae28-scratch/`). So the
-    driver's saving was unrealisable, and the recorded ladder was unreproducible. This slice
-    therefore **regenerates the full 7-member sweep and commits the shards**, which is what
-    makes the cache durable and the ~5–40× claim true from here on.
+    **Premise correction (2026-07-27): the cache this was costed against did not exist** —
+    AE21's shards were written to an uncommitted outdir, so the driver's saving was
+    unrealisable and the recorded ladder was unreproducible. **Resolved by this slice:** it
+    regenerated the full 7-member sweep and committed the shards, so the cache is durable and
+    the ~5–40× claim holds from here on. The regenerated fit **reproduced F19's ladder
+    exactly** (champion 2056 / mcts-150 1796 / mcts-30 1683 / heuristic 1549) — F19 stands and
+    no re-baselining is owed.
   - **Policy** (generalizes the pool.json champion note): any pool edit / new bot →
     recalibrate that variant's ladder before the artifact is trusted; champion/version bumps
     stay behind the existing "won experiment raises the ceiling" gate.
@@ -307,9 +309,9 @@ this epic owns the user-facing feature + its UX.
     stable) vs periodic full re-fit (research-accurate, everyone moves). Likely both:
     provisional on add, full re-fit on version bumps. Decide when P61 is built.
 - **Depends on:** research AE21/[F19](../research/FINDINGS.md) (harness + first Classic ladder)
-  + its sharding infra (`ae21-sweep`/`champion`/`pool`). **P61 depends on this.** No engine
-  change — tooling + a test. This slice: regenerate + commit the shards, artifact, staleness
-  test, incremental driver; anchor-model refit later (decided with P61).
+  + its sharding infra, renamed here for its function rather than its originating experiment
+  (`pool-sweep.sh` / `pool-champion.sh` / `pool-report.ts`). **P61 depends on this** and is now
+  unblocked. No engine change — tooling + a test.
 
 ### P61 — Surface bot strength ratings (difficulty picker)
 - **Drafted:** 2026-07-23
@@ -322,8 +324,8 @@ this epic owns the user-facing feature + its UX.
   engagement surface on the same data — split out as
   [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other).
 - **Scope:**
-  - *Near-term:* the difficulty picker shows each tier its rating, baked from the AE21 pool
-    ladder (easy = heuristic 1549; medium/hard/extreme = MCTS tiers up toward champion
+  - *Near-term:* the difficulty picker shows each tier its rating, read from P62's committed
+    ladder artifact (easy = heuristic 1549; medium/hard/extreme = MCTS tiers up toward champion
     2056). Static display, no client-side computation.
   - *Future/extension:* a GUI-accessible **arena mode** is now
     [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other) — it consumes this
@@ -334,8 +336,9 @@ this epic owns the user-facing feature + its UX.
     a separate, cheap `--duo` pool-Elo run (smaller board; its bots still run Classic-tuned
     constants, research AE29–31) — a P61 sub-task, not yet done. Never show a Classic number
     on a Duo board, and never compare the two scales.
-- **Depends on:** **P62** (the ladder-artifact data layer — the display reads its committed,
-  hash-guarded ratings rather than hardcoding); research AE21/[F19](../research/FINDINGS.md)
+- **Depends on:** **P62 — landed** (the ladder-artifact data layer — the display reads its
+  committed, hash-guarded ratings rather than hardcoding; P62's open anchor-model decision is
+  settled here); research AE21/[F19](../research/FINDINGS.md)
   (the measured ratings, Classic); relates to P13 (tiers-as-strength-bands, made visible). No
   engine change for the near-term display.
 
