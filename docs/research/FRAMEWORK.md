@@ -148,15 +148,28 @@ baselines. Commit the config alongside the log record so every run is reproducib
 
 **Heavy / sharded sweeps — reuse, don't re-derive.** When one process is too slow
 (MCTS pools; the champion is ~130 s/game), shard with the existing tooling rather than
-rebuilding it: `scripts/experiments/ae21-sweep.sh` runs parallel seed-batches of a
-`--pool` round-robin (resumable), `ae21-champion.sh` runs one heavy contestant as
-isolated pair-sweeps (no seed-collision), and `ae21-pool.ts` sums the shards → refits
-Elo → Wilson CIs. `ae28-sweep.sh` is the single-config head-to-head analog. Oversubscribing
+rebuilding it: `scripts/experiments/pool-sweep.sh` runs parallel seed-batches of a
+`--pool` round-robin (resumable), `pool-champion.sh` runs one heavy contestant as
+isolated pair-sweeps (no seed-collision), and `pool-report.ts` sums the shards → refits
+Elo → Wilson CIs. (These were `ae21-*` until P62 renamed them for their function — they
+are general pool infrastructure, not artifacts of one closed experiment; per-experiment
+scripts like `ae28-sweep.sh` keep their id on purpose, as provenance for one hypothesis.)
+`ae28-sweep.sh` is the single-config head-to-head analog. Oversubscribing
 cores is safe **only** for fixed-work engines (fixed-iteration MCTS, fixed-depth alphabeta) —
 CPU contention then moves wall-time, never strength; never shard a wall-clock-budgeted tier.
 Cost is real (AE21's full pool was ~85 CPU-h even sharded — Sweep A alone ~51) — **`time`
 every batch and size n from a measured probe, never a guess** (M1's sibling: the estimate
 lies too — AE21's first ETA was ~4× low).
+
+**Commit the shards.** A sweep's `.result` files are the *evidence* for every number it
+produces, and they are cheap to keep (the whole Classic pool is ~200 KB). AE21's went to
+an uncommitted scratch dir and were lost, so P62 had to spend ~53 CPU-h re-running the
+entire pool to recover ratings that had already been published — and until that re-run,
+no committed number could be checked against anything. The Classic cache now lives at
+`scripts/experiments/pool-shards/` and is tracked; `pool-sweep.sh` is resumable against
+it, so a later pool addition re-runs only the new member's pairs
+(`npm run ladder:recal <member>`, ~14 batch files instead of 290). Point new sweeps at an
+in-repo directory, never `/tmp` or a dotted scratch dir.
 
 New research domains (advisor, UX) add their own harness row here and their own
 `log/*.md` + `backlog/*.md` files following the same templates.

@@ -1174,3 +1174,59 @@ met twice over while pre-registered criterion (a) fired its fail condition:
 - **hold** hard's beam 16 (48 is a coin-flip, 158 loses) — it transfers unchanged;
 - the extreme/hard flat step is a **new** defect with a named mechanism, not a result
   this entry can absorb; it needs its own entry and its own pre-registered bar.
+
+---
+
+### Run W3 — Regenerating the Classic pool ladder: does it still reproduce? (AE21 / product P62)
+Not a hypothesis test — a **verification + evidence-recovery run**, appended out of letter
+order because it continues the W thread rather than opening a new question. AE21 stays
+closed `no-win`; nothing here revisits its pre-registered bar.
+
+Two reasons it was run. (1) The shards behind [Run W2](#run-w2--diverse-pool-round-robin-does-pool-elo-beat-head-to-head-on-the-full-pool-ae21)
+were written to an uncommitted scratch dir and had been deleted, so W2's published ladder
+could not be recomputed by anyone. (2) Product P62 needed the ladder as a committed,
+machine-readable artifact, which meant it needed evidence to be fit *from*.
+
+**Setup.** Identical to W2 by construction — same `pool.json` members and options, same
+scripts (since renamed `pool-sweep.sh` / `pool-champion.sh` / `pool-report.ts`), same
+baseSeeds. **Sweep A** champion-free 6-member pool, 50 seed-batches × 4 games = n=200/pair
+(wall 4 h 01 m, 52.7 CPU-h measured via `time`, 16 cores). **Sweep B** champion vs each of
+the 6, 40 seed-batches × 1 game = n=40/pair (wall ~2 h 35 m, clock-derived — this stage was
+not wrapped in `time`, so its CPU total is unmeasured). Classic 20×20 4p, mirrored 2v2.
+290 `.result` shards, now committed at `scripts/experiments/pool-shards/`.
+
+**Results.** The re-fit is **identical to W2**, not merely consistent with it:
+
+| bot          | W2 pool Elo | W3 pool Elo | W2 vs incumbent    | W3 vs incumbent    |
+|--------------|-------------|-------------|--------------------|--------------------|
+| champion ♛   | 2056        | **2056**    | 93.3% [81.2, 97.8] | 93.3% [81.2, 97.8] |
+| mcts-150     | 1796        | **1796**    | 82.8% [77.0, 87.4] | 82.8% [77.0, 87.4] |
+| mcts-30      | 1683        | **1683**    | 66.1% [59.3, 72.3] | 66.1% [59.3, 72.3] |
+| alphabeta-d2 | 1587        | **1587**    | 55.5% [48.6, 62.2] | 55.5% [48.6, 62.2] |
+| heuristic ⚑  | 1549        | **1549**    | —                  | —                  |
+| greedy-size  | 1215        | **1215**    | 13.8% [9.7, 19.2]  | 13.8% [9.7, 19.2]  |
+| random       | 615         | **615**     | 0.0% [0.0, 1.9]    | 0.0% [0.0, 1.9]    |
+
+Every rating matches to the point and every vs-incumbent cell to the decimal. All 42
+ordered cells are now recorded in the artifact; W2's record had preserved 11.
+
+**Probe (separate, deliberately throwaway).** To exercise P62's incremental
+recalibration path end-to-end, an 8th member (a `greedy-size` clone, n=2/pair) was added
+and the ladder re-fit, then reverted. It reused all 290 existing shards and wrote 14 new
+ones (7 pairs × 2 batches, 3 m 39 s) — confirming the cache makes an addition cheap. It
+also moved **every** established rating: champion 2056→2060, mcts-150 1796→1805, mcts-30
+1683→1692, i.e. +4 to +20 Elo with no bot changed.
+
+**Read.** The engine has not drifted under W2's numbers: an exact reproduction across a
+full independent re-run rules out any change to Classic play, move generation, or the
+MCTS tiers in the interval. The determinism is by design (seeded mulberry32, fixed-
+iteration members) but had never been demonstrated at this scale. The probe's rating shift
+is the mean-centering property of the Bradley-Terry fit, not instability.
+
+**Decision.** No status change — AE21 remains closed `no-win`, and no strategy claim is
+added or retracted. [F19](../FINDINGS.md) gains a reproduction note; the ladder is now the
+committed artifact `src/game/ai/ladder/classic.json`, held against both `pool.json` and
+these shards by `tests/ladder-artifact.test.ts`. Two method lessons distilled to FINDINGS:
+[M7](../FINDINGS.md) (a pool rating is population-relative — the probe's numbers) and
+[M8](../FINDINGS.md) (keep a heavy run's evidence, or its result is unfalsifiable — this
+run's whole reason for existing).

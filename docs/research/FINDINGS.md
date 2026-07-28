@@ -230,7 +230,7 @@ per-tier beams are **Classic numbers**, and *both* of the rule's inputs move on 
 two-color board — branching collapses while the ms-budgeted tiers complete more
 iterations per move, pushing `iters/beam` up. Duo's tiers are therefore likely
 *under*-beamed, the mirror image of the break above and equally invisible. See AE30.
-**Measured, and the rule did not survive the trip** ([F21](#f21), Run Y): Duo's tiers
+**Measured, and the rule did not survive the trip** ([F21](#f21--duos-medium-beam-should-be-16-not-6--and-f8s-beam--iters6-rule-is-classic-local), Run Y): Duo's tiers
 *are* under-beamed (medium 6 → 16 is a replicated win), but `beam ≈ iters/6` predicts
 the wrong beams there by a wide margin — 42 and 158 both lose, 158 catastrophically —
 and Duo's optimum sits near 16 at both 250 and 950 iterations, i.e. it does not scale
@@ -318,7 +318,8 @@ closed [AE18](backlog/ai-engine.md) as won (live subset).
 n=40 directional but only fix the unambiguous top anchor), **(mechanism)** — a measurement
 methodology, not a tuned value. The AE21 round-robin + Bradley-Terry pool-Elo harness is
 built and correct (`runRoundRobin`/`bradleyTerryElo`, `src/game/ai/arena.ts`; deterministic,
-unit-tested; sharded via `scripts/experiments/ae21-sweep.sh`/`ae21-champion.sh`/`ae21-pool.ts`;
+unit-tested; sharded via `scripts/experiments/pool-sweep.sh`/`pool-champion.sh`/`pool-report.ts`
+— renamed from `ae21-*` by P62, which also committed the shard cache;
 pool versioned in `pool.json`, champion top entry). Tested on the **full 7-member pool**
 (random, greedy-size, heuristic, alphabeta-d2, mcts-30, mcts-150, champion), Run W2: the
 pool is **strictly transitive** — no upset in any of the 21 cells, champion dominates the
@@ -346,6 +347,21 @@ structural, not a number) — though whether the Duo pool is *also* transitive i
 unmeasured (2p zero-sum has no kingmaker, so plausibly yes, but untested). Runs W, W2;
 closed [AE21](backlog/ai-engine.md) no-win.
 
+**Independently reproduced, and now a committed artifact (Run W3, 2026-07-27).** The ladder
+above was re-fit from a full re-run of both sweeps and came back **identical** — all seven
+ratings to the point, and every vs-incumbent cell to the decimal (see Run W3). Two things
+follow. First, the engine has **not** moved under these numbers since Run W2, so F19 stands
+as written and nothing downstream needs re-baselining — a rare chance to *check* a published
+result rather than trust it, and it held. Second, the ladder is no longer prose: it lives at
+`src/game/ai/ladder/classic.json` with the fingerprint of the `pool.json` it was fit from,
+and a test refuses both a pool edited without recalibration and an artifact that disagrees
+with its own shards. The ratings a player eventually sees are therefore *mechanically*
+tied to this finding's evidence — see product P62, and [M8](#m8--keep-a-heavy-runs-evidence-or-its-result-is-unfalsifiable) for what the re-run cost
+and why. **Caveat that now has a number:** the Bradley-Terry fit mean-centers on the pool,
+so these values are only meaningful *relative to this 7-member population* — adding an
+eighth member shifted every rating above by +4 to +20 Elo with nobody having got stronger
+([M7](#m7--a-pool-rating-is-a-population-relative-coordinate-not-a-property-of-the-bot)). Publishing them to players requires an anchor decision first (product P61).
+
 ### F20 — Our whole shipped ladder tops out at Pentobi **Duo** level 1, about one level below where it sits on Classic
 `significant` **(duo)** — one well-powered run, n=200 per pairing, CIs clear except where
 stated. The first external anchor for Duo (Run X, AE29), via the AE19 GTP bridge extended
@@ -355,7 +371,7 @@ the answer for both measured tiers is **none**. Our `extreme` tier (500 iters, b
 [45.8, 59.6], one-sided p=0.22, i.e. *inconclusive, not a win* — and loses CI-clear to L2
 (35.5% [29.2, 42.3]) and L3 (14.8% [10.5, 20.3]). Our `easy` tier (heuristic) is far below
 L1 (9.2% [6.0, 14.1]) and ~0% from L2 up. **Transfer loss:** the same tiers place roughly
-**one Pentobi level lower on Duo than on Classic** ([F14](#f14)) — extreme goes from
+**one Pentobi level lower on Duo than on Classic** ([F14](#f14--absolute-strength-our-best-bot--pentobi-level-12-the-first-external-anchor)) — extreme goes from
 "beats L1 CI-clear (61.8%), even with L2" to "even with L1, loses L2 CI-clear"; easy's
 share vs L1 more than halves (21.2% → 9.2%). *Held as directional on size, not on
 direction:* the Classic figures are 4p 2v2 **team** shares and these are 1v1, so this
@@ -378,7 +394,7 @@ across 1400 bridged games). Run X; closed [AE29](backlog/ai-engine.md) won.
 [57.4, 70.6]; confirmation on non-overlapping seeds n=600: **58.6%** [54.6, 62.5], clearing
 the pre-registered 52% lower-bound bar; pooled n=800: 60.0% [56.6, 63.3]). Raising the
 `medium` tier's beam from the Classic-inherited 6 to **16** is a large Duo win at matched
-iterations. **But the rule that predicted it is wrong.** [F8](#f8)'s `beam ≈ iters/6`
+iterations. **But the rule that predicted it is wrong.** [F8](#f8--mcts-beam-must-scale-with-the-iteration-budget-a-fixed-wide-beam-breaks-the-low-tier)'s `beam ≈ iters/6`
 prescribes beam **42** for Duo `medium` (250 iters) and **158** for `hard` (950 iters);
 both *lose* — 42 at 41.0% [34.4, 47.9], 158 at 18.0% [13.3, 23.9]. A beam-24 bracket
 completes a unimodal curve **6 → 16 (peak) → 24 (54.2%) → 42 (loses)**, and `hard`'s
@@ -493,3 +509,34 @@ alongside M5's anchor rule — because a new *variant* is a new track, and needs
 external readout before self-relative numbers accumulate (AE29). This sentence
 previously claimed the two skill gates as the enforcement while neither existed; a rule
 that only asks to be remembered is the thing M6 is about.
+
+### M7 — A pool rating is a population-relative coordinate, not a property of the bot
+Our pool Elo comes from a Bradley-Terry fit **mean-centered on the pool** (=1500), so a
+rating answers "how strong is this bot *within this population*", never "how strong is
+this bot". The consequence is easy to miss until you see it: adding one eighth member to
+the frozen 7-member Classic pool moved **every** established rating by +4 to +20 Elo —
+champion 2056→2060, mcts-150 1796→1805, mcts-30 1683→1692 — while not one of those bots
+changed by a single line of config. Measured 2026-07-27 via a throwaway recalibration
+(Run W3's probe), not reasoned about. Two rules follow. **Never compare ratings across
+pools** — that includes across variants, which is M6's point arriving from a second
+direction: a Duo ladder is a different population *and* a different game, so it is twice
+non-comparable. And **a rating shown to a player needs an anchor model first** (freeze a
+reference bot, or re-fit everything on a schedule and accept that published numbers
+move), or the difficulty picker will silently relabel "Medium" every time the research
+pool grows. That decision is product **P61**'s, and it is a prerequisite for display,
+not a refinement of it.
+
+### M8 — Keep a heavy run's evidence, or its result is unfalsifiable
+A sweep's `.result` shards are what make its published numbers *checkable*. AE21's were
+written to an uncommitted scratch dir and later deleted, which cost twice over: the
+ladder in F19 could not be recomputed by anyone, and P62 had to spend ~53 CPU-h
+re-running the entire pool to get back numbers that were already written down. The re-run
+happened to reproduce F19 exactly — but "happened to" is the problem, because until it
+finished, nobody could tell a still-valid result from one the engine had drifted out from
+under, and the whole point of a recorded number is not having to re-earn it. Shards are
+tiny (~200 KB for the full Classic pool) against the cost of regenerating them, so the
+asymmetry is not close. **Commit them, in-repo, next to the tooling** — now at
+`scripts/experiments/pool-shards/`, which also makes a later pool addition cheap
+(re-run only the new member's pairs) rather than another full sweep. Generalizes past
+M1/M2: those say a result needs enough data to believe; this says it needs *retained*
+data to stay believable.

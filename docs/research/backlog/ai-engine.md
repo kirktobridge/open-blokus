@@ -518,8 +518,12 @@ test (product P21) fails CI if any ID here is missing or terminal.
   a sufficient ranker until a **non-transitive** pool member exists (not queued; speculative).
   Harness + sharding infra delivered regardless.
 - **Deploys as:** the champion-anchored **Elo ladder**, **Classic-only** (champion 2056 …
-  random 615; 20×20 4p) → product **P61** (surface bot strength in the difficulty picker /
-  a future arena mode) and **P13**'s ceiling anchor + per-tier ratings. Elo is scoped to its
+  random 615; 20×20 4p) → **landed** as the committed artifact
+  `src/game/ai/ladder/classic.json` (product **P62**, Run W3), which product **P61** reads to
+  surface bot strength in the difficulty picker / a future arena mode, and which gives
+  **P13** its ceiling anchor + per-tier ratings. Displaying the numbers still needs an anchor
+  decision first — the fit mean-centers, so the pool growing moves every published rating
+  ([M7](../FINDINGS.md)); that call belongs to P61. Elo is scoped to its
   `(variant × pool)` (M6): these numbers are shown only in Classic; **Duo is unrated** until a
   separate `--duo` pool run exists (its bots run Classic-tuned constants — AE29–31), and a Duo
   ladder is a *different scale*, never compared to this one. *Not* a research-readout adoption
@@ -554,7 +558,8 @@ test (product P21) fails CI if any ID here is missing or terminal.
 - **Cost / risk:** small-moderate; pure arena tooling, no engine change.
   Compute grows with pool size — prune to ~6–8 members.
 - **Log:** Run W (harness + transitive fast-pool), Run W2 (full diverse pool incl champion,
-  n=200 non-champion / n=40 champion) → [F19](../FINDINGS.md).
+  n=200 non-champion / n=40 champion) → [F19](../FINDINGS.md); Run W3 (verification re-run
+  for product P62 — reproduced W2's ladder exactly, shards now committed; status unchanged).
 
 ### AE22 — AlphaZero-lite pipeline (policy+value net over board planes; AE4's designated successor)
 - **Drafted:** 2026-07-06
