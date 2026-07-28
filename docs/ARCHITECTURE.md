@@ -608,3 +608,14 @@ client. Networked rooms stay human-only.
   regeneration — otherwise yesterday's ratings ship silently wrong. Consumers read the
   artifact; changing the pool means recalibrating (`npm run ladder:recal`). Classic and Duo
   ladders are separate, non-comparable scales.
+- **The published Elo scale is anchored to a member, not to the pool mean** (P61).
+  Bradley-Terry fixes only rating *differences*, so the absolute level is a free constant.
+  Mean-centering ties it to pool composition: adding one weak bot lowers the mean and so
+  raises every incumbent's published number, with nobody having got stronger. The committed
+  ladder therefore pins `heuristic` = 1549 (`fit.anchor`, `schema: 2`); mean-centering
+  remains `bradleyTerryElo`'s default for ad-hoc reports, where the pool *is* the frame of
+  reference and nothing outlives the run. The anchor is deliberately **not** read from
+  `pool.json`'s `incumbent` tag: [ladder/hash.ts](../src/game/ai/ladder/hash.ts) excludes
+  tags from the staleness fingerprint, on the grounds that re-designating an incumbent moves
+  no rating — true under mean-centering, false once the anchor sets the scale. Sourcing it
+  from a tag would let a rating shift slip past the very guard that exists to catch it.

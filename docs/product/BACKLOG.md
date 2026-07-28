@@ -26,21 +26,22 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P61** — surface bot strength ratings (difficulty-picker Elo). **Unblocked:** P62 landed
-   the committed, hash-guarded artifact the display reads, so this is a cheap, visible
-   legibility win with the data in hand. Also carries P62's remaining piece — the anchor-model
-   decision (mean-centered today, so published numbers move when the pool grows).
-2. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
+1. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
-   dependency-free — the tournament engine already runs in the browser, and its Elo board now
-   waits only on P61 — but it is much the largest build of the ready set, so it sits last
-   until something above it clears.
+3. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+   dependency-free — the tournament engine already runs in the browser, and its Elo board
+   now reads P61's shipped Classic ratings — but it is much the largest build of the ready
+   set, so it sits last until something above it clears.
+
+**P61 is deliberately not listed.** It is `partial`, but its one outstanding piece — the
+Duo ladder — is a `--duo` pool-Elo sweep, i.e. arena time routed to research, not a
+dependency-ready build. It returns here only if the research lands and the wire-up needs
+its own slice.
 
 ---
 
@@ -272,11 +273,13 @@ this epic owns the user-facing feature + its UX.
 - **Drafted:** 2026-07-27 — re-verified against `src/`: the ladder is still prose-only
   (no `2056`/`1796`/`1683` anywhere in `src/`, `scripts/`, `tests/`; positive control on
   `champion` matched), and `bradleyTerryElo`/`pool.json`/the sweep scripts are as described.
-- **Status:** partial — **shipped 2026-07-27:** the artifact, the staleness test, the
-  incremental driver, the policy, and the committed shard cache the driver reuses
-  (`npm run ladder` / `ladder:check` / `ladder:recal`). **Remaining:** the anchor-model
-  decision below, deferred to P61 by design — the artifact ships mean-centered on 1500,
-  so published numbers still move when the pool gains a member.
+- **Status:** shipped (2026-07-28, merge `a03117a`) — the artifact, the staleness test,
+  the incremental driver, the policy, and the committed shard cache the driver reuses
+  landed 2026-07-27 (`npm run ladder` / `ladder:check` / `ladder:recal`); the one
+  remaining item, the anchor-model decision deferred to P61 by design, was settled and
+  built there. The artifact is now `schema: 2`, anchored on `heuristic` = 1549 instead
+  of mean-centered on 1500, so a pool addition no longer moves a published rating whose
+  pairwise results didn't change.
 - **Value:** pool Elo is a *derived* artifact of `(variant × pool)` — once the pool changes,
   yesterday's ladder is silently wrong. Today it exists only as prose in a research log
   ([F19](../research/FINDINGS.md)), so P61's display has nothing machine-readable to read and
@@ -303,11 +306,12 @@ this epic owns the user-facing feature + its UX.
   - **Policy** (generalizes the pool.json champion note): any pool edit / new bot →
     recalibrate that variant's ladder before the artifact is trusted; champion/version bumps
     stay behind the existing "won experiment raises the ceiling" gate.
-  - **Open decision — anchor model:** `bradleyTerryElo` mean-centers today (=1500), so adding
-    a bot shifts every published number though nobody got stronger. Frozen-anchor/provisional
-    (peg heuristic or the AE19 Pentobi anchor; rate a new bot without moving established ones —
-    stable) vs periodic full re-fit (research-accurate, everyone moves). Likely both:
-    provisional on add, full re-fit on version bumps. Decide when P61 is built.
+  - **Anchor model — settled in P61 (2026-07-28):** `bradleyTerryElo` mean-centered (=1500),
+    so adding a bot shifted every published number though nobody got stronger. Resolved as
+    frozen-anchor: `bradleyTerryElo` gained an optional `anchor` (mean-centering stays the
+    default for ad-hoc reports, where nothing outlives the run), and the committed ladder
+    pegs `heuristic` = 1549. It throws if the anchor names a member outside the fit rather
+    than silently falling back to mean-centering while still claiming to be anchored.
 - **Depends on:** research AE21/[F19](../research/FINDINGS.md) (harness + first Classic ladder)
   + its sharding infra, renamed here for its function rather than its originating experiment
   (`pool-sweep.sh` / `pool-champion.sh` / `pool-report.ts`). **P61 depends on this** and is now
@@ -317,7 +321,23 @@ this epic owns the user-facing feature + its UX.
 - **Drafted:** 2026-07-28 — re-verified against `src/`: the picker is still four bare
   words (`CustomGameScreen`'s tier `<select>`), P62's artifact + `ladder/hash.ts` are on
   the client import path as designed, and `variant` is already in scope at the picker.
-- **Status:** in-progress — display + M6 + the anchor decision, this session.
+- **Status:** partial — **shipped 2026-07-28 (merge `a03117a`):** the Classic rating
+  display in the difficulty picker, M6's Duo-unrated rule, and the anchor model P62
+  deferred here (ladder now `schema: 2`, pinned to `heuristic` = 1549; `bradleyTerryElo`
+  gained an optional `anchor`). **Outstanding:** the Duo ladder itself — a `--duo`
+  pool-Elo sweep. That is arena time, not code: the display already returns *unrated*
+  for any variant without a ladder, so landing one is an artifact plus a line in
+  `ladderFor`. Routed to research; no experiment id exists for it yet.
+  **Two deviations from the scope below, as built:**
+  - Duo shows the **bare tier names plus one caption** saying Duo bots are unrated,
+    rather than `unrated` / `—` repeated per tier. Same guarantee, less repetition —
+    and the guarantee is the mechanically enforced part
+    ([tests/ratings.test.ts](../../tests/ratings.test.ts),
+    [e2e/ratings.spec.ts](../../e2e/ratings.spec.ts) both hold that no Classic number
+    can appear on a Duo board).
+  - Only `easy`/`extreme` are exact; `medium`/`hard` render with a `≈` prefix and the
+    caption explains it. This was already known at claim time (see *Scope*), not a
+    discovery — recorded here so the shipped surface isn't read as four exact ratings.
 - **Value:** the difficulty ladder reads as four opaque words today (easy/medium/hard/
   extreme); research AE21/[F19](../research/FINDINGS.md) measured a champion-anchored Elo
   per bot, so showing each tier its rating makes difficulty legible as *strength*
