@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { CLASSIC_LADDER, eloOf, cellOf, ceilingOf, type LadderArtifact } from '../src/game/ai/ladder';
 import { canonicalPool, poolFingerprint, type PoolFile } from '../src/game/ai/ladder/hash';
+import { bradleyTerryElo } from '../src/game/ai/arena';
+import { poolShards } from '../scripts/experiments/lib/shards';
 
 /**
  * Ladder artifact guard (P62). A pool Elo rating is derived from the exact
@@ -138,5 +140,31 @@ describe('Classic ladder artifact', () => {
     expect(ladder.provenance.shardDirs.length).toBeGreaterThan(0);
     expect(ladder.provenance.batchFiles).toBeGreaterThan(0);
     expect(ladder.provenance.generated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  /**
+   * Closes the loop: pool.json ↔ artifact ↔ shards. The fingerprint test above catches a
+   * pool edited without recalibration; this catches the artifact drifting from the
+   * evidence it claims to be fit from — a hand-edited rating, a stale commit, or a
+   * regeneration that silently read a different cache. Cheap because the shards are
+   * committed (~290 small files) and the fit is the same one the generator runs.
+   */
+  it('every rating and cell is reproducible from the committed shards', () => {
+    const { names, pooled, wins, games } = poolShards([
+      fileURLToPath(new URL('../scripts/experiments/pool-shards', import.meta.url)),
+    ]);
+    expect(names.sort()).toEqual([...ladder.ranking].sort());
+
+    const elo = bradleyTerryElo(names, wins, games);
+    for (const name of names) {
+      expect(Math.round(elo[name]), `${name} rating is not what the shards give`).toBe(ladder.elo[name]);
+    }
+
+    for (const c of ladder.cells) {
+      const cell = pooled[c.a]?.[c.b];
+      expect(cell, `${c.a} vs ${c.b} is in the artifact but not in the shards`).toBeDefined();
+      expect(cell!.games).toBe(c.games);
+      expect(cell!.wins / cell!.games).toBeCloseTo(c.share, 4);
+    }
   });
 });

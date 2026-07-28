@@ -16,7 +16,7 @@
   },
   "provenance": {
     "generated": "2026-07-28",
-    "source": "AE21 pool re-run for P62 (Runs W2 sweeps A+B regenerated; original shards were lost)",
+    "source": "pool round-robin over pool.json (pool-sweep.sh + pool-champion.sh shards)",
     "shardDirs": [
       "scripts/experiments/pool-shards"
     ],

@@ -36,7 +36,11 @@ if (!dirs.length) {
 const variant = flag('variant', 'classic');
 const poolPath = flag('pool', 'scripts/experiments/pool.json');
 const outPath = flag('out', `src/game/ai/ladder/${variant}.json`);
-const source = flag('source', 'AE21 pool round-robin');
+// Must default to something STABLE: `npm run ladder` has to be idempotent, or --check
+// reports a spurious diff and stops being usable as a CI guard. One-off context (why a
+// particular re-run happened) belongs in the commit message and the research log, not
+// in a field that changes every time someone regenerates.
+const source = flag('source', 'pool round-robin over pool.json (pool-sweep.sh + pool-champion.sh shards)');
 const check = argv.includes('--check');
 
 const pool = JSON.parse(readFileSync(poolPath, 'utf8')) as PoolFile;
