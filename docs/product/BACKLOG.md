@@ -314,8 +314,10 @@ this epic owns the user-facing feature + its UX.
   unblocked. No engine change — tooling + a test.
 
 ### P61 — Surface bot strength ratings (difficulty picker)
-- **Drafted:** 2026-07-23
-- **Status:** proposed.
+- **Drafted:** 2026-07-28 — re-verified against `src/`: the picker is still four bare
+  words (`CustomGameScreen`'s tier `<select>`), P62's artifact + `ladder/hash.ts` are on
+  the client import path as designed, and `variant` is already in scope at the picker.
+- **Status:** in-progress — display + M6 + the anchor decision, this session.
 - **Value:** the difficulty ladder reads as four opaque words today (easy/medium/hard/
   extreme); research AE21/[F19](../research/FINDINGS.md) measured a champion-anchored Elo
   per bot, so showing each tier its rating makes difficulty legible as *strength*
@@ -327,6 +329,19 @@ this epic owns the user-facing feature + its UX.
   - *Near-term:* the difficulty picker shows each tier its rating, read from P62's committed
     ladder artifact (easy = heuristic 1549; medium/hard/extreme = MCTS tiers up toward champion
     2056). Static display, no client-side computation.
+    **Only two of the four mappings are exact** (verified 2026-07-28 against `pool.json` +
+    `difficulty.ts`): `easy`/`extreme` match a pool member config-for-config, but
+    `medium`/`hard` are *time-budget* tiers standing in for *fixed-iteration* pool members,
+    so their ratings are hardware-dependent approximations and must not be shown as if
+    measured. A test holds the mapping, so retuning a tier can't silently keep its rating.
+  - *Anchor model (inherited from P62, settled 2026-07-28):* pin the scale to the pool's
+    tagged incumbent (`heuristic` = 1549) instead of centering the pool mean on 1500.
+    Bradley-Terry identifies only rating *differences*, so the level is a free constant;
+    mean-centering ties it to pool composition, which moves every published number when a
+    member is added even though no tier's strength changed. Chosen over `random` (never
+    retunable, but the noisiest estimate in the pool) and over `champion` (the anchor most
+    likely to move, by policy). Costs nothing today — the current pool mean is already
+    ~1500.1, so no published rating shifts; it only constrains the future.
   - *Future/extension:* a GUI-accessible **arena mode** is now
     [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other) — it consumes this
     entry's ratings but ships independently of them.
