@@ -12,7 +12,8 @@
  * Usage:
  *   vite-node scripts/experiments/ladder-build.ts <shard-dir> [<shard-dir> ...]
  *     [--variant=classic] [--pool=scripts/experiments/pool.json] [--out=<path>]
- *     [--source="AE21 Run W2 re-run (P62)"] [--check]
+ *     [--source="AE21 Run W2 re-run (P62)"] [--anchor=heuristic] [--anchor-elo=1549]
+ *     [--check]
  *
  * `--check` prints what it would write and exits non-zero if that differs from the
  * artifact on disk — the recalibration driver's "did this actually change anything?"
@@ -43,6 +44,19 @@ const outPath = flag('out', `src/game/ai/ladder/${variant}.json`);
 const source = flag('source', 'pool round-robin over pool.json (pool-sweep.sh + pool-champion.sh shards)');
 const check = argv.includes('--check');
 
+// The published scale's zero point (P61). BT fixes only rating differences, so this
+// is a convention, not a measurement — and the convention has to be a *member*, not
+// the pool mean, or adding a bot republishes every tier's rating in the difficulty
+// picker without any tier having changed.
+//
+// Deliberately NOT read from pool.json's `incumbent` tag: `ladder/hash.ts` leaves tags
+// out of the fingerprint precisely because re-designating an anchor "moves no rating" —
+// true under mean-centering, false here. A tag that could silently shift every rating
+// past a staleness guard that ignores it is the drift this artifact exists to stop.
+// `tests/ladder-artifact.test.ts` holds the value below.
+const anchorMember = flag('anchor', 'heuristic');
+const anchorElo = Number(flag('anchor-elo', '1549'));
+
 const pool = JSON.parse(readFileSync(poolPath, 'utf8')) as PoolFile;
 const { names, pooled, wins, games, files } = poolShards(dirs);
 
@@ -69,7 +83,8 @@ if (unmeasured.length) {
   console.error(`WARNING (--allow-partial): omitting unmeasured member(s): ${unmeasured.join(', ')}`);
 }
 
-const elo = bradleyTerryElo(names, wins, games);
+const anchor = { member: anchorMember, elo: anchorElo };
+const elo = bradleyTerryElo(names, wins, games, { anchor });
 const ranking = [...names].sort((x, y) => elo[y] - elo[x]);
 
 const cells = [];
@@ -90,7 +105,7 @@ for (const a of ranking) {
 }
 
 const artifact = {
-  schema: 1 as const,
+  schema: 2 as const,
   variant,
   pool: {
     file: poolPath,
@@ -103,7 +118,7 @@ const artifact = {
     shardDirs: dirs,
     batchFiles: files,
   },
-  fit: { method: 'bradley-terry-mm', centeredOn: 1500, prior: 0.5 },
+  fit: { method: 'bradley-terry-mm', anchor, prior: 0.5 },
   elo: Object.fromEntries(ranking.map((n) => [n, Math.round(elo[n])])),
   ranking,
   anchors: {
