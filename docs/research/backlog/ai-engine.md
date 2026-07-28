@@ -1165,3 +1165,49 @@ test (product P21) fails CI if any ID here is missing or terminal.
   the simplest defensible configuration rather than the highest-scoring one per tier.
 - **Deploys as:** [P63](../../product/BACKLOG.md) scope (c), which is gated on this entry.
 - **Log:** —
+
+### AE35 — Duo pool-Elo ladder artifact (so Duo tiers can show ratings)
+- **Drafted:** 2026-07-28
+- **Status:** deferred — **valid but deliberately not-yet**, and the reason is the finding
+  that came out of drafting it. A pool ladder is a *derived artifact of the members' exact
+  configs* (that is what `ladder/hash.ts` fingerprints), and Duo's tier constants are
+  actively in flux: [AE33](#ae33) is expected to change `extreme`'s iteration count, and
+  product P63 (b)/(c) plus [AE34](#ae34) change the weight vector the tiers search with.
+  Measuring a Duo ladder before those settle means paying the full sweep, watching the
+  fingerprint invalidate, and paying again. Not in `## Next up` for that reason.
+  **Unblocks when** AE33 and AE34 are terminal and P63's Duo constants have shipped.
+- **Variant:** duo — a Duo population on a 14×14 board; every number it yields is
+  Duo-scoped and non-comparable to the Classic ladder (M6, M7).
+- **Objective:** give Duo the machine-readable Elo ladder Classic already has
+  (`src/game/ai/ladder/classic.json`), so P61's difficulty picker can show Duo ratings.
+  Duo currently renders as **unrated** by design — correct, but a visible gap.
+- **Hypothesis:** none to test. This is a **measurement**, not a hypothesis — the same
+  category as AE21's harness work, and it should not pretend to a strength claim it isn't
+  making. What it produces is a rating per member with CIs, not a verdict.
+- **Method:** a `--duo` pool round-robin mirroring the Classic one, reusing the existing
+  sharding infra (`pool-sweep.sh` / `pool-champion.sh`, shards committed under
+  `scripts/experiments/pool-shards-duo/`) — fixed-iteration members only, so shards pool and
+  the fit reproduces across machines. Pool membership is its own decision and should be
+  made *after* the blockers land, since it must contain the tiers Duo actually ships. Fit
+  via `ladder-build.ts --variant=duo`, anchored on the Duo incumbent (not on any Classic
+  value — the scales must never be tied). Anchor the track externally by reporting the
+  members' placement on the AE29 Pentobi Duo ladder (`npm run arena:pentobi -- --variant=duo`),
+  which already exists, so the ratings are not purely self-relative (M5).
+- **Success criteria:** a measurement bar, not a strength bar — (a) every non-champion pair
+  at **n ≥ 200**, so no rating is `directional` (M1); (b) the committed artifact passes the
+  same guards as Classic's (`tests/ladder-artifact.test.ts`: pool fingerprint matches, every
+  member rated, every cell reproducible from the committed shards); (c) the ladder is
+  reported with its flat steps intact — if two shipped tiers are statistically identical on
+  Duo, that is the honest result and P61 must display it as such rather than manufacture a
+  gap. (F23 already found exactly that for `extreme` vs `hard`, which is why AE33 blocks.)
+- **Power:** n=200/pair → MDE 58.9% (`stats.py --power --bar 52 --n 200`). Sufficient for
+  (a), which asks only that ratings be non-directional. It is *not* sufficient to separate
+  adjacent tiers that sit near parity — that separation is AE33's job at n≥600, not this
+  entry's, and conflating the two is how a measurement gets read as a verdict.
+- **Cost / risk:** cheaper than Classic's ~85 CPU-h — a 14×14 board with two seats is a
+  fraction of the per-game cost — but it is a full round-robin, so budget hours, not minutes.
+  Risk is the sequencing above: run it early and the fingerprint guard correctly throws the
+  result away.
+- **Deploys as:** [P61](../../product/BACKLOG.md)'s remaining scope — Duo ratings in the
+  difficulty picker. P61 is `partial` pending exactly this.
+- **Log:** —

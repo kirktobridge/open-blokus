@@ -1230,3 +1230,47 @@ these shards by `tests/ladder-artifact.test.ts`. Two method lessons distilled to
 [M7](../FINDINGS.md) (a pool rating is population-relative — the probe's numbers) and
 [M8](../FINDINGS.md) (keep a heavy run's evidence, or its result is unfalsifiable — this
 run's whole reason for existing).
+
+---
+
+### Run W4 — Re-fitting the Classic pool ladder on a frozen anchor (AE21 / product P61)
+Not a run: **no games were played.** A pure re-fit of [Run W3](#run-w3--regenerating-the-classic-pool-ladder-does-it-still-reproduce-ae21--product-p62)'s
+290 committed shards under a different centering convention, recorded because it changed a
+published number and the log is what that number is checked against. AE21 stays closed
+`no-win`; no strategy claim is added or retracted.
+
+**Why.** W3's probe measured the mean-centering property directly ([M7](../FINDINGS.md)):
+adding an 8th member moved every established rating by +4 to +20 Elo with no bot changed.
+Product P61 puts these ratings in the difficulty picker, where that property becomes a
+defect — "Medium" would silently relabel whenever the research pool grew. P61 took the
+first of M7's two branches and froze a reference bot.
+
+**Change.** `bradleyTerryElo` (`src/game/ai/arena.ts`) gained an optional `anchor`; the
+committed artifact now pins the incumbent `heuristic` at 1549 instead of centering the
+pool mean on 1500 (schema 2, `fit.anchor` replacing `fit.centeredOn`). Mean-centering
+remains the **default** for ad-hoc pool reports — `runPool` is unchanged — because there
+the pool legitimately *is* the frame of reference. Same shards, same MM fit, same prior.
+
+| bot          | W3 (mean-centered) | W4 (anchored) |
+|--------------|--------------------|---------------|
+| champion ♛   | 2056               | 2056          |
+| mcts-150     | 1796               | 1796          |
+| mcts-30      | 1683               | 1683          |
+| alphabeta-d2 | 1587               | **1588**      |
+| heuristic ⚑  | 1549               | 1549 (anchor) |
+| greedy-size  | 1215               | 1215          |
+| random       | 615                | 615           |
+
+**Read.** One rating moved, by one point, and not because anything was measured
+differently: W3's pool mean was 1500.14 rather than exactly 1500, so pinning heuristic to
+its own fitted value shifted the whole scale by 0.14 and carried `alphabeta-d2` across a
+rounding boundary. The other six were far enough from a boundary to be unaffected. This is
+the expected size of the change — an anchored fit and a mean-centered fit differ only by a
+constant, so **no rating difference, ordering, or CI in W3 is altered**, and W3's table
+stays correct as a record of what the mean-centered fit gave.
+
+**Decision.** No status change. [F19](../FINDINGS.md) updated for the one moved rating and
+for a misnomer it carried since W2 (it called the output "champion-anchored" when the fit
+was mean-centered and the champion was the *ceiling* anchor in P13's sense — a different
+thing from the fit's zero point). [M7](../FINDINGS.md) records that its open decision is
+now made. The Duo counterpart does not exist and is **not** cheap to add yet — see AE35.

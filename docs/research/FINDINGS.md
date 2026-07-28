@@ -335,9 +335,15 @@ including the self-play-tuned MCTS tiers and champion — is one. So for ranking
 head-to-head-vs-incumbent is sufficient. (Run W's fast 4-member pool showed the same; Run
 W2's earlier partial n=112 falsely flagged mcts-30 ≈ alphabeta as a pool-broken tie — noise,
 gone by n=200, M1.) **Deployment is independent of the negative:** the harness's real output
-is a **champion-anchored Elo ladder** (champion 2056, mcts-150 1796, mcts-30 1683, alphabeta
-1587, heuristic 1549, greedy 1215, random 615) — product **P13**'s ceiling anchor + tier
-ratings, and a front-end surface (bot strength in the difficulty picker / an arena mode).
+is a **pool Elo ladder** (champion 2056, mcts-150 1796, mcts-30 1683, alphabeta 1588,
+heuristic 1549, greedy 1215, random 615) — product **P13**'s ceiling anchor + tier ratings,
+and a front-end surface (bot strength in the difficulty picker, shipped by **P61**; an arena
+mode, P64). Two corrections to how this line read before Run W4, neither of them a
+re-measurement: the ladder was described as *champion-anchored*, but the fit was
+**mean-centered on the pool** (M7) and the champion was the *ceiling* anchor in P13's sense —
+a different thing from the fit's zero point. It is now genuinely anchored, on **heuristic
+= 1549** (P61). That re-fit moved `alphabeta-d2` 1587 → 1588, a rounding boundary and not a
+strength change; W2/W3's tables keep 1587 correctly as what the mean-centered fit gave.
 **Variant scope (M6): every number here is Classic (20×20 4p).** Elo is scoped to its
 `(variant × pool)` — these ratings do *not* transfer to Duo and are *not comparable* to a
 Duo ladder (a different pool = a different scale). Duo is a separate, unmeasured ladder, and
@@ -523,8 +529,23 @@ direction: a Duo ladder is a different population *and* a different game, so it 
 non-comparable. And **a rating shown to a player needs an anchor model first** (freeze a
 reference bot, or re-fit everything on a schedule and accept that published numbers
 move), or the difficulty picker will silently relabel "Medium" every time the research
-pool grows. That decision is product **P61**'s, and it is a prerequisite for display,
-not a refinement of it.
+pool grows.
+
+**Settled 2026-07-28 (P61, [Run W4](log/ai-strategy.md#run-w4--re-fitting-the-classic-pool-ladder-on-a-frozen-anchor-ae21--product-p61)):**
+the first branch — freeze a reference bot. The committed ladder pins the incumbent
+`heuristic` at 1549; `bradleyTerryElo` takes an optional `anchor` and refuses one naming a
+member outside the fit, rather than falling back to the mean while the artifact still
+claims to be anchored. Nothing above is retracted — a rating stays population-relative, and
+the anchor does not make it a property of the bot. What it buys is narrower and is the
+whole point: **the free constant is now tied to a member instead of to pool composition**,
+so a pool addition moves a published rating only through the fit, not through arithmetic.
+Two consequences worth carrying forward. Mean-centering remains the **default** for ad-hoc
+pool reports, where the pool genuinely is the frame of reference — the divergence is
+deliberate, and `bradleyTerryElo`'s doc says which to reach for. And the anchor is
+deliberately **not** read from `pool.json`'s `incumbent` tag: `ladder/hash.ts` excludes tags
+from the staleness fingerprint precisely because re-designating an anchor "moves no rating",
+which was true under mean-centering and false under an anchored fit — a tag that could shift
+every published rating past a guard that ignores it is the drift the artifact exists to stop.
 
 ### M8 — Keep a heavy run's evidence, or its result is unfalsifiable
 A sweep's `.result` shards are what make its published numbers *checkable*. AE21's were
