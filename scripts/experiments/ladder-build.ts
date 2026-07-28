@@ -50,9 +50,19 @@ if (strays.length) {
   console.error(`shards contain members absent from ${poolPath}: ${strays.join(', ')}`);
   process.exit(1);
 }
+// A member the shards never played would be silently missing from the ladder, and a
+// missing rating reads exactly like a member that doesn't exist. Refuse rather than
+// warn: a warning scrolls past in a 6-hour sweep's output, and the resulting artifact
+// looks complete. `--allow-partial` is for deliberately building against a subset.
 const unmeasured = pool.members.map((m) => m.name).filter((n) => !names.includes(n));
+if (unmeasured.length && !argv.includes('--allow-partial')) {
+  console.error(`error: no shard data for pool member(s): ${unmeasured.join(', ')}`);
+  console.error('The ladder would omit them entirely. Run the missing pairs, or pass');
+  console.error('--allow-partial if a subset ladder is genuinely what you want.');
+  process.exit(1);
+}
 if (unmeasured.length) {
-  console.error(`WARNING: pool members with no shard data (omitted from the ladder): ${unmeasured.join(', ')}`);
+  console.error(`WARNING (--allow-partial): omitting unmeasured member(s): ${unmeasured.join(', ')}`);
 }
 
 const elo = bradleyTerryElo(names, wins, games);

@@ -50,6 +50,31 @@ for opp in $OPPONENTS; do
   bash scripts/experiments/pool-sweep.sh "$CACHE/pairs/${NEW}__vs__${opp}" "$NEW,$opp" "$BATCHES" "$GAMES"
 done
 
+# Completeness gate — do NOT refit on partial data.
+#
+# pool-sweep.sh runs its batches as background jobs and only `mv`s a .result into
+# place on success, so a batch whose arena run died leaves a .tmp behind and the sweep
+# still exits 0. `set -e` cannot see that. Refitting anyway would write an artifact
+# full of confident-looking ratings backed by fewer games than claimed, which is
+# precisely the untrustworthiness this whole artifact exists to prevent -- so count
+# the evidence before believing it.
+incomplete=0
+for opp in $OPPONENTS; do
+  dir="$CACHE/pairs/${NEW}__vs__${opp}"
+  got=$(find "$dir" -name '*.result' 2>/dev/null | wc -l)
+  if [ "$got" -ne "$BATCHES" ]; then
+    echo "  INCOMPLETE $dir: $got/$BATCHES batches" >&2
+    incomplete=1
+  fi
+done
+if [ "$incomplete" -ne 0 ]; then
+  echo >&2
+  echo "error: refusing to refit the ladder on incomplete sweeps." >&2
+  echo "Rerun this script -- pool-sweep.sh is resumable, so only the missing batches" >&2
+  echo "re-run. If a batch fails repeatedly, fix that before trusting any rating." >&2
+  exit 1
+fi
+
 echo ">>> refitting the ladder over the whole cache"
 # The bin directly, not `npx`: npx parses `--flag=value` as its own npm config and
 # refuses to run the script.
