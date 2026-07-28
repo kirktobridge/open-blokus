@@ -1,7 +1,8 @@
 {
   "version": 1,
-  "title": "AE21 population-play pool (Classic)",
+  "title": "Classic evaluation pool (population play)",
   "note": "CLASSIC pool (20x20, 4 colors). Frozen evaluation pool for round-robin Elo; every rating it yields is Classic-scoped (M6) and NOT comparable to a Duo ladder — Duo is a separate --duo pool (different population = different scale), not built here, and its bots would still run Classic-tuned constants (AE29-31). Top entry (tags.champion) is the latency-unbounded strength ceiling P13's shippable tiers are measured against; bump it whenever a won experiment raises the ceiling. mcts members use fixed iterations (not time budgets) so the pool is reproducible across machines. Run a subset with --members=a,b,c; the heavy mcts arm is a separate pooled run.",
+  "recalibrationPolicy": "P62. The committed ladder (src/game/ai/ladder/classic.json) is a derived artifact of THIS file: any edit to a member's name, strategy, or options — and any add/remove — invalidates every rating in it, so recalibrate before the artifact is trusted. tests/ladder-artifact.test.ts enforces this by fingerprinting the members here and failing CI on a mismatch, so a pool edit cannot ship stale ratings. Editing this note, the title, or a member's tags deliberately does NOT invalidate the ladder: prose and the champion/incumbent designation move no rating. To recalibrate an addition cheaply, run `npm run ladder:recal <member>` — it plays only the newcomer's pairs and reuses the committed pool-shards/ cache. Champion/version bumps stay behind the existing 'won experiment raises the ceiling' gate above. Keep pool-shards/ committed: the incremental path's whole saving depends on it, and the first ladder had to be re-run from scratch because the original shards were left in a scratch dir and lost.",
   "members": [
     {
       "name": "champion",

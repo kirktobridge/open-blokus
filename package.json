@@ -16,6 +16,9 @@
     "serve": "vite-node src/server/index.ts",
     "arena": "vite-node src/game/ai/arena.cli.ts",
     "arena:pentobi": "vite-node src/game/ai/pentobi/run.ts",
+    "ladder": "vite-node scripts/experiments/ladder-build.ts scripts/experiments/pool-shards",
+    "ladder:check": "vite-node scripts/experiments/ladder-build.ts scripts/experiments/pool-shards --check",
+    "ladder:recal": "bash scripts/experiments/ladder-recal.sh",
     "test:e2e": "playwright test",
     "mutate": "bash scripts/mutate.sh"
   },

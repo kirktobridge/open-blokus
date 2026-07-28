@@ -1,0 +1,516 @@
+{
+  "schema": 1,
+  "variant": "classic",
+  "pool": {
+    "file": "scripts/experiments/pool.json",
+    "fingerprint": "fnv1a64:66144095f05335e7",
+    "members": [
+      "champion",
+      "mcts-150",
+      "mcts-30",
+      "alphabeta-d2",
+      "heuristic",
+      "greedy-size",
+      "random"
+    ]
+  },
+  "provenance": {
+    "generated": "2026-07-28",
+    "source": "pool round-robin over pool.json (pool-sweep.sh + pool-champion.sh shards)",
+    "shardDirs": [
+      "scripts/experiments/pool-shards"
+    ],
+    "batchFiles": 290
+  },
+  "fit": {
+    "method": "bradley-terry-mm",
+    "centeredOn": 1500,
+    "prior": 0.5
+  },
+  "elo": {
+    "champion": 2056,
+    "mcts-150": 1796,
+    "mcts-30": 1683,
+    "alphabeta-d2": 1587,
+    "heuristic": 1549,
+    "greedy-size": 1215,
+    "random": 615
+  },
+  "ranking": [
+    "champion",
+    "mcts-150",
+    "mcts-30",
+    "alphabeta-d2",
+    "heuristic",
+    "greedy-size",
+    "random"
+  ],
+  "anchors": {
+    "champion": "champion",
+    "incumbent": "heuristic"
+  },
+  "cells": [
+    {
+      "a": "champion",
+      "b": "mcts-150",
+      "share": 0.8417,
+      "wins": 33.6667,
+      "games": 40,
+      "ci": [
+        0.6996,
+        0.9239
+      ]
+    },
+    {
+      "a": "champion",
+      "b": "mcts-30",
+      "share": 0.9125,
+      "wins": 36.5,
+      "games": 40,
+      "ci": [
+        0.7852,
+        0.9675
+      ]
+    },
+    {
+      "a": "champion",
+      "b": "alphabeta-d2",
+      "share": 0.9667,
+      "wins": 38.6667,
+      "games": 40,
+      "ci": [
+        0.8587,
+        0.9928
+      ]
+    },
+    {
+      "a": "champion",
+      "b": "heuristic",
+      "share": 0.9333,
+      "wins": 37.3334,
+      "games": 40,
+      "ci": [
+        0.8123,
+        0.9784
+      ]
+    },
+    {
+      "a": "champion",
+      "b": "greedy-size",
+      "share": 1,
+      "wins": 40,
+      "games": 40,
+      "ci": [
+        0.9124,
+        1
+      ]
+    },
+    {
+      "a": "champion",
+      "b": "random",
+      "share": 1,
+      "wins": 40,
+      "games": 40,
+      "ci": [
+        0.9124,
+        1
+      ]
+    },
+    {
+      "a": "mcts-150",
+      "b": "champion",
+      "share": 0.1583,
+      "wins": 6.3333,
+      "games": 40,
+      "ci": [
+        0.0761,
+        0.3004
+      ]
+    },
+    {
+      "a": "mcts-150",
+      "b": "mcts-30",
+      "share": 0.66,
+      "wins": 132,
+      "games": 200,
+      "ci": [
+        0.5919,
+        0.7221
+      ]
+    },
+    {
+      "a": "mcts-150",
+      "b": "alphabeta-d2",
+      "share": 0.7433,
+      "wins": 148.6667,
+      "games": 200,
+      "ci": [
+        0.6786,
+        0.7989
+      ]
+    },
+    {
+      "a": "mcts-150",
+      "b": "heuristic",
+      "share": 0.8283,
+      "wins": 165.6667,
+      "games": 200,
+      "ci": [
+        0.77,
+        0.8743
+      ]
+    },
+    {
+      "a": "mcts-150",
+      "b": "greedy-size",
+      "share": 0.9775,
+      "wins": 195.5,
+      "games": 200,
+      "ci": [
+        0.9462,
+        0.9908
+      ]
+    },
+    {
+      "a": "mcts-150",
+      "b": "random",
+      "share": 1,
+      "wins": 200,
+      "games": 200,
+      "ci": [
+        0.9812,
+        1
+      ]
+    },
+    {
+      "a": "mcts-30",
+      "b": "champion",
+      "share": 0.0875,
+      "wins": 3.5,
+      "games": 40,
+      "ci": [
+        0.0325,
+        0.2148
+      ]
+    },
+    {
+      "a": "mcts-30",
+      "b": "mcts-150",
+      "share": 0.34,
+      "wins": 68,
+      "games": 200,
+      "ci": [
+        0.2779,
+        0.4081
+      ]
+    },
+    {
+      "a": "mcts-30",
+      "b": "alphabeta-d2",
+      "share": 0.6517,
+      "wins": 130.3333,
+      "games": 200,
+      "ci": [
+        0.5833,
+        0.7143
+      ]
+    },
+    {
+      "a": "mcts-30",
+      "b": "heuristic",
+      "share": 0.6608,
+      "wins": 132.1667,
+      "games": 200,
+      "ci": [
+        0.5927,
+        0.7229
+      ]
+    },
+    {
+      "a": "mcts-30",
+      "b": "greedy-size",
+      "share": 0.95,
+      "wins": 190,
+      "games": 200,
+      "ci": [
+        0.9104,
+        0.9726
+      ]
+    },
+    {
+      "a": "mcts-30",
+      "b": "random",
+      "share": 1,
+      "wins": 200,
+      "games": 200,
+      "ci": [
+        0.9812,
+        1
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "champion",
+      "share": 0.0333,
+      "wins": 1.3333,
+      "games": 40,
+      "ci": [
+        0.0072,
+        0.1413
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "mcts-150",
+      "share": 0.2567,
+      "wins": 51.3333,
+      "games": 200,
+      "ci": [
+        0.2011,
+        0.3214
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "mcts-30",
+      "share": 0.3483,
+      "wins": 69.6667,
+      "games": 200,
+      "ci": [
+        0.2857,
+        0.4167
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "heuristic",
+      "share": 0.555,
+      "wins": 111.0001,
+      "games": 200,
+      "ci": [
+        0.4857,
+        0.6222
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "greedy-size",
+      "share": 0.89,
+      "wins": 178,
+      "games": 200,
+      "ci": [
+        0.8391,
+        0.9262
+      ]
+    },
+    {
+      "a": "alphabeta-d2",
+      "b": "random",
+      "share": 1,
+      "wins": 200,
+      "games": 200,
+      "ci": [
+        0.9812,
+        1
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "champion",
+      "share": 0.0667,
+      "wins": 2.6666,
+      "games": 40,
+      "ci": [
+        0.0216,
+        0.1877
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "mcts-150",
+      "share": 0.1717,
+      "wins": 34.3333,
+      "games": 200,
+      "ci": [
+        0.1257,
+        0.23
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "mcts-30",
+      "share": 0.3392,
+      "wins": 67.8333,
+      "games": 200,
+      "ci": [
+        0.2771,
+        0.4073
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "alphabeta-d2",
+      "share": 0.445,
+      "wins": 88.9999,
+      "games": 200,
+      "ci": [
+        0.3778,
+        0.5143
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "greedy-size",
+      "share": 0.8625,
+      "wins": 172.5,
+      "games": 200,
+      "ci": [
+        0.8079,
+        0.9034
+      ]
+    },
+    {
+      "a": "heuristic",
+      "b": "random",
+      "share": 1,
+      "wins": 200,
+      "games": 200,
+      "ci": [
+        0.9812,
+        1
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "champion",
+      "share": 0,
+      "wins": 0,
+      "games": 40,
+      "ci": [
+        0,
+        0.0876
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "mcts-150",
+      "share": 0.0225,
+      "wins": 4.5,
+      "games": 200,
+      "ci": [
+        0.0092,
+        0.0538
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "mcts-30",
+      "share": 0.05,
+      "wins": 10,
+      "games": 200,
+      "ci": [
+        0.0274,
+        0.0896
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "alphabeta-d2",
+      "share": 0.11,
+      "wins": 22,
+      "games": 200,
+      "ci": [
+        0.0738,
+        0.1609
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "heuristic",
+      "share": 0.1375,
+      "wins": 27.5,
+      "games": 200,
+      "ci": [
+        0.0966,
+        0.1921
+      ]
+    },
+    {
+      "a": "greedy-size",
+      "b": "random",
+      "share": 0.9725,
+      "wins": 194.5,
+      "games": 200,
+      "ci": [
+        0.9394,
+        0.9877
+      ]
+    },
+    {
+      "a": "random",
+      "b": "champion",
+      "share": 0,
+      "wins": 0,
+      "games": 40,
+      "ci": [
+        0,
+        0.0876
+      ]
+    },
+    {
+      "a": "random",
+      "b": "mcts-150",
+      "share": 0,
+      "wins": 0,
+      "games": 200,
+      "ci": [
+        0,
+        0.0188
+      ]
+    },
+    {
+      "a": "random",
+      "b": "mcts-30",
+      "share": 0,
+      "wins": 0,
+      "games": 200,
+      "ci": [
+        0,
+        0.0188
+      ]
+    },
+    {
+      "a": "random",
+      "b": "alphabeta-d2",
+      "share": 0,
+      "wins": 0,
+      "games": 200,
+      "ci": [
+        0,
+        0.0188
+      ]
+    },
+    {
+      "a": "random",
+      "b": "heuristic",
+      "share": 0,
+      "wins": 0,
+      "games": 200,
+      "ci": [
+        0,
+        0.0188
+      ]
+    },
+    {
+      "a": "random",
+      "b": "greedy-size",
+      "share": 0.0275,
+      "wins": 5.5,
+      "games": 200,
+      "ci": [
+        0.0123,
+        0.0606
+      ]
+    }
+  ]
+}
