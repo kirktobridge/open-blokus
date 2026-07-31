@@ -30,10 +30,14 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P65** — Custom Game screen character pass. Every dependency has shipped and the
+   milestones are independently shippable, so it is the cheapest ready entry: M1 (variant as
+   a board) and M3 (summary as headline) carry most of the change, M2/M4 are small. Setup
+   logic is a constraint, not scope — presentation only.
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-3. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
    dependency-free — the tournament engine already runs in the browser, and its Elo board
    now reads P61's shipped Classic ratings — but it is much the largest build of the ready
    set, so it sits last until something above it clears.
@@ -1305,6 +1309,80 @@ four classic colors as accents, shapes as the star.
 - **Later, separately:** full IDE-flavored themes (matching mat + surfaces + pieces) are a
   distinct future entry — they'd reuse the mat/finish-tuning machinery (P40/P59) and carry
   the surface-design cost this entry deliberately avoids.
+
+### P65 — Custom Game screen character pass (the setup screen joins the front door)
+- **Drafted:** 2026-07-31 — verified against `src/`: `CustomGameScreen` is a 640px column
+  holding one `PANEL` of four inline `<select>`s; `formatTierRating` renders into `<option>`
+  text; `progression` is not imported anywhere on the lobby setup path.
+- **Status:** proposed
+- **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
+  that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
+  promoted to a screen by that same entry, kept the old `<details>` form's character: it is
+  the least spatial surface in a game whose whole subject is space. The variant choice —
+  20×20/4-color/corners vs 14×14/2-color/interior starts, the most consequential control on
+  the screen — renders as two words in a dropdown with a `title` tooltip that touch devices
+  never show. This is [P35](#p35--lobby-menu-hierarchy-pass-one-primary-adaptive-rows)'s
+  relationship to P29's menu, applied to the screen next door: a character and legibility
+  pass over a shipped surface, not a rebuild. Setup logic and the data model are
+  **constraints, not scope** — `normalizeSetup`, `resolveExtremeForBlitz`, `launchSetup` and
+  `pinSetup` keep their current behavior exactly.
+- **Scope / milestones:**
+  - **M1 — variant as a board, not a dropdown.** Replace the `Game:` `<select>` with two
+    selectable cards, each rendering a real ~140px board: Classic 20×20 with its four corner
+    start cells, Duo 14×14 with its two interior ones, each in that variant's own piece
+    colors, plus a one-line caption. Geometry reads from **`VARIANTS[variant]`**
+    (`boardSize` / `playColors` / `startCells`) — the variant-keyed seam; the
+    `boardSizeOf`/`startCellOf` helpers take a `GameState` and so do not apply here.
+    Rendering reuses [`PlacedLayer`](../../src/client/board/PlacedLayer.tsx), which derives
+    its side length from `board.length` and therefore draws a 14×14 board unmodified, over
+    the same mat/grid recipe [`AmbientBoard`](../../src/client/lobby/AmbientBoard.tsx)
+    already builds. **Static cells only** — no timers, no engine, no ambient animation: the
+    front door's board is decorative, but this one is a control, and motion here would
+    compete with the CTA on a screen whose job is to be exited. Preserves P29's
+    no-engine-in-the-lobby-bundle property.
+  - **M2 — difficulty rows say what they mean.** Promote the rating out of `<option>` text
+    into the `WELL_ROW` beside each seat's `<select>`, alongside that tier's record from
+    `useProgression()` (`perTier[variant][tier]`, rendered via the shipped `winRate`) —
+    "≈1683 Elo · you're 1–4 vs hard", with the record clause absent where there is no
+    record. Options are visible only mid-interaction and render platform-dependently, so
+    today the `≈` and the caption explaining it are never co-visible with the number. Keeps
+    `formatTierRating` and M6's Duo-unrated rule exactly as P61 shipped them, and keeps
+    `disabled` extreme + its in-place "needs untimed play" suffix (P25).
+  - **M3 — the summary becomes the headline.** `setupSummary(setup)` is already written as a
+    sentence and is the same string Quick Play uses as its subtitle, but it renders at 13.5px
+    muted beneath an `<h2>` reading "Custom game" — which duplicates both the top-bar chip
+    and the back button, so the largest type on screen carries no information. Invert them:
+    summary at ~20px in `--ink`, updating live; the heading demoted or dropped.
+  - **M4 — show returning players what they changed.** `isPinned` is already computed from
+    `setupKey`; extend that comparison per-field so rows differing from `quickPlay` carry a
+    subtle changed-affordance (a `--well` edge accent or dot). The returning player's whole
+    task is "bump one bot, keep my usual" and the only current signal is a button
+    re-enabling. No new state — `quickPlay` is already held.
+  - **M5 — name the watch game.** When `aiCount === mode`, `setupSummary` already says
+    "Watch — N bots" and suppresses the clock, but the CTA still reads "Start this setup" and
+    Blitz still looks live while being inert. Relabel the CTA to "Watch this game" in that
+    state and recede (not remove) the Blitz row with a note that the clock only runs on a
+    human seat. Distinct from
+    [P64](#p64--in-app-arena-matchup-lab-pit-bots-against-each-other)'s arena, which is a
+    bot-only *matchup lab* rather than a play mode.
+- **Depends on:** [P29](#p29--front-door-ambient-board--action-menu) (shipped — the screen +
+  `AmbientBoard`'s board recipe), [P61](#p61--surface-bot-strength-ratings-difficulty-picker)
+  (the rating display M2 revises — its Classic display shipped 2026-07-28; the entry stays
+  `partial` on its own outstanding piece, the Duo ladder, which this entry neither needs nor
+  blocks), [P15](#p15--local-progression-stats--history--shipped) (shipped —
+  `useProgression`/`winRate` for M2's records),
+  [P46](#p46--quick-play-configurable-default) (shipped — `setupKey`/pin semantics M4 reads;
+  unchanged), [P20](#p20--variety-blokus-duo--blitz--shipped) M2b (shipped — the `VARIANTS`
+  registry M1 reads). Milestones are independently shippable; M1 and M3 together carry most
+  of the character change, M2 and M4 are the cheap wins.
+- **Notes:** deliberately **not** in scope: wiring [drama.ts](../../src/client/drama.ts) into
+  this screen. It is a play-time detector over `prev`/`cur` game states with no meaning on a
+  setup form, and using it here would be theming for its own sake. M1 must respect the
+  variant-sensitivity invariant — no `BOARD_SIZE`/`CORNERS`/`COLOR_ORDER` in the new card
+  component, which the shipped `no-restricted-imports` rule enforces. Verification is
+  per-theme screenshots of both variant cards (light + Lamplight) — the same eyes-on detector
+  P40/P59 use — plus the existing `ratings` specs, which must keep holding that no Classic
+  number appears on a Duo board.
 
 ---
 
