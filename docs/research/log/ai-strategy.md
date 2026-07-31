@@ -1274,3 +1274,87 @@ for a misnomer it carried since W2 (it called the output "champion-anchored" whe
 was mean-centered and the champion was the *ceiling* anchor in P13's sense — a different
 thing from the fit's zero point). [M7](../FINDINGS.md) records that its open decision is
 now made. The Duo counterpart does not exist and is **not** cheap to add yet — see AE35.
+
+---
+
+### Run Z — Restoring the Duo ladder's top step: can `extreme` out-play `hard` on 14×14? (AE33)
+
+**Date:** 2026-07-28 · **Config:** `scripts/experiments/ae33-phase1.ts`,
+`ae33-x1000-s{6,48}.json`, `ae33-pentobi-L{1,2}.json`, drivers `ae33-sweep.sh`,
+`ae33-pentobi.sh`. All arena runs are Duo 1v1, fixed-iteration on **both** sides
+(shardable; same substitution argument as Run Y).
+
+**Pre-registered before any arm ran (M2):** criterion (a) Wilson lower bound > 52% vs
+`hard` over ≥600 pooled Duo games; criterion (b) p95 ≤ **6000 ms/move**, fixed by the user
+at parity with `extreme`'s measured Classic cost (5973 ms/move, Run Y); criterion (c) every
+adjacent ladder step CI-clear of 50% (inherited from AE30).
+
+**Phase 1 — latency (seeds 42/43/44, 36 probe positions, 12 plies × 3 traces).**
+
+| iters | samples | mean ms | p95 ms | vs 6000 ms cap |
+|---|---|---|---|---|
+| 500 (shipped) | 6 | 1409 | 2567 | PASS |
+| 500 (shipped) | 48 | 1506 | 2482 | PASS |
+| **1000** | **6** | **2928** | **5404** | **PASS** |
+| **1000** | **48** | **3103** | **5273** | **PASS** |
+| 1500 | 6 | 4218 | 7732 | OVER |
+| 1500 | 48 | 4452 | 7512 | OVER |
+| 2000 | 6 | 5439 | 9027 | OVER |
+| 2000 | 48 | 5768 | 9735 | OVER |
+
+Control check: 500/s48 at 1506 ms mean vs Run Y's 1549 ms — reproduces, harness sound.
+**The cap admits only the 1000-iter arms**, i.e. near-parity with `hard`'s 955 iters/move,
+not a search advantage over it. 17m18s.
+
+**Phase 2 — head-to-head vs `hard` (950 iters, beam 16, s6).** Both admitted arms run at
+n=600; the pre-registered screen→confirm was collapsed to n=600-per-arm because only two
+arms survived phase 1, so the screen's job (locating one arm among six) was moot. Sampling
+plan only — the 52% bar was not touched.
+
+| arm | seeds | n | game-share | Wilson 95% CI | criterion (a) |
+|---|---|---|---|---|---|
+| 1000 iters, **s6** | 201–224 | 600 | 54.6% | [50.6, 58.5] | **fails** (lower bound < 52) |
+| 1000 iters, **s48** | 201–224 | 600 | 62.8% | [58.9, 66.6] | clears |
+| 1000 iters, s48 — replication | 401–424 | 600 | 64.3% | [60.4, 68.1] | clears |
+| **1000 iters, s48 — pooled** | both | **1200** | **63.6%** | **[60.8, 66.3]** | **clears**, p=2.5e-21 |
+
+Wall-clock: confirm 440m55s (48 batches), replication 221m18s (24 batches). Both driver
+runs passed the completeness gate (24/24 per config) before any pooling.
+
+**Phase 3a — ladder monotonicity (criterion (c)).** Steps 1 and 2 are **cited from Run Y,
+not re-run**: only `extreme` changed, so those matchups are byte-identical configs already
+measured at n=600 with clear CIs. Stated as a substitution rather than left implicit.
+
+| step | matchup | game-share | Wilson 95% CI | source |
+|---|---|---|---|---|
+| 1 | medium-b16 vs easy | 95.8% | [93.8, 97.1] | Run Y (cited) |
+| 2 | hard vs medium-b16 | 76.1% | [72.5, 79.3] | Run Y (cited) |
+| 3 | **extreme-1000-s48 vs hard** | **63.6%** | **[60.8, 66.3]** | this run, n=1200 |
+
+**Phase 3b — external anchor, Pentobi Duo ladder (n=200/pairing, matching Run X).** 75m22s.
+
+| opponent | `extreme-1000-s48` | shipped 500-iter config (Run X / F20) |
+|---|---|---|
+| Duo **L1** | **57.5%** [50.6, 64.1], p=0.017 | 52.8% [45.8, 59.6], p=0.22 |
+| Duo **L2** | **49.0%** [42.2, 55.9] | 35.5% [29.2, 42.3] |
+
+**Read.** The entry's headline hypothesis — "raise Duo's `extreme` iteration count to
+out-search `hard`" — was **foreclosed by its own latency criterion** and is not what
+produced the win. The cap admitted only 1000 iters against `hard`'s 955, a 1.05× search
+advantage worth well under a point by F6. The `s6` arm isolates almost exactly that term
+and **failed the bar at 54.6%**. The 8.2-point gap between the two arms at identical
+iterations is rollout **width**, so the lever here is F18's mechanism, not search depth.
+Both moved together — the doubling from the shipped 500 iters is real — but width is what
+clears 52%, and reporting this as "more iterations fixed the Duo ladder" would credit the
+wrong constant. Externally the retune is worth about one Pentobi Duo level (even-with-L1
+→ beats-L1, loses-L2 → even-with-L2), which closes the transfer loss F20 named; the L1 win
+is genuine but marginal (lower bound 50.6%). Two AE33 hypotheses died and are recorded
+rather than dropped: the iteration lever is capped by latency, and `rolloutSamples` did
+**not** need re-optimising downward on Duo — 48 beat 6 at the new budget too.
+
+**Decision.** AE33 closes **won**. Criteria (a) `replicated` at n=1200, (b) p95 5273 ms
+under the 6000 ms cap, (c) all three steps CI-clear — AE30's inherited criterion (a) is
+discharged. New finding [F24](../FINDINGS.md); [F23](../FINDINGS.md) annotated as
+superseded-by-measurement, not deleted. Deployment is **not** a retune-in-place: the
+winning config is Duo-specific and `MCTS_TIERS` in `difficulty.ts` has no variant
+dimension, so it needs a product entry (see the AE33 close).

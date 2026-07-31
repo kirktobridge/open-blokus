@@ -1,0 +1,8 @@
+{
+  "title": "AE33 Phase 3 — retuned Duo extreme (1000 iters, beam 20, samples 48) vs Pentobi Duo L1 (1v1). External anchor for the retune; the shipped 500-iter config's placement is F20/Run X.",
+  "variant": "duo",
+  "seats": [
+    { "kind": "local", "name": "extreme-1000", "strategy": "mcts", "options": { "iterations": 1000, "beam": 20, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutSamples": 48 } },
+    { "kind": "pentobi", "name": "pentobi-duo-L1", "level": 1 }
+  ]
+}

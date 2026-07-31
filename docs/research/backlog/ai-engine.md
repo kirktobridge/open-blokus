@@ -21,15 +21,21 @@ test (product P21) fails CI if any ID here is missing or terminal.
    is now known to be mostly the iterations shorter playouts buy (not per-move smarts),
    so a prior has to add signal a cheap size-max sampler doesn't. **AE32**'s concept
    mining is the natural feed for its design phase — read before fixing the feature set.
-2. **AE33** — restore the Duo ladder's top step. Carved out of AE30's close: `extreme`
-   and `hard` are statistically identical on Duo (49.8%, [F23](../FINDINGS.md)) because
-   `hard` completes 955 iters/move against `extreme`'s fixed 500. Cause already measured,
-   so this is a sweep rather than an investigation — and it is a *shipped tier doing
-   nothing for players*, which outranks further Classic engine work.
-3. **AE34** — does `block: 0` survive into the Duo MCTS tiers? Cheap, and it decides
+2. **AE34** — does `block: 0` survive into the Duo MCTS tiers? Cheap, and it decides
    P63's last slice: F22's 75.3% is a *heuristic-level* result, so shipping it to the
    tiers without measuring would read the finding past its stated scope. **Blocked on
-   P63(b)** — the `MctsConfig` weights seam — so sequence it after that lands.
+   P63(b)** — the `MctsConfig` weights seam — so sequence it after that lands. Seat the
+   **retuned** `extreme` (1000 iters, [F24](../FINDINGS.md)) when it runs.
+3. **AE36** — Duo `extreme`'s beam at the retuned 1000-iteration budget. Filed by AE33's
+   staleness sweep: the retune moved `iters/beam` 25 → 50 without ever sweeping beam, so
+   whether 20 is still right is unmeasured. Dependency-ready and self-contained, but
+   lower payoff than the two above — the likely outcome is that beam 20 stands.
+
+**Duo track status:** AE33 closed `won` (Run Z / [F24](../FINDINGS.md)) — the Duo ladder is
+monotone end-to-end for the first time and `extreme` now beats Pentobi Duo L1. The
+remaining Duo work is deployment ([P63](../../product/BACKLOG.md#p63) scope (a)), not
+research; nothing in the Duo queue is blocked on a further measurement except AE34's
+dependency on P63(b).
 4. **AE31** — Duo reward model (placed-square leader ≠ Duo winner). Now the last
    untested member of the trio of Classic-scoped constants F20 named; AE30 falsified
    the beam one and retuned the weights, leaving the scoring proxy. Its readout
@@ -1085,9 +1091,46 @@ test (product P21) fails CI if any ID here is missing or terminal.
 
 ### AE33 — Duo's top ladder step is flat: `extreme` must out-search `hard` on 14×14
 - **Drafted:** 2026-07-27
-- **Status:** proposed — **dependency-ready**. Carved out of [AE30](#ae30) at its close
-  (Run Y / [F23](../FINDINGS.md)) rather than absorbed, because AE30's criterion (a) is a
-  *fail* it cannot close over and the fix is a different constant than the ones AE30 tuned.
+- **Status:** won (Run Z / [F24](../FINDINGS.md)) — Duo `extreme` at **1000 iterations,
+  beam 20, `rolloutSamples` 48** beats `hard` **63.6%** [60.8, 66.3] pooled over n=1200
+  (two independent seed batches), clearing the pre-registered 52% bar; p95 5273 ms is inside
+  the 6000 ms cap; all three adjacent ladder steps are CI-clear. AE30's inherited criterion
+  (a) is discharged. Carved out of [AE30](#ae30) at its close (Run Y / [F23](../FINDINGS.md))
+  rather than absorbed, because AE30's criterion (a) was a *fail* it could not close over.
+- **Deploys as:** [P63](../../product/BACKLOG.md#p63) **scope (a)** — the per-variant tier
+  config already scoped there. AE33 adds a *second* Duo delta beside `medium.beam = 16`:
+  `extreme.iterations = 1000`. No new surface is needed (`rolloutSamples: 48` is already the
+  shipped `extreme` value, so it needs no delta), and no other slice of P63 is implicated.
+  Until (a) ships, Duo players still get the 500-iter tier and [F20](../FINDINGS.md)'s
+  "tops out at Duo L1" remains the true statement about the *shipped* ladder.
+- **What the result was not (the hypothesis died, recorded per M-discipline):** this entry
+  predicted that *raising iterations to out-search `hard`* would restore the step. The
+  pre-registered latency cap foreclosed exactly that: only 1000 iters fits, against `hard`'s
+  955, a 1.05× advantage. The `s6` arm isolates that term and **failed at 54.6%**
+  [50.6, 58.5]. The win is rollout **width** at the new budget ([F18](../FINDINGS.md)'s
+  mechanism, now shown to transfer to Duo in the affirmative). Crediting iterations here
+  would be reading the winning arm without its control.
+- **Staleness sweep (the change moves a shipped default + doubles move time 1506 → 3103 ms):**
+  - [F23](../FINDINGS.md) — annotated superseded-by-measurement; kept, not deleted.
+  - [F20](../FINDINGS.md) — its `extreme` placement is superseded *for the retuned config*
+    only; the claim about the shipped ladder stays true until P63(a) lands. No edit owed yet.
+  - [F18](../FINDINGS.md)/[AE28](#ae28) — Classic-scoped result unaffected; F24 extends it to
+    Duo rather than contradicting it.
+  - **AE34** — must now measure `block: 0` against the **retuned** `extreme` (1000 iters),
+    not the 500-iter one, or it inherits a stale opponent. Noted on that entry.
+  - **[AE35](#ae35)** — if the Duo pool-Elo ladder is ever built, it must seat the retuned
+    config; a ladder fitted on the 500-iter tier would be born stale.
+  - **Beam at the new budget** — `iters/beam` for Duo `extreme` moves 25 → 50, further from
+    F8's Classic-local `/6` rule ([F21](../FINDINGS.md) already showed that rule does not
+    govern Duo). Not covered by this run's design; filed as **[AE36](#ae36)** rather than
+    assumed either way.
+  - Blitz pacing — unaffected, `extreme` is excluded from blitz (`resolveExtremeForBlitz`),
+    so the doubled move time interacts with nothing there.
+- **Move-time cap (pre-registered 2026-07-28, criterion (b)):** p95 **6000 ms/move** on Duo
+  — parity with `extreme`'s measured Classic cost (5973 ms/move, Run Y phase 1). Rationale:
+  `extreme` is the no-time-budget tier and already ships at ~6 s/move on Classic, so a Duo
+  player has no grounds to expect faster; it is excluded from blitz for exactly this reason.
+  Fixed **before** phase 2 per M2 — no arm gets adopted by moving this line.
 - **Variant:** duo — the constant at fault is Classic-scoped and only misbehaves at 14×14.
 - **Objective:** restore a real top step on the Duo ladder. Measured: `extreme` vs `hard`
   is **49.8%**, CI [45.8, 53.8] at n=600 — statistically identical, so the tier players are
@@ -1123,7 +1166,36 @@ test (product P21) fails CI if any ID here is missing or terminal.
   extreme is already excluded from blitz for that reason; if no setting clears (a) inside
   the (b) cap, the honest outcome is **collapsing the Duo ladder to three tiers**, which
   is a product decision, not a research one — surface it rather than shipping a tier that
-  does nothing.
+  does nothing. *(Outcome: the cap did bind, but a setting cleared (a) inside it — the
+  three-tier collapse was not needed.)*
+- **Log:** [Run Z](../log/ai-strategy.md) (phases 1–3; configs `ae33-x1000-s{6,48}.json`,
+  `ae33-pentobi-L{1,2}.json`, drivers `ae33-sweep.sh`, `ae33-pentobi.sh`)
+
+### AE36 — Duo `extreme`'s beam at the retuned 1000-iteration budget
+- **Drafted:** 2026-07-28
+- **Status:** proposed — cheap re-validation filed by [AE33](#ae33)'s staleness sweep rather
+  than assumed. Dependency-ready (needs no product work; the arena already plays Duo).
+- **Variant:** duo.
+- **Objective:** AE33 doubled Duo `extreme`'s iterations while holding `beam: 20`, moving
+  `iters/beam` from 25 to 50. Beam was not a swept dimension there, so whether 20 is still
+  the right width at 1000 iters is **unmeasured** — the retune may be leaving strength on
+  the table even though it already cleared its own bar.
+- **Hypothesis:** weakly held, and deliberately two-sided. [F8](../FINDINGS.md)'s
+  `beam ≈ iters/6` would want ~167, but [F21](../FINDINGS.md) showed that rule is
+  Classic-local and Duo's `medium` wanted a beam *far below* it (16, not 42). So the honest
+  prior is "unknown, plausibly wider than 20, certainly not 167."
+- **Method:** fixed-iteration head-to-heads at 1000 iters, beam ∈ {12, 20, 32, 48} vs the
+  AE33 winner (beam 20), Duo 1v1, `rolloutSamples` 48 throughout. Reuse
+  `ae33-sweep.sh` with new `ae36-*.json` configs. Screen n=200/arm (directional, M1), then
+  confirm the leader at n=600 on non-overlapping seeds. Re-check the p95 6000 ms cap at the
+  winner — a wider beam costs move time, and AE33's cap is inherited, not renegotiated.
+- **Success criteria:** a candidate beam beats beam 20 with Wilson lower bound > **52%** at
+  n≥600, *and* holds p95 ≤ 6000 ms/move. Otherwise close `no-win` and beam 20 stands.
+- **Power:** n=600 → MDE 56.0%; n=200 screen is directional only
+  (`stats.py --power --bar 52 --n 600`). Pool to n≥1200 if the leader lands under 56%.
+- **Cost / risk:** moderate — same per-game cost as AE33 phase 2 (~3 s/move), so budget a
+  multi-hour sweep. Risk: low value if beam 20 is already near-optimal, which is the likely
+  outcome; the entry exists so that "we never looked" is not the reason we don't know.
 - **Log:** —
 
 ### AE34 — Does `block: 0` survive into the MCTS tiers on Duo?
@@ -1134,6 +1206,11 @@ test (product P21) fails CI if any ID here is missing or terminal.
   search a different weight vector today. Stated as a blocker rather than a caveat because
   it is a code change in another skill's tree, not an arena config.
 - **Variant:** duo — the term's measured behaviour is variant-specific ([F22](../FINDINGS.md)).
+- **Opponent moved (flagged by [AE33](#ae33)'s staleness sweep, 2026-07-28):** the `extreme`
+  seat this entry measures against is now **1000 iterations**, not 500
+  ([F24](../FINDINGS.md)). Seat the retuned config when this runs — a `block` result
+  measured against the old top tier would be answering a question about a bot we no longer
+  intend to ship.
 - **Objective:** decide whether Duo's `medium`/`hard`/`extreme` tiers should also drop the
   `block` term, or whether F22's win is confined to the greedy chooser.
 - **Hypothesis:** genuinely open, which is why it needs its own bar rather than an

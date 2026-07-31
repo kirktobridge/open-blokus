@@ -1,0 +1,8 @@
+{
+  "title": "AE33 Phase 2 — Duo extreme candidate (1000 iters, beam 20, rolloutSamples 6) vs shipped hard (950 iters, beam 16). Fixed-iteration both sides so shards pool and wall-clock never confounds strength.",
+  "variant": "duo",
+  "seats": [
+    { "name": "extreme", "strategy": "mcts", "options": { "iterations": 1000, "beam": 20, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25, "rolloutSamples": 6 } },
+    { "name": "hard", "strategy": "mcts", "options": { "iterations": 950, "beam": 16, "rolloutDepth": 0, "minIterations": 8, "rankRewardWeight": 0.25 } }
+  ]
+}

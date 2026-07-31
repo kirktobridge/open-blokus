@@ -440,6 +440,44 @@ throughput, where extreme's 500 beats hard's 155) leaking into a variant it was 
 measured on — M6 again, and the second time in two runs that a `difficulty.ts` constant
 has failed to transfer. Independent of the F21 beam change: it reproduces with `hard` at
 its inherited beam 16. Run Y.
+**Superseded by [F24](#f24--duos-top-tier-is-fixed-by-rollout-width-not-by-out-searching-hard-and-the-latency-cap-is-what-forecloses-iterations) (Run Z)** — the flat step is fixed, and the diagnosis above is
+*half* right: the iteration deficit is real, but closing it is not what restored the step
+(the latency cap allows only ~1000 iters vs `hard`'s 955, and that arm alone fails the
+bar). Kept as the record of the defect and of a mechanism claim that measurement then
+narrowed.
+
+### F24 — Duo's top tier is fixed by rollout *width*, not by out-searching `hard` — and the latency cap is what forecloses iterations
+`replicated` **(duo)** — two independent seed batches (n=600 each, 62.8% [58.9, 66.6] and
+64.3% [60.4, 68.1]); pooled **n=1200, 63.6% [60.8, 66.3]**, p=2.5e-21, against a
+pre-registered 52% Wilson-lower-bound bar. Duo `extreme` retuned to **1000 iterations,
+beam 20, `rolloutSamples` 48** turns F23's flat top step into a real one and leaves every
+adjacent Duo step CI-clear (95.8 / 76.1 / 63.6).
+
+**The win is width, not depth, and the two are separable here.** A p95 6000 ms/move cap
+(pre-registered, parity with `extreme`'s Classic cost) admits only the 1000-iter arms —
+1500 and 2000 iters land at 7.5–9.7 s. Since `hard` already completes **955** iters/move on
+Duo, the cap leaves the top tier a **1.05× search advantage**, worth well under a point by
+[F6](#f6). The `s6` arm isolates that term and **fails the bar at 54.6% [50.6, 58.5]**; the
+`s48` arm at the *same* iteration count clears it by 9 points. So F23's iteration-deficit
+diagnosis identified a real defect but the wrong remedy: what the extra iterations buy is
+the *budget regime* in which width pays, exactly [F18](#f18)'s mechanism — and F18's own
+variant-scope caveat (it declined to transfer itself to Duo because the right width is
+budget-dependent) is now discharged **in the affirmative**: 48 still beats 6 at Duo's new
+budget, no downward re-optimisation needed.
+
+**External anchor (M5), n=200/pairing:** the retune is worth about **one Pentobi Duo
+level** — from "even with L1 (52.8%, p=0.22), loses L2 CI-clear (35.5%)" to **beats L1
+(57.5% [50.6, 64.1], p=0.017)** and **even with L2 (49.0% [42.2, 55.9])**. That places Duo
+`extreme` where Classic `extreme` sits in [F14](#f14--absolute-strength-our-best-bot--pentobi-level-12-the-first-external-anchor), closing the one-level transfer loss
+[F20](#f20--our-whole-shipped-ladder-tops-out-at-pentobi-duo-level-1-about-one-level-below-where-it-sits-on-classic) named. Held with its size stated: the L1 win is **marginal** (lower bound
+50.6% at n=200), so "beats L1" is significant but not comfortable; the L2 parity is the
+better-powered half of the claim.
+
+**Cost of the win, stated:** mean move time doubles, 1506 → 3103 ms (p95 5273 ms). Within
+the cap, and `extreme` is already excluded from blitz, so no pacing interacts. **Deploy:**
+not a retune-in-place — the config is Duo-specific and `MCTS_TIERS`
+([difficulty.ts](../../src/client/ai/difficulty.ts)) has no variant dimension; see the
+AE33 close for the product pointer. Run Z.
 
 ---
 
