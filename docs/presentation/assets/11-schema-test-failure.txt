@@ -1,0 +1,26 @@
+
+ RUN  v2.1.9 /home/glamdring/open-blokus/open-blokus
+
+ ❯ tests/backlog-schema.test.ts (30 tests | 1 failed) 22ms
+   × backlog schema > docs/product/BACKLOG.md > every open entry is dated 4ms
+     → open P2 has no **Drafted:** YYYY-MM-DD: expected null not to be null
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/backlog-schema.test.ts > backlog schema > docs/product/BACKLOG.md > every open entry is dated
+AssertionError: open P2 has no **Drafted:** YYYY-MM-DD: expected null not to be null
+ ❯ tests/backlog-schema.test.ts:364:72
+    362|           if (!open.has(e.statusToken ?? '')) continue;
+    363|           const d = draftedOn(e.body);
+    364|           expect(d, `open ${e.id} has no **Drafted:** YYYY-MM-DD`).not…
+       |                                                                        ^
+    365|           expect(d! <= today, `${e.id} is drafted in the future (${d})…
+    366|         }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 29 passed (30)
+   Start at  00:41:42
+   Duration  228ms (transform 34ms, setup 0ms, collect 32ms, tests 22ms, environment 0ms, prepare 52ms)
+
