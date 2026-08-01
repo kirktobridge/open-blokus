@@ -48,7 +48,7 @@ function changedRow(changed: boolean | undefined): CSSProperties {
     ...WELL_ROW,
     fontSize: 14,
     flexWrap: 'wrap',
-    boxShadow: changed ? 'inset 3px 0 0 0 var(--accent)' : undefined,
+    boxShadow: changed ? 'inset 3px 0 0 0 var(--brass)' : undefined,
   };
 }
 
@@ -70,7 +70,7 @@ function ChangedDot({ changed, field }: { changed: boolean | undefined; field: s
         width: 6,
         height: 6,
         borderRadius: '50%',
-        background: 'var(--accent)',
+        background: 'var(--brass)',
         flex: '0 0 auto',
       }}
     />
