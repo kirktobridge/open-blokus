@@ -30,14 +30,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-2. **P65** — Custom Game screen character pass. `partial`: M1 + M3 (character) and M2 + M4
-   (the seat rows) have shipped. All that remains is **M5** — relabel the CTA to "Watch this
-   game" and recede the Blitz row when every seat is a bot — the smallest milestone in the
-   entry and dependency-ready. Setup logic is a constraint, not scope — presentation only.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+3. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
    dependency-free — the tournament engine already runs in the browser, and its Elo board
    now reads P61's shipped Classic ratings — but it is much the largest build of the ready
    set, so it sits last until something above it clears.
@@ -1310,25 +1306,25 @@ four classic colors as accents, shapes as the star.
   distinct future entry — they'd reuse the mat/finish-tuning machinery (P40/P59) and carry
   the surface-design cost this entry deliberately avoids.
 
-### P65 — Custom Game screen character pass (the setup screen joins the front door)
-- **Drafted:** 2026-07-31 — re-verified against `src/` after M2 + M4 landed, for the sake of
-  the one milestone still open. **M5's premises hold:** `setupSummary` still says
-  "Watch — N bots" when `aiCount === mode`, the CTA still reads "Start this setup" in that
-  state, and the Blitz row still renders live-looking while inert. M2 + M4 rewrote the seat
-  rows around them without touching that block. Setup logic is likewise unchanged —
-  `normalizeSetup`, `resolveExtremeForBlitz`, `launchSetup` and `pinSetup` keep the behavior
-  M5 must also preserve.
-- **Status:** in-progress — **M5 claimed** (`feat/p65-watch-game`), the last milestone.
-  **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is
-  two selectable cards drawing each variant's true geometry from `VARIANTS`, and
-  `setupSummary` takes the headline slot in place of the "Custom game" `<h2>`. M1's card
-  *selection ring* was invisible from that land until `af6bfff` — it was drawn in
-  `var(--accent)`, a token this project never defines, and an unresolvable `var()` voids the
-  whole declaration; read the M1-shipped claim above as shipped-but-not-visibly-selectable
-  for that window. **M2 + M4 shipped** (2026-07-31, `9b43263`): each seat's rating and its
-  record move out of `<option>` text into the row beside the `<select>`, and rows differing
-  from the pinned `quickPlay` carry an edge accent + dot. M5 (name the watch game) is the
-  milestone now in flight; nothing else in the entry is open.
+### P65 — Custom Game screen character pass (the setup screen joins the front door) — SHIPPED
+- **Status:** shipped (2026-07-31) — all five milestones landed; the screen this entry
+  describes is [../../src/client/lobby/CustomGameScreen.tsx](../../src/client/lobby/CustomGameScreen.tsx)
+  plus [../../src/client/lobby/VariantCard.tsx](../../src/client/lobby/VariantCard.tsx).
+  **M1 + M3** (`fa71bec`): the variant choice is two selectable cards drawing each variant's
+  true geometry from `VARIANTS`, and `setupSummary` takes the headline slot in place of the
+  "Custom game" `<h2>`. M1's card *selection ring* was invisible from that land until
+  `af6bfff` — it was drawn in `var(--accent)`, a token this project never defines, and an
+  unresolvable `var()` voids the whole declaration; read the M1-shipped claim as
+  shipped-but-not-visibly-selectable for that window. **M2 + M4** (`9b43263`): each seat's
+  rating and its record move out of `<option>` text into the row beside the `<select>`, and
+  rows differing from the pinned `quickPlay` carry an edge accent + dot. **M5** (`2ce48e2`,
+  `6e6bf85`): the CTA reads "Watch this game" and the Blitz row recedes when every seat is a
+  bot. M5 is **presentation only** — `launchSetup` already suppressed the clock for a watch
+  game, so no setup logic moved; the receded row stays mounted and enabled, and an e2e spec
+  holds that a blitz value survives the all-bot round trip. Its 0.55 opacity is held to WCAG
+  AA's **3:1 UI-component** bar (measured 3.39:1 light, 5.11:1 Lamplight), not the 4.5:1
+  body-text bar — a deliberate call, recorded at the constant, because the row has to read as
+  receded.
 - **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
   that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
   promoted to a screen by that same entry, kept the old `<details>` form's character: it is
@@ -1409,7 +1405,8 @@ four classic colors as accents, shapes as the star.
   somewhere, with a positive control so an empty scan cannot pass it vacuously. It is a weak
   check for a visual property and does not replace the eyes-on pass — a defined token can
   still be the wrong color — but it closes the specific hole that let an invisible control
-  ship.
+  ship. **Nothing is carried forward:** the entry's scope is fully consumed, and `drama.ts`
+  stays excluded for the reason stated above, not as deferred work.
 
 ---
 
