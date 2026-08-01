@@ -1314,7 +1314,8 @@ four classic colors as accents, shapes as the star.
 - **Drafted:** 2026-07-31 — verified against `src/`: `CustomGameScreen` is a 640px column
   holding one `PANEL` of four inline `<select>`s; `formatTierRating` renders into `<option>`
   text; `progression` is not imported anywhere on the lobby setup path.
-- **Status:** proposed
+- **Status:** in-progress — **M1 + M3** claimed (`feat/p65-custom-game-character`); M2, M4,
+  M5 unclaimed and still independently shippable.
 - **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
   that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
   promoted to a screen by that same entry, kept the old `<details>` form's character: it is
@@ -1379,7 +1380,10 @@ four classic colors as accents, shapes as the star.
   this screen. It is a play-time detector over `prev`/`cur` game states with no meaning on a
   setup form, and using it here would be theming for its own sake. M1 must respect the
   variant-sensitivity invariant — no `BOARD_SIZE`/`CORNERS`/`COLOR_ORDER` in the new card
-  component, which the shipped `no-restricted-imports` rule enforces. Verification is
+  component. **Correction (2026-07-31, verified at claim time):** the drafted claim that
+  `no-restricted-imports` already enforces this here was wrong — the rule's `files` scope
+  does not cover `src/client/lobby/**`, so M1 is the first variant-sensitive rendering in
+  an unguarded tree. M1 therefore extends that scope rather than relying on it. Verification is
   per-theme screenshots of both variant cards (light + Lamplight) — the same eyes-on detector
   P40/P59 use — plus the existing `ratings` specs, which must keep holding that no Classic
   number appears on a Duo board.
