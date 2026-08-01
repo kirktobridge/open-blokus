@@ -30,11 +30,10 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-2. **P65** — Custom Game screen character pass. `partial`: M1 (variant as a board) and M3
-   (summary as headline) shipped, carrying most of the character change. What remains is the
-   cheap tail — M2 (rating + record beside each seat) and M4 (mark what differs from your
-   pinned default), both small and dependency-ready; M5 (name the watch game) is smaller
-   still. Setup logic is a constraint, not scope — presentation only.
+2. **P65** — Custom Game screen character pass. `partial`: M1 + M3 (character) and M2 + M4
+   (the seat rows) have shipped. All that remains is **M5** — relabel the CTA to "Watch this
+   game" and recede the Blitz row when every seat is a bot — the smallest milestone in the
+   entry and dependency-ready. Setup logic is a constraint, not scope — presentation only.
 3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
@@ -1312,17 +1311,23 @@ four classic colors as accents, shapes as the star.
   the surface-design cost this entry deliberately avoids.
 
 ### P65 — Custom Game screen character pass (the setup screen joins the front door)
-- **Drafted:** 2026-07-31 — re-verified against `src/` after M1 + M3 landed, since the
-  remaining milestones read this line: the variant `<select>` is now two `VariantCard`s, but
-  the three seat `<select>`s M2 revises remain, `formatTierRating` still renders into
-  `<option>` text (`CustomGameScreen.tsx:213`) while the `≈`/Duo-unrated caption renders
-  outside it — so M2's never-co-visible premise holds; `progression` is still not imported on
-  the lobby setup path; `isPinned`/`setupKey` are unchanged, so M4 is untouched.
-- **Status:** in-progress — **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is
+- **Drafted:** 2026-07-31 — re-verified against `src/` after M2 + M4 landed, for the sake of
+  the one milestone still open. **M5's premises hold:** `setupSummary` still says
+  "Watch — N bots" when `aiCount === mode`, the CTA still reads "Start this setup" in that
+  state, and the Blitz row still renders live-looking while inert. M2 + M4 rewrote the seat
+  rows around them without touching that block. Setup logic is likewise unchanged —
+  `normalizeSetup`, `resolveExtremeForBlitz`, `launchSetup` and `pinSetup` keep the behavior
+  M5 must also preserve.
+- **Status:** partial — **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is
   two selectable cards drawing each variant's true geometry from `VARIANTS`, and
-  `setupSummary` takes the headline slot in place of the "Custom game" `<h2>`. **M2 + M4 now
-  claimed** (`feat/p65-difficulty-rows`) — both revise the same seat-row block. M5 unclaimed
-  and still independently shippable.
+  `setupSummary` takes the headline slot in place of the "Custom game" `<h2>`. M1's card
+  *selection ring* was invisible from that land until `af6bfff` — it was drawn in
+  `var(--accent)`, a token this project never defines, and an unresolvable `var()` voids the
+  whole declaration; read the M1-shipped claim above as shipped-but-not-visibly-selectable
+  for that window. **M2 + M4 shipped** (2026-07-31, `9b43263`): each seat's rating and its
+  record move out of `<option>` text into the row beside the `<select>`, and rows differing
+  from the pinned `quickPlay` carry an edge accent + dot. M5 (name the watch game) is the one
+  unclaimed milestone and stays independently shippable.
 - **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
   that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
   promoted to a screen by that same entry, kept the old `<details>` form's character: it is
@@ -1395,7 +1400,15 @@ four classic colors as accents, shapes as the star.
   file-level disables stating why. Verification is
   per-theme screenshots of both variant cards (light + Lamplight) — the same eyes-on detector
   P40/P59 use — plus the existing `ratings` specs, which must keep holding that no Classic
-  number appears on a Duo board.
+  number appears on a Duo board. **That detector was not sufficient:** it passed over an
+  M1 selection ring painted in an undefined token, which renders as *nothing* rather than as
+  a wrong color, and vitest/typecheck/lint cannot see it either — a custom property is only a
+  string to all three. [tests/css-tokens.test.ts](../../tests/css-tokens.test.ts) (added by
+  `af6bfff`) now mechanically enforces that every bare `var(--token)` in `src/` is defined
+  somewhere, with a positive control so an empty scan cannot pass it vacuously. It is a weak
+  check for a visual property and does not replace the eyes-on pass — a defined token can
+  still be the wrong color — but it closes the specific hole that let an invisible control
+  ship.
 
 ---
 
