@@ -1318,7 +1318,8 @@ four classic colors as accents, shapes as the star.
   rows around them without touching that block. Setup logic is likewise unchanged —
   `normalizeSetup`, `resolveExtremeForBlitz`, `launchSetup` and `pinSetup` keep the behavior
   M5 must also preserve.
-- **Status:** partial — **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is
+- **Status:** in-progress — **M5 claimed** (`feat/p65-watch-game`), the last milestone.
+  **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is
   two selectable cards drawing each variant's true geometry from `VARIANTS`, and
   `setupSummary` takes the headline slot in place of the "Custom game" `<h2>`. M1's card
   *selection ring* was invisible from that land until `af6bfff` — it was drawn in
@@ -1326,8 +1327,8 @@ four classic colors as accents, shapes as the star.
   whole declaration; read the M1-shipped claim above as shipped-but-not-visibly-selectable
   for that window. **M2 + M4 shipped** (2026-07-31, `9b43263`): each seat's rating and its
   record move out of `<option>` text into the row beside the `<select>`, and rows differing
-  from the pinned `quickPlay` carry an edge accent + dot. M5 (name the watch game) is the one
-  unclaimed milestone and stays independently shippable.
+  from the pinned `quickPlay` carry an edge accent + dot. M5 (name the watch game) is the
+  milestone now in flight; nothing else in the entry is open.
 - **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
   that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
   promoted to a screen by that same entry, kept the old `<details>` form's character: it is
