@@ -26,30 +26,28 @@ The dependency-ready head of the backlog, highest-payoff first — the authorita
 to "what to build next." Refreshed by /ship on status flips + intake (see P22); the
 schema test (P21) fails CI if any ID here is missing or terminal.
 
-1. **P63** — per-variant AI tier constants. Deploys AE30's two replicated Duo wins
-   (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
-   pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
-   only (c) waits on AE34. Duo players are running the measured-worse settings today.
-2. **P67** — quiet the review transport chrome, fit the tray. Dependency-free, pure
+1. **P67** — quiet the review transport chrome, fit the tray. Dependency-free, pure
    presentation, and the only ready entry fixing a defect visible in the shipped app: the
    Your-Hand tray is clipped in review today. Small, but it must not disturb P52's pinning,
    which `e2e/rail-layout.spec.ts` holds.
-3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
-   variant, since the arena can play Duo.
-4. **P66** — Custom Game controls become steppers + a blitz slider. Dependency-ready (P65
+   variant, since the arena can play Duo — and P63 (a) has just made the tier constants
+   per-variant, which is the axis those bands would sit on.
+3. **P66** — Custom Game controls become steppers + a blitz slider. Dependency-ready (P65
    and P46 both shipped) and the smallest build of the ready set: one screen, no setup
    logic moves. Its real cost is a11y, not layout — replacing three `<select>`s gives up
    native keyboard traversal that has to be rebuilt deliberately.
-5. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
    dependency-free — the tournament engine already runs in the browser, and its Elo board
    now reads P61's shipped Classic ratings — but it is much the largest build of the ready
    set, so it sits last until something above it clears.
 
-**P61 is deliberately not listed.** It is `partial`, but its one outstanding piece — the
-Duo ladder — is a `--duo` pool-Elo sweep, i.e. arena time routed to research, not a
-dependency-ready build. It returns here only if the research lands and the wire-up needs
-its own slice.
+**P61 and P63 are deliberately not listed.** Both are `partial` with their remainder
+gated on research, not on build capacity. P61's outstanding piece — the Duo ladder — is a
+`--duo` pool-Elo sweep; P63's is slice (c) (Duo `block: 0`), which waits on AE34 — itself
+unblocked only now that P63 (b) shipped the `weights` seam. Either returns here once its
+research lands and the wire-up needs its own slice.
 
 ---
 
@@ -1870,9 +1868,21 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ### P63 — Per-variant AI tier constants (Duo stops inheriting Classic's beam and weights)
 - **Drafted:** 2026-08-01
-- **Status:** in-progress — claimed 2026-08-01 on `feat/p63-per-variant-ai-tiers`, scoped to
-  slices **(a)** and **(b)** only. **(c)** is not being built: it stays gated on AE34, which
-  is in turn blocked on (b), so the two land in that order or not at all.
+- **Status:** partial — **(a) + (b) shipped 2026-08-01** (merge `a5b37bb`, commit `9be3883`):
+  `mctsConfigFor(difficulty, variant)` merges Classic's constants with a per-variant delta
+  table (Duo `medium.beam = 16`, F21), and `MctsConfig.weights` replaces the module-constant
+  `WEIGHTS` reads in the search. **(c) did not land** and stays gated on AE34 — the entry
+  stays open for it. Two things were built past the slices as written, recorded so they don't
+  read as drift: a **third** weights read site the scope didn't name — the low-visit fallback
+  `chooseMove` — was threaded too, or a search configured with one vector would fall back to a
+  move chosen by another; and `variant` joined `LocalAIGame`'s `difficultyKey` memo key, or a
+  variant switch would reuse bots memoized for the old board. Verified limits: only `medium`
+  was driven in the real app (`hard`/`extreme` have empty Duo deltas — unchanged *by
+  construction*, not observed), and `weights` is untested end-to-end in a real game because no
+  variant ships a non-default vector yet, by design pending AE34.
+- **Unblocks AE34** ([ai-engine.md](../research/backlog/ai-engine.md)), whose `proposed` status
+  names *exactly* this seam as its blocker — verified 2026-08-01 by reading that entry. Its
+  status flip is **owed to /research**, not done here.
 - **Value:** [AE30](../research/backlog/ai-engine.md) measured two Classic-tuned constants
   that do **not** transfer to 14×14, and today Duo players get both of the losing settings:
   the `medium` tier runs a beam of 6 where 16 wins 58.6% at n=600
@@ -1886,7 +1896,7 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   AE30's `won` close points at; without it the research result is inventory.
 - **Scope:** three slices, deliberately independent — (a) and (b) ship without waiting on
   research, (c) does not.
-  - **(a) Per-variant tier config.** `MCTS_TIERS`
+  - **(a) Per-variant tier config — shipped.** `MCTS_TIERS`
     ([difficulty.ts](../../src/client/ai/difficulty.ts)) reads through
     [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
     existing axis — `tunedFor(base, deltas, G)` / `VariantDeltas<T>` in
@@ -1894,21 +1904,25 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     delta of `medium.beam = 16`. Reuse, not new infra. Note the shape mismatch to settle at
     build time: `tunedFor` keys off a `GameState`, while tier configs are chosen at seat-setup
     time; pass the variant rather than widening the helper if that reads cleaner.
-  - **(b) A weights seam in the search core.** Add `weights` to `MctsConfig`, replacing the
+  - **(b) A weights seam in the search core — shipped.** Add `weights` to `MctsConfig`, replacing the
     two module-constant reads above; default to `WEIGHTS` so Classic behaviour is unchanged.
     Contained by design — [heuristic.ts](../../src/game/ai/heuristic.ts) already takes weights
     as a parameter (`heuristicStrategy(weights = WEIGHTS)`), so only the search core lacks the
     seam. `tuning.ts` is **not** reusable here: it lives in `src/client/` and the search core
     is the pure rules-side tree, which cannot import from it.
-  - **(c) Duo `block: 0`** — gated on **AE34**, not on (b). F22 is measured
+  - **(c) Duo `block: 0`** — **still open**, gated on **AE34**, not on (b). F22 is measured
     heuristic-vs-heuristic, so it establishes the `easy` tier and the move-ordering/rollout
     *signal*; whether the term still hurts once a search sits on top of it is unmeasured.
     Shipping (c) off F22 alone would be reading a finding past its stated scope.
-- **Depends on:** [AE30](../research/backlog/ai-engine.md) (`won`) for (a) and (b);
-  **AE34** for (c). Adjacent but not blocking:
+- **Depends on:** [AE30](../research/backlog/ai-engine.md) (`won`) for (a) and (b) — both now
+  shipped; **AE34** for (c). Adjacent but not blocking:
   [P13](#p13--ladder-calibration-policy-tiers-as-strength-contracts) would make `MCTS_TIERS`
   an implementation detail behind measured strength bands — compatible with (a), and its
-  bands are worth re-asking per variant once this lands.
+  bands are worth re-asking per variant now that this has landed.
+- **No Classic ratings re-check is owed.** The `variant = 'classic'` default keeps every
+  existing caller on byte-identical constants, so the Classic-measured Elo ladder is
+  untouched by construction — verified 2026-08-01, `tests/ratings.test.ts` passes 10/10
+  unchanged. Any re-calibration this entry's scope text implied is void on that ground.
 
 ---
 
