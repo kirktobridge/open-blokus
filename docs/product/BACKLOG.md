@@ -1318,10 +1318,11 @@ four classic colors as accents, shapes as the star.
   `<option>` text (`CustomGameScreen.tsx:213`) while the `≈`/Duo-unrated caption renders
   outside it — so M2's never-co-visible premise holds; `progression` is still not imported on
   the lobby setup path; `isPinned`/`setupKey` are unchanged, so M4 is untouched.
-- **Status:** partial — **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is two
-  selectable cards drawing each variant's true geometry from `VARIANTS`, and `setupSummary`
-  takes the headline slot in place of the "Custom game" `<h2>`. M2, M4, M5 unclaimed and still
-  independently shippable — nothing in that diff voided them.
+- **Status:** in-progress — **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is
+  two selectable cards drawing each variant's true geometry from `VARIANTS`, and
+  `setupSummary` takes the headline slot in place of the "Custom game" `<h2>`. **M2 + M4 now
+  claimed** (`feat/p65-difficulty-rows`) — both revise the same seat-row block. M5 unclaimed
+  and still independently shippable.
 - **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
   that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
   promoted to a screen by that same entry, kept the old `<details>` form's character: it is
