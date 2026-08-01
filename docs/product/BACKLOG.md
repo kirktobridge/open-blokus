@@ -1868,18 +1868,20 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
 
 ### P63 — Per-variant AI tier constants (Duo stops inheriting Classic's beam and weights)
 - **Drafted:** 2026-08-01
-- **Status:** partial — **(a) + (b) shipped 2026-08-01** (merge `a5b37bb`, commit `9be3883`):
-  `mctsConfigFor(difficulty, variant)` merges Classic's constants with a per-variant delta
-  table (Duo `medium.beam = 16`, F21), and `MctsConfig.weights` replaces the module-constant
+- **Status:** partial — **(a) + (b) shipped 2026-08-01** (merges `a5b37bb`, `94e6d9a`; commits
+  `9be3883`, `ef4c3ba`): `mctsConfigFor(difficulty, variant)` merges Classic's constants with a
+  per-variant delta table — carrying **both** Duo deltas, `medium.beam = 16` (F21) and
+  `extreme.iterations = 1000` (F24) — and `MctsConfig.weights` replaces the module-constant
   `WEIGHTS` reads in the search. **(c) did not land** and stays gated on AE34 — the entry
   stays open for it. Two things were built past the slices as written, recorded so they don't
   read as drift: a **third** weights read site the scope didn't name — the low-visit fallback
   `chooseMove` — was threaded too, or a search configured with one vector would fall back to a
   move chosen by another; and `variant` joined `LocalAIGame`'s `difficultyKey` memo key, or a
   variant switch would reuse bots memoized for the old board. Verified limits: only `medium`
-  was driven in the real app (`hard`/`extreme` have empty Duo deltas — unchanged *by
-  construction*, not observed), and `weights` is untested end-to-end in a real game because no
-  variant ships a non-default vector yet, by design pending AE34.
+  was driven in the real app — `extreme`'s Duo delta is a config-table change covered by unit
+  tests and never exercised in a running game, and `hard` has no Duo delta at all, so it is
+  unchanged *by construction* rather than observed. `weights` is likewise untested end-to-end
+  in a real game because no variant ships a non-default vector yet, by design pending AE34.
 - **Unblocks AE34** ([ai-engine.md](../research/backlog/ai-engine.md)), whose `proposed` status
   names *exactly* this seam as its blocker — verified 2026-08-01 by reading that entry. Its
   status flip is **owed to /research**, not done here.
@@ -1900,10 +1902,23 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
     ([difficulty.ts](../../src/client/ai/difficulty.ts)) reads through
     [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
     existing axis — `tunedFor(base, deltas, G)` / `VariantDeltas<T>` in
-    [tuning.ts](../../src/client/tuning.ts), **verified present 2026-08-01** — with a Duo
-    delta of `medium.beam = 16`. Reuse, not new infra. Note the shape mismatch to settle at
-    build time: `tunedFor` keys off a `GameState`, while tier configs are chosen at seat-setup
-    time; pass the variant rather than widening the helper if that reads cleaner.
+    [tuning.ts](../../src/client/tuning.ts), **verified present 2026-08-01** — with two Duo
+    deltas: `medium.beam = 16` ([AE30](../research/backlog/ai-engine.md) / F21) and
+    `extreme.iterations = 1000` ([AE33](../research/backlog/ai-engine.md) / F24). Reuse, not
+    new infra. The shape mismatch called out at draft time was settled by passing the variant
+    rather than widening `tunedFor`, which keys off a `GameState` while tier configs are
+    chosen at seat-setup time.
+    **(a) is now complete with respect to both research entries that deploy through it** —
+    AE30 and AE33 are the two `won` entries whose `Deploys as:` names this surface, and each
+    delta they ask for is in the table (verified 2026-08-01 by reading
+    [difficulty.ts](../../src/client/ai/difficulty.ts) against both entries). Nothing further
+    is owed to (a); the entry stays open only for (c). AE33 needs no `rolloutSamples` delta —
+    48 is already `extreme`'s shipped Classic value.
+    **Limits, deliberately recorded:** the 1000-iteration Duo `extreme` was **not** driven in
+    the running app — it is a config-table change covered by unit tests, and the app-level
+    check drove `medium` only. Move time roughly doubling (1506 → 3103 ms per F24) is an
+    *arena* measurement, not an observed in-app latency. `hard` still has no Duo delta and is
+    unchanged by construction.
   - **(b) A weights seam in the search core — shipped.** Add `weights` to `MctsConfig`, replacing the
     two module-constant reads above; default to `WEIGHTS` so Classic behaviour is unchanged.
     Contained by design — [heuristic.ts](../../src/game/ai/heuristic.ts) already takes weights
