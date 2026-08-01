@@ -395,6 +395,17 @@ their placement needs a wall-clock-controlled batch and is **unmeasured**. Stand
 readout: `npm run arena:pentobi -- --variant=duo`, replay-verified (zero mapping throws
 across 1400 bridged games). Run X; closed [AE29](backlog/ai-engine.md) won.
 
+> **Superseded as a statement about the *shipped* ladder (2026-08-01), not as a
+> measurement.** Every number above stands for the config it measured — Duo `extreme` at
+> **500 iters**. That is no longer what ships: [F24](#f24) retuned Duo `extreme` to 1000
+> iters and [P63](../product/BACKLOG.md#p63)(a) deployed it (commit `ef4c3ba`). F24 carries
+> its own external anchor (n=200/pairing) putting the retuned tier at **beats Duo L1,
+> even with L2** — about one level up, closing the transfer loss this finding named. So
+> the headline above no longer describes the shipped bot. The `easy`-tier and
+> transfer-loss numbers here are untouched; what lapsed is specifically `extreme`'s
+> placement and the "whole ladder tops out at L1" framing. Note F24 states the L1 win is
+> **marginal** (lower bound 50.6% at n=200) — one level up, not comfortably clear.
+
 ### F21 — Duo's `medium` beam should be 16, not 6 — and F8's `beam ≈ iters/6` rule is Classic-local
 `replicated` **(duo)** — two independent seed batches agree (screen n=200: 64.2%
 [57.4, 70.6]; confirmation on non-overlapping seeds n=600: **58.6%** [54.6, 62.5], clearing

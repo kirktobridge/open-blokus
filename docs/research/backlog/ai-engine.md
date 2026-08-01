@@ -23,19 +23,20 @@ test (product P21) fails CI if any ID here is missing or terminal.
    mining is the natural feed for its design phase — read before fixing the feature set.
 2. **AE34** — does `block: 0` survive into the Duo MCTS tiers? Cheap, and it decides
    P63's last slice: F22's 75.3% is a *heuristic-level* result, so shipping it to the
-   tiers without measuring would read the finding past its stated scope. **Blocked on
-   P63(b)** — the `MctsConfig` weights seam — so sequence it after that lands. Seat the
-   **retuned** `extreme` (1000 iters, [F24](../FINDINGS.md)) when it runs.
+   tiers without measuring would read the finding past its stated scope. **Unblocked
+   2026-08-01** — P63(b) shipped the `MctsConfig` weights seam, so a weight vector is now
+   an arena config. Seat the **retuned** `extreme` (1000 iters, [F24](../FINDINGS.md)).
 3. **AE36** — Duo `extreme`'s beam at the retuned 1000-iteration budget. Filed by AE33's
    staleness sweep: the retune moved `iters/beam` 25 → 50 without ever sweeping beam, so
    whether 20 is still right is unmeasured. Dependency-ready and self-contained, but
    lower payoff than the two above — the likely outcome is that beam 20 stands.
 
 **Duo track status:** AE33 closed `won` (Run Z / [F24](../FINDINGS.md)) — the Duo ladder is
-monotone end-to-end for the first time and `extreme` now beats Pentobi Duo L1. The
-remaining Duo work is deployment ([P63](../../product/BACKLOG.md#p63) scope (a)), not
-research; nothing in the Duo queue is blocked on a further measurement except AE34's
-dependency on P63(b).
+monotone end-to-end for the first time and `extreme` now beats Pentobi Duo L1 (marginally:
+lower bound 50.6% at n=200). Its deployment **shipped 2026-08-01**
+([P63](../../product/BACKLOG.md#p63) scope (a), commit `ef4c3ba`), and P63(b)'s weights
+seam unblocked AE34 — so the Duo queue is now measurement again, with nothing in it
+blocked on a code change.
 4. **AE31** — Duo reward model (placed-square leader ≠ Duo winner). Now the last
    untested member of the trio of Classic-scoped constants F20 named; AE30 falsified
    the beam one and retuned the weights, leaving the scoring proxy. Its readout
@@ -374,7 +375,10 @@ dependency on P63(b).
 - **Cost / risk:** small; also feeds the advisor (AD2/AD3) a less degenerate value
   signal in lost positions.
 - **Log:** Run S → [F15](../FINDINGS.md)
-- **Deploys as:** product P36 (rankRewardWeight 0.25 retune-in-place).
+- **Deploys as:** shipped — product P36 (rankRewardWeight 0.25 retune-in-place).
+  Verified 2026-08-01 in [mcts.ts](../../../src/game/ai/mcts.ts): `DEFAULTS` carries
+  `rankRewardWeight: 0.25`, and all three MCTS tiers set it in
+  [difficulty.ts](../../../src/client/ai/difficulty.ts).
 
 ### AE16 — Opening book
 - **Drafted:** 2026-07-06
@@ -743,9 +747,9 @@ dependency on P63(b).
   the extra iterations rather than the width, which this design cannot separate —
   an `rolloutSamples 6 @ 59 it` arm is the control that isolates it, and it's cheap
   to add. Interacts with AE24 (learned priors would replace the sampler outright).
-- **Deploys as:** product [P37](../../product/BACKLOG.md) — extreme's `rolloutSamples`
-  6→48, shipped (`replication-pending`). AE28 is the fixed-iteration follow-up that
-  sized the bump; the `fallbackMove` instrumentation this entry asked for ships as
+- **Deploys as:** shipped — product [P37](../../product/BACKLOG.md), extreme's
+  `rolloutSamples` 6→48 (`replication-pending`). AE28 is the fixed-iteration follow-up
+  that sized the bump; the `fallbackMove` instrumentation this entry asked for ships as
   `npm run arena -- --rollout-stats`.
 - **Log:** [Run U](../log/ai-strategy.md) → [F17](../FINDINGS.md). Confound control
   fired as designed: the width lever is iteration-dominated (the risk above was real).
@@ -818,10 +822,10 @@ dependency on P63(b).
 - **Cost / risk:** compute-heavy — 500 iters/move is ~3× the AE26 per-game cost;
   n=600 ran 732 min / 150 CPU-h at 14-way. Risk (underpowered for a small effect) did
   not fire — the effect was large (+11 pts), CI cleared at n=600.
-- **Deploys as:** product [P37](../../product/BACKLOG.md) — extreme's `rolloutSamples`
-  6→48, shipped (`replication-pending`; the Run V re-batch is still owed, ~150 CPU-h).
-  Verified in [difficulty.ts](../../../src/client/ai/difficulty.ts): the `extreme` tier
-  ships `rolloutSamples: 48`.
+- **Deploys as:** shipped — product [P37](../../product/BACKLOG.md), extreme's
+  `rolloutSamples` 6→48 (`replication-pending`; the Run V re-batch is still owed,
+  ~150 CPU-h). Verified in [difficulty.ts](../../../src/client/ai/difficulty.ts): the
+  `extreme` tier ships `rolloutSamples: 48`.
 - **Log:** [Run V](../log/ai-strategy.md) → [F18](../FINDINGS.md). Follow-up: instrument
   `fallbackMove` rate at width 48 (ships as `npm run arena -- --rollout-stats`).
 
@@ -1097,12 +1101,17 @@ dependency on P63(b).
   the 6000 ms cap; all three adjacent ladder steps are CI-clear. AE30's inherited criterion
   (a) is discharged. Carved out of [AE30](#ae30) at its close (Run Y / [F23](../FINDINGS.md))
   rather than absorbed, because AE30's criterion (a) was a *fail* it could not close over.
-- **Deploys as:** [P63](../../product/BACKLOG.md#p63) **scope (a)** — the per-variant tier
-  config already scoped there. AE33 adds a *second* Duo delta beside `medium.beam = 16`:
-  `extreme.iterations = 1000`. No new surface is needed (`rolloutSamples: 48` is already the
-  shipped `extreme` value, so it needs no delta), and no other slice of P63 is implicated.
-  Until (a) ships, Duo players still get the 500-iter tier and [F20](../FINDINGS.md)'s
-  "tops out at Duo L1" remains the true statement about the *shipped* ladder.
+- **Deploys as:** shipped 2026-08-01 — [P63](../../product/BACKLOG.md#p63) **scope (a)**,
+  which now carries this entry's `extreme.iterations = 1000` as a second Duo delta beside
+  `medium.beam = 16` (commit `ef4c3ba`). No new surface was needed (`rolloutSamples: 48` is
+  already the shipped `extreme` value, so it needs no delta), and no other slice of P63 is
+  implicated. **Duo players now get the 1000-iter tier**, so [F20](../FINDINGS.md)'s "tops
+  out at Duo L1" no longer describes the shipped ladder; F24's own external anchor places
+  the retuned tier a level up (beats L1, even with L2) — see the sweep below.
+  - *How it nearly didn't:* P63(a) landed once with only `medium.beam = 16`, because P63's
+    own text predates this close and never named AE33 — the pointer runs *this* way, and
+    nothing read it. Caught at /checkpoint, one merge late, and now mechanized by
+    [tests/backlog-schema.test.ts](../../../tests/backlog-schema.test.ts).
 - **What the result was not (the hypothesis died, recorded per M-discipline):** this entry
   predicted that *raising iterations to out-search `hard`* would restore the step. The
   pre-registered latency cap foreclosed exactly that: only 1000 iters fits, against `hard`'s
@@ -1113,7 +1122,11 @@ dependency on P63(b).
 - **Staleness sweep (the change moves a shipped default + doubles move time 1506 → 3103 ms):**
   - [F23](../FINDINGS.md) — annotated superseded-by-measurement; kept, not deleted.
   - [F20](../FINDINGS.md) — its `extreme` placement is superseded *for the retuned config*
-    only; the claim about the shipped ladder stays true until P63(a) lands. No edit owed yet.
+    only. The condition it was parked on has now fired: **P63(a) landed 2026-08-01**, so
+    the shipped Duo ladder runs the 1000-iter tier, which F24's own external anchor places
+    at *beats L1, even with L2*. **Edit owed → done** (annotated at F20, not deleted — the
+    L1 placement remains the true reading of Run X's 500-iter measurement, and F20's easy-tier
+    and transfer-loss numbers are unaffected).
   - [F18](../FINDINGS.md)/[AE28](#ae28) — Classic-scoped result unaffected; F24 extends it to
     Duo rather than contradicting it.
   - **AE34** — must now measure `block: 0` against the **retuned** `extreme` (1000 iters),
@@ -1199,12 +1212,15 @@ dependency on P63(b).
 - **Log:** —
 
 ### AE34 — Does `block: 0` survive into the MCTS tiers on Duo?
-- **Drafted:** 2026-07-27
-- **Status:** proposed — blocked on **P63** scope (b), the `weights` seam in `MctsConfig`.
-  Not runnable before it: [mcts.ts](../../../src/game/ai/mcts.ts) reads the module constant
-  `WEIGHTS` directly (:193 beam ordering, :422 rollout policy), so there is no way to give a
-  search a different weight vector today. Stated as a blocker rather than a caveat because
-  it is a code change in another skill's tree, not an arena config.
+- **Drafted:** 2026-08-01
+- **Status:** proposed — **dependency-ready as of 2026-08-01**; the blocker cleared.
+  [P63](../../product/BACKLOG.md#p63) scope (b) shipped the `weights` seam (commit
+  `9be3883`): `MctsConfig` now carries a `weights` field defaulting to `WEIGHTS`, and the
+  search reads `cfg.weights` for beam ordering and the `score`/`softmax` rollout policy
+  instead of the module constant. **Verified 2026-08-01** by reading
+  [mcts.ts](../../../src/game/ai/mcts.ts). A weight vector is now a per-run arena config,
+  which is what this entry was waiting on. Nothing has run yet — this is `proposed`, not
+  `active`.
 - **Variant:** duo — the term's measured behaviour is variant-specific ([F22](../FINDINGS.md)).
 - **Opponent moved (flagged by [AE33](#ae33)'s staleness sweep, 2026-07-28):** the `extreme`
   seat this entry measures against is now **1000 iterations**, not 500
