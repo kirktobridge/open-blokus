@@ -77,12 +77,25 @@ describe('per-variant tier config (P63)', () => {
     expect(duo.rankRewardWeight).toBe(classic.rankRewardWeight);
   });
 
+  it('extreme on Duo searches 1000 iterations, not Classic 500 (F24)', () => {
+    // AE33: at 500 the Duo ladder's top step was flat (extreme failed to out-search
+    // hard); 1000 restores it at 63.6% over n=1200. The value is pinned by the
+    // latency cap, so this guards a *specific* number, not "more is better".
+    expect(mctsConfigFor('extreme', 'duo').iterations).toBe(1000);
+    expect(mctsConfigFor('extreme', 'classic').iterations).toBe(500);
+  });
+
+  it('Duo extreme keeps the wide rollout pool the win actually came from', () => {
+    // F24's mechanism was rollout width at the larger budget, not iterations alone
+    // (the iterations-only arm failed at 54.6%). 48 is already extreme's shipped
+    // value, so it needs no delta — but the two must not drift apart.
+    expect(mctsConfigFor('extreme', 'duo').rolloutSamples).toBe(48);
+  });
+
   it('a tier with no measured Duo delta plays Classic constants, deliberately', () => {
-    // Not an oversight — AE30 measured `medium`. hard/extreme are unmeasured on Duo
-    // and inherit until they are, which is the documented delta discipline.
-    for (const tier of ['hard', 'extreme'] as const) {
-      expect(mctsConfigFor(tier, 'duo')).toEqual(mctsConfigFor(tier, 'classic'));
-    }
+    // Not an oversight — AE30 measured `medium`, AE33 `extreme`. `hard` is unmeasured
+    // on Duo and inherits until it isn't, which is the documented delta discipline.
+    expect(mctsConfigFor('hard', 'duo')).toEqual(mctsConfigFor('hard', 'classic'));
   });
 });
 

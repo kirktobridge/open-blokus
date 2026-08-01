@@ -45,7 +45,8 @@ type MctsTier = Exclude<Difficulty, 'easy'>;
  * a branching factor that moves with board size *and* opponent count, and the reward
  * ranks by placed squares — the winner under *basic* scoring, not under Duo's
  * advanced-only scoring. Where a Duo measurement exists it lives in `MCTS_TIER_DELTAS`
- * below; the rest stay Classic-by-default, deliberately and unmeasured.
+ * below; a tier with no delta there plays Classic's constants on that variant because
+ * nobody has measured otherwise — deliberate, and re-openable by an arena run.
  */
 const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
   medium: { timeBudgetMs: 500, beam: 6, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
@@ -63,6 +64,16 @@ const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
  * a 14×14 two-color game has a different branching factor, so the same time budget
  * supports a wider beam.
  *
+ * `extreme.iterations: 1000` on Duo is F24 (AE33, two seed batches): at 1000 iters the
+ * tier beats `hard` 63.6% [60.8, 66.3] over n=1200, restoring a top ladder step that was
+ * flat on 14×14 — Classic's 500 left `extreme` failing to out-search `hard`. The latency
+ * cap is what pins the value: 1000 iters is the most that fits (p95 5273 ms under a
+ * 6000 ms cap), and move time roughly doubles (1506 → 3103 ms), which is the accepted
+ * cost of the step. Note the *mechanism*: the `s6` arm isolating iterations alone failed
+ * (54.6%), so the win comes from rollout **width** (`rolloutSamples: 48`, already the
+ * shipped `extreme` value) paying off at the larger budget — raising iterations further
+ * is not indicated by this result.
+ *
  * Duo's `block: 0` (F22) is **not** here: that is a `weights` change, and it is measured
  * heuristic-vs-heuristic only. Whether the term still hurts with a search on top is
  * AE34, unmeasured — shipping it off F22 alone would read the finding past its scope.
@@ -70,7 +81,7 @@ const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
 const MCTS_TIER_DELTAS: Record<MctsTier, VariantDeltas<Partial<MctsConfig>>> = {
   medium: { duo: { beam: 16 } },
   hard: {},
-  extreme: {},
+  extreme: { duo: { iterations: 1000 } },
 };
 
 /**
