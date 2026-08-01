@@ -1,4 +1,6 @@
 import type { MctsConfig } from '../../game/ai/mcts';
+import type { Variant } from '../../game/types';
+import type { VariantDeltas } from '../tuning';
 import type { BlitzSeconds } from '../blitz/blitz';
 
 /**
@@ -36,14 +38,14 @@ type MctsTier = Exclude<Difficulty, 'easy'>;
  * the default 6 — their width optimum trades against *free iterations* (F17), a
  * separate budget regime left as-is here.
  *
- * **Variant scope (Classic).** Every constant above was measured on Classic 20×20 4p
- * (F6/F8/F15/F17/F18) and is scoped to it, not to "the game" — see FINDINGS M6. Three
- * are known not to transfer as written: `rankRewardWeight` is provably inert at two
+ * **Variant scope (Classic).** Every constant here is the *Classic* value, measured on
+ * 20×20 4p (F6/F8/F15/F17/F18) and scoped to it, not to "the game" — see FINDINGS M6.
+ * Three are known not to transfer as written: `rankRewardWeight` is provably inert at two
  * colors (the rank term collapses onto the winner term at n=2), `beam ≈ iters/6` reads
  * a branching factor that moves with board size *and* opponent count, and the reward
  * ranks by placed squares — the winner under *basic* scoring, not under Duo's
- * advanced-only scoring. A Duo ladder needs its own measurements (AE29–AE31), so don't
- * read these numbers as universal.
+ * advanced-only scoring. Where a Duo measurement exists it lives in `MCTS_TIER_DELTAS`
+ * below; the rest stay Classic-by-default, deliberately and unmeasured.
  */
 const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
   medium: { timeBudgetMs: 500, beam: 6, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25 },
@@ -51,8 +53,36 @@ const MCTS_TIERS: Record<MctsTier, Partial<MctsConfig>> = {
   extreme: { iterations: 500, beam: 20, rolloutDepth: 0, minIterations: 8, rankRewardWeight: 0.25, rolloutSamples: 48 },
 };
 
-export function mctsConfigFor(difficulty: MctsTier): Partial<MctsConfig> {
-  return MCTS_TIERS[difficulty];
+/**
+ * Per-variant tier overrides — **only** what a measurement moved (P63/P55's delta
+ * discipline, the same shape `tuning.ts` uses for signal thresholds). A tier with no
+ * entry plays Classic's constants on that variant *deliberately*.
+ *
+ * `medium.beam: 16` on Duo is F21 (AE30, replicated): 16 beats Classic's 6 by 58.6%
+ * over n=600 on 14×14. The Classic rule of thumb `beam ≈ iters/6` is what fails here —
+ * a 14×14 two-color game has a different branching factor, so the same time budget
+ * supports a wider beam.
+ *
+ * Duo's `block: 0` (F22) is **not** here: that is a `weights` change, and it is measured
+ * heuristic-vs-heuristic only. Whether the term still hurts with a search on top is
+ * AE34, unmeasured — shipping it off F22 alone would read the finding past its scope.
+ */
+const MCTS_TIER_DELTAS: Record<MctsTier, VariantDeltas<Partial<MctsConfig>>> = {
+  medium: { duo: { beam: 16 } },
+  hard: {},
+  extreme: {},
+};
+
+/**
+ * The MCTS config for `difficulty` on `variant` — Classic constants plus that
+ * variant's measured deltas. Keyed on the variant rather than a `GameState` (which
+ * `tunedFor` needs) because tiers are picked at seat-setup time, before a game exists.
+ */
+export function mctsConfigFor(
+  difficulty: MctsTier,
+  variant: Variant = 'classic',
+): Partial<MctsConfig> {
+  return { ...MCTS_TIERS[difficulty], ...MCTS_TIER_DELTAS[difficulty][variant] };
 }
 
 /**
