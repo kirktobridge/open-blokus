@@ -1869,26 +1869,28 @@ The "why come back" layer — daily hooks and a memory of your journey across ga
   first — pacing has to be *measured* on a Duo board, which needs the arena.
 
 ### P63 — Per-variant AI tier constants (Duo stops inheriting Classic's beam and weights)
-- **Drafted:** 2026-07-27
-- **Status:** proposed
+- **Drafted:** 2026-08-01
+- **Status:** in-progress — claimed 2026-08-01 on `feat/p63-per-variant-ai-tiers`, scoped to
+  slices **(a)** and **(b)** only. **(c)** is not being built: it stays gated on AE34, which
+  is in turn blocked on (b), so the two land in that order or not at all.
 - **Value:** [AE30](../research/backlog/ai-engine.md) measured two Classic-tuned constants
   that do **not** transfer to 14×14, and today Duo players get both of the losing settings:
   the `medium` tier runs a beam of 6 where 16 wins 58.6% at n=600
   ([F21](../research/FINDINGS.md), replicated), and the heuristic carries a `block` term
   that *loses 3:1* on Duo — deleting it wins 75.3% over n=1200
   ([F22](../research/FINDINGS.md), replicated). Neither can ship as a config edit, which is
-  why this is an entry and not a one-line tweak: **verified this session**,
+  why this is an entry and not a one-line tweak: **verified 2026-08-01 by reading `src/`**,
   [mcts.ts](../../src/game/ai/mcts.ts) reads the module constant `WEIGHTS` directly for beam
-  ordering (:193) and the rollout policy (:422), so there is no seam to pass a variant's
-  weights through. This is the deployment surface AE30's `won` close points at; without it
-  the research result is inventory.
+  ordering (:193) and the rollout policy (:422), and `MctsConfig` has no `weights` field — so
+  there is no seam to pass a variant's weights through. This is the deployment surface
+  AE30's `won` close points at; without it the research result is inventory.
 - **Scope:** three slices, deliberately independent — (a) and (b) ship without waiting on
   research, (c) does not.
   - **(a) Per-variant tier config.** `MCTS_TIERS`
     ([difficulty.ts](../../src/client/ai/difficulty.ts)) reads through
     [P55](#p55--mechanical-classicduo-separation-make-variant-drift-impossible-not-discouraged)'s
     existing axis — `tunedFor(base, deltas, G)` / `VariantDeltas<T>` in
-    [tuning.ts](../../src/client/tuning.ts), **verified present this session** — with a Duo
+    [tuning.ts](../../src/client/tuning.ts), **verified present 2026-08-01** — with a Duo
     delta of `medium.beam = 16`. Reuse, not new infra. Note the shape mismatch to settle at
     build time: `tunedFor` keys off a `GameState`, while tier configs are chosen at seat-setup
     time; pass the variant rather than widening the helper if that reads cleaner.
