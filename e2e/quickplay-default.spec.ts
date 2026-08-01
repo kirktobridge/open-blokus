@@ -115,3 +115,43 @@ test('changed rows are marked against your pinned default (P65 M4)', async ({ pa
   await expect(page.getByTestId('changed-aiCount')).toHaveCount(0);
 });
 
+test('a watch game says so: the CTA and the clock row (P65 M5)', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('open-custom').click();
+
+  // A normal game with a human seat: the CTA invites you to play, and the clock is
+  // a live setting.
+  await expect(page.getByTestId('start-ai')).toHaveText('Start this setup');
+  await expect(page.getByTestId('blitz-row')).not.toHaveAttribute('data-inert', 'true');
+  await expect(page.getByTestId('blitz-inert-note')).toHaveCount(0);
+
+  // Every seat a bot — there is nothing for you to play.
+  await page.getByTestId('ai-count-select').selectOption('4');
+  await expect(page.getByTestId('custom-summary')).toContainText('Watch — 4 bots');
+  await expect(page.getByTestId('start-ai')).toHaveText('Watch this game');
+  // Receded, not removed: the control is still there and still usable, because it
+  // applies again the moment you take a seat back.
+  await expect(page.getByTestId('blitz-row')).toHaveAttribute('data-inert', 'true');
+  await expect(page.getByTestId('blitz-select')).toBeEnabled();
+  await expect(page.getByTestId('blitz-inert-note')).toBeVisible();
+
+  // Taking a seat back restores both.
+  await page.getByTestId('ai-count-select').selectOption('3');
+  await expect(page.getByTestId('start-ai')).toHaveText('Start this setup');
+  await expect(page.getByTestId('blitz-inert-note')).toHaveCount(0);
+});
+
+test('a blitz value set before going all-bot survives the round trip (P65 M5)', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('open-custom').click();
+  await page.getByTestId('blitz-select').selectOption('10');
+
+  // Receding the row must not quietly clear the setting — M5 is presentation, and
+  // launchSetup already suppresses the clock for a watch game on its own.
+  await page.getByTestId('ai-count-select').selectOption('4');
+  await expect(page.getByTestId('blitz-select')).toHaveValue('10');
+  await page.getByTestId('ai-count-select').selectOption('3');
+  await expect(page.getByTestId('blitz-select')).toHaveValue('10');
+  await expect(page.getByTestId('custom-summary')).toContainText('blitz 10s');
+});
+

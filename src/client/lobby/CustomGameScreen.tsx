@@ -121,6 +121,10 @@ export function CustomGameScreen({
   // `isPinned`, so a returning player sees *what* they changed, not just that they did.
   const diff = useMemo(() => setupDiff(setup, quickPlay), [setup, quickPlay]);
   const progression = useProgression();
+  // Every seat is a bot, so there is nothing to play — you watch (M5). `setupSummary`
+  // already calls this state "Watch — N bots"; the CTA and the clock row now agree
+  // with it instead of promising a game you'd sit out.
+  const isWatch = aiCount === mode;
 
   const start = () => onStart(launchSetup(setup));
   const pin = () => setQuickPlay(pinSetup(setup));
@@ -228,9 +232,31 @@ export function CustomGameScreen({
                 </select>
                 <ChangedDot changed={diff.aiCount} field="aiCount" />
               </label>
+              {/* In a watch game the clock is inert — it only ever runs on a human
+                  seat — so the row recedes rather than disappearing (M5). Removing it
+                  would make the setting look unavailable, and it isn't: it applies
+                  again the moment you take a seat, and the value you picked is kept.
+
+                  0.55 measured 3.39:1 contrast on the light theme and 5.11:1 on
+                  Lamplight (P65 M5, eyes-on + computed). Held to the 3:1 WCAG AA bar
+                  for a de-emphasized control, not the 4.5:1 body-text one — the row
+                  has to actually read as receded. Raising it fights the milestone;
+                  lowering it breaks the bar. */}
               <label
-                style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
-                title="Per-move time limit. Run out and a random legal move is played for you."
+                data-testid="blitz-row"
+                data-inert={isWatch || undefined}
+                style={{
+                  display: 'flex',
+                  gap: 6,
+                  alignItems: 'center',
+                  fontSize: 14,
+                  opacity: isWatch ? 0.55 : 1,
+                }}
+                title={
+                  isWatch
+                    ? 'The clock only runs on a human seat, so it does nothing in a watch game.'
+                    : 'Per-move time limit. Run out and a random legal move is played for you.'
+                }
               >
                 Blitz:{' '}
                 <select
@@ -257,6 +283,14 @@ export function CustomGameScreen({
                 </select>
                 <ChangedDot changed={diff.blitz} field="blitz" />
               </label>
+              {isWatch && (
+                <span
+                  data-testid="blitz-inert-note"
+                  style={{ fontSize: 12.5, color: 'var(--mut)', alignSelf: 'center' }}
+                >
+                  The clock only runs on a human seat.
+                </span>
+              )}
             </div>
 
             {botSeats.length > 0 && (
@@ -340,7 +374,7 @@ export function CustomGameScreen({
               onClick={start}
               style={{ ...PRIMARY_BTN, marginTop: 8, width: '100%' }}
             >
-              Start this setup
+              {isWatch ? 'Watch this game' : 'Start this setup'}
             </button>
 
             {/* Pinning is a state change with nowhere to navigate to, so the control
