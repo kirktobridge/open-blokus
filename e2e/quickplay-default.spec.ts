@@ -88,3 +88,30 @@ test('a pinned setup is still normalized — no invalid default can start (P46)'
   await expect(page.getByTestId('quick-play')).toContainText('hard');
   await expect(page.getByTestId('quick-play')).not.toContainText('extreme');
 });
+
+test('changed rows are marked against your pinned default (P65 M4)', async ({ page }) => {
+  await page.goto('/?botDelay=0');
+  await page.getByTestId('open-custom').click();
+
+  // Fresh: the form *is* the default, so nothing is marked. The mark has to mean
+  // "you changed this", which it cannot if it is on before you touch anything.
+  await expect(page.getByTestId('changed-blitz')).toHaveCount(0);
+  await expect(page.getByTestId('changed-aiCount')).toHaveCount(0);
+
+  // Bump one bot — the returning player's whole task. Only that row marks.
+  await page.getByTestId('ai-difficulty-1').selectOption('hard');
+  await expect(page.getByTestId('changed-blitz')).toHaveCount(0);
+  await expect(page.getByTestId('changed-aiCount')).toHaveCount(0);
+
+  // A second, different kind of edit marks its own control too.
+  await page.getByTestId('blitz-select').selectOption('10');
+  await expect(page.getByTestId('changed-blitz')).toBeVisible();
+
+  // Pinning makes the current setup the default, so every mark clears — the marks
+  // and the pin button are two readings of the same comparison and cannot disagree.
+  await page.getByTestId('pin-default').click();
+  await expect(page.getByTestId('pin-default')).toBeDisabled();
+  await expect(page.getByTestId('changed-blitz')).toHaveCount(0);
+  await expect(page.getByTestId('changed-aiCount')).toHaveCount(0);
+});
+

@@ -1,21 +1,81 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { GameMode, Variant } from '../../game/types';
 import { DIFFICULTIES, resolveExtremeForBlitz, type Difficulty } from '../ai/difficulty';
 import { formatTierRating, ladderFor } from '../ai/ratings';
 import { BLITZ_OPTIONS } from '../blitz/blitz';
 import { FIELD, FONT_UI, GHOST_BTN, PANEL, PRIMARY_BTN, WELL_ROW } from '../theme';
+import { useProgression, type ProgressionState } from '../progression/progression';
 import {
   botSeatLabels,
   launchSetup,
   loadSetup,
   normalizeSetup,
   pinSetup,
+  setupDiff,
   setupKey,
   setupSummary,
   type AiSetup,
 } from './aiSetup';
 import { LobbyTopBar } from './LobbyTopBar';
 import { VariantCard } from './VariantCard';
+
+/**
+ * What a tier is, said beside the control that picks it (P65 M2): its rating on this
+ * variant's ladder, then your record against it. Either clause can be absent — Duo has
+ * no ladder (P61 M6) and an untried tier has no record — and with both absent the note
+ * is empty rather than a placeholder.
+ */
+function tierNote(variant: Variant, tier: Difficulty, p: ProgressionState): string {
+  const rating = formatTierRating(variant, tier);
+  const { played, won } = p.perTier[variant][tier];
+  return [
+    rating ? `${rating} Elo` : null,
+    // "you're 1–4 vs hard" — a record only says something once there is one.
+    played > 0 ? `you're ${won}–${played - won} vs ${tier}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/**
+ * A seat row, accented when it differs from the pinned Quick Play setup (P65 M4).
+ * Deliberately quiet — an edge accent on the well, not a badge: the returning player's
+ * task is "bump one bot, keep my usual", so this has to be scannable at a glance
+ * without competing with the CTA.
+ */
+function changedRow(changed: boolean | undefined): CSSProperties {
+  return {
+    ...WELL_ROW,
+    fontSize: 14,
+    flexWrap: 'wrap',
+    boxShadow: changed ? 'inset 3px 0 0 0 var(--brass)' : undefined,
+  };
+}
+
+/**
+ * The same "differs from your default" mark for the inline controls (M4), which sit on
+ * the panel rather than in a well and so have no edge to accent. Carries a text twin —
+ * a bare colored dot is invisible to a screen reader and to anyone who can't separate
+ * it from the label.
+ */
+function ChangedDot({ changed, field }: { changed: boolean | undefined; field: string }) {
+  if (!changed) return null;
+  return (
+    <span
+      data-testid={`changed-${field}`}
+      role="img"
+      aria-label="changed from your Quick Play default"
+      title="Changed from your Quick Play default"
+      style={{
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: 'var(--brass)',
+        flex: '0 0 auto',
+      }}
+    />
+  );
+}
 
 /**
  * The variant options, in display order. Captions name the three things the choice
@@ -57,6 +117,10 @@ export function CustomGameScreen({
   // being edited, and the pin control can say which of the two you're looking at.
   const [quickPlay, setQuickPlay] = useState<AiSetup>(() => loadSetup());
   const isPinned = setupKey(setup) === setupKey(quickPlay);
+  // Which individual rows differ from that default (M4) — the per-field twin of
+  // `isPinned`, so a returning player sees *what* they changed, not just that they did.
+  const diff = useMemo(() => setupDiff(setup, quickPlay), [setup, quickPlay]);
+  const progression = useProgression();
 
   const start = () => onStart(launchSetup(setup));
   const pin = () => setQuickPlay(pinSetup(setup));
@@ -84,12 +148,21 @@ export function CustomGameScreen({
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* The variant choice shows the two boards it picks between (M1). */}
+            {/* The variant choice shows the two boards it picks between (M1). Its
+                changed-mark (M4) sits on the group, not inside a card: the cards
+                already carry a selected ring, and a second accent inside one would
+                read as part of the selection rather than as "differs from default". */}
+            {diff.variant && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--mut)' }}>
+                <ChangedDot changed field="variant" />
+                Different game from your Quick Play default
+              </div>
+            )}
             <div
               role="radiogroup"
               aria-label="Game"
               data-testid="variant-cards"
-              style={{ display: 'flex', gap: 10 }}
+              style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}
             >
               {VARIANT_CARDS.map(({ value, label, caption }) => (
                 <VariantCard
@@ -137,6 +210,7 @@ export function CustomGameScreen({
                   <option value={3}>3</option>
                   <option value={4}>4</option>
                 </select>
+                <ChangedDot changed={diff.mode} field="mode" />
               </label>
               <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
                 AI opponents:{' '}
@@ -152,6 +226,7 @@ export function CustomGameScreen({
                     </option>
                   ))}
                 </select>
+                <ChangedDot changed={diff.aiCount} field="aiCount" />
               </label>
               <label
                 style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
@@ -180,55 +255,69 @@ export function CustomGameScreen({
                     </option>
                   ))}
                 </select>
+                <ChangedDot changed={diff.blitz} field="blitz" />
               </label>
             </div>
 
             {botSeats.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {botSeats.map(({ seat, label }) => (
-                  <label key={seat} style={{ ...WELL_ROW, fontSize: 14 }}>
-                    <span style={{ minWidth: 140 }}>{label}:</span>
-                    <select
-                      data-testid={`ai-difficulty-${seat}`}
-                      value={botDifficulties[seat] ?? 'easy'}
-                      onChange={(e) =>
-                        setSetup((s) => ({
-                          ...s,
-                          botDifficulties: {
-                            ...s.botDifficulties,
-                            [seat]: e.target.value as Difficulty,
-                          },
-                        }))
-                      }
-                      style={FIELD}
-                    >
-                      {DIFFICULTIES.map((d) => {
-                        // Extreme has no time budget (~12s/move), so it can't be
-                        // paced into a blitz clock — disable it and say why in
-                        // place, no modal (P25).
-                        const blocked = d === 'extreme' && blitzSeconds != null;
-                        // The rating replaces the tier's own suffix slot, so a
-                        // blocked extreme still explains itself rather than
-                        // advertising a strength you can't select (P61).
-                        const rating = formatTierRating(variant, d);
-                        const suffix = blocked
-                          ? ' — needs untimed play'
-                          : rating
-                            ? ` — ${rating}`
-                            : '';
-                        return (
-                          <option key={d} value={d} disabled={blocked}>
-                            {d}
-                            {suffix}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </label>
-                ))}
+                {botSeats.map(({ seat, label }) => {
+                  const tier = botDifficulties[seat] ?? 'easy';
+                  return (
+                    <label key={seat} style={changedRow(diff[`seat:${seat}`])}>
+                      <span style={{ minWidth: 140 }}>{label}:</span>
+                      <select
+                        data-testid={`ai-difficulty-${seat}`}
+                        value={tier}
+                        onChange={(e) =>
+                          setSetup((s) => ({
+                            ...s,
+                            botDifficulties: {
+                              ...s.botDifficulties,
+                              [seat]: e.target.value as Difficulty,
+                            },
+                          }))
+                        }
+                        style={FIELD}
+                      >
+                        {DIFFICULTIES.map((d) => {
+                          // Extreme has no time budget (~12s/move), so it can't be
+                          // paced into a blitz clock — disable it and say why in
+                          // place, no modal (P25).
+                          const blocked = d === 'extreme' && blitzSeconds != null;
+                          // A blocked extreme still explains itself in the option
+                          // rather than advertising a strength you can't select
+                          // (P61/P25). The *rating* no longer rides here — it moved
+                          // into the row (M2) — so the suffix slot is the blocked
+                          // reason alone.
+                          return (
+                            <option key={d} value={d} disabled={blocked}>
+                              {d}
+                              {blocked ? ' — needs untimed play' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {/* What the selected tier actually is, beside the control that
+                          selects it (M2). In an <option> this was visible only while
+                          the menu was open — so the `≈` and the caption explaining it
+                          were never on screen together — and native option text renders
+                          platform-dependently. */}
+                      <span
+                        data-testid={`tier-note-${seat}`}
+                        style={{ color: 'var(--mut)', fontSize: 12.5, lineHeight: 1.35 }}
+                      >
+                        {tierNote(variant, tier, progression)}
+                      </span>
+                    </label>
+                  );
+                })}
                 {/* A bare "1683" is not legible on its own — it needs to say what
-                    scale it is on, and (M6) that the scale is Classic-only. Duo
-                    reads as deliberately unrated rather than broken. */}
+                    scale it is on, and (P61 M6) that the scale is Classic-only. Duo
+                    reads as deliberately unrated rather than broken. Wording is
+                    P61's, unchanged; what changed (P65 M2) is that the `≈` it
+                    explains now renders in the rows above instead of inside an
+                    <option>, so the mark and its explanation are finally co-visible. */}
                 <p
                   data-testid="rating-caption"
                   style={{ margin: '2px 0 0', color: 'var(--mut)', fontSize: 12, lineHeight: 1.45 }}

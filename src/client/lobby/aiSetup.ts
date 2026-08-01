@@ -143,3 +143,34 @@ export function setupKey(setup: AiSetup): string {
     .map((seat) => `${seat}:${botDifficulties[seat]}`);
   return [variant, mode, aiCount, blitzSeconds ?? 'off', ...tiers].join('|');
 }
+
+/** Which controls differ from the pinned default (P65 M4). Seats are keyed `seat:<id>`. */
+export type SetupDiff = Readonly<Record<string, boolean>>;
+
+/**
+ * Per-field version of `setupKey`'s comparison (P65 M4), so the screen can mark the
+ * individual rows a returning player changed rather than only whether *anything* did.
+ *
+ * Normalizes both sides exactly as `setupKey` does — a difference that normalization
+ * erases is not a difference the started game would show, and marking it would point at
+ * a row the player cannot change back. Consequence: `setupKey(a) === setupKey(b)`
+ * implies no field here is marked, which is the property the tests hold.
+ *
+ * A seat present on one side only counts as changed: dropping to fewer bots and back is
+ * a real edit to that row.
+ */
+export function setupDiff(setup: AiSetup, pinned: AiSetup): SetupDiff {
+  const a = normalizeSetup(setup);
+  const b = normalizeSetup(pinned);
+
+  const diff: Record<string, boolean> = {
+    variant: a.variant !== b.variant,
+    mode: a.mode !== b.mode,
+    aiCount: a.aiCount !== b.aiCount,
+    blitz: (a.blitzSeconds ?? null) !== (b.blitzSeconds ?? null),
+  };
+  for (const seat of new Set([...Object.keys(a.botDifficulties), ...Object.keys(b.botDifficulties)])) {
+    diff[`seat:${seat}`] = a.botDifficulties[seat] !== b.botDifficulties[seat];
+  }
+  return diff;
+}

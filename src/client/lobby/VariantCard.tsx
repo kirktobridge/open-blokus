@@ -116,7 +116,7 @@ export function VariantCard({
         background: selected ? 'var(--well)' : 'transparent',
         // Selection reads as a ring in the accent, unselected as a quiet edge —
         // both are always present, so the card never changes size on selection.
-        border: `2px solid ${selected ? 'var(--accent)' : 'var(--pnl-bd)'}`,
+        border: `2px solid ${selected ? 'var(--brass)' : 'var(--pnl-bd)'}`,
         color: 'var(--ink)',
         font: 'inherit',
         textAlign: 'center',
