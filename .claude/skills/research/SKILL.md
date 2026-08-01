@@ -113,6 +113,16 @@ null. Use its numbers verbatim in the log and FINDINGS. `WINS` may be fractional
      `Deploys as:` line (a product P# via /triage→/ship, or a named retune-in-place
      task) — or states `no deployment surface`. A won result with no owner is
      inventory, not value (F15's w=0.25 sat undeployed behind a default of 0).
+     **This line is read by machines and by /implement's inbound-pointer gate**, so
+     keep the product ID in it and, once the result actually lands, lead the line
+     with `shipped` (`- **Deploys as:** shipped — …`). That leading marker is the
+     schema test's only signal that the obligation closed; the word "shipped" loose
+     in the prose does not count, and describing some *other* constant as shipped is
+     exactly how AE33 slipped past a first draft of that check.
+   - **When the pointer names a P# that is already terminal**, resolve it rather than
+     leaving it: check `src/` and either record `shipped` on the line, or say the
+     product entry shipped without this result — a win left as inventory that someone
+     must re-queue. `tests/backlog-schema.test.ts` fails until one of those is true.
    - **Replication before shipped defaults:** if the result changes a shipped
      default (difficulty tiers, mcts defaults), run and pool a second independent
      seed batch before closing — or label the finding `significant,

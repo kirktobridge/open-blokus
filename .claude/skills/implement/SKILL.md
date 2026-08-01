@@ -34,6 +34,16 @@ ARCHITECTURE.md; **/research** owns `docs/research/**`; GAME_SPEC.md is human-ow
 - **MILESTONE GATE:** if Scope lists milestones (R0/R1/…), build **one per
   invocation**. If the user didn't name one, propose the first unshipped one and
   confirm — don't silently build the whole epic.
+- **INBOUND-POINTER GATE:** the entry does not know everything scoped *into* it.
+  Research amends product scope from the outside — a `won` `AE#`/`AD#` names its
+  deployment surface in `Deploys as:`, and an entry drafted before that close has
+  no idea it exists. So before building, run
+  `grep -n "Deploys as:" -A4 docs/research/backlog/*.md | grep -n "<ID>"` and read
+  every hit: each `won` entry pointing here is scope, whether or not this entry
+  mentions it. **Positive-control the grep** — a proxied `grep "Deploys as:"` has
+  returned 0 against 16 real hits, which would silently empty this gate. This is
+  how P63 shipped scope (a) with AE33's delta missing: P63's own claims all
+  verified, and nothing read the pointer aimed at it.
 - **PREMISE GATE:** the entry text is a snapshot from drafting time; the code may
   have moved since. Grep the code symbols the entry names and check every factual
   claim its Status/Scope makes about the code ("default is 0", "X is undeployed",
@@ -80,6 +90,12 @@ ARCHITECTURE.md; **/research** owns `docs/research/**`; GAME_SPEC.md is human-ow
   Scope text (premise gate, step 1): name in the hand-off to /land only obligations
   the change as-built really incurs, and say explicitly which scope-listed ones
   turned out void and why — /ship writes what it's handed.
+- **Before handing off, re-read the inbound pointers** from the gate above against
+  the diff: every `won` entry deploying here either landed in this change (say so,
+  so /research can record it in `Deploys as:`) or did not (say *that* — it's a win
+  left as inventory, and naming it is what stops the next session inheriting the
+  gap). `tests/backlog-schema.test.ts` holds this once the product entry goes
+  terminal; catching it here is cheaper than catching it at close.
 - If the work surfaced a *measurable* follow-up question, route it through
   **/triage** — don't tack an experiment onto the feature branch.
 

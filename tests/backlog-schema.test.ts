@@ -240,6 +240,23 @@ function dependsOn(body: string[], idPattern: RegExp): string[] {
   return [...new Set(ids)];
 }
 
+/**
+ * The full text of a `- **Label:**` bullet, continuation lines included — the bullet
+ * runs until the next top-level `- **` bullet. `dependsOn` can read a single line
+ * because `Depends on:` is short; `Deploys as:` routinely wraps across several, and
+ * the product ID it points at is as likely to be on line three as line one.
+ */
+function labelledBlock(body: string[], label: RegExp): string[] {
+  const start = body.findIndex((l) => label.test(l));
+  if (start === -1) return [];
+  const out = [body[start]];
+  for (let i = start + 1; i < body.length; i++) {
+    if (/^\s*-\s+\*\*/.test(body[i])) break; // next top-level bullet
+    out.push(body[i]);
+  }
+  return out;
+}
+
 /** The first word of a `**Variant:**` line, lowercased, or null if there's no such line. */
 function variantToken(body: string[]): string | null {
   for (const l of body) {
@@ -413,6 +430,57 @@ describe('backlog schema', () => {
               `retune-in-place task, or "no deployment surface"`,
           ).toBe(true);
         }
+      });
+
+      it('flags a `won` entry whose deployment target already shipped', () => {
+        // The reverse of the staleness check above, and the direction that has
+        // actually burned us. That check reads an entry's own `Depends on:` and looks
+        // *backward*; it can only fire on a dependency the entry names. But research
+        // amends product scope from the *outside*: AE33 closed `won` naming P63 scope
+        // (a) as its deployment surface, and P63's text never mentioned AE33 — it was
+        // drafted first. So P63 was built, verified, and landed with AE33's delta
+        // missing, and every gate passed, because nothing read the pointer aimed at it.
+        //
+        // A `won` research entry pointing at a *terminal* product entry is therefore
+        // the shape to catch: either the result shipped there (say so, so the pointer
+        // stops reading as an open obligation) or the product entry shipped without
+        // it, which is a win left as inventory. Either way a human must look.
+        //
+        // The escape hatch is a **leading `shipped:` marker** on the `Deploys as:`
+        // line, not the word "shipped" loose in the prose. Written the loose way
+        // first, this test exempted AE33 — whose block says `rolloutSamples: 48` is
+        // "already the shipped value", about a *different* constant — and so failed
+        // to catch the exact bug it was built for. A keyword anywhere in a paragraph
+        // cannot express "this result landed"; a marker in a fixed position can.
+        if (b.idPattern.source.startsWith('^P')) return; // research backlogs only
+        const byId = new Map(parsed.flatMap((q) => q.entries.map((e) => [e.id, e] as const)));
+
+        // Collected, not fail-fast: these are independent loose ends, and failing on
+        // the first one hides the rest. (Written fail-fast at first — the AE33 case
+        // this test exists for was masked by an unrelated AE15 hit, which is exactly
+        // the silence the whole check is meant to end.)
+        const loose: string[] = [];
+        for (const e of p.entries) {
+          if (e.statusToken !== 'won') continue;
+          const block = labelledBlock(e.body, /\*\*Deploys as:\*\*/);
+          if (block.length === 0) continue; // the presence check above owns that
+          const text = block.join(' ');
+          // Positional, not keyword: `- **Deploys as:** shipped — …`.
+          if (/\*\*Deploys as:\*\*\s*(shipped|landed|deployed)\b/i.test(block[0])) continue;
+          for (const pid of new Set([...text.matchAll(/\bP\d+\b/g)].map((m) => m[0]))) {
+            const target = byId.get(pid);
+            if (!target || !TERMINAL_PRODUCT.has(target.statusToken ?? '')) continue;
+            loose.push(`${e.id} → ${pid} (${target.statusToken})`);
+          }
+        }
+        expect(
+          loose,
+          `a \`won\` result points at an already-terminal product entry, and its ` +
+            `**Deploys as:** never says it shipped: ${loose.join('; ')}. Either the ` +
+            `result landed (record that in **Deploys as:**) or the product entry ` +
+            `shipped without it and the win is inventory. Check against \`src/\` — ` +
+            `the answer is usually one grep, and only a human can tell the two apart.`,
+        ).toEqual([]);
       });
 
       it('has a `## Next up` block whose IDs all exist and are non-terminal', () => {

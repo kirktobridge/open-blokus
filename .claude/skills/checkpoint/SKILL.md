@@ -38,6 +38,12 @@ misflagged, or pointed at the wrong path. So:
    `grep -n "Deploys as:" docs/research/backlog/*.md` — a `won` entry whose
    `Deploys as:` points at a product item that doesn't exist yet (or one still
    `proposed` with nothing queued) is a closed-but-undeployed win; surface it.
+   The *terminal*-target half of this is now mechanical —
+   `tests/backlog-schema.test.ts` fails when a `won` entry points at a shipped P#
+   without recording that it landed — so a green `npm test` covers it and this grep
+   only has to catch the not-yet-terminal cases. **Positive-control it regardless:**
+   this exact grep has returned 0 against 16 real hits under the `rtk` proxy, and it
+   is the check that caught AE33 one merge too late.
 3. `grep -n "Status:" docs/product/BACKLOG.md | grep -i in-progress` — an
    in-progress entry whose work is **already merged to main** is missing its /ship
    flip; run /ship now (on main). Work that's finished but still on its branch is
