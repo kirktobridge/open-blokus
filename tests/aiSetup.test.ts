@@ -5,6 +5,7 @@ import {
   loadSetup,
   normalizeSetup,
   pinSetup,
+  setupDiff,
   setupKey,
   setupSummary,
   DEFAULT_SETUP,
@@ -131,5 +132,56 @@ describe('setupKey (P46)', () => {
   it('separates setups that would start a different game', () => {
     expect(setupKey(setup())).not.toBe(setupKey(setup({ blitzSeconds: 30 })));
     expect(setupKey(setup())).not.toBe(setupKey(setup({ aiCount: 2 })));
+  });
+});
+
+describe('setupDiff (P65 M4)', () => {
+  const pinned = setup({ mode: 4, aiCount: 3, botDifficulties: { '1': 'easy', '2': 'easy', '3': 'easy' } });
+
+  it('marks nothing when the setup is the pinned default', () => {
+    expect(Object.values(setupDiff(pinned, pinned)).every((v) => v === false)).toBe(true);
+  });
+
+  it('marks only the seat whose tier was bumped', () => {
+    const edited = setup({ ...pinned, botDifficulties: { ...pinned.botDifficulties, '2': 'hard' } });
+    const diff = setupDiff(edited, pinned);
+    expect(diff['seat:2']).toBe(true);
+    expect(diff['seat:1']).toBe(false);
+    expect(diff['seat:3']).toBe(false);
+    // The returning player's whole task is "bump one bot, keep my usual" — the other
+    // controls must stay unmarked or the signal is noise.
+    expect(diff.variant).toBe(false);
+    expect(diff.mode).toBe(false);
+    expect(diff.aiCount).toBe(false);
+    expect(diff.blitz).toBe(false);
+  });
+
+  it.each([
+    ['variant', setup({ ...pinned, variant: 'duo' as const })],
+    ['blitz', setup({ ...pinned, blitzSeconds: 30 })],
+    ['aiCount', setup({ ...pinned, aiCount: 2 })],
+  ])('marks a changed %s', (field, edited) => {
+    expect(setupDiff(edited, pinned)[field]).toBe(true);
+  });
+
+  it('agrees with setupKey: same key means nothing is marked', () => {
+    // setupDiff is the per-field twin of the isPinned comparison, so the two must not
+    // be able to disagree — a marked row on an identically-keyed setup would point at
+    // something the player cannot change back.
+    const equivalent = normalizeSetup(setup({ ...pinned, botDifficulties: { ...pinned.botDifficulties } }));
+    expect(setupKey(equivalent)).toBe(setupKey(pinned));
+    expect(Object.values(setupDiff(equivalent, pinned)).some(Boolean)).toBe(false);
+  });
+
+  it('counts a seat that exists on only one side as changed', () => {
+    // botSeatLabels labels the *trailing* seats, so dropping 3 bots to 1 keeps seat
+    // '3' and retires '1' and '2' — those are the rows that vanished, and a row that
+    // exists on only one side is a real difference from the default.
+    const fewer = normalizeSetup(setup({ ...pinned, aiCount: 1 }));
+    const diff = setupDiff(fewer, pinned);
+    expect(Object.keys(fewer.botDifficulties)).toEqual(['3']);
+    expect(diff['seat:1']).toBe(true);
+    expect(diff['seat:2']).toBe(true);
+    expect(diff['seat:3']).toBe(false);
   });
 });
