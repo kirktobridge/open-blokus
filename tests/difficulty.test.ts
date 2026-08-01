@@ -12,7 +12,9 @@ import {
 // research runs (Run J), not here.
 describe('difficulty MCTS config', () => {
   it('medium uses a narrow beam matched to its small iteration budget', () => {
-    const m = mctsConfigFor('medium');
+    // Classic explicitly: the ≤8 bar is a *Classic* measurement (F8/AE5) and Duo
+    // measures the opposite way (F21), so this must not silently read a default.
+    const m = mctsConfigFor('medium', 'classic');
     expect(m.timeBudgetMs).toBe(500);
     expect(m.rolloutDepth).toBe(0); // full rollouts — the strength driver (F6)
     // beam ≈ iters/6 with medium ≈ 30 iters ⇒ ~5. Guard against a regression to a
@@ -44,6 +46,43 @@ describe('difficulty MCTS config', () => {
     expect(mctsConfigFor('extreme').rolloutSamples).toBe(48);
     expect(mctsConfigFor('medium').rolloutSamples).toBeUndefined();
     expect(mctsConfigFor('hard').rolloutSamples).toBeUndefined();
+  });
+});
+
+/**
+ * P63 (a): Duo stops inheriting Classic's beam. These guard the *deployment* of
+ * F21 — the finding itself is settled by the arena (AE30, n=600, replicated), not
+ * here. What can regress silently is the wiring: a tier that reads Classic's
+ * constants on a Duo board is exactly the bug this slice exists to remove.
+ */
+describe('per-variant tier config (P63)', () => {
+  it('medium on Duo uses the measured beam of 16, not Classic 6 (F21)', () => {
+    expect(mctsConfigFor('medium', 'duo').beam).toBe(16);
+    expect(mctsConfigFor('medium', 'classic').beam).toBe(6);
+  });
+
+  it('defaults to Classic when no variant is given', () => {
+    // Load-bearing: the Elo pool and its ratings are Classic-measured, and callers
+    // that omit the variant (tests/ratings.test.ts, the arena scripts) must keep
+    // reading Classic's numbers rather than silently drifting onto a variant's.
+    expect(mctsConfigFor('medium')).toEqual(mctsConfigFor('medium', 'classic'));
+  });
+
+  it('deltas override only what they name — everything else stays Classic', () => {
+    const classic = mctsConfigFor('medium', 'classic');
+    const duo = mctsConfigFor('medium', 'duo');
+    expect(duo.timeBudgetMs).toBe(classic.timeBudgetMs);
+    expect(duo.rolloutDepth).toBe(classic.rolloutDepth);
+    expect(duo.minIterations).toBe(classic.minIterations);
+    expect(duo.rankRewardWeight).toBe(classic.rankRewardWeight);
+  });
+
+  it('a tier with no measured Duo delta plays Classic constants, deliberately', () => {
+    // Not an oversight — AE30 measured `medium`. hard/extreme are unmeasured on Duo
+    // and inherit until they are, which is the documented delta discipline.
+    for (const tier of ['hard', 'extreme'] as const) {
+      expect(mctsConfigFor(tier, 'duo')).toEqual(mctsConfigFor(tier, 'classic'));
+    }
   });
 });
 

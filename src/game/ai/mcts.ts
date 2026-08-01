@@ -23,6 +23,7 @@ import { remainingSquares } from '../scoring';
 import type { Cell, Color, GameState, PieceId, Placement } from '../types';
 import { cloneState, recomputeStuck, applyAndAdvance } from './simstate';
 import { chooseMove, scoreCells, scorePlacement, WEIGHTS } from './heuristic';
+import type { Weights } from './heuristic';
 import type { Strategy } from './arena';
 
 /** Total squares one color owns across all 21 pieces (sum of sizes). */
@@ -77,6 +78,17 @@ export interface MctsConfig {
   /** Prune each node's action set to the heuristic's top-K (0 = keep all). */
   beam: number;
   /**
+   * Heuristic weights the *search* scores with — beam ordering and the
+   * `score`/`softmax` rollout policies. Separate from the tier constants above
+   * because a weight vector is not universal: `block` is measured to lose 3:1 on
+   * Duo while paying its way on Classic (F22/AE30), so a variant needs to hand the
+   * search its own vector rather than inherit the module default.
+   *
+   * Defaults to `WEIGHTS`, the Classic-tuned vector — so a config that omits this
+   * searches exactly as it did before the field existed.
+   */
+  weights: Weights;
+  /**
    * Enable RAVE / AMAF value sharing (AE3). When on, every simulation's moves
    * warm up the AMAF estimate of *sibling* actions, blended into selection via a
    * β schedule that decays to pure UCT as real visits accrue. Off = byte-identical
@@ -115,6 +127,7 @@ export const DEFAULTS: MctsConfig = {
   rolloutTemperature: 8,
   rolloutDepth: 0,
   beam: 16,
+  weights: WEIGHTS,
   rave: false,
   raveK: 1000,
   rankRewardWeight: 0.25,
@@ -190,7 +203,7 @@ function untriedMoves(node: Node, cfg: MctsConfig): Placement[] {
   let moves = generateLegalMoves(node.G, color);
   if (cfg.beam > 0 && moves.length > cfg.beam) {
     moves = moves
-      .map((m) => ({ m, s: scorePlacement(node.G, color, m, WEIGHTS) }))
+      .map((m) => ({ m, s: scorePlacement(node.G, color, m, cfg.weights) }))
       .sort((a, b) => b.s - a.s)
       .slice(0, cfg.beam)
       .map((e) => e.m);
@@ -419,7 +432,7 @@ function rolloutMove(
     const s = sampleLegalMove(G, color, rng, bb);
     statSample(s, keys, boardSizeOf(G));
     if (!s) continue;
-    const v = scoreCells(G, color, s.cells, WEIGHTS);
+    const v = scoreCells(G, color, s.cells, cfg.weights);
     cands.push(s);
     scores.push(v);
     if (v > bestScore) bestScore = v;
@@ -632,7 +645,9 @@ export function mctsSearch(
   }
 
   // Trust the tree only if it has enough total visits (reuse counts toward this).
-  if (root.N < cfg.minIterations) return { move: chooseMove(root.G, color, rng), root };
+  if (root.N < cfg.minIterations) {
+    return { move: chooseMove(root.G, color, rng, cfg.weights), root };
+  }
 
   // Robust child: highest visit count (ties broken by rng).
   let best: Node[] = [];

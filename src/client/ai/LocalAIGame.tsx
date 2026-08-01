@@ -96,8 +96,13 @@ export function LocalAIGame({
   );
 
   // Stable key for the seat→difficulty map so worker/bot memos only rebuild when a
-  // tier actually changes, not on every render (object identity would churn).
-  const difficultyKey = botSeats.map((s) => `${s}:${botDifficulties[s] ?? 'easy'}`).join(',');
+  // tier actually changes, not on every render (object identity would churn). The
+  // variant is part of the key because tier configs are variant-tuned (P63): the same
+  // tier is a different search on Duo, so a variant switch must rebuild the bots.
+  const difficultyKey = [
+    variant ?? 'classic',
+    ...botSeats.map((s) => `${s}:${botDifficulties[s] ?? 'easy'}`),
+  ].join(',');
 
   // Each MCTS bot seat gets its own Web Worker so its per-color search trees stay
   // isolated — mixed tiers never share a tree (the worker keys trees by color).
@@ -132,7 +137,7 @@ export function LocalAIGame({
             enumerate,
             seed: `vs-ai-${seat}`,
             getWorker: () => workersRef.current.get(seat) ?? null,
-            config: mctsConfigFor(diff),
+            config: mctsConfigFor(diff, variant),
           }),
         );
       }

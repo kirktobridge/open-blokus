@@ -12,7 +12,7 @@ import {
   DEFAULTS,
   type MctsNode,
 } from '../src/game/ai/mcts';
-import { chooseMove } from '../src/game/ai/heuristic';
+import { chooseMove, WEIGHTS } from '../src/game/ai/heuristic';
 import { remainingSquares } from '../src/game/scoring';
 import { COLOR_ORDER } from '../src/game/types';
 import { colorStateOf } from '../src/game/modes';
@@ -208,6 +208,70 @@ describe('reward-shaping default (P36/F15)', () => {
     // The middle losers, flat under winner-take-all, are now separated.
     expect(shaped[2]).toBeGreaterThan(0);
     expect(shaped[1]).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * P63 (b): the search takes its heuristic weights from config, not the module
+ * constant. This is the seam AE34 needs — without it there is no way to give a
+ * search a different weight vector, so `block: 0` on Duo cannot even be measured.
+ *
+ * These assert the *wiring*, not that any vector is better: they show an injected
+ * vector reaches beam ordering and the rollout policy, and that omitting it leaves
+ * Classic behaviour byte-identical.
+ */
+describe('weights seam in MctsConfig (P63)', () => {
+  it('defaults to the Classic WEIGHTS vector', () => {
+    expect(DEFAULTS.weights).toEqual(WEIGHTS);
+  });
+
+  it('injected weights reach beam ordering — a different vector picks a different move', () => {
+    // A vector inverted hard enough to reorder the beam: prefer *small* pieces.
+    // If the search still read the module constant, both runs would agree.
+    const G = createInitialState(4, 'basic', 'classic');
+    const cfg = { iterations: 20, rolloutDepth: 2, beam: 3 } as const;
+
+    const base = mctsSearch(G, 'blue', seededRng(), cfg).move;
+    const flipped = mctsSearch(G, 'blue', seededRng(), {
+      ...cfg,
+      weights: { size: -10, frontier: 0, center: 0, block: 0 },
+    }).move;
+
+    expect(base).not.toBeNull();
+    expect(flipped).not.toBeNull();
+    // Size dominates the opening: the default beam holds 5-square pieces, the
+    // inverted one holds 1-square pieces, so the chosen moves cannot coincide.
+    expect(resolveCells(flipped!).length).toBeLessThan(resolveCells(base!).length);
+  });
+
+  it('injected weights reach the score rollout policy', () => {
+    // `score`/`softmax` rank rejection samples by the full heuristic. Same seed and
+    // same tree shape, so a divergence can only come from the rollout scoring.
+    const G = createInitialState(4, 'basic', 'classic');
+    const cfg = { iterations: 25, rolloutDepth: 4, beam: 6, rolloutPolicy: 'score' } as const;
+
+    const a = mctsSearch(G, 'blue', seededRng(), cfg).root;
+    const b = mctsSearch(G, 'blue', seededRng(), {
+      ...cfg,
+      weights: { size: -10, frontier: 0, center: 0, block: 0 },
+    }).root;
+
+    // Rollout outcomes feed backprop, so inverted rollout play moves the values.
+    const values = (r: MctsNode | null) =>
+      (r?.children ?? []).map((c) => `${c.N}:${Array.from(c.W).join('/')}`).join(',');
+    expect(values(a)).not.toBe('');
+    expect(values(a)).not.toBe(values(b));
+  });
+
+  it('omitting weights is byte-identical to passing the Classic vector', () => {
+    // The compatibility guarantee: every existing caller (Elo pool, arena scripts,
+    // the shipped Classic tiers) keeps its measured behaviour.
+    const G = createInitialState(4, 'basic', 'classic');
+    const cfg = { iterations: 20, rolloutDepth: 3, beam: 5 } as const;
+
+    const implicit = mctsSearch(G, 'blue', seededRng(), cfg).move;
+    const explicit = mctsSearch(G, 'blue', seededRng(), { ...cfg, weights: WEIGHTS }).move;
+    expect(implicit).toEqual(explicit);
   });
 });
 
