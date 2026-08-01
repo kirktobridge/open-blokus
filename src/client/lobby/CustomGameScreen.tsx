@@ -15,12 +15,27 @@ import {
   type AiSetup,
 } from './aiSetup';
 import { LobbyTopBar } from './LobbyTopBar';
+import { VariantCard } from './VariantCard';
+
+/**
+ * The variant options, in display order. Captions name the three things the choice
+ * actually changes — board size, colors, and where you start — since that is what the
+ * cards' boards show and what the old dropdown's `title` tooltip hid from touch.
+ */
+const VARIANT_CARDS: readonly { value: Variant; label: string; caption: string }[] = [
+  { value: 'classic', label: 'Classic', caption: '20×20 · four colours · start in the corners' },
+  { value: 'duo', label: 'Duo', caption: '14×14 · two colours · start inside the board' },
+];
 
 /**
  * Custom Game (P29) — the vs-AI setup form, promoted from a `<details>` inside the
  * old play card to a screen of its own. It's a setup flow that *leads into a game*,
  * so it takes the view rather than overlaying it; the glance destinations (friends,
  * stats) are modals instead.
+ *
+ * P65 M1/M3 gave it the front door's character: the variant picks itself from two real
+ * boards rather than a dropdown, and the live setup summary is the headline instead of
+ * a muted line under a redundant "Custom game" heading.
  */
 export function CustomGameScreen({
   onStart,
@@ -56,43 +71,53 @@ export function CustomGameScreen({
         </button>
 
         <section data-testid="custom-game" style={{ ...PANEL, padding: 22 }}>
-          <h2 style={{ margin: '0 0 4px', fontWeight: 800 }}>Custom game</h2>
-          <p data-testid="custom-summary" style={{ margin: '0 0 18px', color: 'var(--mut)', fontSize: 13.5 }}>
+          {/* The summary is the headline (M1/M3). "Custom game" was the largest type
+              on screen while duplicating both the top-bar chip and the back button —
+              three sayings of the same word and no information. The sentence that
+              actually describes what Start will launch takes the slot instead, and it
+              updates live as the form changes. */}
+          <p
+            data-testid="custom-summary"
+            style={{ margin: '0 0 18px', color: 'var(--ink)', fontSize: 20, fontWeight: 700, lineHeight: 1.3 }}
+          >
             {setupSummary(setup)}
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-              <label
-                style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}
-                title="Classic is the 20×20 four-colour game. Duo is the two-player 14×14 game: black and white, interior starting points, advanced scoring."
-              >
-                Game:{' '}
-                <select
-                  data-testid="variant-select"
-                  value={variant}
-                  onChange={(e) => {
+            {/* The variant choice shows the two boards it picks between (M1). */}
+            <div
+              role="radiogroup"
+              aria-label="Game"
+              data-testid="variant-cards"
+              style={{ display: 'flex', gap: 10 }}
+            >
+              {VARIANT_CARDS.map(({ value, label, caption }) => (
+                <VariantCard
+                  key={value}
+                  variant={value}
+                  label={label}
+                  caption={caption}
+                  selected={variant === value}
+                  onSelect={() =>
                     // normalizeSetup pins the seat count and scoring a variant
                     // requires, so a switch can never leave an unstartable form.
-                    const v = e.target.value as Variant;
                     setSetup((s) => {
                       // Carry the human seats across, not the bot count: pinning Duo
                       // to 2 seats while keeping "3 bots" would silently turn your
                       // game into a watch game.
                       const humans = s.mode - s.aiCount;
-                      const next = normalizeSetup({ ...s, variant: v });
+                      const next = normalizeSetup({ ...s, variant: value });
                       return normalizeSetup({
                         ...next,
                         aiCount: Math.max(0, next.mode - Math.min(humans, next.mode)),
                       });
-                    });
-                  }}
-                  style={FIELD}
-                >
-                  <option value="classic">Classic</option>
-                  <option value="duo">Duo</option>
-                </select>
-              </label>
+                    })
+                  }
+                />
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 14 }}>
                 Players:{' '}
                 <select

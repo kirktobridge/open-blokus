@@ -43,7 +43,7 @@ test('a blocked extreme explains itself instead of advertising a rating', async 
 
 test('Duo shows no ratings at all — the scale is Classic-only (M6)', async ({ page }) => {
   await openPicker(page);
-  await page.getByTestId('variant-select').selectOption('duo');
+  await page.getByTestId('variant-card-duo').click();
   await page.getByTestId('ai-count-select').selectOption('1');
 
   const picker = page.getByTestId('ai-difficulty-1');
@@ -67,8 +67,8 @@ test('switching Classic → Duo → Classic puts the ratings back', async ({ pag
   const easy = page.locator('[data-testid^="ai-difficulty-"]').first().locator('option[value="easy"]');
 
   await expect(easy).toHaveText('easy — 1549');
-  await page.getByTestId('variant-select').selectOption('duo');
+  await page.getByTestId('variant-card-duo').click();
   await expect(easy).toHaveText('easy');
-  await page.getByTestId('variant-select').selectOption('classic');
+  await page.getByTestId('variant-card-classic').click();
   await expect(easy).toHaveText('easy — 1549');
 });

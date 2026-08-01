@@ -1,3 +1,8 @@
+/* eslint-disable no-restricted-imports -- Classic by design (P55/P65): the front
+   door replays `AMBIENT_GAMES`, which are precomputed *Classic* self-play games —
+   their moves are 20×20 board indices and their color indices index COLOR_ORDER.
+   The constants match the fixture, so they are the correct read, not a variant leak;
+   making this variant-aware would mean shipping a Duo game set, not a helper call. */
 import { useEffect, useMemo, useState } from 'react';
 import type { Color } from '../../game/types';
 import { COLOR_ORDER } from '../../game/types';

@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 /** Start a Duo game against one easy bot from the Custom Game screen. */
 async function startDuo(page: Page) {
   await page.getByTestId('open-custom').click();
-  await page.getByTestId('variant-select').selectOption('duo');
+  await page.getByTestId('variant-card-duo').click();
   await page.getByTestId('ai-count-select').selectOption('1');
   await page.getByTestId('start-ai').click();
 }
@@ -14,7 +14,7 @@ test('Duo deals a 14×14 board with black and white only (P20 M2b)', async ({ pa
 
   // Duo is a fixed two-seat game, so choosing it pins the player count.
   await page.getByTestId('open-custom').click();
-  await page.getByTestId('variant-select').selectOption('duo');
+  await page.getByTestId('variant-card-duo').click();
   await expect(page.getByTestId('ai-mode-select')).toHaveValue('2');
   await expect(page.getByTestId('ai-mode-select')).toBeDisabled();
   await expect(page.getByTestId('custom-summary')).toContainText('Duo');
