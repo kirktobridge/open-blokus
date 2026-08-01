@@ -43,6 +43,10 @@ export default tseslint.config(
       'src/game/puzzle/**',
       'src/client/board/**',
       'src/client/advisor/**',
+      // The lobby renders both variants' geometry at setup time (P65 M1's variant
+      // cards), before any GameState exists to read through the helpers — so it is
+      // variant-sensitive rendering in the one client tree this rule used to miss.
+      'src/client/lobby/**',
       'src/client/drama.ts',
       'src/game/recap.ts',
       'src/game/share.ts',

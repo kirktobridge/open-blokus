@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-imports -- Classic by design (P55/P65): the wordmark's
+   2×2 glyph is brand art, not a board. Its four colors are the product's identity and
+   stay four on a Duo screen; there is no variant here to read through playColorsOf. */
 import { COLOR_ORDER } from '../../game/types';
 import { FONT_UI, PIECE_VAR } from '../theme';
 
