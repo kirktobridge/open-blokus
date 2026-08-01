@@ -30,14 +30,18 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
+2. **P67** — quiet the review transport chrome, fit the tray. Dependency-free, pure
+   presentation, and the only ready entry fixing a defect visible in the shipped app: the
+   Your-Hand tray is clipped in review today. Small, but it must not disturb P52's pinning,
+   which `e2e/rail-layout.spec.ts` holds.
+3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-3. **P66** — Custom Game controls become steppers + a blitz slider. Dependency-ready (P65
+4. **P66** — Custom Game controls become steppers + a blitz slider. Dependency-ready (P65
    and P46 both shipped) and the smallest build of the ready set: one screen, no setup
    logic moves. Its real cost is a11y, not layout — replacing three `<select>`s gives up
    native keyboard traversal that has to be rebuilt deliberately.
-4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+5. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
    dependency-free — the tournament engine already runs in the browser, and its Elo board
    now reads P61's shipped Classic ratings — but it is much the largest build of the ready
    set, so it sits last until something above it clears.
@@ -1465,6 +1469,48 @@ four classic colors as accents, shapes as the star.
   named tiers carrying ratings and records (P65 M2), not a number line. A continuous blitz
   range is a possible later entry; this one records that it was considered and declined.
 
+### P67 — Review rail: quiet the transport chrome, fit the tray
+- **Drafted:** 2026-07-31
+- **Status:** proposed
+- **Value:** Two complaints at one seam, both *verified* against `src/` on 2026-07-31.
+  (a) The transport reads as a panel floating *on top of* the page rather than as the
+  table's own footer: `transportRow` (full-width `--table-bg` band + hairline top edge)
+  wraps `actionBar` (a `--pnl` card with border, `borderRadius: 16`, and
+  `boxShadow: 0 16px 32px rgba(15,9,3,.38)`). The band alone already marks the scroll
+  boundary [P52](#p52--pin-the-review-transport-the-action-bar-never-moves) wanted; the
+  card-plus-drop-shadow layered on it is a second, redundant chrome layer. (b) The
+  Analysis panel is tall enough that the Your-Hand tray below it is clipped by the rail's
+  internal scroll — both timelines are fixed `H = 200` SVGs stacked with labels, so
+  Analysis consumes most of the rail before the tray gets any budget, and the player sees
+  a half-tray and must scroll the rail to read their own pieces.
+- **Scope:** pure presentation in the review rail + footer; no change to scrubber
+  behavior, timeline data, seek, or move logic.
+  - Flatten the transport to a **single** chrome layer — drop the drop-shadow and let the
+    band carry the boundary, or drop the band and keep the card. Pick one; don't stack.
+  - Give the Analysis charts a shorter height so tray + Analysis both fit a 1280×720 rail
+    without internal scrolling. Whether chart height becomes responsive to rail height or
+    is simply a smaller constant is the implementer's call — a constant is fine if it fits
+    the short viewport.
+  - **P52's pinning is a constraint, not a target.** That entry made the transport
+    positionally invariant and `e2e/rail-layout.spec.ts` holds it; those assertions must
+    still pass. This entry changes how the bar *looks*, never where it sits.
+- **Acceptance:** at 1280×720 in review with a human seat, the Your-Hand tray is fully
+  visible without scrolling the rail, and the transport's viewport rect is unchanged.
+  Visual: **/verify with screenshots in at least two themes** — per CLAUDE.md a
+  shadow/tint tuned against one mat can vanish on another while vitest, typecheck and lint
+  all stay green.
+- **Depends on:** nothing. Succeeds [P48](#p48--right-rail--piece-tray-layout-widen-horizontally--collapsible-panels-all-modes)
+  and [P52](#p52--pin-the-review-transport-the-action-bar-never-moves) (both shipped) —
+  revises their chrome and height budget rather than reopening either. Surfaces:
+  [../../src/client/recap/ReviewTable.tsx](../../src/client/recap/ReviewTable.tsx),
+  [../../src/client/recap/ScoreTimeline.tsx](../../src/client/recap/ScoreTimeline.tsx),
+  [../../src/client/recap/MobilityTimeline.tsx](../../src/client/recap/MobilityTimeline.tsx).
+- **Notes:** P52's shipped note records a `/verify` pass confirming the transport was
+  fully in view, which remains true — the bar is visible in the reported screenshot. The
+  tray clipping is the rail's internal scroll absorbing overflow exactly as P52 designed;
+  this entry is that design meeting a rail whose content budget is over-subscribed, not a
+  P52 regression.
+
 ---
 
 ## Epic: Engagement & retention
@@ -2064,3 +2110,50 @@ Dev-facing hygiene that keeps the doc discipline mechanical instead of manual.
     AD2–AD4) executes through /research, its single writer.
 - **Depends on:** nothing — dependency-free guardrail work, startable now; coordinates
   with /research for its half.
+
+### P68 — A no-clip guard: elements that must never leave the viewport
+- **Drafted:** 2026-08-01
+- **Status:** proposed
+- **Value:** [P67](#p67--review-rail-quiet-the-transport-chrome-fit-the-tray) fixes one
+  clipped tray; this stops the *class*. The gap is not that the assertion doesn't exist —
+  [../../e2e/rail-layout.spec.ts](../../e2e/rail-layout.spec.ts) already has the right
+  one, a local `inView` helper checking `r.y >= 0 && r.y + r.height <= viewportHeight`.
+  Two things stop it from guarding anything else, both **verified this session** by
+  reading the spec. (a) It is a `const` inside a single test, so the play dock and the
+  tray inherit nothing from it. (b) More seriously, P52's fixture starts a **4-AI /
+  0-human watch game**, and per
+  [P48](#p48--right-rail--piece-tray-layout-widen-horizontally--collapsible-panels-all-modes)'s
+  shipped note a watch game puts *no tray in the rail* — so the fixture carrying the
+  pinning assertions is structurally incapable of seeing the tray bug. A shared helper
+  pointed at the wrong fixture is a green test over a broken screen. Playwright's
+  `toBeVisible()` is not a substitute: an element scrolled out of a rail is still
+  "visible" to it (non-empty box, not `display: none`), which is why this class reads as
+  covered when it isn't.
+- **Scope:**
+  - Lift the `inView` check into a shared e2e helper, expressed as Playwright's
+    `toBeInViewport()` where that suffices (already used once, in
+    [../../e2e/game-history.spec.ts](../../e2e/game-history.spec.ts)). The value of this
+    entry is the **inventory and the fixtures**, not a novel assertion.
+  - Hold a **named list** of must-never-clip elements — review transport, Your-Hand tray,
+    play action dock — asserted at a wide and a short viewport (1280×720). The list lives
+    in the test, never in prose: it is exactly the kind of inventory CLAUDE.md's claim
+    discipline says belongs in a test.
+  - **Each element is asserted in a fixture that actually renders it.** The tray needs a
+    seat configuration with a human seat, not the watch game. Getting this wrong
+    reproduces the precise hole this entry exists to close.
+  - Scoped to elements with a **standing** visibility requirement. Deliberately **not** a
+    blanket "nothing anywhere is ever clipped" sweep — legitimate scroll containers and
+    intentional overflow exist, and a blanket rule would be fought and then disabled.
+- **Acceptance:** the guard **fails against the pre-P67 tray layout** and passes after it.
+  A guard never demonstrated red is not known to detect anything; this is the entry's own
+  positive control, in CLAUDE.md's sense.
+- **Depends on:** [P67](#p67--review-rail-quiet-the-transport-chrome-fit-the-tray) — not
+  to build, but for the acceptance: P67's fix is the known-good state and the pre-P67
+  layout the known-bad one, so building this first means having no confirmed red to
+  calibrate against. Succeeds
+  [P52](#p52--pin-the-review-transport-the-action-bar-never-moves) (shipped — the
+  assertion this generalizes). Surfaces:
+  [../../e2e/rail-layout.spec.ts](../../e2e/rail-layout.spec.ts), a shared e2e helper.
+- **Notes:** the sibling class — an element clipped inside a *scroll container* while
+  still within the viewport — is not caught by a viewport check and is **not** in scope.
+  Recorded so a later entry picks it up deliberately rather than assuming this one covered it.
