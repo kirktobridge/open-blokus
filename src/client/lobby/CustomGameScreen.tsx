@@ -235,7 +235,13 @@ export function CustomGameScreen({
               {/* In a watch game the clock is inert — it only ever runs on a human
                   seat — so the row recedes rather than disappearing (M5). Removing it
                   would make the setting look unavailable, and it isn't: it applies
-                  again the moment you take a seat, and the value you picked is kept. */}
+                  again the moment you take a seat, and the value you picked is kept.
+
+                  0.55 measured 3.39:1 contrast on the light theme and 5.11:1 on
+                  Lamplight (P65 M5, eyes-on + computed). Held to the 3:1 WCAG AA bar
+                  for a de-emphasized control, not the 4.5:1 body-text one — the row
+                  has to actually read as receded. Raising it fights the milestone;
+                  lowering it breaks the bar. */}
               <label
                 data-testid="blitz-row"
                 data-inert={isWatch || undefined}
