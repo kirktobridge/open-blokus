@@ -33,7 +33,11 @@ schema test (P21) fails CI if any ID here is missing or terminal.
 2. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
-3. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
+3. **P66** — Custom Game controls become steppers + a blitz slider. Dependency-ready (P65
+   and P46 both shipped) and the smallest build of the ready set: one screen, no setup
+   logic moves. Its real cost is a11y, not layout — replacing three `<select>`s gives up
+   native keyboard traversal that has to be rebuilt deliberately.
+4. **P64** — in-app arena (bot-vs-bot matchup lab). Its head-to-head slice is
    dependency-free — the tournament engine already runs in the browser, and its Elo board
    now reads P61's shipped Classic ratings — but it is much the largest build of the ready
    set, so it sits last until something above it clears.
@@ -1407,6 +1411,59 @@ four classic colors as accents, shapes as the star.
   still be the wrong color — but it closes the specific hole that let an invisible control
   ship. **Nothing is carried forward:** the entry's scope is fully consumed, and `drama.ts`
   stays excluded for the reason stated above, not as deferred work.
+
+### P66 — Custom Game numeric controls become direct-manipulation
+- **Drafted:** 2026-07-31
+- **Status:** proposed
+- **Value:** [P65](#p65--custom-game-screen-character-pass-the-setup-screen-joins-the-front-door--shipped)
+  made the variant choice spatial (two real boards) and promoted the summary to the
+  headline, but the three setting rows below stayed `<select>` dropdowns over three, five,
+  and four values. A dropdown costs two interactions plus an OS-rendered popup to change a
+  number by one, and hides the current value while open. The returning player's task —
+  established as P65 M4's premise — is "bump one bot, keep my usual". Every control on this
+  row becomes directly manipulable and permanently legible, so the row stops mixing idioms.
+  Same class as P65: a character and legibility pass over a shipped surface;
+  `normalizeSetup`, `resolveExtremeForBlitz`, `launchSetup` and `pinSetup` keep their
+  behavior exactly.
+- **Scope:**
+  - **Players** and **AI opponents** become `−  N  +` steppers. Existing clamps stay as they
+    are — the stepper's job is to disable `−`/`+` at the bounds, not to introduce new
+    clamping. AI opponents' upper bound is `mode`, so changing Players re-derives it live
+    (the `Math.min(s.aiCount, m)` clamp already covers the value; the buttons need the bound).
+  - Duo keeps Players non-interactive — both buttons disabled, value shown — as the current
+    `disabled` select does. GAME_SPEC_DUO §5 fixes it at two seats.
+  - **Blitz becomes a 4-detent slider** over the existing `BLITZ_OPTIONS` — `off · 5s · 10s ·
+    30s`, no intermediate values. **Deliberately not a continuous range:** `BlitzSeconds` is
+    `number | null` and `resolveBlitzSeconds` already honours arbitrary values, so a tunable
+    5–60s slider is available for free and is **rejected** here — this entry is an
+    interaction pass, and widening the setting space is a separate decision. The slider is a
+    skin over today's four setups.
+  - `off` is the **leftmost detent**, not a zero: the readout renders "off" and the track
+    fill reads empty, never "0s". `null` stays a state; the detent is its position.
+  - Snapping is load-bearing — the thumb must rest only on the four stops, so an errant drag
+    cannot produce an unrepresentable value.
+  - `resolveExtremeForBlitz` fires on every change today. A slider drags across detents, so
+    extreme-seat retirement keys off the **committed** value (change / pointer-up), not each
+    intermediate one — otherwise dragging past `off` silently retires an extreme seat mid-drag.
+  - The watch-game receded state (P65 M5, opacity 0.55 held to WCAG AA's 3:1 UI-component
+    bar) carries onto the slider — it must read as inert without reading as unavailable.
+  - `ChangedDot` (P65 M4) rides alongside all three controls unchanged.
+  - **Keyboard + a11y are load-bearing, not polish.** A native `<select>` gives arrow-key
+    traversal and a name/value pair for free; a pair of `<button>`s does not. Blitz gets this
+    back cheaply via `<input type="range">` (native arrow keys, `aria-valuenow`) with
+    `aria-valuetext` reading "off" at the minimum. The two steppers must either keep a
+    visually-hidden `<input type="number">` as the labelled control or carry
+    `role="spinbutton"` with `aria-valuenow/min/max` and arrow-key handling.
+  - `data-testid="ai-mode-select"` / `"ai-count-select"` / `"blitz-select"` are read by
+    existing e2e specs — those hooks move onto the new controls, or the specs move with them.
+- **Depends on:** [P65](#p65--custom-game-screen-character-pass-the-setup-screen-joins-the-front-door--shipped)
+  (shipped — the screen and its `ChangedDot`/`FIELD` idiom),
+  [P46](#p46--quick-play-configurable-default) (shipped — `setupKey`/pin semantics
+  the changed-dots compare against; unchanged).
+- **Notes:** the same `<select>`-over-few-values shape exists elsewhere (Settings, the
+  per-seat difficulty pickers). Difficulty is deliberately **not** in scope — its options are
+  named tiers carrying ratings and records (P65 M2), not a number line. A continuous blitz
+  range is a possible later entry; this one records that it was considered and declined.
 
 ---
 
