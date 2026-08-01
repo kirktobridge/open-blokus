@@ -30,10 +30,11 @@ schema test (P21) fails CI if any ID here is missing or terminal.
    (F21 beam 6→16, F22 `block: 0`), which are otherwise stranded: `mcts.ts` has no seam to
    pass a variant's weights through. Slices (a) and (b) are dependency-ready and small;
    only (c) waits on AE34. Duo players are running the measured-worse settings today.
-2. **P65** — Custom Game screen character pass. Every dependency has shipped and the
-   milestones are independently shippable, so it is the cheapest ready entry: M1 (variant as
-   a board) and M3 (summary as headline) carry most of the change, M2/M4 are small. Setup
-   logic is a constraint, not scope — presentation only.
+2. **P65** — Custom Game screen character pass. `partial`: M1 (variant as a board) and M3
+   (summary as headline) shipped, carrying most of the character change. What remains is the
+   cheap tail — M2 (rating + record beside each seat) and M4 (mark what differs from your
+   pinned default), both small and dependency-ready; M5 (name the watch game) is smaller
+   still. Setup logic is a constraint, not scope — presentation only.
 3. **P13** — ladder calibration policy (tiers as measured strength bands). Dependency-free
    but the lowest-urgency of the ready set; P13's bands are now also worth re-asking per
    variant, since the arena can play Duo.
@@ -1311,11 +1312,16 @@ four classic colors as accents, shapes as the star.
   the surface-design cost this entry deliberately avoids.
 
 ### P65 — Custom Game screen character pass (the setup screen joins the front door)
-- **Drafted:** 2026-07-31 — verified against `src/`: `CustomGameScreen` is a 640px column
-  holding one `PANEL` of four inline `<select>`s; `formatTierRating` renders into `<option>`
-  text; `progression` is not imported anywhere on the lobby setup path.
-- **Status:** in-progress — **M1 + M3** claimed (`feat/p65-custom-game-character`); M2, M4,
-  M5 unclaimed and still independently shippable.
+- **Drafted:** 2026-07-31 — re-verified against `src/` after M1 + M3 landed, since the
+  remaining milestones read this line: the variant `<select>` is now two `VariantCard`s, but
+  the three seat `<select>`s M2 revises remain, `formatTierRating` still renders into
+  `<option>` text (`CustomGameScreen.tsx:213`) while the `≈`/Duo-unrated caption renders
+  outside it — so M2's never-co-visible premise holds; `progression` is still not imported on
+  the lobby setup path; `isPinned`/`setupKey` are unchanged, so M4 is untouched.
+- **Status:** partial — **M1 + M3 shipped** (2026-07-31, `fa71bec`): the variant choice is two
+  selectable cards drawing each variant's true geometry from `VARIANTS`, and `setupSummary`
+  takes the headline slot in place of the "Custom game" `<h2>`. M2, M4, M5 unclaimed and still
+  independently shippable — nothing in that diff voided them.
 - **Value:** [P29](#p29--front-door-ambient-board--action-menu) gave the lobby a front door
   that *shows* the game — a viewport-scaled living board carrying the page. Custom Game,
   promoted to a screen by that same entry, kept the old `<details>` form's character: it is
@@ -1380,10 +1386,12 @@ four classic colors as accents, shapes as the star.
   this screen. It is a play-time detector over `prev`/`cur` game states with no meaning on a
   setup form, and using it here would be theming for its own sake. M1 must respect the
   variant-sensitivity invariant — no `BOARD_SIZE`/`CORNERS`/`COLOR_ORDER` in the new card
-  component. **Correction (2026-07-31, verified at claim time):** the drafted claim that
-  `no-restricted-imports` already enforces this here was wrong — the rule's `files` scope
-  does not cover `src/client/lobby/**`, so M1 is the first variant-sensitive rendering in
-  an unguarded tree. M1 therefore extends that scope rather than relying on it. Verification is
+  component. **Correction (2026-07-31, closed by M1):** the drafted claim that
+  `no-restricted-imports` already enforces this here was wrong — the rule's `files` scope did
+  not cover `src/client/lobby/**`, so M1 would have been the first variant-sensitive rendering
+  in an unguarded tree. M1 extended that scope instead of relying on it, so the invariant is
+  now **mechanically enforced** in this tree; the two pre-existing Classic-by-design hits take
+  file-level disables stating why. Verification is
   per-theme screenshots of both variant cards (light + Lamplight) — the same eyes-on detector
   P40/P59 use — plus the existing `ratings` specs, which must keep holding that no Classic
   number appears on a Duo board.
