@@ -1,0 +1,29 @@
+# TrueNAS SCALE custom app (Apps → Discover Apps → ⋮ → Install via YAML).
+# Before installing: create dataset Main/apps/open-blokus/data (preset: Apps),
+# owned by apps:apps (568). Then open http://192.168.1.212:30080.
+# The image builds on the NAS from GitHub main; redeploying the app rebuilds it,
+# so pushing to main + redeploying is the update path.
+services:
+  open-blokus:
+    image: open-blokus:latest
+    build:
+      context: https://github.com/kirktobridge/open-blokus.git#main
+    pull_policy: build
+    restart: unless-stopped
+    user: '568:568'
+    ports:
+      - '30080:8000'
+    environment:
+      TZ: America/New_York
+      # Must list every URL players load the game from (CORS + socket.io).
+      OBK_ORIGINS: http://192.168.1.212:30080,http://arda:30080,http://arda.local:30080
+      # Uncomment to enable the /admin panel:
+      # OBK_ADMIN_USER: admin
+      # OBK_ADMIN_PASS: change-me
+    volumes:
+      - /mnt/Main/apps/open-blokus/data:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8000/games']
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.data
+.claude
+.ae26-scratch
+.ae28-scratch
+reports
+test-results
+playwright-report
+.stryker-tmp
+e2e
+docs
+design_handoff_game_table_redesign

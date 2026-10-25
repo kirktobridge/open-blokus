@@ -4,7 +4,13 @@ import type { BlitzSeconds } from '../blitz/blitz';
 import { dailyDateKey } from '../../game/puzzle/daily';
 import { emptyStreak, foldCompletion, liveStreak, type PuzzleStreak } from './streak';
 
-export const SERVER_URL = import.meta.env.VITE_SERVER ?? 'http://localhost:8000';
+/**
+ * Game server base URL. A production build defaults to the page's own origin
+ * (the server serves the client — see OBK_STATIC_DIR); dev talks to :8000.
+ */
+export const SERVER_URL =
+  import.meta.env.VITE_SERVER ??
+  (import.meta.env.PROD ? window.location.origin : 'http://localhost:8000');
 
 export const SESSION_KEY = 'obk:session';
 export const QUICKPLAY_KEY = 'obk:quickplay';

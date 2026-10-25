@@ -1,6 +1,7 @@
 import { Server, Origins, FlatFile } from 'boardgame.io/server';
 import { BlokusGame } from '../bgio/BlokusGame';
 import { createAdminRouter } from './admin';
+import { serveStatic } from './static';
 
 const PORT = Number(process.env.PORT ?? 8000);
 
@@ -36,6 +37,14 @@ if (adminUser && adminPass) {
   const admin = createAdminRouter(server.db, { user: adminUser, pass: adminPass });
   server.app.use(admin.routes()).use(admin.allowedMethods());
 }
+
+/**
+ * Optional static client. Set OBK_STATIC_DIR to the `vite build` output to
+ * serve the app from this server (single-origin deploy, see Dockerfile).
+ * Mounted after the admin router so /admin keeps its auth gate.
+ */
+const staticDir = process.env.OBK_STATIC_DIR;
+if (staticDir) server.app.use(serveStatic(staticDir));
 
 server.run(PORT, () => {
   // eslint-disable-next-line no-console
